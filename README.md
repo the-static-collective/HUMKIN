@@ -1,14 +1,24 @@
-# HUMKIN — MUTANT POP · GitHub Pages release candidate
+# HUMKIN — MUTANT POP
 
-The official free-to-listen, free-to-download player for twelve original HUMKIN tracks. The public Pages target is **https://the-static-collective.github.io/HUMKIN/**.
+Free-to-listen, free-to-download player for the 12-song *MUTANT POP* album, with an on-demand HUMKIN RADIO companion.
 
-## Release status
-This branch contains a complete static **HTML / CSS / JavaScript player**, an editable song manifest and the HUMKIN RADIO three-channel interface. **The 12 actual MP3 assets and album artwork must be uploaded before merging or advertising this as a working full-album site**. The existing full-size, web-optimized audio files and art are already packaged in the owner's `HUMKIN_PUBLIC_PLAYER_SOURCE.zip` (31.5 MB). No audio is fabricated, remotely proxied, or represented as verified on Pages by this branch.
+**Repository:** the-static-collective/HUMKIN  
+**GitHub Pages preview:** https://the-static-collective.github.io/HUMKIN/  
+**Intended custom domain:** https://humkin.abundent.org/
 
-## Publish
-1. Upload the 12 `audio/*.mp3` files and `cover.jpg` from the prepared ZIP into this branch, retaining paths/case exactly.
-2. Open `https://the-static-collective.github.io/HUMKIN/` after merging the PR to `main`, with GitHub Pages configured to publish `main` /`(root)`. No Node or build step is needed.
-3. Verify all 12 play, skip/shuffle/repeat, per-song direct downloads and `/radio/`. The tracks use relative URLs so the GitHub Pages subpath and a later verified custom domain both work.
-4. When migration is verified, configure `humkin.abundent.org` under GitHub Settings → Pages and adjust DNS. Do not assume the existing Vercel site has migrated merely because Pages settings changed. Add a `CNAME` only in the verified custom-domain cutover.
+## Release state (November 12, 2026)
+- All 12 web-optimized full-length MP3 files are present under `audio/`.
+- The 1080×1080 album cover is present as `cover.jpg`.
+- `index.html`, `player.js`, `styles.css`, `tracks.json` and `radio/index.html` are present.
+- `.github/workflows/deploy-pages.yml` deploys automatically when commits reach `main`.
+- **The public URL and audio playback must be checked after the first successful deployment.** Files in Git alone do not establish that Pages or a custom domain is live.
 
-Provenance: the original full-quality private submission masters, original metadata and licensing evidence stay untouched. The public player contains web-optimized listening encodes only. No analytics, tracking, autoplay, sign-in or paid features. The radio is on-demand fiction, not a live broadcast or first-listen AI DJ session.
+## Publish and check
+1. Merge the release branch to `main`.
+2. In GitHub Settings → Pages, set Source to **GitHub Actions** (not “Deploy from a branch”).
+3. Confirm Actions → “Deploy HUMKIN to GitHub Pages” succeeded. Open the Pages preview URL above.
+4. Test at least two song starts, all 12 audio URLs returning MP3s (not HTML), direct downloads, next/previous, share links and `/radio/`.
+5. Only once the preview works, assign the domain `humkin.abundent.org` in Settings → Pages, add `CNAME` containing exactly `humkin.abundent.org`, and configure the DNS CNAME record for the subdomain to `the-static-collective.github.io` at the domain's DNS host (delete conflicting records). Confirm HTTPS and playback at the custom domain.
+6. Keep an older publication until the cutover is independently verified.
+
+This static site has no paid services, app accounts, analytics, tracking or autoplay. Original private masters and supporting rights documentation remain separate. Public audio files are optimized listening encodes, not masters. Recording rights and third-party commercial licensing must be confirmed for each relevant use.
