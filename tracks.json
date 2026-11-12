@@ -1,0 +1,102 @@
+{
+  "album": "MUTANT POP",
+  "artist": "HUMKIN",
+  "tracks": [
+    {
+      "number": 1,
+      "title": "Noontime Bloom",
+      "duration": 165,
+      "filename": "01_Noontime_Bloom.mp3",
+      "url": "audio/01_Noontime_Bloom.mp3",
+      "source": "https://suno.com/song/269e4447-261c-4377-a648-dfa54e464909"
+    },
+    {
+      "number": 2,
+      "title": "Haileylu Morning",
+      "duration": 164,
+      "filename": "02_Haileylu_Morning.mp3",
+      "url": "audio/02_Haileylu_Morning.mp3",
+      "source": "https://suno.com/song/6ea3fbb4-68a1-4a98-871c-9518185f790c"
+    },
+    {
+      "number": 3,
+      "title": "Bright Blue Rose",
+      "duration": 183,
+      "filename": "03_Bright_Blue_Rose.mp3",
+      "url": "audio/03_Bright_Blue_Rose.mp3",
+      "source": "https://suno.com/song/8ee1494e-9bec-4971-9080-a97ba81d56f4"
+    },
+    {
+      "number": 4,
+      "title": "Golden Yellow Blue",
+      "duration": 133,
+      "filename": "04_Golden_Yellow_Blue.mp3",
+      "url": "audio/04_Golden_Yellow_Blue.mp3",
+      "source": "https://suno.com/song/8335dfd2-55fd-4eaa-8aeb-ec3abf0ca3d4"
+    },
+    {
+      "number": 5,
+      "title": "Room Enough for Two",
+      "duration": 170,
+      "filename": "05_Room_Enough_for_Two.mp3",
+      "url": "audio/05_Room_Enough_for_Two.mp3",
+      "source": "https://suno.com/song/d4263d92-5d91-4b21-96ea-67e697217f4d"
+    },
+    {
+      "number": 6,
+      "title": "We Are Still Here",
+      "duration": 215,
+      "filename": "06_We_Are_Still_Here.mp3",
+      "url": "audio/06_We_Are_Still_Here.mp3",
+      "source": "https://suno.com/song/f0308a2b-e2b0-4c24-9cfa-e14ba7e61e9e"
+    },
+    {
+      "number": 7,
+      "title": "There's Room for You",
+      "duration": 184,
+      "filename": "07_There_s_Room_for_You.mp3",
+      "url": "audio/07_There_s_Room_for_You.mp3",
+      "source": "https://suno.com/song/da615762-de98-4dfc-a219-435afdf001c5"
+    },
+    {
+      "number": 8,
+      "title": "Make a Little Room",
+      "duration": 264,
+      "filename": "08_Make_a_Little_Room.mp3",
+      "url": "audio/08_Make_a_Little_Room.mp3",
+      "source": "https://suno.com/song/4a23ba50-25c8-4767-9568-d445d4edcce0"
+    },
+    {
+      "number": 9,
+      "title": "Rose Mary Blooms",
+      "duration": 169,
+      "filename": "09_Rose_Mary_Blooms.mp3",
+      "url": "audio/09_Rose_Mary_Blooms.mp3",
+      "source": "https://suno.com/song/cb564171-30d1-4025-b88f-31314f570d4c"
+    },
+    {
+      "number": 10,
+      "title": "First Light Finds Your Face",
+      "duration": 159,
+      "filename": "10_First_Light_Finds_Your_Face.mp3",
+      "url": "audio/10_First_Light_Finds_Your_Face.mp3",
+      "source": "https://suno.com/song/503f17f8-198b-4bac-be5d-36f3fb04a44e"
+    },
+    {
+      "number": 11,
+      "title": "I Love You in the Quiet",
+      "duration": 260,
+      "filename": "11_I_Love_You_in_the_Quiet.mp3",
+      "url": "audio/11_I_Love_You_in_the_Quiet.mp3",
+      "source": "https://suno.com/song/0ca3a1f3-f0fa-4506-ad43-9fcf1ed0af82"
+    },
+    {
+      "number": 12,
+      "title": "HaileyLuYAH",
+      "duration": 195,
+      "filename": "12_HaileyLuYAH.mp3",
+      "url": "audio/12_HaileyLuYAH.mp3",
+      "source": "https://suno.com/song/e7c1c00d-891e-478c-b72e-051aba108d65"
+    }
+  ]
+}
