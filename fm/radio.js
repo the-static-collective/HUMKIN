@@ -18,10 +18,15 @@ const CRATE_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // RLS-protect
 async function getPublishedCrate(){
   try{
     // Published rows only; anonymous reads are constrained by Postgres RLS.
-    const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,duration_seconds,storage_path&published_at=not.is.null&order=published_at.asc&limit=1000",
-      {headers:{apikey:CRATE_KEY},cache:"no-cache"});
-    if(!response.ok)throw Error("HTTP "+response.status);
-    const rows=await response.json();
+    const abort=new AbortController();
+    const timer=setTimeout(()=>abort.abort(),4500);
+    let rows;
+    try{
+      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,duration_seconds,storage_path&published_at=not.is.null&order=published_at.asc&limit=1000",
+        {headers:{apikey:CRATE_KEY},cache:"no-cache",signal:abort.signal});
+      if(!response.ok)throw Error("HTTP "+response.status);
+      rows=await response.json();
+    }finally{clearTimeout(timer)}
     if(!Array.isArray(rows))throw Error("Unexpected catalog response");
     return rows.map(row=>{
       const storagePath=String(row.storage_path||"");
