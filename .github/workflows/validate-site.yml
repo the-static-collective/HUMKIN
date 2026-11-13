@@ -18,3 +18,4 @@ jobs:
       - run: node tests/commons.test.mjs
       - run: python3 scripts/build_dj_pack.py
       - run: node tests/dj.test.mjs
+      - run: node tests/radio.test.mjs
