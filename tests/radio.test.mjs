@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import {readFileSync,existsSync} from "node:fs";
+import {readFileSync,existsSync,statSync} from "node:fs";
+import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
@@ -22,11 +23,18 @@ const initialTracks=rotation.tracks;
 assert.equal(rotation.source_type,"track_list");
 assert.equal(rotation.status,"expanded_rotation");
 assert.equal(rotation.live_stream_url,null,"Do not invent streaming server");
-assert.equal(rotation.tracks.length,19);
-assert.equal(new Set(rotation.tracks.map(t=>t.id)).size,19,"Radio track IDs must be unique");
+assert.equal(rotation.tracks.length,20);
+assert.equal(new Set(rotation.tracks.map(t=>t.id)).size,20,"Radio track IDs must be unique");
 assert.equal(rotation.tracks.filter(t=>t.album==="MUTANT POP").length,12);
 assert.equal(rotation.tracks.filter(t=>t.album==="everywhere;near you").length,7);
 assert.equal(ep.tracks.length,7);
+const single=rotation.tracks.find(t=>t.id==="haileylu-bloom");
+assert(single&&single.title==="HaileyLu Bloom","New single must be in radio rotation");
+assert.equal(single.src,"./audio/haileylu-bloom.mp3");
+assert(Math.abs(single.duration-147.864)<.01);
+const mp3Path="fm/audio/haileylu-bloom.mp3";
+assert.equal(statSync(mp3Path).size,3428213,"Real uploaded MP3 must be committed in full");
+assert.equal(createHash("sha256").update(readFileSync(mp3Path)).digest("hex"),"1c92c36b078586a3bc795e4431dd63cec8d0733349d9d61bcec83dbc080aced6","Exact uploaded audio must be preserved");
 for(const t of rotation.tracks){
  assert(t.title&&t.artist==="HUMKIN"&&Number.isFinite(t.duration)&&t.duration>0,"Invalid radio metadata");
  const url=new URL(t.src,"https://humkin.abundent.org/fm/");
@@ -67,7 +75,7 @@ function fixture(config=rotation){
 const f=fixture();await flush();
 assert.equal(f.$("listen").disabled,false,"Tune in should be enabled");
 assert.equal(f.$("air").playCount,0,"No radio autoplay");
-assert.equal(f.window.HUMKIN_RADIO.state.tracks,19);
+assert.equal(f.window.HUMKIN_RADIO.state.tracks,20);
 const sample=f.window.HUMKIN_RADIO.tuneAt(f.time.now);
 assert(sample&&sample.index>=0&&sample.index<12);
 assert(sample.position>=0&&sample.position<initialTracks[sample.index].duration);
@@ -77,14 +85,15 @@ assert.equal(different.cycle,sample.cycle+1,"Station rotation must continue into
 f.$("listen").click();await flush();
 assert.equal(f.$("air").playCount,1,"Tune-in must start playback");
 assert.equal(f.$("air").paused,false);
-assert.equal(f.$("air").src,new URL(initialTracks[sample.index].src,"https://humkin.abundent.org/fm/").href,"Same-time radio must select a real track from either album");
+assert.equal(f.$("air").src,new URL(initialTracks[sample.index].src,"https://humkin.abundent.org/fm/").href,"Same-time radio must select a real published recording");
 assert(f.$("air").currentTime>0,"Tuning in should seek into the current shared clock position");
 f.$("mode-shuffle").click();await flush();
 assert.equal(f.window.HUMKIN_RADIO.state.mode,"shuffle");
 assert.equal(f.$("next-song").hidden,false);
 const played=new Set([f.window.HUMKIN_RADIO.state.index]);
-for(let i=0;i<18;i++){f.$("next-song").click();await flush();played.add(f.window.HUMKIN_RADIO.state.index)}
-assert.equal(played.size,19,"Road shuffle must hear all 19 unique tracks before repeat");
+for(let i=0;i<19;i++){f.$("next-song").click();await flush();played.add(f.window.HUMKIN_RADIO.state.index)}
+assert.equal(played.size,20,"Road shuffle must hear all 20 unique tracks before repeat");
+assert(played.has(19),"Road shuffle must play HaileyLu Bloom before the cycle repeats");
 assert([...played].some(i=>i>=12),"Road shuffle never reached the newly added EP");
 assert.equal(f.$("air").paused,false,"Shuffle should continuously play");
 f.$("mode-clock").click();await flush();
@@ -107,4 +116,4 @@ const customF=fixture(custom);await flush();
 assert.equal(customF.window.HUMKIN_RADIO.state.tracks,2,"Curated JSON should work without modifying JavaScript");
 assert(customF.$("air").src.includes("/fm/audio/"),"Custom track URLs should resolve relative to the FM directory");
 assert(customF.$("playlist-note").textContent.includes("demo")||customF.$("playlist-note").textContent.length>0);
-console.log("Radio tests passed: 19 real tracks (12 MUTANT POP + 7 everywhere;near you), no autoplay, deterministic shared clock, unique shuffle, album art, car media keys and future curated playlists.");
+console.log("Radio tests passed: 20 real tracks (12 MUTANT POP + 7 everywhere;near you + HaileyLu Bloom), SHA-verified new MP3, deterministic clock, no-repeat shuffle, no autoplay, art and media keys.");
