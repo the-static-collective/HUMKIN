@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#201b38">
+<meta name="description" content="HUMKIN RADIO — continuous free music for the road. Tune in for a shared clock rotation or shuffle your own endless drive. No login, no autoplay, no ads.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="HUMKIN RADIO ✳ Always Something On">
+<meta property="og:description" content="Music for the long way home. A free continuous radio-style station built around HUMKIN recordings.">
+<meta property="og:image" content="https://humkin.abundent.org/cover.jpg">
+<meta property="og:url" content="https://humkin.abundent.org/fm/">
+<title>HUMKIN RADIO · Music for the Long Way Home</title>
+<link rel="stylesheet" href="./radio.css">
+<link rel="manifest" href="./manifest.webmanifest">
+<script defer src="./radio.js"></script>
+</head>
+<body>
+<header class="topline">
+  <a class="brand" href="../" aria-label="HUMKIN album homepage">HUMKIN <span>✳</span></a>
+  <span class="station-id">RADIO / NO ADS / NO ACCOUNT</span>
+  <a href="../dj.html" class="dj-link">FOR DJS ↗</a>
+</header>
+<main>
+<section class="masthead">
+  <p class="eyebrow">THE OPEN ROAD HAS A SOUNDTRACK</p>
+  <h1>HUMKIN<br><em>RADIO.</em></h1>
+  <p class="lead">Music for the long way home.<br>Turn it on. Keep driving. Let the songs find you.</p>
+  <div class="little-rule"><span>✳</span><span>ALWAYS SOMETHING ON</span><span>✳</span></div>
+</section>
+<section class="desk" aria-labelledby="desk-heading">
+  <div class="poster">
+    <img id="current-art" src="../cover.jpg" width="720" height="720" alt="HUMKIN album illustration">
+    <div class="seal" aria-hidden="true">TAKE THE<br>LONG WAY<br>HOME</div>
+  </div>
+  <div class="controls">
+    <p id="station-status" class="status-pill" role="status" aria-live="polite">CONNECTING THE TUNER…</p>
+    <h2 id="desk-heading">THERE'S MUSIC<br>OUT HERE.</h2>
+    <p class="eyebrow">NOW ON THE DIAL</p>
+    <h3 id="current-title">FINDING A SONG…</h3>
+    <p id="current-artist" class="artist">HUMKIN · RADIO</p>
+    <div class="mode" role="group" aria-label="Radio listening mode">
+      <button type="button" id="mode-clock" aria-pressed="true" disabled>◉ SAME-TIME RADIO</button>
+      <button type="button" id="mode-shuffle" aria-pressed="false" disabled>⤨ ROAD SHUFFLE</button>
+    </div>
+    <p id="mode-help" class="mode-help">Same-time radio tunes different listeners into approximately the same song and position. This is a browser-built station clock, not yet a dedicated broadcast stream.</p>
+    <button type="button" id="listen" class="listen" disabled>▶ TUNE IN</button>
+    <div class="subcontrols">
+      <button id="catch-up" type="button" disabled>⟳ CATCH UP TO AIR</button>
+      <button id="next-song" type="button" hidden disabled>NEXT SONG →</button>
+      <button id="share-station" type="button">↗ SHARE STATION</button>
+    </div>
+    <audio id="air" preload="none" controls aria-label="HUMKIN RADIO audio playback"></audio>
+    <div class="status-row"><span id="playback-message" role="status" aria-live="polite">Choose TUNE IN to begin.</span><span id="counter" aria-label="Current rotation progress">✳</span></div>
+  </div>
+</section>
+<div class="strip" aria-hidden="true">✳ &nbsp; THE ROAD IS LONG · THE MUSIC IS FREE &nbsp; ✳ &nbsp; THE ROAD IS LONG · THE MUSIC IS FREE &nbsp; ✳</div>
+<section class="about">
+ <div><p class="eyebrow">A STATION YOU CAN CARRY</p><h2>DRIVE.<br><em>LISTEN.</em><br>REPEAT.</h2></div>
+ <div class="about-copy">
+ <p>Two ways to listen. <strong>Same-time radio</strong> uses a shared clock so listeners arriving together hear approximately the same part of the rotation. <strong>Road shuffle</strong> plays continuously in a different, repeat-free order on your own device.</p>
+ <p>Both run on your phone or computer using direct HUMKIN recordings. They do not require a broadcast server. Music continues while the browser can keep playing audio; some phones may suspend background tabs or require you to resume.</p>
+ <p class="preview-note" id="playlist-note">The current rotation is a working preview drawn from MUTANT POP. A new car-radio playlist is being curated and will replace this demo when its audio files are available.</p>
+ <div class="about-actions"><a href="../" class="button">THE FULL RECORD ↗</a><a href="../somewhere.html" class="button">PUT HUMKIN SOMEWHERE ↗</a><a href="../dj.html" class="button">THE DJ CRATE ↗</a></div>
+ </div>
+</section>
+<section class="road-notes">
+ <p class="eyebrow">ONE IMPORTANT DISTINCTION</p>
+ <h2>RADIO VIBES,<br><em>REAL ENGINEERING.</em></h2>
+ <p>This page currently plays a continuous radio-style rotation, not a traditional licensed FM signal, native Android Auto app, or an always-on Icecast stream. To broadcast the same live program to every receiver—even while nobody has a browser open—we can connect an actual streaming server later. The independent full-album homepage stays as it is for the Walmart submission.</p>
+ <p>Listening on personal devices is different from playing recordings over a business sound system. Venue, composition and any applicable broadcast permissions remain separate matters. <a href="../docs/RADIO-OPERATIONS.md">How the real broadcast upgrade works ↗</a></p>
+</section>
+</main>
+<footer><a href="../">← HUMKIN FULL ALBUM</a><span>HUMKIN RADIO ✳ THE MUSIC FINDS A WAY</span><a href="mailto:us@abundent.org">US@ABUNDENT.ORG</a></footer>
+</body>
+</html>
