@@ -56,3 +56,11 @@
 @media(max-width:980px){.mood-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mix-layout{grid-template-columns:1fr;gap:50px}.mix-preview-wrap{max-width:650px;margin:auto;width:100%}}
 @media(max-width:640px){.mood-section,.mix-section{padding:65px 5% 75px}.mood-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mood-grid button{min-height:149px;padding:13px}.mood-grid button span{font-size:30px}.mood-grid button strong{font-size:14px}.mood-grid button small{font-size:11px}.mood-grid button:last-child{grid-column:1 / -1;min-height:85px;display:grid;grid-template-columns:45px 1fr;align-content:center;gap:0}.mood-grid button:last-child span{grid-row:span 2;margin:0}.mood-grid button:last-child strong{margin:0}.mix-preview{transform:none;box-shadow:7px 7px 0 #302343}.received{padding:45px 5%}.received .postcard-paper{transform:none;box-shadow:7px 7px 0 #302343}.gift-buttons button,.gift-buttons a{padding:12px 15px}.postcard-message{font-size:18px}}
 @media(prefers-reduced-motion:reduce){.is-playing .cover,.is-playing .art-back{animation:none}.mood-grid button{transition:none}.mood-grid button:hover,.mood-grid button:focus-visible{transform:none}}
+
+/* Illustration slot: future artwork becomes available by adding a manifest entry. */
+.postcard-art{border:2px solid #312542;border-radius:8px;overflow:hidden;background:#fff9e7;margin:18px 0 22px;aspect-ratio:8/5;position:relative;box-shadow:4px 4px 0 #31254266}
+.postcard-art[hidden]{display:none!important}
+.postcard-art img{width:100%;height:100%;object-fit:cover;object-position:center 47%;display:block}
+.mix-preview .postcard-art{margin-top:15px}
+.received .postcard-art{max-width:570px}
+@media(max-width:640px){.postcard-art{aspect-ratio:4/3}.emoji-jukebox-scroll{scroll-padding:0 20px}}
