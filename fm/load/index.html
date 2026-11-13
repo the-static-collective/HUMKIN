@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#201b38">
+<meta name="robots" content="noindex,nofollow">
+<title>HUMKIN · Crate Loader</title>
+<link rel="stylesheet" href="../radio.css">
+<style>
+:root{color-scheme:light}
+body{background:#fff7e8;color:#211b3a}
+main{max-width:980px;margin:0 auto;padding:24px 16px 100px}
+h1{font-size:clamp(3rem,10vw,6.8rem);letter-spacing:-.075em;line-height:.86;margin:24px 0}
+h2{font-size:1.4rem;margin:0 0 15px}
+p{line-height:1.5}
+.deck{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.panel{border:3px solid #211b3a;box-shadow:7px 7px 0 #211b3a;border-radius:15px;background:#fff;padding:20px}
+.panel.tint{background:#ffe1e6}
+.card{margin-top:22px}
+label{font-weight:700}
+input[type=email],input[type=text]{padding:13px;width:100%;max-width:400px;border:2px solid #211b3a;border-radius:8px;background:#fff;font:inherit;margin:6px 0}
+button,.button-like{padding:13px 18px;border:2px solid #211b3a;border-radius:10px;background:#ffe575;font:800 1rem inherit;cursor:pointer;color:#211b3a;display:inline-block;text-decoration:none;box-sizing:border-box}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.accent{background:#c4ffe4}
+button.warn{background:#ffd3d3}
+#drop{border:3px dashed #211b3a;border-radius:15px;display:block;text-align:center;cursor:pointer;padding:32px 12px;background:#f3e6ff;font-weight:800}
+#drop.over{background:#c4ffe4}
+#pick{max-width:100%;margin:10px 0}
+.small{font-size:.88rem;opacity:.84}
+#queue{list-style:none;padding:0;margin:12px 0;max-height:400px;overflow:auto}
+#queue li{display:grid;grid-template-columns:1fr auto;gap:10px;border-bottom:1px solid #bbb;padding:9px 0;overflow-wrap:anywhere}
+.state{font-weight:700}
+#history{max-height:210px;overflow:auto;white-space:pre-wrap;background:#211b3a;color:#fff;padding:12px;border-radius:9px;font-size:.82rem}
+.hidden{display:none!important}
+#total{font-size:2rem;font-weight:900}
+#stats{font-size:1.1rem;font-weight:800}
+.progress{width:100%;height:12px;appearance:none;accent-color:#211b3a}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+#draft-list{list-style:none;padding:0;max-height:240px;overflow:auto}
+#draft-list li{padding:8px;border-bottom:1px solid #bbb}
+#auth-message,#feedback{font-weight:700;min-height:24px}
+footer{padding:20px;text-align:center}
+@media(max-width:720px){.deck{grid-template-columns:1fr}.panel{padding:15px}h1{font-size:3.5rem}}
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+<script type="module" src="./loader.js"></script>
+</head>
+<body>
+<header class="topline"><a href="../" class="brand">HUMKIN <span>✳</span></a><span class="station-id">CREATOR / CRATE LOADER</span><a href="../" class="dj-link">← RADIO</a></header>
+<main>
+<p class="eyebrow">PRIVATE BACKSTAGE · ONE CRATE AT A TIME</p>
+<h1>LOAD THE<br><em>WHOLE ROAD.</em></h1>
+<p class="lead">Bring a fistful of MP3s or WAVs. We prep the files on your device, stage them privately, then you decide what actually goes on air. No spreadsheets, no manual song-by-song GitHub edits.</p>
+<div class="deck">
+<section class="panel tint" aria-labelledby="login-title">
+<h2 id="login-title">01 · Unlock your crate</h2>
+<p class="small">Only the verified owner of <strong>us@abundent.org</strong> can upload or publish. Sign-in uses an email link—no password embedded in the site.</p>
+<div id="signed-out"><label for="email">Email</label><br><input id="email" type="email" value="us@abundent.org" autocomplete="email"><br><button id="send-link">EMAIL ME THE KEY ↗</button></div>
+<div id="signed-in" class="hidden"><p id="signed-label"></p><button id="sign-out" class="warn">LOCK THE CRATE</button></div>
+<p id="auth-message" role="status" aria-live="polite"></p>
+</section>
+<section class="panel" aria-labelledby="health-title">
+<h2 id="health-title">02 · Storage gauge</h2>
+<p id="stats">Checking storage…</p>
+<p id="total">0:00 on air</p>
+<p class="small">Existing radio tracks stay untouched. This new crate is staged separately. The connected Supabase organization is on its <strong>1 GB free storage allowance</strong>, shared with other projects. Loader uses a conservative 700 MiB soft budget—stop before hitting the ceiling. Approx. 10 hours at 128 kbps is ~550 MiB.</p>
+</section>
+</div>
+<section class="panel card" aria-labelledby="drop-title">
+<h2 id="drop-title">03 · Drop a stack</h2>
+<label id="drop" for="pick">DROP MP3 / WAV HERE<br><span class="small">or tap to choose as many files as you like</span></label>
+<input type="file" id="pick" multiple accept=".mp3,.wav,audio/mpeg,audio/wav,audio/x-wav">
+<p class="small">WAV → 128 kbps stereo MP3 on your device, one file at a time; source WAVs are never uploaded. Mobile WAV conversion may use substantial RAM. The files must remain accessible while the tab is open.</p>
+<p id="selection">No files selected.</p>
+<p id="selected-time">0 hours 0 minutes queued</p>
+<ul id="queue"></ul>
+<div class="row"><button id="stage" class="accent" disabled>STAGE THIS CRATE ↗</button><button id="cancel" class="warn" disabled>STOP AFTER CURRENT SONG</button><button id="clear">CLEAR SELECTION</button></div>
+<progress class="progress" id="progress" value="0" max="100"></progress>
+<p id="feedback" role="status" aria-live="polite"></p>
+</section>
+<section class="panel card" aria-labelledby="ready-title">
+<h2 id="ready-title">04 · Put it on the air</h2>
+<p>Staging is private. Only pressing <strong>PUT THE CRATE ON AIR</strong> publishes those files to the radio. Publishing moves finished MP3s into a public playback bucket, then the station loads the catalog automatically on refresh.</p>
+<ul id="draft-list"><li>Sign in to view private drafts.</li></ul>
+<div class="row"><button id="publish" disabled>PUT THE CRATE ON AIR ↗</button><button id="refresh-drafts">REFRESH CRATE</button><a href="../" class="button-like">LISTEN TO RADIO ↗</a></div>
+</section>
+<section class="panel card">
+<h2>Field notes</h2>
+<p>Keep originals on your phone or computer; this loader makes listening copies, not archival masters. Upload failures leave the unshared source untouched. Exact duplicates are skipped by SHA-256. A locked screen may suspend uploads, so leave this tab visible while a crate is transferring.</p>
+<p>For hundreds of WAVs, a desktop FFmpeg batch conversion is faster and more reliable than encoding on a phone. The repo also includes a local offline converter at <code>tools/humkin-radio-batch.py</code>. Make MP3s once, then drop the resulting folder here.</p>
+<pre id="history" role="log" aria-live="polite">Ready.</pre>
+</section>
+</main>
+<footer><a href="../">← HUMKIN RADIO</a> · OWNER LOAD-IN v1 · NO TRACKING</footer>
+</body></html>
