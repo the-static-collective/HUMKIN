@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUMKIN — everywhere;near you</title>
+<meta name="description" content="Seven songs, one little house, and everywhere in between. HUMKIN — everywhere;near you.">
+<meta property="og:title" content="HUMKIN — everywhere;near you"><meta property="og:type" content="music.album">
+<meta property="og:description" content="Seven songs that keep finding their way home.">
+<meta property="og:image" content="https://humkin.abundent.org/releases/everywhere-near-you/cover.jpg">
+<meta name="theme-color" content="#1c203a">
+<style>
+:root{color-scheme:dark;--bg:#1c203a;--cream:#f9ede4;--pale:#d8cdd8;--rose:#edc4b6}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 5% 5%,#75719e80,transparent 48%),radial-gradient(circle at 90% 85%,#8c53704a,transparent 50%),var(--bg);color:var(--cream);font:16px/1.55 system-ui,sans-serif;min-height:100vh}
+main,header,footer{max-width:1020px;padding:20px;margin:auto}
+a{color:var(--rose)}button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:3px}
+header,footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+header a{text-decoration:none;color:var(--cream)}header strong{letter-spacing:.22em;font-size:.9rem}
+.hero{display:grid;grid-template-columns:minmax(230px,430px) 1fr;gap:clamp(22px,6vw,75px);align-items:center;margin:45px 0 50px}
+.hero img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border:1px solid #ffffff40;border-radius:16px;box-shadow:0 20px 65px #0d10258a}
+.eyebrow{color:var(--rose);font-weight:700;letter-spacing:.19em;text-transform:uppercase;font-size:.73rem}
+h1{font:400 clamp(3rem,6.5vw,5.6rem)/.99 Georgia,serif;letter-spacing:-.05em;margin:15px 0;overflow-wrap:anywhere}
+.lead{font:1.25rem/1.65 Georgia,serif;max-width:36ch;color:#f9e3db}
+.btn{border:1px solid #ffffff40;background:var(--rose);border-radius:99px;color:#201c30;padding:12px 20px;font-weight:800}
+.btn.secondary{background:transparent;color:var(--cream);text-decoration:none;display:inline-block}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.box{background:#ffffff0b;border:1px solid #ffffff30;border-radius:17px;overflow:hidden}
+.box h2{font:400 1.9rem Georgia,serif;margin:0}.head{padding:21px 24px}.head p{margin:4px 0 0;color:var(--pale)}
+.row{background:transparent;border:0;border-top:1px solid #ffffff20;padding:16px 24px;color:var(--cream);display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left}
+.row small{display:block;color:var(--pale)}.row:hover,.row[aria-current="true"]{background:#ffffff19}.row time{font-variant-numeric:tabular-nums;color:var(--pale)}
+.deck{background:#0f1533af;border-top:1px solid #ffffff30;padding:25px}
+.deck .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}.controls button{border:1px solid #ffffff40;border-radius:25px;padding:9px 15px;background:#ffffff13;color:var(--cream)}
+.controls button[aria-pressed="true"]{border-color:var(--rose);background:#eab9a82c}
+#seek{width:100%;accent-color:var(--rose);margin:24px 0 0}
+.times{display:flex;justify-content:space-between;color:var(--pale);font-variant-numeric:tabular-nums}
+.note{font-size:.85rem;color:var(--pale);line-height:1.5}
+.quote{font:1.6rem Georgia,serif;text-align:center;margin:60px auto;color:var(--pale)}
+footer{border-top:1px solid #ffffff28;color:var(--pale);font-size:.85rem;padding-bottom:38px}
+@media(max-width:700px){.hero{grid-template-columns:1fr;text-align:center;margin-top:20px}.hero img{max-width:470px;margin:auto}.links{justify-content:center}.lead{margin-left:auto;margin-right:auto}.head,.row,.deck{padding-left:16px;padding-right:16px}}
+</style></head>
+<body><header><a href="../../index.html"><strong>HUMKIN</strong></a><a href="../../somewhere.html">the music relay ↗</a></header>
+<main>
+<section class="hero"><img src="cover.jpg" width="1200" height="1200" alt="Manga-inspired album cover for everywhere;near you">
+<div><div class="eyebrow">seven songs · one continuous return</div><h1>everywhere;<br>near you</h1><p>HUMKIN · <span id="duration">20:27</span></p>
+<p class="lead">A blue bowl. A cracked glass. Two peaches on the seat. Every road bends back toward someone.</p>
+<div class="links"><button class="btn" id="from-start">▶ Listen from the beginning</button><a class="btn secondary" href="../../index.html">The other HUMKIN record ↗</a></div></div></section>
+<section class="box" aria-label="Album player"><div class="head"><h2>the little repeating world</h2><p>Start anywhere. Repeat the seven. No autoplay.</p></div>
+<div id="songs"></div><div class="deck"><div class="eyebrow">Now playing</div><strong id="current">Home With You</strong>
+<div class="controls"><button id="previous" aria-label="Previous song">⏮</button><button id="toggle" aria-label="Play">▶ Play</button><button id="next" aria-label="Next song">⏭</button><button id="repeat" aria-pressed="true">↻ Repeat · on</button><button id="share">Share ↗</button></div>
+<input type="range" id="seek" min="0" max="1000" value="0" aria-label="Playback position">
+<div class="times"><span id="elapsed">0:00</span><span id="end">2:59</span></div><p id="status" role="status" aria-live="polite" class="note">Ready when you are.</p>
+<p class="note">Personal listening is welcome; downloading or playing this through venue speakers or reusing it in a video requires separate rights review.</p></div></section>
+<p class="quote">“This looks less like a house<br>and more like a promise kept.”</p>
+</main><footer><span>HUMKIN · everywhere;near you</span><a href="mailto:us@abundent.org?subject=HUMKIN%20everywhere%3Bnear%20you">Get in touch</a></footer>
+<audio id="audio" preload="metadata"></audio>
+<script>
+(async()=>{
+"use strict";
+const $=id=>document.getElementById(id),audio=$("audio"),status=$("status");
+const manifest=await fetch("tracks.json").then(r=>{if(!r.ok)throw Error("No catalog");return r.json()}).catch(()=>null);
+if(!manifest||!Array.isArray(manifest.tracks)){status.textContent="Track list unavailable.";return}
+const tracks=manifest.tracks;let i=0,loop=true;
+const fmt=s=>Number.isFinite(s)?Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0"):"0:00";
+for(const t of tracks){const b=document.createElement("button");b.className="row";b.type="button";b.dataset.i=String(t.number-1);
+const number=document.createElement("span");number.textContent=String(t.number).padStart(2,"0");
+const info=document.createElement("span");const name=document.createElement("strong");name.textContent=t.title;const subtitle=document.createElement("small");subtitle.textContent=t.tagline;info.append(name,subtitle);
+const dur=document.createElement("time");dur.textContent=fmt(t.duration_seconds);b.append(number,info,dur);$("songs").append(b);b.addEventListener("click",()=>load(t.number-1,true))}
+function select(){for(const b of $("songs").children)b.setAttribute("aria-current",String(+b.dataset.i===i))}
+function load(n,start){if(n<0||n>=tracks.length)return;i=n;audio.src=tracks[i].url;audio.load();$("current").textContent=tracks[i].title;$("elapsed").textContent="0:00";$("end").textContent=fmt(tracks[i].duration_seconds);$("seek").value=0;select();if(start)play()}
+async function play(){try{await audio.play()}catch{status.textContent="Audio not available yet. Check the published file."}}
+function next(){if(i+1<tracks.length)load(i+1,true);else if(loop)load(0,true);else{audio.pause();status.textContent="Finished."}}
+$("from-start").onclick=()=>load(0,true);
+$("toggle").onclick=()=>audio.paused?play():audio.pause();
+$("previous").onclick=()=>audio.currentTime>3?audio.currentTime=0:load((i+tracks.length-1)%tracks.length,true);
+$("next").onclick=next;
+$("repeat").onclick=()=>{loop=!loop;$("repeat").setAttribute("aria-pressed",String(loop));$("repeat").textContent=loop?"↻ Repeat · on":"↻ Repeat · off"};
+$("share").onclick=async()=>{const u=new URL(location.href);u.searchParams.set("track",String(i+1).padStart(2,"0"));try{if(navigator.share)await navigator.share({url:u.href,title:"HUMKIN — "+tracks[i].title});else{await navigator.clipboard.writeText(u.href);status.textContent="Song link copied"}}catch{status.textContent="Share cancelled or unavailable"}};
+$("seek").oninput=e=>{if(Number.isFinite(audio.duration))audio.currentTime=(+e.target.value/1000)*audio.duration};
+audio.ontimeupdate=()=>{$("elapsed").textContent=fmt(audio.currentTime);if(Number.isFinite(audio.duration)&&audio.duration>0)$("seek").value=String(Math.round(audio.currentTime/audio.duration*1000))};
+audio.onloadedmetadata=()=>$("end").textContent=fmt(audio.duration);
+audio.onplay=()=>{$("toggle").textContent="Ⅱ Pause";status.textContent="Playing"};
+audio.onpause=()=>{$("toggle").textContent="▶ Play";if(audio.currentTime<audio.duration)status.textContent="Paused"};
+audio.onended=next;
+audio.onerror=()=>status.textContent="This MP3 has not been uploaded to the site yet.";
+let start=Number(new URL(location.href).searchParams.get("track"));if(Number.isInteger(start)&&start>=1&&start<=tracks.length)i=start-1;load(i,false);
+})()
+</script></body></html>
