@@ -1,0 +1,18 @@
+{
+  "name": "HUMKIN RADIO — Music for the Long Way Home",
+  "short_name": "HUMKIN RADIO",
+  "description": "Free continuous music for the long way home.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff8e9",
+  "theme_color": "#221b39",
+  "icons": [
+    {
+      "src": "../cover.jpg",
+      "sizes": "1080x1080",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

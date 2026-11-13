@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "station_name": "HUMKIN RADIO",
+  "tagline": "Music for the long way home.",
+  "status": "preview_rotation",
+  "status_note": "A continuous demo rotation of the 12 previously released MUTANT POP recordings. The creator's new car-radio playlist has not been supplied yet.",
+  "source_type": "existing_catalog",
+  "catalog": "../tracks.json",
+  "catalog_numbers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "artwork": "../cover.jpg",
+  "synced_clock_epoch_utc": "2026-11-13T00:00:00Z",
+  "live_stream_url": null,
+  "metadata_url": null,
+  "request_stems_url": "../dj.html",
+  "creator_email": "us@abundent.org",
+  "note": "For the forthcoming curated playlist, add approved MP3 files and replace this rotation with source_type=track_list and tracks=[{id,title,duration,src,artist,artwork}]. Existing full-album homepage is unaffected."
+}
