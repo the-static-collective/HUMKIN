@@ -21,7 +21,10 @@ for(const [page,script] of [[html,"somewhere.js"],[miniHtml,"embed.js"]]){
 }
 assert(html.includes("Commercial sync")||html.includes("Commercial sync,"),"Station must mention actual licensing gate");
 assert(!html.includes("Google Analytics"),"Unexpected analytics");
-assert(html.includes('href="./relay.html"'),"Station does not link six-up physical relay");\nassert(miniHtml.includes('GET THIS PLAYER ↗'),"Embeds must make it possible to create more embeds");\nconst RELAY=read("relay.html");\nassert((RELAY.match(/class="card"/g)||[]).length===6,"Print sheet must have six unique cards");\nconst QR=read("poster.html").match(/const data="([^"]+)"/)?.[1];
+assert(html.includes('href="./relay.html"'),"Station does not link six-up physical relay");
+assert(miniHtml.includes('GET THIS PLAYER ↗'),"Embeds must make it possible to create more embeds");
+const RELAY=read("relay.html");
+assert((RELAY.match(/class="card"/g)||[]).length===6,"Print sheet must have six unique cards");\nconst QR=read("poster.html").match(/const data="([^"]+)"/)?.[1];
 assert(QR&&Buffer.from(QR,"base64").length===172,"Existing local poster QR must survive");
 class El{
  constructor(id){this.id=id;this.value="";this.textContent="";this.disabled=false;this.hidden=false;this.href="";this.src="";this.children=[];this.listeners={};this.attributes={};this.dataset={};this.playCount=0;this.currentTime=0;this.paused=true;this.classList={toggle(){}}}
