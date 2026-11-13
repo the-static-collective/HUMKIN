@@ -1,5 +1,5 @@
 /* HUMKIN Pocket Player. Static first; no tracking, no automatic audio downloads. */
-const SHELL="humkin-shell-v3";
+const SHELL="humkin-shell-v4";
 const MUSIC="humkin-music-v1";
 const FILES=["./","./index.html","./styles.css","./gifts.css","./approved-look.css","./player.js","./gifts.js","./signup.js","./cover.jpg","./tracks.json","./privacy.html","./poster.html","./manifest.webmanifest"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(SHELL).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
