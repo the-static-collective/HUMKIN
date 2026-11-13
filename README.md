@@ -91,3 +91,11 @@ A dedicated `/dj.html` route offers existing MUTANT POP 12-track MP3s directly t
 No-fee DJ use is offered only insofar as HUMKIN controls the applicable rights. Venues/streaming/broadcast have separate licensing rules. The creator reports Premier creation and no third-party remixes, recorded in the rights inventory. Suno-approved download/composition/venue checks remain for expanded licensing.
 
 **Walmart protection:** The homepage remains the full album/player, with only a small DJ nav link. The distribution station links the DJ portal separately. High-bandwidth DJ ZIP downloads may eventually require object storage rather than GitHub Pages' 100GB/month soft limit.
+
+## HUMKIN RADIO / long-way-home tuner (November 13, 2026)
+
+`/fm/` is a new **independent** car-oriented, continuous browser radio, not a replacement for the original 12-track MUTANT POP homepage or the earlier fictional `/radio/` project. A user chooses between **Same-Time Radio**, a deterministic synchronized-clock approximation, and **Road Shuffle**, a repeat-free continuous playlist. It provides MediaSession transport controls where browsers support them, a radio-specific installable web app manifest, no autoplay, no account and no analytics. The starting `fm/rotation.json` playlist is explicitly labeled a **demo rotation** of the 12 existing MUTANT POP MP3s; the creator's new curated radio playlist has not yet been provided or uploaded. `source_type:track_list` can accept the eventual files without changing the player.
+
+There is **no actual streaming station server, FM license, native Android Auto app or audio broadcast** in this PR. Those require further implementation and applicable rights/permissions. `docs/RADIO-OPERATIONS.md` documents true Icecast/AzuraCast, input requirements, mobile testing, station directories and licensing. No imported music files, fake live-stream URL, or staged album tracks are invented.
+
+GitHub Pages and the existing Walmart-facing full-album page remain in place; only light menu links are added to the independent radio route. Cache shell v11 includes the light page/config scripts, not the broadcast audio library or DJ ZIP by default.
