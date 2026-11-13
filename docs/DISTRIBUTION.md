@@ -5,7 +5,8 @@ Album: https://humkin.abundent.org/
 Portable player: https://humkin.abundent.org/embed.html  
 Public catalog: https://humkin.abundent.org/tracks.json  
 Discovery: https://humkin.abundent.org/discovery.json  
-Free printable QR poster: https://humkin.abundent.org/poster.html\nSix take-one cards: https://humkin.abundent.org/relay.html
+Free printable QR poster: https://humkin.abundent.org/poster.html
+Six take-one cards: https://humkin.abundent.org/relay.html
 
 ## What is actually available
 
