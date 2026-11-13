@@ -16,7 +16,7 @@ assert(html.includes("not published here yet"),"Page must not pretend WAV/stems 
 assert(html.includes("Public DJ performance may require venue/platform licenses"),"DJ license warning absent");
 assert(read("index.html").includes('href="./dj.html"'),"Home must link to DJ desk without altering full album");
 assert(read("somewhere.html").includes('href="./dj.html"'),"Station must link to DJ desk");
-assert(Number(read("sw.js").match(/humkin-shell-v(\\d+)/)?.[1]) >= 10,"DJ service worker must be at least v10");
+assert(Number(read("sw.js").match(/humkin-shell-v(\d+)/)?.[1]) >= 10,"DJ service worker must be at least v10");
 assert(read("sw.js").includes('"./dj.js"'),"Service worker must cache DJ interface");
 assert(!read("sw.js").includes('"./dj-pack.zip"'),"Do not automatically pre-cache large audio ZIP");
 assert(read("sitemap.xml").includes("https://humkin.abundent.org/dj.html"),"Sitemap missing DJ desk");
