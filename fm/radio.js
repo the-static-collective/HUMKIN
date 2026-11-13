@@ -13,6 +13,28 @@ let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,lastLiveCheck=0,switching=false;
 let remoteStream=null;
 const EPOCH_FALLBACK="2026-11-13T00:00:00Z";
+const CRATE_API="https://kbhqacsdvjsstzyplqij.supabase.co";
+const CRATE_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // RLS-protected public key.
+async function getPublishedCrate(){
+  try{
+    // Published rows only; anonymous reads are constrained by Postgres RLS.
+    const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,duration_seconds,storage_path&published_at=not.is.null&order=published_at.asc&limit=1000",
+      {headers:{apikey:CRATE_KEY},cache:"no-cache"});
+    if(!response.ok)throw Error("HTTP "+response.status);
+    const rows=await response.json();
+    if(!Array.isArray(rows))throw Error("Unexpected catalog response");
+    return rows.map(row=>{
+      const storagePath=String(row.storage_path||"");
+      if(!/^[0-9a-f-]{36}\/[0-9a-f]{64}\.mp3$/.test(storagePath))return null;
+      const src=CRATE_API+"/storage/v1/object/public/humkin-radio-live/"+storagePath;
+      const duration=Number(row.duration_seconds);
+      if(!(duration>0&&duration<14400))return null;
+      return {id:"crate-"+row.id,title:String(row.title||"").slice(0,240),
+        artist:String(row.artist||"HUMKIN"),album:String(row.album||"HUMKIN RADIO"),
+        duration,src,artwork:fileUrl("cover.jpg",root)};
+    }).filter(t=>t?.title);
+  }catch(error){console.warn("HUMKIN additional crate unavailable; using original radio rotation.",error);return []}
+}
 const safeText=s=>typeof s==="string"?s:"";
 const fileUrl=(relative,base)=>new URL(relative,base).href;
 const setMessage=s=>{message.textContent=s};
@@ -305,7 +327,12 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    $("playlist-note").textContent=config.status_note||"Continuous music from the HUMKIN catalog.";
+    const cloud=await getPublishedCrate();
+    const originalCount=tracks.length;
+    const baseIds=new Set(tracks.map(t=>t.id));
+    tracks.push(...cloud.filter(t=>!baseIds.has(t.id)));
+    $("playlist-note").textContent=(config.status_note||"Continuous music from the HUMKIN catalog.")+
+      (tracks.length>originalCount?" PLUS "+(tracks.length-originalCount)+" new creator-loaded songs on the dial.":"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     setMessage("Press TUNE IN. No autoplay; you're in control.");
