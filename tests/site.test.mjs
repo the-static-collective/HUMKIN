@@ -12,6 +12,13 @@ for(const file of scripts){
     if(match[1]!=="source-link")assert(pageIds.has(match[1]),file+": missing #"+match[1]);
   }
 }
+// Walmart pitch gate: keep the full-album player as the home page.
+const station=text("somewhere.html");
+assert(html.includes("<title>HUMKIN — MUTANT POP | Free full album</title>"),"Home page must remain the full album for Walmart submissions");
+assert(html.includes('id="album-heading"')&&html.includes('id="play-album"')&&html.includes('id="audio"'),"Homepage player must remain intact");
+assert(html.includes('href="./somewhere.html"'),"Home must link to a separate distribution station");
+assert(station.includes("Put HUMKIN Somewhere — Free Music Distribution Station"),"Distribution station must retain its own standalone HTML page");
+assert(station.includes('href="./"'),"The station needs a route back to the main album page");
 const album=JSON.parse(text("tracks.json"));
 assert.equal(album.tracks.length,12);
 for(const [i,track] of album.tracks.entries()){
