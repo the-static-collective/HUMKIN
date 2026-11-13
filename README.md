@@ -83,3 +83,11 @@ The regression test in `tests/site.test.mjs` guards against unintentionally repl
 **Rights readiness:** `docs/RIGHTS-INVENTORY.md` includes every MUTANT POP track with public source references. All are marked **not yet cleared for new direct business or creator licensing** pending source, paid-plan/download, composition, recording, PRO and distributor rights verification. The personal listening relay is not represented as commercial venue music authorization.
 
 **Operations:** The service worker shell is bumped to v8 and caches the new page's assets. `tests/surprise.test.mjs` exercises gift generation, playback, sharing and browser navigation as part of GitHub Actions. The existing full-album poster still routes to the Walmart-safe homepage.
+
+## DJ Desk / downloadable DJ starter crate — November 13, 2026
+
+A new `/dj.html` route offers the existing MUTANT POP 12-track MP3 album directly to DJs, with on-page auditions, individual file downloads, a real build-produced `/dj-pack.zip` containing all twelve source MP3s, a local-path `/dj-crate.m3u8`, a metadata `/dj-crate.csv`, and `docs/DJ-PERMISSION.md`. Python stdlib script `scripts/build_dj_pack.py` runs during GitHub Pages deployment. ZIP is **not** cached by the service worker. WAV masters, extracted stems, BPM and keys are **not** fabricated and aren't served until real assets are uploaded/processed.
+
+No-fee DJ use is offered to the extent HUMKIN controls the rights in the official recordings; public-performance and other platform rules are separately stated. The creator now reports Premier generation and no third-party remixes, recorded in the rights inventory as an evidentiary update. The approved-download and additional composition/venue rights checks remain before any unqualified business licensing claims.
+
+**Walmart protection:** Keep the **full 12-song original album** at the homepage; only add a light DJ entry in nav. The independent station adds a DJ portal link. New regression tests guard this separation. ZIP may incur significant bandwidth under GitHub Pages' soft bandwidth limit of 100 GB/month if broadly distributed; migrate heavy downloads to suitable object storage when use warrants it.
