@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "published": [
     {
       "id": "mutant-pop",
@@ -9,6 +9,96 @@
       "src": "cover.jpg",
       "alt": "MUTANT POP album art: the original manga couple together in their colorful music-filled room.",
       "aspect": "square"
+    },
+    {
+      "id": "rainy-song",
+      "title": "Rainy Song · After the Rain",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/rainy-song.webp",
+      "alt": "The manga couple making music together by a rainy window.",
+      "aspect": "square"
+    },
+    {
+      "id": "thyme",
+      "title": "Thyme · Morning Tea",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/thyme.webp",
+      "alt": "The manga couple sharing a warm kitchen morning beneath the handwritten title Thyme.",
+      "aspect": "square"
+    },
+    {
+      "id": "love",
+      "title": "Love · Bread and Sunshine",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/love.webp",
+      "alt": "The manga couple baking bread in a bright sunlit kitchen beneath the title Love.",
+      "aspect": "portrait"
+    },
+    {
+      "id": "make-a-little-room",
+      "title": "Make a Little Room",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/make-a-little-room.webp",
+      "alt": "The manga couple leaning together over tea as rain falls outside.",
+      "aspect": "square"
+    },
+    {
+      "id": "humkin-roses-banner",
+      "title": "HUMKIN · Roses and Sun",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/humkin-roses-banner.webp",
+      "alt": "Wide illustrated HUMKIN banner with the smiling manga couple, flowers, and an emoji song row.",
+      "aspect": "wide"
+    },
+    {
+      "id": "mutant-pop-day",
+      "title": "Mutant Pop · Bright Day",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/mutant-pop-day.webp",
+      "alt": "The manga couple smiling together in a vibrant sunny room, with the words HUMKIN MUTANT POP.",
+      "aspect": "square"
+    },
+    {
+      "id": "rose-mary",
+      "title": "Rose Mary · Country Morning",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/rose-mary.webp",
+      "alt": "The manga couple drinking tea in a country kitchen beneath the handwritten title Rose Mary.",
+      "aspect": "square"
+    },
+    {
+      "id": "basil",
+      "title": "Basil · Rain and Firelight",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/basil.webp",
+      "alt": "The manga couple together in a warm kitchen at night beneath the handwritten title Basil.",
+      "aspect": "square"
+    },
+    {
+      "id": "mutant-pop-night",
+      "title": "Mutant Pop · Evening Glow",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/mutant-pop-night.webp",
+      "alt": "The manga couple relaxing with music and mugs at sunset beneath the words HUMKIN MUTANT POP.",
+      "aspect": "square"
+    },
+    {
+      "id": "humkin-vintage-banner",
+      "title": "HUMKIN · Vintage Post",
+      "family": "home",
+      "era": "young",
+      "src": "postcards/humkin-vintage-banner.webp",
+      "alt": "Wide weathered illustrated HUMKIN banner with the smiling manga couple and an emoji song row.",
+      "aspect": "wide"
     }
   ],
   "ideas": [
