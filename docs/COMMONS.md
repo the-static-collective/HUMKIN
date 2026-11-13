@@ -112,3 +112,25 @@ Suggested future bridges: reLATTE for crossing/provenance, MOTIF for useful-cand
 ## Concrete field test
 
 Take one entirely controlled source clip, make one intentionally credited remix with altered music or assembly, obtain permission from every necessary rightsholder, publish both with hash-identified parent/descendant records, and test the download and attribution experience on a phone. Don't publish bulk Drive or local assets automatically.
+
+
+## Public home-media dock: optional source, no invented address
+
+FREEPORT 007 adds a *separate* local media holder and read-only server in the freeport repository. Its secure published-only JSON endpoint is /v1/catalog.json and hashed media is /media/<sha>.<ext>.
+
+HUMKIN Commons can now discover specifically authorized, published-clear media from a real HTTPS dock. An owner must first configure and operate the dock, publish a genuinely rights-cleared source file, then explicitly add the real HTTPS manifest URL to commons/sources.json as remote_catalogs. The default array is empty. No unknown IP, home network address, test hostname, service key or Supabase credential is embedded.
+
+Example configuration **AFTER** the owner has a real HTTPS published hostname:
+
+~~~json
+{
+  "schema_version": "commons.sources.v0.1",
+  "remote_catalogs": [
+    "https://REAL-HOSTNAME-FROM-YOUR-OWN-TUNNEL/v1/catalog.json"
+  ]
+}
+~~~
+
+Do not literally use the illustrative hostname in production. The site requests only HTTPS /v1/catalog.json from explicitly listed origins with no credentials and a 7-second timeout, validates content-addressed media URLs on that exact origin and canonical CC licenses, and shows an offline state when a dock is unavailable. Existing Drive/IP inventory records remain rights-unreviewed.
+
+Connecting a remote public catalog is not a proof that a human has lawful authority to publish its payload. The owner remains responsible for real rights checks, license attribution, provider terms and source evidence. Home file availability is temporary: the GitHub Pages site may remain online even when media URLs are offline. Plan redundant storage and a stable delivery CDN before widespread sharing.

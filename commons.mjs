@@ -43,6 +43,75 @@ function link(text, href, cls) {
   a.href=href; if (new URL(href,document.baseURI).origin !== location.origin){a.target="_blank";a.rel="noopener noreferrer";}
   return a;
 }
+
+const LICENSE_MAP = {
+  "CC0-1.0":"https://creativecommons.org/publicdomain/zero/1.0/",
+  "CC-BY-4.0":"https://creativecommons.org/licenses/by/4.0/",
+  "CC-BY-SA-4.0":"https://creativecommons.org/licenses/by-sa/4.0/",
+  "CC-BY-NC-4.0":"https://creativecommons.org/licenses/by-nc/4.0/",
+  "CC-BY-NC-SA-4.0":"https://creativecommons.org/licenses/by-nc-sa/4.0/"
+};
+const SAFE_MEDIA_EXT = new Set(["mp4","m4v","webm","mov","mp3","m4a","wav","flac","ogg","jpg","jpeg","png","webp","gif","pdf","zip"]);
+export function isHarborRelease(raw, sourceHref) {
+  if (!raw || !raw.rights || !canRemix(raw)) return false;
+  const digest = raw.sha256;
+  if (typeof digest !== "string" || !/^[a-f0-9]{64}$/.test(digest) ||
+    raw.id !== "sha256:"+digest) return false;
+  const r = raw.rights;
+  if (!LICENSE_MAP[r.license_id] || r.license_url !== LICENSE_MAP[r.license_id]) return false;
+  try {
+    const source=new URL(sourceHref), media=new URL(raw.asset_url);
+    if(source.protocol!=="https:" || media.protocol!=="https:" || source.origin!==media.origin)return false;
+    const match=media.pathname.match(/^\/media\/([a-f0-9]{64})\.([a-z0-9]+)$/);
+    return Boolean(match && match[1]===digest && SAFE_MEDIA_EXT.has(match[2]));
+  } catch {return false;}
+}
+async function loadHarborSources() {
+  const el=document.querySelector("#harbor-state");
+  let cfg;
+  try {
+    const r=await fetch("./commons/sources.json",{cache:"no-store"});
+    if(!r.ok)throw Error("source registry unavailable");
+    cfg=await r.json();
+  } catch {
+    el.textContent="Offline or unable to load public dock registry. Existing archive catalog remains available.";
+    return;
+  }
+  const sources=Array.isArray(cfg.remote_catalogs)?cfg.remote_catalogs.slice(0,3):[];
+  if(!sources.length){
+    el.textContent="Home media dock not connected yet. Inventory is visible; no footage is being served from a personal computer.";
+    return;
+  }
+  let count=0, failures=0;
+  for(const address of sources){
+    let u;
+    try {u=new URL(address);if(u.protocol!=="https:"||u.pathname!=="/v1/catalog.json")throw Error("unsupported harbor URL");}
+    catch {failures++;continue;}
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),7000);
+    try {
+      const res=await fetch(u.href,{mode:"cors",credentials:"omit",cache:"no-store",signal:controller.signal});
+      if(!res.ok)throw Error("harbor unavailable");
+      const body=await res.json();
+      if(!Array.isArray(body.entries) || body.entries.length>2000)throw Error("invalid harbor payload");
+      const seen=new Set(catalog.map(a=>a.id));
+      for(const raw of body.entries){
+        if(!isHarborRelease(raw,u.href)||seen.has(raw.id))continue;
+        const entry=normalizeEntry(raw);
+        if(!entry)continue;
+        entry.source=String(raw.creator||"Contributor")+" · operator-attested release";
+        entry.note="Published through a Freeport media dock. Read the stated license before reusing.";
+        catalog.push(entry);
+        seen.add(raw.id);count++;
+      }
+    } catch {failures++;}
+    finally {clearTimeout(timer);}
+  }
+  el.textContent=count+" public remix asset"+(count===1?"":"s")+" from connected media dock"+(sources.length===1?"":"s")+
+    (failures?" · "+failures+" dock"+(failures===1?"":"s")+" unavailable.":" · static archive remains available offline.");
+  render();
+}
+
 let catalog=[], localEntries=[];
 function render() {
   const q = document.querySelector("#q").value.trim().toLowerCase();
@@ -164,6 +233,7 @@ async function init() {
     if(!Array.isArray(data.entries)) throw Error("Invalid catalog");
     catalog=data.entries.map(normalizeEntry).filter(Boolean);
     render();
+    await loadHarborSources();
   } catch(err) {
     document.querySelector("#counts").textContent="Catalog unavailable";
     document.querySelector("#library-error").textContent="Couldn't load the catalog. You can still index your local files below.";
