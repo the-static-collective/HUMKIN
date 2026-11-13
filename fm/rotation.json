@@ -2,29 +2,186 @@
   "schema_version": 1,
   "station_name": "HUMKIN RADIO",
   "tagline": "Music for the long way home.",
-  "status": "preview_rotation",
-  "status_note": "A continuous demo rotation of the 12 previously released MUTANT POP recordings. The creator's new car-radio playlist has not been supplied yet.",
-  "source_type": "existing_catalog",
-  "catalog": "../tracks.json",
-  "catalog_numbers": [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12
+  "status": "expanded_rotation",
+  "status_note": "19 songs now in the rotation: MUTANT POP (12) + everywhere;near you (7). A continuous browser-radio mix, while the creator's separate radio-focused selection is still being assembled.",
+  "source_type": "track_list",
+  "tracks": [
+    {
+      "id": "mutant-pop-01",
+      "title": "Noontime Bloom",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 165,
+      "src": "../audio/01_Noontime_Bloom.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-02",
+      "title": "Haileylu Morning",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 164,
+      "src": "../audio/02_Haileylu_Morning.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-03",
+      "title": "Bright Blue Rose",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 183,
+      "src": "../audio/03_Bright_Blue_Rose.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-04",
+      "title": "Golden Yellow Blue",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 133,
+      "src": "../audio/04_Golden_Yellow_Blue.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-05",
+      "title": "Room Enough for Two",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 170,
+      "src": "../audio/05_Room_Enough_for_Two.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-06",
+      "title": "We Are Still Here",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 215,
+      "src": "../audio/06_We_Are_Still_Here.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-07",
+      "title": "There's Room for You",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 184,
+      "src": "../audio/07_There_s_Room_for_You.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-08",
+      "title": "Make a Little Room",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 264,
+      "src": "../audio/08_Make_a_Little_Room.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-09",
+      "title": "Rose Mary Blooms",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 169,
+      "src": "../audio/09_Rose_Mary_Blooms.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-10",
+      "title": "First Light Finds Your Face",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 159,
+      "src": "../audio/10_First_Light_Finds_Your_Face.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-11",
+      "title": "I Love You in the Quiet",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 260,
+      "src": "../audio/11_I_Love_You_in_the_Quiet.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "mutant-pop-12",
+      "title": "HaileyLuYAH",
+      "artist": "HUMKIN",
+      "album": "MUTANT POP",
+      "duration": 195,
+      "src": "../audio/12_HaileyLuYAH.mp3",
+      "artwork": "../cover.jpg"
+    },
+    {
+      "id": "everywhere-near-you-01",
+      "title": "Home With You",
+      "artist": "HUMKIN",
+      "album": "everywhere;near you",
+      "duration": 179.472,
+      "src": "../releases/everywhere-near-you/audio/01_home_with_you.mp3",
+      "artwork": "../releases/everywhere-near-you/cover.jpg"
+    },
+    {
+      "id": "everywhere-near-you-02",
+      "title": "Rose Mary Water",
+      "artist": "HUMKIN",
+      "album": "everywhere;near you",
+      "duration": 195.744,
+      "src": "../releases/everywhere-near-you/audio/02_rose_mary_water.mp3",
+      "artwork": "../releases/everywhere-near-you/cover.jpg"
+    },
+    {
+      "id": "everywhere-near-you-03",
+      "title": "Hopeful Resilience",
+      "artist": "HUMKIN",
+      "album": "everywhere;near you",
+      "duration": 136.992,
+      "src": "../releases/everywhere-near-you/audio/03_hopeful_resilience.mp3",
+      "artwork": "../releases/everywhere-near-you/cover.jpg"
+    },
+    {
+      "id": "everywhere-near-you-04",
+      "title": "Blue Night Morning Bloom",
+      "artist": "HUMKIN",
+      "album": "everywhere;near you",
+      "duration": 154.224,
+      "src": "../releases/everywhere-near-you/audio/04_blue_night_morning_bloom.mp3",
+      "artwork": "../releases/everywhere-near-you/cover.jpg"
+    },
+    {
+      "id": "everywhere-near-you-05",
+      "title": "Lovely Blue Bloom",
+      "artist": "HUMKIN",
+      "album": "everywhere;near you",
+      "duration": 181.92,
+      "src": "../releases/everywhere-near-you/audio/05_lovely_blue_bloom.mp3",
+      "artwork": "../releases/everywhere-near-you/cover.jpg"
+    },
+    {
+      "id": "everywhere-near-you-06",
+      "title": "There by Two",
+      "artist": "HUMKIN",
+      "album": "everywhere;near you",
+      "duration": 166.584,
+      "src": "../releases/everywhere-near-you/audio/06_there_by_two.mp3",
+      "artwork": "../releases/everywhere-near-you/cover.jpg"
+    },
+    {
+      "id": "everywhere-near-you-07",
+      "title": "Blue Bowl Rings",
+      "artist": "HUMKIN",
+      "album": "everywhere;near you",
+      "duration": 212.304,
+      "src": "../releases/everywhere-near-you/audio/07_blue_bowl_rings.mp3",
+      "artwork": "../releases/everywhere-near-you/cover.jpg"
+    }
   ],
-  "artwork": "../cover.jpg",
   "synced_clock_epoch_utc": "2026-11-13T00:00:00Z",
   "live_stream_url": null,
   "metadata_url": null,
   "request_stems_url": "../dj.html",
   "creator_email": "us@abundent.org",
-  "note": "For the forthcoming curated playlist, add approved MP3 files and replace this rotation with source_type=track_list and tracks=[{id,title,duration,src,artist,artwork}]. Existing full-album homepage is unaffected."
+  "note": "All seven everywhere;near you files are staged from verified MP3 parts and assembled at deploy time, not lossless masters. Browser radio only; no Icecast server."
 }
