@@ -1,5 +1,5 @@
 /* HUMKIN Pocket Player. Static first; no tracking, no automatic audio downloads. */
-const SHELL="humkin-shell-v4";
+const SHELL="humkin-shell-v5";
 const MUSIC="humkin-music-v1";
 const FILES=["./","./index.html","./styles.css","./gifts.css","./approved-look.css","./player.js","./gifts.js","./signup.js","./cover.jpg","./tracks.json","./privacy.html","./poster.html","./manifest.webmanifest"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(SHELL).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
@@ -26,8 +26,22 @@ self.addEventListener("fetch",event=>{
  if(request.mode==="navigate"){
    event.respondWith(fetch(request).catch(async()=>await (await caches.open(SHELL)).match("./index.html")||Response.error()));return;
  }
- if(FILES.some(p=>new URL(p,self.registration.scope).href===url.href)){
-   event.respondWith((async()=>await (await caches.open(SHELL)).match(request)||fetch(request))());
+ // Keep interface scripts and markup in sync. Older cache-first workers could
+ // serve an obsolete gifts.js alongside freshly deployed HTML, disabling buttons.
+ // Match by path (ignoring a script's cache-busting query) and fetch online first.
+ const shellPath=FILES.find(p=>new URL(p,self.registration.scope).pathname===url.pathname);
+ if(shellPath){
+   event.respondWith((async()=>{
+     const cache=await caches.open(SHELL);
+     const key=new URL(shellPath,self.registration.scope);
+     try{
+       const fresh=await fetch(request,{cache:"no-cache"});
+       if(fresh.ok)await cache.put(key.href,fresh.clone());
+       return fresh;
+     }catch{
+       return await cache.match(key.href)||Response.error();
+     }
+   })());
  }
 });
 self.addEventListener("message",event=>{
