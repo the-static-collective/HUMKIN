@@ -23,7 +23,7 @@ const original=poster.match(/const data="([^"]+)"/)?.[1];
 assert(qr&&qr!==original&&Buffer.from(qr,"base64").length===172,"Six music cards must have a separate 37x37 QR from the album poster");
 assert(relay.includes("humkin.abundent.org/surprise.html"),"Printed cards must show the actual surprise page");
 assert(read("somewhere.html").includes('href="./surprise.html"'),"Station must link surprise song");
-assert(read("sw.js").includes('humkin-shell-v8')&&read("sw.js").includes('"./surprise.js"'),"SW needs fresh gift code");
+assert(read("sw.js").includes('humkin-shell-v9')&&read("sw.js").includes('"./surprise.js"'),"SW needs fresh gift code");
 assert(read("sitemap.xml").includes("/surprise.html</loc>"),"Sitemap must link surprise");
 assert(!read("sitemap.xml").includes("\\n"),"Sitemap has literal backslash-n");
 
