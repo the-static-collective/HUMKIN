@@ -1,0 +1,64 @@
+{
+  "artist": "HUMKIN",
+  "album": "everywhere;near you",
+  "release_status": "STAGING — SITE MEDIA NOT PRESENT UNTIL UPLOADED",
+  "release_type": "7-song EP (stores may classify as album)",
+  "tracks": [
+    {
+      "number": 1,
+      "title": "Home With You",
+      "filename": "01_home_with_you.mp3",
+      "url": "audio/01_home_with_you.mp3",
+      "duration_seconds": 179.472,
+      "tagline": "the morning"
+    },
+    {
+      "number": 2,
+      "title": "Rose Mary Water",
+      "filename": "02_rose_mary_water.mp3",
+      "url": "audio/02_rose_mary_water.mp3",
+      "duration_seconds": 195.744,
+      "tagline": "begin again"
+    },
+    {
+      "number": 3,
+      "title": "Hopeful Resilience",
+      "filename": "03_hopeful_resilience.mp3",
+      "url": "audio/03_hopeful_resilience.mp3",
+      "duration_seconds": 136.992,
+      "tagline": "the road outward"
+    },
+    {
+      "number": 4,
+      "title": "Blue Night Morning Bloom",
+      "filename": "04_blue_night_morning_bloom.mp3",
+      "url": "audio/04_blue_night_morning_bloom.mp3",
+      "duration_seconds": 154.224,
+      "tagline": "the light returns"
+    },
+    {
+      "number": 5,
+      "title": "Lovely Blue Bloom",
+      "filename": "05_lovely_blue_bloom.mp3",
+      "url": "audio/05_lovely_blue_bloom.mp3",
+      "duration_seconds": 181.92,
+      "tagline": "the doorway"
+    },
+    {
+      "number": 6,
+      "title": "There by Two",
+      "filename": "06_there_by_two.mp3",
+      "url": "audio/06_there_by_two.mp3",
+      "duration_seconds": 166.584,
+      "tagline": "the county line"
+    },
+    {
+      "number": 7,
+      "title": "Blue Bowl Rings",
+      "filename": "07_blue_bowl_rings.mp3",
+      "url": "audio/07_blue_bowl_rings.mp3",
+      "duration_seconds": 212.304,
+      "tagline": "the promise kept"
+    }
+  ]
+}
