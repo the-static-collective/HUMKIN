@@ -1,0 +1,104 @@
+/* HUMKIN hand-printed paper-zine direction · approved November 2026.
+ * Pure CSS design layer; existing real album art and interactive elements are preserved.
+ * Keep lyrics, poster links, music and postcards functional and selectable.
+ */
+:root{
+ --paper:#f9efda;--ink:#282139;--rose-ink:#ad665f;--rose:#d88f88;
+ --warm-cream:#fff8e8;--line:#3d303d;--dust:#d7b7b4;--sun:#e8b867;
+}
+body{background:var(--paper);color:var(--ink)}
+.sitehead{
+ background:#f9f0dc;color:var(--ink);border-bottom:2px solid var(--line);
+ padding:14px 5%;box-shadow:0 4px 0 #a46c6122;
+}
+.sitehead a{color:var(--ink)}
+.sitehead nav a{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:5px;text-decoration-color:#a4696988}
+.sitehead .wordmark{font-family:Georgia,"Times New Roman",serif;letter-spacing:-.045em;font-size:clamp(25px,3vw,35px);font-weight:950}
+.sitehead .asterisk{color:#b56d62}
+.hero{
+ background:radial-gradient(ellipse at 70% 22%,#f1d4b8 0 6%,transparent 48%),
+ repeating-linear-gradient(21deg,#fff7e622 0 3px,#e4d3be22 3px 5px),
+ linear-gradient(140deg,#fbf4e4 0%,#f4e5d1 65%,#eed6c4 100%);
+ color:var(--ink);
+}
+.hero:before{
+ content:"✳";position:absolute;top:-160px;left:-120px;
+ font:900 370px/1 Georgia,serif;color:#c08d8d18;
+ pointer-events:none;
+}
+.hero-inner{padding-top:clamp(38px,5vw,70px);padding-bottom:clamp(45px,6vw,88px)}
+.hero .eyebrow{color:#926362}
+.hero h1{font-family:Georgia,"Times New Roman",serif;font-weight:950;line-height:.84;
+ letter-spacing:-.085em;font-size:clamp(78px,11vw,165px);text-shadow:2px 2px 0 #fff9}
+.hero h1 em{color:#b4645d}
+.hero .lead{font-family:Georgia,"Times New Roman",serif;font-weight:700;max-width:600px}
+.hero .lede{color:#655462}
+.hero .hero-note{opacity:.88}
+.hero .art-wrap{max-width:470px}
+.hero .art-back{background:#ce8e88}
+.hero .cover{border:5px solid #fdf0d3;border-radius:2px;box-shadow:12px 16px 0 #6e4f5230,0 16px 40px #402e3228}
+.hero .sticker{background:#f9d37e;color:#38283c;border:2px solid #32273b;box-shadow:4px 6px 0 #422d3a55}
+.btn-yellow{background:#bb706b;color:#fff9e7;border:2px solid #4d3544}
+.btn-outline{border:2px solid #5b4356;color:#3b2d40;background:#fdf6e9}
+.btn-yellow:hover,.btn-yellow:focus-visible{background:#99595c}
+.btn-outline:hover,.btn-outline:focus-visible{background:#fff2ce}
+.marquee{background:#e8bfb0;color:#3e2b3d;border-top:2px solid #4d3940;border-bottom:2px solid #4d3940;font-family:Georgia,serif}
+.emoji-jukebox{background:#fbf0dc;border-bottom:2px solid #6a5150;border-top:0;padding:12px 3%}
+.emoji-jukebox-scroll{
+ width:max-content;max-width:100%;margin:auto;justify-content:center;
+ border:2px solid #523c40;border-radius:999px;background:#fdf6e9;
+ padding:7px 12px 11px;gap:clamp(3px,.55vw,8px);
+ box-shadow:4px 5px 0 #8f626055;
+}
+.juke-emoji{
+ width:clamp(49px,4.7vw,65px);height:clamp(49px,4.7vw,65px);
+ border:1px solid #b9716f;border-radius:17px;background:#fffaed;
+ box-shadow:0 3px 0 #b7756e49;
+}
+.juke-emoji:hover,.juke-emoji:focus-visible{background:#ffe3c4;border-color:#8d5259}
+.juke-emoji.is-selected{background:#f4c4b7;border:2px solid #845059;box-shadow:0 4px 0 #ac686a}
+.listen{max-width:1130px}
+.section-intro h2,.listen h2,.newsletter-section h2,.mix-section h2,.received h2,.note-section h2{
+ font-family:Georgia,"Times New Roman",serif;letter-spacing:-.065em
+}
+.listen .section-tag{color:#995e70}
+.listen .trackbox{border:3px solid #40303e;box-shadow:8px 9px 0 #c89891;background:#fffaf0}
+.listen .track-head{background:#3a2a3b;color:#fff5e7}
+.song.is-active{background:#f6ddc9}
+.song-play:hover,.song-download:hover{background:#f9e7cf}
+.section-counter{color:#ad6865;font-family:Georgia,serif}
+.text-button{border-color:#3b2b3e;background:#fff6e4}
+.text-button:hover{background:#fce7c9}
+.mix-section{background:linear-gradient(140deg,#f0d5d1,#ead1d2)}
+.mix-maker .gift-eyebrow{color:#76505c}
+.postcard-paper{border-radius:3px;box-shadow:8px 10px 0 #5b4149;background:#fff0d5}
+.color-sun{background:#ffe3bb}.color-rose{background:#f6d0d3}.color-sky{background:#d8e8e6}
+.postcard-paper:after{color:#d59d8f28;right:-50px;bottom:-115px}
+.postcard-art{border-radius:3px;box-shadow:4px 5px 0 #5f424654}
+.postcard-paper h3{font-family:Georgia,serif}
+.gift-primary{background:#af6669;border-color:#493140;color:#fff9eb}
+.gift-primary:hover{background:#8d4c5d}
+.gift-secondary{background:#fff9ed;border-color:#513e4c}
+.note-section{background:#edd8c9}
+.note-sparkle{color:#ba807c}
+.newsletter-section{background:#dfd1d8}
+footer{background:#3a2b3d;color:#f5e8d9}
+.dock{background:#3a293e;border-top:2px solid #a8706d;box-shadow:0 -4px 0 #edbaaa8c,0 -14px 30px #0002}
+.transport button.main-play{background:#e4a781;color:#30233b}
+.transport button.is-on{color:#edc5a2}
+@media(max-width:850px){
+ .emoji-jukebox-scroll{justify-content:flex-start;width:100%;padding:7px 9px 11px}
+ .juke-emoji{flex:0 0 51px;width:51px;height:51px}
+ .sitehead{flex-wrap:wrap}
+ .hero h1{font-size:clamp(70px,17vw,120px)}
+}
+@media(max-width:470px){
+ .sitehead{padding:13px 16px}
+ .sitehead nav{gap:7px 14px}
+ .sitehead nav a{font-size:10px}
+ .emoji-jukebox{padding:9px 4%}
+ .hero-inner{padding:45px 5% 58px}
+ .hero .art-wrap{max-width:310px}
+ .hero .sticker{right:-9px;bottom:-13px;width:95px;height:95px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.juke-emoji{transition:none}}

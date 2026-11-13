@@ -21,6 +21,9 @@ for(const [i,track] of album.tracks.entries()){
 }
 for(const id of ["feel","mixtape","received-postcard","received-play","mix-share","mix-copy","mix-play","mix-message","mix-palette","mix-one","mix-two","mix-three","save-offline"])assert(pageIds.has(id),"Missing interface id "+id);
 for(const file of ["gifts.css","poster.html","manifest.webmanifest"])assert(existsSync(file));
+assert(existsSync("approved-look.css"),"Approved hand-printed design stylesheet missing");
+assert(html.includes('href="./approved-look.css"'),"Approved design stylesheet not linked");
+assert(text("sw.js").includes('"./approved-look.css"'),"Offline shell does not cache approved design stylesheet");
 const src=text("gifts.js");
 const parseSource=src.slice(src.indexOf("function parseMix("),src.indexOf("function chosen("));
 assert(parseSource.startsWith("function parseMix("));
