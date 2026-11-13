@@ -18,7 +18,7 @@
 7. Confirmed fresh HTTP loads at `http://humkin.abundent.org/` show the new full-album page with twelve tracks, and `http://humkin.abundent.org/radio/` serves the new radio.
 
 ## Remaining verification gate
-- **HTTPS was not accepting connections immediately after DNS cutover.** The Pages deployment log showed `http://humkin.abundent.org/` as the environment URL. Check the GitHub Settings → Pages custom-domain certificate status, and enable **Enforce HTTPS** after the certificate provisions. Do not claim secure HTTPS until re-tested.
+- ✅ **HTTPS is live:** On November 12, 2026, fresh public fetches succeeded at `https://humkin.abundent.org/` (full album) and `https://humkin.abundent.org/radio/` (HUMKIN RADIO). The earlier certificate/cutover issue has cleared.
 - Test **actual in-browser MP3 playback** (not just rendered tracklist), multiple song downloads, share URLs, and a radio channel. The Git tree contains real MP3 blobs and the Actions bundle includes them, but listening from a consumer browser was not independently verified here.
 - On success, revise release links / distribution pitches to the secure URL and clear the previous launch HOLD.
 - If a rollback becomes necessary, the old exact Cloudflare CNAME target is documented above; avoid altering apex or any other subdomains.
