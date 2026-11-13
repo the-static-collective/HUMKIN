@@ -12,3 +12,4 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/site.test.mjs
+      - run: node tests/postcard-buttons.test.mjs
