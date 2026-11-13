@@ -1,0 +1,247 @@
+{
+  "schema_version": "commons.catalog.v0.1",
+  "as_of": "2026-11-13",
+  "notice": "Discovery metadata, not a copyright assertion, rights grant, media host or complete inventory. No private Drive URLs or local file paths included.",
+  "entries": [
+    {
+      "id": "humkin-mutant-pop-001",
+      "title": "MUTANT POP — 12-song record",
+      "kind": "music",
+      "availability": "public-preview",
+      "source": "HUMKIN",
+      "note": "Twelve existing public listening/download files. Further reuse licensing is NOT implied.",
+      "preview_url": "./",
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "humkin-postcards-001",
+      "title": "HUMKIN — manga postcard art",
+      "kind": "images",
+      "availability": "public-preview",
+      "source": "HUMKIN",
+      "note": "Postcard imagery already visible on HUMKIN; separate creative reuse has not been cleared.",
+      "preview_url": "./#mixtape",
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "manga-assembly-001",
+      "title": "MANGA ASSEMBLY 001 — Home to Front Room",
+      "kind": "manga",
+      "availability": "drive-inventory",
+      "source": "Static Collective",
+      "note": "Source folder located in Drive; no files or permissions made public.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "manga-assembly-008",
+      "title": "MANGA ASSEMBLY 008 — Last Light / Open Circuit",
+      "kind": "manga",
+      "availability": "drive-inventory",
+      "source": "Static Collective",
+      "note": "Source folder located in Drive; no files or permissions made public.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "manga-assembly-019",
+      "title": "MANGA ASSEMBLY 019 — The Resume",
+      "kind": "manga",
+      "availability": "drive-inventory",
+      "source": "Static Collective",
+      "note": "Source folder located in Drive; no files or permissions made public.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "manga-assemblies-family",
+      "title": "Manga assemblies — 001 through 019",
+      "kind": "manga",
+      "availability": "drive-inventory",
+      "source": "Static Collective",
+      "note": "Nineteen named assembly folders observed in Drive search; contents, duplicates and clearance still to audit.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "who-murdered-tomorrow",
+      "title": "Who Murdered Tomorrow — tabletop case game",
+      "kind": "games",
+      "availability": "drive-inventory",
+      "source": "Static Collective",
+      "note": "Start-here, case and printable-player packets found in Drive; needs edition and release check.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "the-neighbor-experiment",
+      "title": "The Neighbor Experiment — print-and-play game",
+      "kind": "games",
+      "availability": "drive-inventory",
+      "source": "Static Collective",
+      "note": "Print-and-play rules found in Drive; needs edition and release check.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "table-road-cards",
+      "title": "Table & Road — 22 card copybook",
+      "kind": "games",
+      "availability": "drive-inventory",
+      "source": "Static Collective",
+      "note": "Card copybook and master charter found in Drive; needs edition and release check.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "fellowship-videos",
+      "title": "Fellowship — AI footage and cake cuts",
+      "kind": "video",
+      "availability": "drive-inventory",
+      "source": "Collaboration",
+      "note": "Working video backup and production notes located in Drive; collaborator, likeness and soundtrack approvals required.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "paula-flow-demo",
+      "title": "Paula — Flow demo video assets",
+      "kind": "video",
+      "availability": "drive-inventory",
+      "source": "Collaboration",
+      "note": "Flow demo folder and output gallery found in Drive; not presumed shareable.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "haunted-toaster-motion",
+      "title": "Haunted Toaster — experimental motion",
+      "kind": "video",
+      "availability": "project-index",
+      "source": "Static Collective",
+      "note": "Project repository exists; video inventory and actual rights still unknown.",
+      "preview_url": "https://github.com/the-static-collective/the-haunted-toaster",
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "flow-local-videos",
+      "title": "Google Flow — local video collection (~225 reported)",
+      "kind": "video",
+      "availability": "local-awaiting-intake",
+      "source": "User-reported",
+      "note": "Approximate count reported by creator, not scanned or uploaded. No disk access from this website.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "kackslack",
+      "title": "Kackslack — casual festival/work pants",
+      "kind": "design",
+      "availability": "local-awaiting-intake",
+      "source": "User-reported",
+      "note": "Design conversation exists; source files not located in Drive by name.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    },
+    {
+      "id": "lady-grey",
+      "title": "Heather-grey women's dress-pant concept",
+      "kind": "design",
+      "availability": "local-awaiting-intake",
+      "source": "User-reported",
+      "note": "Design conversation exists; source files not located in Drive by name.",
+      "preview_url": null,
+      "rights": {
+        "status": "review_required",
+        "license_id": null,
+        "license_url": null,
+        "attribution": null
+      },
+      "parents": []
+    }
+  ]
+}
