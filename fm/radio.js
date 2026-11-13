@@ -177,7 +177,7 @@ async function share(){
   setMessage("Share this address: "+link);
 }
 $("listen").addEventListener("click",startRadio);
-$("spotlight").addEventListener("click",()=>spotlight("leave-the-kettle-on"));
+$("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
 $("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
 $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused)});
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
