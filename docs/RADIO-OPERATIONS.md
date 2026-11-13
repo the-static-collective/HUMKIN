@@ -131,3 +131,27 @@ Rights status: the creator previously reports these Suno outputs were made under
 The user supplied `Leave The Kettle On (1).mp3` directly, with a Suno creation tag `created=2026-07-05T17:09:35Z; id=f3366bcc-39d5-4187-b7f9-073a7efc3dcc`. Its source file has 3,925,398 bytes and duration 173.952 seconds, SHA-256 `c855100c353b8f229c0811bf67c079f5e038dca4316b5a08a90cf10225e08d3d`. The original file was copied without transcoding, checked by GitHub Actions, and committed at `fm/audio/leave-the-kettle-on.mp3`. This increases the browser radio catalog to **21**. The new song has a bright, syncopated bass-and-keys introduction, lead fiddle-like melodic line, warm soul-pop vocal and a catchy domestic refrain. Its start/stop and inter-track volume should be field-tested before a true broadcast pipeline.
 
 The station's `HEAR THE NEW ONE` button prioritizes the new single and then resumes repeat-free shuffle. The previous HaileyLu Bloom stays in the rotation. No radio tower or 24/7 relay has been deployed, and recorded music still needs all relevant public-performance rights before external broadcast.
+
+## November 13: lock-screen track-continuity attempt (pending phone field test)
+
+**Observed in `fm/radio.js` before this change:** Each song transition explicitly called `audio.pause()` and `audio.load()` before playing the next source. Chrome documents that media sessions may be considered inactive while media is loading or seeking, so tearing down the current audio element can interrupt Android lock-screen playback.
+
+**Changed in the proposed radio fix:**
+
+- Reuse the same `<audio>` element without explicit pause/load for an actively playing transition. Only intentionally stopped playback loads in the idle state.
+- Keep `navigator.mediaSession.playbackState` at `playing` during the song swap; use `paused` for explicit stops and failed playback.
+- Try an early Road Shuffle transition in the final 350 milliseconds of a track while audio is still active, with the existing `ended` event as fallback.
+- Skip periodic Same-Time clock re-tuning when the document is hidden. Resume clock synchronization when visible or when the current file ends.
+- Guard old `play()` promise settlements against overriding a newer track.
+
+**Automated scope:** A simulated hidden-document test verifies that Road Shuffle changes sources without explicitly pausing/loading, Media Session reports `playing`, the `ended` fallback advances, and an explicit pause reports `paused`. This is not proof that a physical phone will execute background JavaScript.
+
+**Acceptance test on a real Android/Chrome phone:**
+
+1. Open `https://humkin.abundent.org/fm/` in Chrome and choose **ROAD SHUFFLE**, then **TUNE IN**. Play long enough to reach the last 30 seconds of a song.
+2. Lock the screen. Confirm audio continues through *at least two* song boundaries, and that Android's media notification does not disappear. Test with and without Bluetooth.
+3. Repeat for **SAME-TIME RADIO**. After unlocking, confirm it can resynchronize to the shared clock.
+4. Test notification Pause/Play and physical headset or car controls. Test one forced network interruption and one battery-optimization state. Record the exact browser/Android version, mode, transition time and whether notification disappeared.
+5. If either mode stalls on the first locked-screen boundary, the reliable escalation is a **single continuous HTTPS audio stream** (Icecast/AzuraCast or equivalent) or a native Android media service. Web JavaScript and Media Session metadata alone cannot force a suspended browser to execute track changes.
+
+Do not announce verified lock-screen reliability until the device test is completed. `live_stream_url` remains `null`; no true broadcast server was created by this change.
