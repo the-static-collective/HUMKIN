@@ -79,3 +79,14 @@ node tests/distribution.test.mjs
 ```
 
 Check links on the final HTTPS custom domain and real audio on mobile separately. Automated repository validation does not prove that every independent browser accepts clipboard access or embedded audio playback.
+
+## The little music relay (November 13)
+
+- Direct QR gift entry: `https://humkin.abundent.org/surprise.html`. Every unparameterized visit selects one of the 12 album recordings and one published manga illustration; no account, cookies, analytics, or autoplay.
+- The page **replaces the URL in the address bar** with `?song=NN&art=ART_ID` to make that chosen song and artwork permanently linkable. Copy/share forwards this exact combination. `FIND ANOTHER` deliberately picks a different song and published art, without starting playback until pressed.
+- `KEEP IT` is a personal MP3 download link to the selected web-quality audio. Use over headphones or personal devices by the person choosing to listen; this does not give the venue blanket speaker-playback authorization.
+- `relay.html` contains six different physical cards with the **same** static QR code for the surprise entry. A fresh scan (without any query string) chooses its own song; the recipient may subsequently share a fixed song. The existing `poster.html` continues linking directly to the full album on the Walmart-submission home page.
+- The QR payload is encoded locally into a 37×37 SVG matrix; it was decoded and verified before publication to yield `https://humkin.abundent.org/surprise.html`. No remote QR API.
+- Leave cards only with permission from the host; print and display are completely distinct from background music licensing.
+- The proposed direct-business and creator-use clearance checklist lives at `docs/RIGHTS-INVENTORY.md`. All 12 tracks are **on hold** for any new blanket business or sync permission until rights are reviewed song by song.
+- `tests/surprise.test.mjs` protects QR, persistent links, non-autoplay playback, keep/share/next, browser navigation and the rights inventory. Existing homepage and album behavior are unchanged.
