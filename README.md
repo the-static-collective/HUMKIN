@@ -65,4 +65,6 @@ There is no invented adoption registry or backend tracking. Real placement recei
 
 Run all three Node tests, merge the PR, verify GitHub Pages Action, then verify **HTTPS** and actual user-initiated audio on `humkin.abundent.org`. Publishing a player is not proof of performance licenses for public spaces. Each proposed creator/business reuse must receive its own rights clearance. Refer to `docs/DISTRIBUTION.md`.
 
-### Physical + embed propagation extension (Nov 13)\n\nSix-up printable take-one cards: `/relay.html`, with the already-tested local no-remote-service QR for the home page. Every embeddable player now has a small **GET THIS PLAYER** link back to the station, so one installation can inspire another without collecting visitor data. Station links to both the existing full poster and six-up cards. Offline shell updated to v7.\n
+### Physical + embed propagation extension (Nov 13)
+
+Six-up printable take-one cards: `/relay.html`, with the already-tested local no-remote-service QR for the home page. Every embeddable player now has a small **GET THIS PLAYER** link back to the station, so one installation can inspire another without collecting visitor data. Station links to both the existing full poster and six-up cards. Offline shell updated to v7.
