@@ -24,3 +24,11 @@
 - If a rollback becomes necessary, the old exact Cloudflare CNAME target is documented above; avoid altering apex or any other subdomains.
 
 This status document exists to prevent another conversation from reconstructing the same release process from incomplete staging notes.
+
+## HUMKIN LETTERS release — November 12, 2026
+- PR #2 merged: replaces the home-page radio navigation/promo with the anchored **HUMKIN LETTERS** subscription panel; all original audio and /radio/ stay intact.
+- Custom postcard-styled signup with email field, explicit opt-in checkbox, spam honeypot, accessible success/error messages, and privacy page.
+- Supabase Edge Function `humkin-subscribe` deployed on existing user-owned pantry-gate infrastructure with an isolated `public.humkin_subscribers` table. RLS is ON, and anonymous/authenticated Data API roles have no SELECT or INSERT grants.
+- Verified with an actual HTTP POST through pg_net returning 200, and confirmed the synthetic email was saved and then deleted. No test email remains.
+- **No welcome emails, campaigns, or automated double opt-in exist yet.** Addresses are stored for later operator-led mailing. Unsubscribe/deletion requests go to us@abundent.org.
+- /radio/ is retained for direct testing but is no longer promoted or listed in the sitemap; a `noindex` tag asks crawlers not to index it until ready.
