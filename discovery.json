@@ -54,5 +54,7 @@
   "analytics": "No application-level visitor analytics or client-side tracking code.",
   "status": "Static discovery/embedding: live when deployed; public adoptions and downstream usage are not independently tracked or verified.",
   "surprise_song": "https://humkin.abundent.org/surprise.html",
-  "printable_music_relay": "https://humkin.abundent.org/relay.html"
+  "printable_music_relay": "https://humkin.abundent.org/relay.html",
+  "browser_radio": "https://humkin.abundent.org/fm/",
+  "browser_radio_status": "Preview rotation; new creator-selected playlist pending. No actual continuous server broadcast."
 }
