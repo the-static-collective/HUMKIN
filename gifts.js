@@ -7,7 +7,7 @@ const selects=["mix-one","mix-two","mix-three"].map(byId);
 const note=byId("mix-message"),palette=byId("mix-palette");
 const feedback=byId("mix-status");
 const preview=byId("mix-preview");
-const moodStatus=byId("mood-status");
+
 const colors=["sun","rose","sky"];
 const defaults=[1,5,9];
 const trackByNumber=n=>tracks.find(t=>t.number===n);
@@ -67,16 +67,24 @@ byId("mix-share").addEventListener("click",async()=>{
   }
   copyLink(url);
 });
-const moodChoices={good:[1,2,4,9],comfort:[5,10,11],energy:[3,4,12],human:[6,7,8],surprise:tracks.map(t=>t.number)};
-let lastMoodTrack=0;
-document.querySelectorAll("[data-mood]").forEach(button=>button.addEventListener("click",()=>{
-  const choices=moodChoices[button.dataset.mood];if(!choices)return;
-  const pool=choices.filter(n=>n!==lastMoodTrack);
-  const number=(pool.length?pool:choices)[Math.floor(Math.random()*(pool.length||choices.length))];
-  lastMoodTrack=number;
-  player.playTrack(number);
-  moodStatus.textContent="Now playing: "+label(number)+".";
-}));
+// Twelve emoji buttons correspond exactly to the album's track list.
+const jukeButtons=Array.from(document.querySelectorAll("[data-juke]"));
+function markJukebox(number){
+  for(const button of jukeButtons){
+    const selected=Number(button.dataset.juke)===number;
+    button.classList.toggle("is-selected",selected);
+    button.setAttribute("aria-pressed",String(selected));
+  }
+}
+for(const button of jukeButtons){
+  const number=Number(button.dataset.juke);
+  button.addEventListener("click",()=>{
+    player.playTrack(number);
+    markJukebox(number);
+  });
+}
+window.addEventListener("humkin:trackchange",event=>markJukebox(event.detail?.number));
+markJukebox(player.currentTrack||1);
 const params=new URL(location.href).searchParams;
 const giftIds=parseMix(params.get("mix"));
 if(giftIds){
