@@ -3,7 +3,7 @@
   "station_name": "HUMKIN RADIO",
   "tagline": "Music for the long way home.",
   "status": "expanded_rotation",
-  "status_note": "20 songs in the radio mix: MUTANT POP (12), everywhere;near you (7) and the new single HaileyLu Bloom. More radio-focused selections are being added.",
+  "status_note": "21 songs in the rotation: MUTANT POP (12), everywhere;near you (7), HaileyLu Bloom and Leave The Kettle On. The separate radio-curated playlist is still growing.",
   "source_type": "track_list",
   "tracks": [
     {
@@ -185,6 +185,15 @@
       "duration": 147.864,
       "src": "./audio/haileylu-bloom.mp3",
       "artwork": "../cover.jpg"
+    },
+    {
+      "id": "leave-the-kettle-on",
+      "title": "Leave The Kettle On",
+      "artist": "HUMKIN",
+      "album": "HUMKIN RADIO · Singles",
+      "duration": 173.952,
+      "src": "./audio/leave-the-kettle-on.mp3",
+      "artwork": "../cover.jpg"
     }
   ],
   "synced_clock_epoch_utc": "2026-11-13T00:00:00Z",
@@ -192,5 +201,5 @@
   "metadata_url": null,
   "request_stems_url": "../dj.html",
   "creator_email": "us@abundent.org",
-  "note": "Twenty verified playable radio files, including the exact user-uploaded HaileyLu Bloom MP3 committed to fm/audio. The seven everywhere;near you audio previews are assembled during deploy. Browser radio only; no 24/7 stream server."
+  "note": "Exact creator-supplied MP3 for Leave The Kettle On, verified SHA256 c855100c353b8f229c0811bf67c079f5e038dca4316b5a08a90cf10225e08d3d, 3,925,398 bytes. The radio is browser playback, not a 24/7 stream server."
 }
