@@ -72,6 +72,18 @@ function fixture(config=rotation){
  runInNewContext(js,{window,document,navigator,location,URL,Date:Clock,Math,fetch,setTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}});
  return {$,time,copies,listeners,session,window};
 }
+const newTune=fixture();await flush();
+assert.equal(newTune.$("spotlight").disabled,false);
+assert.equal(newTune.$("air").playCount,0,"Spotlight must never autoplay");
+newTune.$("spotlight").click();await flush();
+assert.equal(newTune.window.HUMKIN_RADIO.state.mode,"shuffle","Spotlight must enter Road Shuffle");
+assert.equal(newTune.window.HUMKIN_RADIO.state.index,19,"Spotlight must select HaileyLu Bloom");
+assert(newTune.$("current-title").textContent==="HaileyLu Bloom");
+assert(newTune.$("air").src.endsWith("/fm/audio/haileylu-bloom.mp3"));
+assert.equal(newTune.$("air").playCount,1,"One click must actually start the new single");
+const spotlightPlayed=new Set([newTune.window.HUMKIN_RADIO.state.index]);
+for(let i=0;i<19;i++){newTune.$("next-song").click();await flush();spotlightPlayed.add(newTune.window.HUMKIN_RADIO.state.index)}
+assert.equal(spotlightPlayed.size,20,"Spotlight-first radio must still play all twenty tracks without repeats");
 const f=fixture();await flush();
 assert.equal(f.$("listen").disabled,false,"Tune in should be enabled");
 assert.equal(f.$("air").playCount,0,"No radio autoplay");
