@@ -1,2 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://humkin.abundent.org/</loc></url></urlset>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://humkin.abundent.org/</loc></url>
+  <url><loc>https://humkin.abundent.org/somewhere.html</loc></url>
+  <url><loc>https://humkin.abundent.org/poster.html</loc></url>
+</urlset>

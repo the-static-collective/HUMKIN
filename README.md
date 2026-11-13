@@ -46,3 +46,21 @@ No automatic audio downloads or autoplay were introduced; radio remains unpromot
 ### Tests / limitations
 - PR #3 validation workflow passed and Pages deployed after merge.
 - The live HTML and printable poster were independently fetched. Automated interactive-browser testing was unavailable at release time; actual in-browser audio, mobile sharing, PWA install and full offline save still merit field testing.
+
+## HUMKIN distribution station — November 13, 2026
+
+**Put HUMKIN Somewhere:** `/somewhere.html` (also linked from home navigation, hero, and note).
+
+The station combines five working tools, built on the existing 12-track public audio and postcard-art manifest:
+
+1. Five suggested listening rooms with three-song audio queues, shareable room URLs, personal MP3 downloads and a clear public-business-playback rights warning.
+2. One-track, three-track, and whole-album `/embed.html` players with an instantly generated iframe snippet, copy fallback, and a live preview. No autoplay or tracking code.
+3. Music-for-creators licensing inquiries, prefilled with the current tracks; emails are drafts until the user sends them. Free downloads **do not** automatically grant film, public-performance, broadcasting or redistribution licenses.
+4. New random manga postcard links using existing published artworks, native sharing and copy fallback, plus the existing locally generated QR poster for real-world placements.
+5. `/discovery.json`, the public `/tracks.json`, and `/docs/DISTRIBUTION.md` for machine-readable music discovery and integration.
+
+There is no invented adoption registry or backend tracking. Real placement receipts are currently voluntary messages to `us@abundent.org`. Prior in-browser home player, original postcards, and mailing list are preserved. The offline shell cache is upgraded to v6 to avoid the stale-JavaScript button bug. `tests/distribution.test.mjs` exercises room and embed controls, copy and share flows alongside the pre-existing postcard and site tests.
+
+### Publishing and licensing gates
+
+Run all three Node tests, merge the PR, verify GitHub Pages Action, then verify **HTTPS** and actual user-initiated audio on `humkin.abundent.org`. Publishing a player is not proof of performance licenses for public spaces. Each proposed creator/business reuse must receive its own rights clearance. Refer to `docs/DISTRIBUTION.md`.

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#231b3d">
+<meta name="description" content="Put HUMKIN somewhere: free music for people, shareable listening kits, privacy-respecting website players, printable posters and an open catalog.">
+<meta property="og:title" content="PUT HUMKIN SOMEWHERE ✳">
+<meta property="og:description" content="Free music for ordinary life. Give somebody a song, embed a player, print a poster, or find music for a project.">
+<meta property="og:image" content="https://humkin.abundent.org/cover.jpg">
+<meta property="og:url" content="https://humkin.abundent.org/somewhere.html">
+<title>Put HUMKIN Somewhere — Free Music Distribution Station</title>
+<link rel="stylesheet" href="./somewhere.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9C%B3%3C/text%3E%3C/svg%3E">
+<script src="./somewhere.js" defer></script>
+</head>
+<body>
+<header class="sitehead">
+<a class="wordmark" href="./">HUMKIN <span aria-hidden="true">✳</span></a>
+<nav aria-label="Distribution station"><a href="#places">A PLACE</a><a href="#websites">A WEBSITE</a><a href="#creators">A FILM</a><a href="#people">A PERSON</a><a href="#machines">A MACHINE</a></nav>
+</header>
+<main>
+<section class="hero">
+<div class="hero-left"><p class="eyebrow">THE HUMKIN DISTRIBUTION STATION · ALWAYS FREE TO LISTEN</p>
+<h1>PUT HUMKIN<br><em>SOMEWHERE.</em></h1>
+<p class="big">Not another platform to join. Just music you can put to use: on a page, in a pocket, on a wall, or in somebody's day.</p>
+<div class="hero-actions"><a class="button bright" href="#places">PICK A PLACE ↓</a><a class="button outline" href="#websites">GET A PLAYER ↗</a></div>
+<p class="tiny">No signup. No ads. No autoplay. No visitor analytics.</p></div>
+<div class="hero-art"><img src="./cover.jpg" alt="HUMKIN MUTANT POP album illustration" width="1080" height="1080"><span class="seal">TAKE THE<br>MUSIC<br>WITH YOU ✳</span></div>
+</section>
+<div class="ticker" aria-hidden="true">✳ &nbsp; MUSIC FOR ORDINARY LIFE &nbsp; ✳ &nbsp; A LITTLE ROOM FOR EVERYONE &nbsp; ✳ &nbsp; MUSIC FOR ORDINARY LIFE &nbsp; ✳</div>
+<section class="intro" aria-label="How the station works"><p class="eyebrow">FIVE DOORS · ONE LITTLE IDEA</p><p>Choose where the music should go. We'll hand you a working tool, a shareable link, or the next practical step. <strong>You don't need our permission to share a link to the music.</strong> Other kinds of reuse may need a license.</p></section>
+
+<section class="station-section cream" id="places" aria-labelledby="places-title">
+<div class="section-number">01 / A PLACE</div>
+<div class="section-grid">
+<div><h2 id="places-title">FIND A SONG<br><em>FOR THE ROOM.</em></h2><p>A little three-song radio for whatever you're doing. Try a few spaces. Press play yourself; nothing starts on its own.</p><div class="choice-grid" id="room-choices" role="group" aria-label="Choose a listening room">
+<button type="button" data-room="coffee" aria-pressed="true">☕ COFFEE / SLOW MORNING</button>
+<button type="button" data-room="work" aria-pressed="false">🛠 MAKING / WORKING</button>
+<button type="button" data-room="gym" aria-pressed="false">⚡ MOVING / ENERGY</button>
+<button type="button" data-room="table" aria-pressed="false">🍲 TABLE / COMPANY</button>
+<button type="button" data-room="night" aria-pressed="false">☾ QUIET / LATE NIGHT</button>
+</div>
+<div class="actions"><button class="button dark" id="room-play" type="button" disabled>▶ PLAY THIS ROOM</button><button class="button line" id="room-copy" type="button" disabled>COPY LISTENING LINK ↗</button></div>
+<p class="status" id="room-status" role="status" aria-live="polite">Loading the record…</p></div>
+<div class="card player-card"><p class="card-kicker">✳ YOUR LITTLE ROOM RADIO</p><h3 id="room-name">COFFEE / SLOW MORNING</h3><ol class="selected-tracks" id="room-tracks"><li>Loading three songs…</li></ol>
+<audio id="room-audio" controls preload="none" aria-label="Selected HUMKIN song" class="audio-player"></audio>
+<div class="controls"><button type="button" class="small-button" id="room-next" disabled>NEXT SONG →</button><a class="small-button" id="room-save" href="./" download hidden>SAVE CURRENT MP3 ↓</a></div>
+<p class="smallprint">These are listening suggestions. Playing music in a shop, gym or other public business can require separate public-performance permissions. <a href="#creators">Ask us about a business-use arrangement ↗</a></p></div>
+</div></section>
+
+<section class="station-section lilac" id="websites" aria-labelledby="websites-title">
+<div class="section-number">02 / A WEBSITE</div>
+<div class="section-grid"><div><h2 id="websites-title">GIVE YOUR<br><em>PAGE A PLAYER.</em></h2><p>Put HUMKIN on a blog, project page, shop site, or neighborhood bulletin board. Copy one little piece of HTML. Your visitors decide whether to play.</p>
+<div class="embed-modes" role="group" aria-label="Choose player format">
+<button type="button" data-embed="mix" aria-pressed="true">THREE SONGS</button><button type="button" data-embed="one" aria-pressed="false">ONE SONG</button><button type="button" data-embed="all" aria-pressed="false">ALL 12</button></div>
+<label for="embed-code" class="field-label">YOUR COPY-AND-PASTE EMBED</label><textarea id="embed-code" spellcheck="false" readonly rows="4" aria-label="HTML code for your HUMKIN player"></textarea>
+<div class="actions"><button type="button" class="button dark" id="embed-copy">COPY PLAYER CODE ↗</button><a class="button line" id="embed-direct" href="./embed.html" target="_blank" rel="noopener">OPEN PLAYER ↗</a></div><p class="status" id="embed-status" role="status" aria-live="polite"></p><p class="smallprint">No login, no tracking scripts, no autoplay. A standard iframe streams only after someone chooses to listen. Please keep the player linked to HUMKIN rather than rehosting the files as your own.</p>
+</div><div class="card embed-card"><p class="card-kicker">✳ LIVE PREVIEW · THIS IS WHAT THEY GET</p><iframe id="embed-preview" title="Preview of the HUMKIN website player" src="./embed.html?mix=01.05.09" loading="lazy" referrerpolicy="no-referrer"></iframe><p class="smallprint">The player works on ordinary websites that permit iframe embeds. Some hosted website builders block custom HTML.</p></div>
+</div></section>
+
+<section class="station-section rose" id="creators" aria-labelledby="creators-title">
+<div class="section-number">03 / A FILM, GAME, OR STORY</div>
+<div class="section-grid"><div><h2 id="creators-title">BORROW A<br><em>LITTLE SOUND.</em></h2><p>Making a video, a game, an announcement, a podcast, or something we haven't imagined? Browse the record and ask for a free or low-cost use agreement. We'll keep the conversation human.</p>
+<p><strong>We want to say yes whenever we can.</strong> Commercial sync, broadcast, redistribution, and public playback are not automatically licensed by a free MP3 download.</p>
+<div class="actions"><a id="creator-mail" class="button dark" href="mailto:us@abundent.org?subject=HUMKIN%20creator%20use%20request">REQUEST A USE LICENSE ↗</a><a class="button line" href="./#songs">HEAR ALL 12 ↗</a></div>
+<p class="smallprint">Include the project, tracks, where they'll be used, whether it earns money, and the intended audience. Sending an email opens your mail app; it doesn't send anything automatically.</p></div>
+<div class="card creator-card"><div class="stamp" aria-hidden="true">FREE<br>FIRST</div><p class="card-kicker">✳ FOR PEOPLE WHO MAKE THINGS</p><h3>YOUR STORY<br>NEEDS A SOUNDTRACK.</h3><p>Music for short films. Music for little projects. Music for somebody's first big idea.</p><p class="smallprint">Rights clearance is handled individually so we don't promise permissions that a recording or public venue cannot legally provide.</p></div>
+</div></section>
+
+<section class="station-section pale" id="people" aria-labelledby="people-title">
+<div class="section-number">04 / A PERSON OR A STREET</div>
+<div class="section-grid"><div><h2 id="people-title">ONE FOR YOU.<br><em>ONE TO GIVE.</em></h2><p>Make a random three-song postcard, complete with artwork from our growing little manga world. Or print a poster and put it somewhere with permission. Let music travel through actual people.</p>
+<div class="actions"><button class="button dark" id="seed-make" type="button">✳ MAKE A RANDOM POSTCARD</button><button class="button line" id="seed-share" type="button" disabled>SEND THIS ONE ↗</button></div>
+<p id="seed-status" class="status" role="status" aria-live="polite"></p>
+<label for="seed-link" class="field-label">YOUR POSTCARD LINK</label><input id="seed-link" type="text" readonly aria-label="Shareable postcard link" value="Press make a random postcard">
+<div class="actions"><a class="button line" href="./poster.html">PRINT A FREE QR POSTER ↗</a><a class="button line" href="./#mixtape">MAKE A PERSONAL POSTCARD ↗</a></div>
+</div>
+<div class="card seed-card"><p class="card-kicker">✳ A MESSAGE FROM THE LITTLE POST OFFICE</p><div class="seed-art"><img src="./cover.jpg" id="seed-art" alt="MUTANT POP manga postcard art"></div><p class="seed-heading">SOMEBODY MIGHT NEED THIS SONG.</p><ol id="seed-tracks" class="selected-tracks"><li>Press the postcard button to see what travels.</li></ol><p class="smallprint">Every new postcard gets a random published illustration and three different tracks. No name, address, or account needed.</p></div>
+</div></section>
+
+<section class="station-section midnight" id="machines" aria-labelledby="machines-title">
+<div class="section-number">05 / A MACHINE</div>
+<div class="section-grid"><div><h2 id="machines-title">LET SOFTWARE<br><em>FIND THE MUSIC.</em></h2><p>A public, machine-readable catalog for people building games, sites, listening tools, and genuinely useful little systems. No API key. No paywall. No surveillance layer.</p>
+<div class="actions"><a class="button bright" href="./tracks.json">OPEN TRACK CATALOG ↗</a><a class="button outline" href="./discovery.json">OPEN DISCOVERY FILE ↗</a><a class="button outline" href="./docs/DISTRIBUTION.md">READ THE INTEGRATION NOTES ↗</a></div>
+<p class="smallprint">The catalog is permission to discover and link to music, not a blanket sublicense for commercial reuse, redistribution or public performance. <a href="#creators">Ask us if you want more.</a></p></div>
+<div class="code-card"><p class="card-kicker">✳ FOUR LINES TO A MUSIC LIBRARY</p><pre><code>const album = await fetch(
+  "https://humkin.abundent.org/tracks.json"
+).then(r =&gt; r.json());
+
+console.log(album.tracks);</code></pre><p>12 songs · titles · durations · MP3 URLs · original source links</p></div></div></section>
+<section class="closing"><p class="eyebrow">THIS IS A REAL EXPERIMENT</p><h2>MAKE IT EASIER TO GIVE<br><em>THAN TO KEEP.</em></h2><p>No invented audience numbers. No fake adoption count. We start with actual people who want a bit of music in their lives. If you put HUMKIN somewhere, tell us where it landed.</p><a class="button dark" href="mailto:us@abundent.org?subject=I%20put%20HUMKIN%20somewhere">I PUT HUMKIN SOMEWHERE ↗</a><p class="smallprint">We'll ask before listing any person, organization, or business publicly.</p></section>
+</main><footer><a href="./">← BACK TO THE RECORD</a><span>HUMKIN ✳ MUSIC FOR ORDINARY LIFE</span><a href="mailto:us@abundent.org">US@ABUNDENT.ORG</a></footer>
+</body></html>
