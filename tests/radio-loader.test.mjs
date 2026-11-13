@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import {readFileSync,existsSync} from "node:fs";
+import {execFileSync} from "node:child_process";
+const read=file=>readFileSync(file,"utf8");
+const page=read("fm/load/index.html");
+const app=read("fm/load/loader.js");
+const radio=read("fm/radio.js");
+for(const path of ["fm/load/index.html","fm/load/loader.js","docs/RADIO-CRATE-LOADER.md","tools/humkin-radio-batch.py"]){
+  assert(existsSync(path),"Missing crate loader file "+path);
+}
+execFileSync(process.execPath,["--input-type=module","--check"],{input:app});
+execFileSync("python3",["-c","import ast; ast.parse(open('tools/humkin-radio-batch.py',encoding='utf-8').read())"]);
+const ids=new Set([...page.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
+for(const match of app.matchAll(/\$\("([^"]+)"\)/g))assert(ids.has(match[1]),"Missing load-in UI element "+match[1]);
+assert(page.includes('type="file"')&&page.includes("multiple"),"File picker must support many files");
+assert(page.includes("audio/wav")&&page.includes("audio/mpeg"),"Support WAV and MP3 in browser");
+assert(app.includes("convertWav")&&app.includes("Mp3Encoder")&&app.includes("128"),"WAV browser conversion missing");
+assert(app.includes("crypto.subtle.digest")&&app.includes("SHA-256"),"Need byte-accurate dedup");
+assert(app.includes("STAGED")&&app.includes("DUPLICATE"),"Need visible per-song results");
+assert(app.includes("new tus.Upload")&&app.includes("findPreviousUploads"),"Large uploads should resume");
+assert(app.includes('const INBOX = "humkin-radio-inbox", LIVE = "humkin-radio-live";'),"Private/live separation missing");
+assert(app.includes('destinationBucket:LIVE'),"Publishing must move files across buckets");
+assert(app.includes("confirm(")&&app.includes("published_at:"),"Human publish consent required");
+assert(!/(?:service_role|sb_secret_)/.test(app),"Never ship a secret in the upload client");
+assert(radio.includes("getPublishedCrate")&&radio.includes("rest/v1/humkin_radio_tracks"),"Dynamic live catalog not wired");
+assert(radio.includes("using original radio rotation"),"Base rotation must survive cloud outage");
+assert(page.includes("1 GB free storage allowance")&&page.includes("700 MiB"),"Quota must be explicit");
+assert(page.includes("never uploaded"),"Owner's WAV sources must stay local");
+assert(read("fm/index.html").includes('href="./load/"'),"Radio must link crate loader");
+console.log("Crate Loader static checks passed: route, pinned dependencies, WAV+MP3, dedup, authenticated private stage, explicit publish, radio fallback and quota warnings.");

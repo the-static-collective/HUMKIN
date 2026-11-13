@@ -65,7 +65,7 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation){
+function fixture(config=rotation,cloudRows=[]){
  const elems=new Map(),listeners={},copies=[],time={now:Date.parse(rotation.synced_clock_epoch_utc)+135*1000};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn}};
@@ -73,12 +73,22 @@ function fixture(config=rotation){
  const window={isSecureContext:true,addEventListener:(k,fn)=>{listeners[k]=fn}};
  const session={setActionHandler:(k,fn)=>{session[k]=fn}};
  const navigator={mediaSession:session,clipboard:{writeText:async s=>{copies.push(s)}}};
- const fetch=async url=>({ok:true,json:async()=>String(url).endsWith("rotation.json")?config:songs});
+ const fetch=async url=>({ok:true,json:async()=>
+  String(url).endsWith("rotation.json")?config:
+  String(url).includes("/rest/v1/humkin_radio_tracks")?cloudRows:songs});
  const location=new URL(document.baseURI);
- runInNewContext(js,{window,document,navigator,location,URL,Date:Clock,Math,fetch,setTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}});
+ runInNewContext(js,{window,document,navigator,location,URL,Date:Clock,Math,fetch,AbortController,setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}});
  return {$,time,copies,listeners,session,window,document};
 }
 const newTune=fixture();await flush();
+const uuid="10293847-1029-4837-9029-abcdefabcdef";
+const digest="a".repeat(64);
+const imported=fixture(rotation,[{id:uuid,title:"New Road Song",artist:"HUMKIN",
+ album:"CRATE ONE",duration_seconds:184.4,storage_path:uuid+"/"+digest+".mp3"}]);
+await flush();
+assert.equal(imported.window.HUMKIN_RADIO.state.tracks,22,"Creator's approved cloud track must join the original 21");
+assert(imported.window.HUMKIN_RADIO.tracks===undefined,"Public player surface should stay compact");
+assert.equal(newTune.window.HUMKIN_RADIO.state.tracks,21,"Original radio must survive an empty cloud catalog");
 assert.equal(newTune.$("spotlight").disabled,false);
 assert.equal(newTune.$("air").playCount,0,"Spotlight must never autoplay");
 newTune.$("spotlight").click();await flush();
