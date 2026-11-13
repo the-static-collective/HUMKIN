@@ -16,7 +16,7 @@
     <div class="postcard-paper">
       <p class="gift-eyebrow">✳ SPECIAL DELIVERY · A HUMKIN POSTCARD</p>
       <h2>SOMEONE MADE<br><em>THIS FOR YOU.</em></h2>
-      <p class="postcard-message" id="received-message"></p>
+      <div class="postcard-art" id="received-art-wrap"><img id="received-art" src="./cover.jpg" alt="HUMKIN postcard illustration" loading="eager"></div><p class="postcard-message" id="received-message"></p>
       <ol class="gift-tracks" id="received-tracks"></ol>
       <div class="gift-buttons">
         <button type="button" class="gift-primary" id="received-play">▶ PLAY YOUR THREE SONGS</button>
@@ -109,6 +109,7 @@
         <label for="mix-three">03 · THIRD SONG</label><select id="mix-three" aria-label="Third song"></select>
         <label for="mix-message">A LITTLE NOTE · OPTIONAL</label>
         <textarea id="mix-message" rows="3" maxlength="160" placeholder="I thought of you when I heard these."></textarea>
+        <label id="mix-art-label" for="mix-art">MANGA POSTCARD ART</label><select id="mix-art" aria-labelledby="mix-art-label"><option value="mutant-pop">MUTANT POP · THE FIRST ROOM</option><option value="none">PAPER ONLY</option></select>
         <label for="mix-palette">POSTCARD COLOR</label>
         <select id="mix-palette"><option value="sun">SUNSHINE</option><option value="rose">ROSE</option><option value="sky">BLUE SKY</option></select>
       </div>
@@ -126,7 +127,7 @@
         <div class="preview-stamp">HUMKIN<br>POST OFFICE<br>✳</div>
         <p class="gift-eyebrow">A LITTLE SOMETHING FROM HUMKIN</p>
         <h3>TO YOU,<br>FROM SOMEONE.</h3>
-        <p class="postcard-message" id="mix-preview-message"></p>
+        <div class="postcard-art" id="mix-preview-art-wrap"><img id="mix-preview-art" src="./cover.jpg" alt="HUMKIN postcard illustration" loading="lazy"></div><p class="postcard-message" id="mix-preview-message"></p>
         <ol class="gift-tracks" id="mix-preview-tracks"></ol>
         <p class="postcard-signoff">STAY STRANGE · STAY KIND ✳</p>
       </div>
