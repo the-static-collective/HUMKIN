@@ -1,20 +1,51 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#19172a"><meta name="description" content="Play and download all 12 songs from HUMKIN's MUTANT POP. Free music. No sign-in, no app, no ads." />
+<meta name="theme-color" content="#19172a"><link rel="manifest" href="./manifest.webmanifest"><meta name="description" content="Play and download all 12 songs from HUMKIN's MUTANT POP. Free music. No sign-in, no app, no ads." />
 <meta property="og:type" content="music.album"><meta property="og:title" content="HUMKIN — MUTANT POP • Listen free" />
 <meta property="og:description" content="Twelve songs, one strange little family. Full album free to play and download." />
 <meta property="og:image" content="https://humkin.abundent.org/cover.jpg"><meta property="og:url" content="https://humkin.abundent.org/" />
 <title>HUMKIN — MUTANT POP | Free full album</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9C%B3%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="./styles.css" />
-<link rel="preload" href="./cover.jpg" as="image" />
+<link rel="preload" href="./cover.jpg" as="image" /><link rel="stylesheet" href="./gifts.css" />
 </head><body>
-<header class="sitehead"><a class="wordmark" href="./" aria-label="HUMKIN home">HUMKIN<span class="asterisk">✳</span></a><nav aria-label="Site navigation"><a href="#songs">THE RECORD</a><a href="#letters">THE LETTERS ↗</a><a href="mailto:us@abundent.org">CONTACT</a></nav></header>
+<header class="sitehead"><a class="wordmark" href="./" aria-label="HUMKIN home">HUMKIN<span class="asterisk">✳</span></a><nav aria-label="Site navigation"><a href="#feel">FIND A SONG</a><a href="#songs">THE RECORD</a><a href="#mixtape">POSTCARDS ↗</a><a href="#letters">LETTERS</a><a href="mailto:us@abundent.org">CONTACT</a></nav></header>
 <main>
+<section class="received" id="received-postcard" aria-label="A HUMKIN postcard for you" hidden>
+  <div class="received-inner">
+    <div class="postcard-paper">
+      <p class="gift-eyebrow">✳ SPECIAL DELIVERY · A HUMKIN POSTCARD</p>
+      <h2>SOMEONE MADE<br><em>THIS FOR YOU.</em></h2>
+      <p class="postcard-message" id="received-message"></p>
+      <ol class="gift-tracks" id="received-tracks"></ol>
+      <div class="gift-buttons">
+        <button type="button" class="gift-primary" id="received-play">▶ PLAY YOUR THREE SONGS</button>
+        <a href="#mixtape" class="gift-secondary" id="received-remix">MAKE YOUR OWN ↗</a>
+      </div>
+      <p class="gift-status" id="received-status" role="status" aria-live="polite"></p>
+      <p class="gift-footnote">Free to listen and download. Nothing plays until you press play.</p>
+    </div>
+  </div>
+</section>
 <section class="hero" aria-labelledby="album-heading"><div class="hero-blur" aria-hidden="true"></div><div class="hero-inner">
-<div class="hero-text"><div class="eyebrow"><span class="red-dot"></span> THE WHOLE RECORD IS HERE</div><h1 id="album-heading">MUTANT<br><em>POP.</em></h1><p class="lead">A strange little family of songs. Bright things, quiet things, the everyday miracle of making room for someone.</p><p class="lede">Twelve songs. All yours to hear. No account, no app, no ads.</p><div class="hero-actions"><button class="btn-yellow" id="play-album" type="button">▶ &nbsp; PLAY THE ALBUM</button><a class="btn-outline" href="#songs">SEE ALL 12 ↓</a></div><div class="hero-note">HUMKIN · an independent Minnesota music project</div></div>
+<div class="hero-text"><div class="eyebrow"><span class="red-dot"></span> THE WHOLE RECORD IS HERE</div><h1 id="album-heading">MUTANT<br><em>POP.</em></h1><p class="lead">A strange little family of songs. Bright things, quiet things, the everyday miracle of making room for someone.</p><p class="lede">Twelve songs. All yours to hear. No account, no app, no ads.</p><div class="hero-actions"><button class="btn-yellow" id="play-album" type="button">▶ &nbsp; PLAY THE ALBUM</button><a class="btn-outline" href="#mixtape">MAKE A 3-SONG MIX ✳</a><a class="btn-outline" href="#songs">ALL 12 ↓</a></div><div class="hero-note">HUMKIN · an independent Minnesota music project</div></div>
 <div class="art-wrap"><div class="art-back" aria-hidden="true"></div><img class="cover" src="./cover.jpg" onerror="this.hidden=true" alt="Manga-inspired MUTANT POP album cover, a colorful imaginary world around HUMKIN" width="1080" height="1080"><span class="sticker">FREE<br>TO PLAY<br>& SAVE</span></div>
 </div><div class="marquee" aria-hidden="true"><span>☼ &nbsp; STAY STRANGE &nbsp; ✳ &nbsp; STAY KIND &nbsp; ☼ &nbsp; STAY STRANGE &nbsp; ✳ &nbsp; STAY KIND &nbsp; ☼ &nbsp; STAY STRANGE &nbsp; ✳ &nbsp; STAY KIND &nbsp; ☼</span></div></section>
+<section class="mood-section" id="feel" aria-labelledby="mood-heading">
+  <div class="gift-section-inner">
+    <p class="gift-eyebrow">✳ HUMKIN · A LITTLE SONG MACHINE</p>
+    <h2 id="mood-heading">WHAT DO YOU<br><em>NEED RIGHT NOW?</em></h2>
+    <p>Press a button. We'll pick a song from the record. No quiz, no account, no algorithm following you around.</p>
+    <div class="mood-grid" role="group" aria-label="Find a song by feeling">
+      <button type="button" data-mood="good"><span aria-hidden="true">☼</span><strong>SOMETHING GOOD</strong><small>A little brightness</small></button>
+      <button type="button" data-mood="comfort"><span aria-hidden="true">♡</span><strong>A LITTLE COMFORT</strong><small>Take a breath</small></button>
+      <button type="button" data-mood="energy"><span aria-hidden="true">✴</span><strong>WAKE ME UP</strong><small>Get moving</small></button>
+      <button type="button" data-mood="human"><span aria-hidden="true">✳</span><strong>SOMETHING HUMAN</strong><small>Make a little room</small></button>
+      <button type="button" data-mood="surprise"><span aria-hidden="true">?</span><strong>SURPRISE ME</strong><small>Take a chance</small></button>
+    </div>
+    <p class="mood-status" id="mood-status" role="status" aria-live="polite">Or keep scrolling for all twelve songs.</p>
+  </div>
+</section>
 <section class="listen" id="songs" aria-labelledby="tracks-heading"><div class="section-intro"><div><p class="section-tag">SIDE A / SIDE B / EVERYTHING BETWEEN</p><h2 id="tracks-heading">THE WHOLE <span>THING.</span></h2><p>Pick a song or let the record run from beginning to end. Save any song as an MP3, free.</p></div><div class="section-counter">12 <small>TRACKS</small></div></div>
 <div class="trackbox"><div class="track-head"><span>TRACK LIST</span><span>HUMKIN · MUTANT POP</span></div><ol class="songs"><li class="song" data-row="0" id="song-01">
 <button class="song-play" type="button" data-play="0" aria-label="Play Noontime Bloom"><span class="ordinal">01</span><span class="song-title">Noontime Bloom</span><span class="song-bars" aria-hidden="true">▂▆▃</span><span class="duration">2:45</span></button>
@@ -64,9 +95,46 @@
 <button class="song-play" type="button" data-play="11" aria-label="Play HaileyLuYAH"><span class="ordinal">12</span><span class="song-title">HaileyLuYAH</span><span class="song-bars" aria-hidden="true">▂▆▃</span><span class="duration">3:15</span></button>
 <a class="song-download" href="./audio/12_HaileyLuYAH.mp3" download="HUMKIN - HaileyLuYAH.mp3" aria-label="Download HaileyLuYAH as MP3" title="Free MP3 download">↓ <span class="sr-only">download</span></a>
 </li></ol></div>
-<div class="album-actions"><button id="shuffle-all" class="text-button" type="button">⤨ &nbsp; SHUFFLE ALL</button><a class="text-button" href="#letters">✳ &nbsp; GET THE OCCASIONAL LETTER ↗</a><p>Downloads are full songs in web-optimized MP3 quality. Your copy, your device.</p></div>
+<div class="album-actions"><button id="shuffle-all" class="text-button" type="button">⤨ &nbsp; SHUFFLE ALL</button><button id="save-offline" class="text-button" type="button" hidden>↓ &nbsp; SAVE THE WHOLE ALBUM OFFLINE</button><span id="offline-status" role="status" aria-live="polite" class="offline-status"></span><a class="text-button" href="#letters">✳ &nbsp; GET THE OCCASIONAL LETTER ↗</a><p>Downloads are full songs in web-optimized MP3 quality. Your copy, your device.</p></div>
 </section>
 
+<section class="mix-section" id="mixtape" aria-labelledby="mix-heading">
+  <div class="gift-section-inner mix-layout">
+    <div class="mix-maker">
+      <p class="gift-eyebrow">✳ LITTLE HUMAN MACHINE · 03 SONGS, 01 GIFT</p>
+      <h2 id="mix-heading">MAKE A<br><em>POSTCARD.</em></h2>
+      <p>Pick three songs. Add a note if you like. Send a miniature mixtape to a person who might need one.</p>
+      <div class="mix-fields">
+        <label for="mix-one">01 · FIRST SONG</label><select id="mix-one" aria-label="First song"></select>
+        <label for="mix-two">02 · SECOND SONG</label><select id="mix-two" aria-label="Second song"></select>
+        <label for="mix-three">03 · THIRD SONG</label><select id="mix-three" aria-label="Third song"></select>
+        <label for="mix-message">A LITTLE NOTE · OPTIONAL</label>
+        <textarea id="mix-message" rows="3" maxlength="160" placeholder="I thought of you when I heard these."></textarea>
+        <label for="mix-palette">POSTCARD COLOR</label>
+        <select id="mix-palette"><option value="sun">SUNSHINE</option><option value="rose">ROSE</option><option value="sky">BLUE SKY</option></select>
+      </div>
+      <div class="gift-buttons">
+        <button class="gift-primary" id="mix-play" type="button">▶ HEAR YOUR THREE</button>
+        <button class="gift-primary" id="mix-share" type="button">SEND A POSTCARD ↗</button>
+        <button class="gift-secondary" id="mix-copy" type="button">COPY LINK</button>
+      </div>
+      <p id="mix-status" class="gift-status" role="status" aria-live="polite"></p>
+      <input id="mix-link-fallback" type="text" class="mix-link-fallback" aria-label="Your postcard link, ready to copy" readonly hidden />
+      <p class="gift-footnote">No accounts. No message database. Your note travels inside the shareable link, so don't include private information.</p>
+    </div>
+    <div class="mix-preview-wrap">
+      <div class="postcard-paper mix-preview color-sun" id="mix-preview" aria-label="Your postcard preview">
+        <div class="preview-stamp">HUMKIN<br>POST OFFICE<br>✳</div>
+        <p class="gift-eyebrow">A LITTLE SOMETHING FROM HUMKIN</p>
+        <h3>TO YOU,<br>FROM SOMEONE.</h3>
+        <p class="postcard-message" id="mix-preview-message"></p>
+        <ol class="gift-tracks" id="mix-preview-tracks"></ol>
+        <p class="postcard-signoff">STAY STRANGE · STAY KIND ✳</p>
+      </div>
+      <p class="preview-caption">A shareable mixtape, not another social account.</p>
+    </div>
+  </div>
+</section>
 <section class="newsletter-section" id="letters" aria-labelledby="letters-heading">
   <div class="newsletter-inner">
     <div class="newsletter-copy">
@@ -91,11 +159,13 @@
     </div>
   </div>
 </section>
-<section class="note-section"><div class="note-panel"><span class="note-sparkle" aria-hidden="true">✳</span><div><p class="section-tag">A LITTLE NOTE</p><h2>Music for the places<br>where life happens.</h2><p>Put it on while you work, cook, drive, make things, make a little room. Share the link with a friend. Keep a song. That's the whole idea.</p><p class="small-print">For business radio, gyms, stores, and music-programming inquiries: <a href="mailto:us@abundent.org?subject=HUMKIN%20music%20inquiry">us@abundent.org</a>.</p></div></div></section>
+<section class="note-section"><div class="note-panel"><span class="note-sparkle" aria-hidden="true">✳</span><div><p class="section-tag">A LITTLE NOTE</p><h2>Music for the places<br>where life happens.</h2><p>Put it on while you work, cook, drive, make things, make a little room. Share the link with a friend. Keep a song. That's the whole idea.</p><p class="small-print"><a href="./poster.html">PRINT A FREE HUMKIN POSTER ↗</a> · Leave a little music somewhere it might help.</p><p class="small-print">For business radio, gyms, stores, and music-programming inquiries: <a href="mailto:us@abundent.org?subject=HUMKIN%20music%20inquiry">us@abundent.org</a>.</p></div></div></section>
 </main>
 <footer><span>HUMKIN ✳ MUTANT POP</span><span>FREE LISTENING · FREE MP3 DOWNLOADS</span><span>NO TRACKING · NO ACCOUNT REQUIRED</span></footer>
 <div class="dock" id="dock" aria-label="Music player"><div class="dock-inner"><img class="dock-art" src="./cover.jpg" alt="" width="56" height="56"><div class="now"><span id="now-title">NOONTIME BLOOM</span><small id="now-sub">HUMKIN · MUTANT POP</small></div><div class="transport"><div class="transport-row"><button id="shuffle" type="button" title="Shuffle" aria-label="Toggle shuffle">⤨</button><button id="prev" type="button" title="Previous" aria-label="Previous track">⏮</button><button id="play-pause" class="main-play" type="button" aria-label="Play">▶</button><button id="next" type="button" title="Next" aria-label="Next track">⏭</button><button id="repeat" type="button" title="Repeat off" aria-label="Change repeat mode">↻</button></div><div class="scrub"><span id="elapsed">0:00</span><input id="seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek in track"><span id="remaining">2:45</span></div></div><div class="dock-extra"><button id="share" type="button" title="Copy a link to this song" aria-label="Copy song link">↗</button><a id="download-current" href="./audio/01_Noontime_Bloom.mp3" download title="Download the current song" aria-label="Download current song">↓</a><label class="volume-wrap" aria-label="Volume">♫ <input type="range" id="volume" min="0" max="1" step="0.05" value="0.9" aria-label="Volume"></label></div></div></div>
 <audio id="audio" preload="none"></audio><div id="announce" class="sr-only" aria-live="polite"></div>
 <script src="./player.js" defer></script>
 <script src="./signup.js" defer></script>
+<script src="./gifts.js" defer></script>
+<script src="./offline.js" defer></script>
 </body></html>

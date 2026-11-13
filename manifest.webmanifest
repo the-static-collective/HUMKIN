@@ -1,0 +1,18 @@
+{
+  "name": "HUMKIN — MUTANT POP",
+  "short_name": "HUMKIN",
+  "description": "Twelve free songs, pocket mixtapes, and little postcards.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff7e8",
+  "theme_color": "#211b3a",
+  "icons": [
+    {
+      "src": "./cover.jpg",
+      "sizes": "1080x1080",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
