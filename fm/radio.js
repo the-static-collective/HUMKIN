@@ -135,6 +135,19 @@ function nextShuffle(shouldPlay){
   showTrack(order[cursor]);
   setSource(tracks[order[cursor]].src,0,shouldPlay);
 }
+function spotlight(id){
+  const chosen=tracks.findIndex(t=>t.id===id);
+  if(chosen<0)return;
+  mode="shuffle";
+  buildShuffle();
+  const slot=order.indexOf(chosen);
+  if(slot>0)[order[0],order[slot]]=[order[slot],order[0]];
+  cursor=0;
+  updateModeUI();
+  showTrack(chosen);
+  setSource(tracks[chosen].src,0,true);
+  setMessage("New single: "+tracks[chosen].title+". Road Shuffle will keep playing afterward.");
+}
 function changeMode(target){
   if(target!=="clock"&&target!=="shuffle")return;
   const wasPlaying=!audio.paused&&active;
@@ -164,6 +177,7 @@ async function share(){
   setMessage("Share this address: "+link);
 }
 $("listen").addEventListener("click",startRadio);
+$("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
 $("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
 $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused)});
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
@@ -246,7 +260,7 @@ async function boot(){
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
     $("playlist-note").textContent=config.status_note||"Continuous music from the HUMKIN catalog.";
-    for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song"])$(id).disabled=false;
+    for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     setMessage("Press TUNE IN. No autoplay; you're in control.");
     status.textContent="✳ THE DIAL IS READY";
