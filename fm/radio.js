@@ -245,8 +245,8 @@ audio.addEventListener("timeupdate",()=>{
   if(Number.isFinite(remaining)&&remaining>=0&&remaining<0.35){
     if(mode==="shuffle"){nextShuffle(true);return}
     if(mode==="clock"&&!remoteStream){
-      const upcoming=tuneAt(Date.now()+650);
-      if(upcoming&&upcoming.index!==index){startClock(true);return}
+      const onAir=tuneAt(Date.now());
+      if(onAir&&onAir.index!==index){startClock(true);return}
     }
   }
   // Don't tear down a healthy foreground media session just to resync the
