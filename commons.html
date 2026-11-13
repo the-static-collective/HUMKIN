@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#241b3f"><meta name="description" content="The HUMKIN creative commons workbench: find creative material, help catalog it, and make new things with explicit permission.">
+<title>THE COMMONS — HUMKIN · Borrow, Remix, Return</title>
+<link rel="stylesheet" href="./commons.css">
+</head><body>
+<header class="top"><a class="brand" href="./">HUMKIN <span>✳</span></a><nav aria-label="Site navigation"><a href="./">THE MUSIC</a><a href="./somewhere.html">PUT IT SOMEWHERE</a><a href="mailto:us@abundent.org">CONTACT</a></nav></header>
+<main>
+<section class="hero"><div class="stamp">THE COMMONS · EXPERIMENT 001</div><h1>ONE PERSON'S ENDING.<br><em>ANOTHER'S BEGINNING.</em></h1>
+<p>Footage, music, manga, games, design, and all the strange things people can make together. Archive it. Find it. Recompose it. Return what grows.</p>
+<div class="actions"><a class="primary" href="#library">EXPLORE THE LIBRARY ↓</a><a class="secondary" href="#inventory">CATALOG MY FILES ↗</a></div>
+</section>
+<section class="notice" role="note"><strong>Important distinction:</strong> Publicly viewable or downloadable does not always mean free to remix. This is a growing <em>discovery inventory</em>, not a blanket license. Only assets specifically marked <strong>OPEN FOR REMIX</strong> carry an explicit reuse release. Nothing here uploads your device's files automatically.</section>
+<section class="library" id="library">
+<div class="heading"><div><p class="eyebrow">DISCOVER / COMPOSE / RETURN</p><h2>THE WORKBENCH.</h2></div><p id="counts" aria-live="polite">Loading catalog…</p></div>
+<div class="filters"><label for="q">Find something<input id="q" type="search" placeholder="Video, manga, game, clothing…" autocomplete="off"></label>
+<label for="kind">Kind<select id="kind"><option value="all">Everything</option><option value="video">Video</option><option value="music">Music</option><option value="images">Images</option><option value="manga">Manga</option><option value="games">Games</option><option value="design">Design</option></select></label>
+<label for="state">Access<select id="state"><option value="all">All stages</option><option value="remix">Open for remix</option><option value="preview">Public previews</option><option value="inventory">Not yet released</option></select></label></div>
+<div id="cards" class="cards" aria-live="polite"></div><p id="library-error" class="status" role="status"></p>
+</section>
+<section class="how"><p class="eyebrow">HOW THE EXCHANGE GROWS</p><div class="three">
+<article><span>01</span><h3>BORROW</h3><p>Find materials with a specific reuse license. Preview-only materials stay preview-only until cleared.</p></article>
+<article><span>02</span><h3>RECOMPOSE</h3><p>Make a music video, new page, animation, game, or something nobody anticipated.</p></article>
+<article><span>03</span><h3>RETURN</h3><p>Offer your version and its source ancestry, if you choose. You keep whatever rights you actually hold.</p></article>
+</div></section>
+<section class="inventory" id="inventory"><div class="heading"><div><p class="eyebrow">YOUR HARD DRIVE · LOCAL FIRST</p><h2>DON'T LOSE THE PILE.</h2></div></div>
+<p>Start with those ~225 Flow videos—or any folder of footage, pictures, songs, drawings, and documents. Select files or a folder. This page reads <strong>names, sizes and dates only</strong>, locally in your browser. The media stays on your device. Export a draft inventory you can inspect before deciding what to publish.</p>
+<div class="import-grid"><div class="upload-card"><label for="folder" class="uploader">CHOOSE A FOLDER<input id="folder" type="file" webkitdirectory multiple></label><label for="files" class="uploader">OR CHOOSE FILES<input id="files" type="file" multiple></label><label for="manifest" class="uploader">OR IMPORT AN INVENTORY JSON<input id="manifest" type="file" accept=".json,application/json"></label><p>Folder selection works in supported desktop browsers. Import works with manifests from the offline scanner as well.</p></div>
+<div class="summary"><h3>LOCAL INDEX</h3><p id="local-count">No files selected.</p><div id="local-sample" class="local-sample" aria-live="polite"></div><button type="button" id="export-json" disabled>EXPORT INVENTORY JSON ↓</button><button type="button" id="export-csv" disabled>EXPORT CSV ↓</button><p id="local-status" role="status" aria-live="polite"></p></div></div>
+<p class="fine">Export is archival metadata, not an upload, rights clearance, or backup of the actual video files. Keep original media separately. Use the offline scanner in the HUMKIN repository for SHA-256 hashes and reproducible batch inventories.</p></section>
+<section class="join"><p class="eyebrow">SOMETHING MISSING?</p><h2>ASK. MAKE. GIVE IT BACK.</h2><p>Request a scene, ask about rights, offer a derivative, or contribute an asset. The first return lane is a prepared email; there's no hidden upload service or automatic publication.</p><a id="contribute" class="primary" href="mailto:us@abundent.org?subject=Creative%20Commons%20contribution">OFFER A CREATIVE THING ↗</a></section>
+</main><footer><a href="./">HUMKIN ✳</a><span>Be generous. Be precise about permission.</span><a href="./privacy.html">PRIVACY</a></footer>
+<script type="module" src="./commons.mjs"></script></body></html>
