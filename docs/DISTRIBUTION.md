@@ -6,11 +6,12 @@ Portable player: https://humkin.abundent.org/embed.html
 Public catalog: https://humkin.abundent.org/tracks.json  
 Discovery: https://humkin.abundent.org/discovery.json  
 Free printable QR poster: https://humkin.abundent.org/poster.html
+Six take-one cards: https://humkin.abundent.org/relay.html
 
 ## What is actually available
 
 - **Listening rooms:** Five suggested three-song sequences (coffee, work, moving, table, night). Rooms have shareable `?room=...` URLs. User-started playback continues through the three tracks. The track files and sequences are already published.
-- **Website embeds:** One song, current three-song room, or the entire album; creates a real iframe snippet and a playable preview. The embed fetches the local track manifest and audio. No login, ads, client analytics, third-party API, or autoplay.
+- **Website embeds:** One song, current three-song room, or the entire album; creates a real iframe snippet and a playable preview. The embed fetches the local track manifest and audio. No login, ads, client analytics, third-party API, or autoplay. Every embed includes a small "GET THIS PLAYER" link to let another website owner install one.
 - **Creators:** Contact link opens a prefilled email with the selected room's tracks and a checklist of usage details. This is an *inquiry*, not a license issued automatically.
 - **People and streets:** A random three-song manga postcard URL (random art drawn from the published `postcards.json` library, safely validated), native share or copy fallback, and printable poster linked to the existing local QR.
 - **Machines:** Static JSON music catalog, discovery/permissions document, examples below. No token, no privileged endpoint and no falsely claimed real-time adoption tracking.
