@@ -125,3 +125,9 @@ The track is listed under HUMKIN as the radio artist, while the embedded origina
 The musical feel is laid-back, groove-led and exceptionally suitable for relaxed car listening: spare electric-key or guitar-like chord figures, rounded bass, dry backbeat, intimate vocal and memorable recurring hook. In a polished broadcast, its dynamics and transition timing should be auditioned against adjacent recordings before deploying loudness normalization.
 
 Rights status: the creator previously reports these Suno outputs were made under Premier and not third-party remixes. This individual song's ID3 contains its Suno source and time but is not itself a definitive rights certificate. The station is still a browser radio player, not an externally regulated FM station, direct-licensed venue speaker service, or independent always-on Icecast stream.
+
+## November 13: Leave The Kettle On
+
+The user supplied `Leave The Kettle On (1).mp3` directly, with a Suno creation tag `created=2026-07-05T17:09:35Z; id=f3366bcc-39d5-4187-b7f9-073a7efc3dcc`. Its source file has 3,925,398 bytes and duration 173.952 seconds, SHA-256 `c855100c353b8f229c0811bf67c079f5e038dca4316b5a08a90cf10225e08d3d`. The original file was copied without transcoding, checked by GitHub Actions, and committed at `fm/audio/leave-the-kettle-on.mp3`. This increases the browser radio catalog to **21**. The new song has a bright, syncopated bass-and-keys introduction, lead fiddle-like melodic line, warm soul-pop vocal and a catchy domestic refrain. Its start/stop and inter-track volume should be field-tested before a true broadcast pipeline.
+
+The station's `HEAR THE NEW ONE` button prioritizes the new single and then resumes repeat-free shuffle. The previous HaileyLu Bloom stays in the rotation. No radio tower or 24/7 relay has been deployed, and recorded music still needs all relevant public-performance rights before external broadcast.

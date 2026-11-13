@@ -108,3 +108,7 @@ GitHub Pages and the existing Walmart-facing full-album page remain in place; on
 ## Added single: HaileyLu Bloom (November 13)
 
 The user-supplied `HaileyLu Bloom.mp3` (Suno id `b6d91f50-f082-4e47-9dc8-56ac9ed73f36`) was committed to `fm/audio/haileylu-bloom.mp3` with byte-identical SHA-256 `1c92c36b078586a3bc795e4431dd63cec8d0733349d9d61bcec83dbc080aced6`. Duration `147.864` seconds. The station now has **20 songs**, and the new-single spotlight button immediately plays this original file and continues through the 19 other tracks in randomized, non-repeating order. The creator's full album/Walmart homepage remains unchanged. This is an original MP3 supplied by the creator; no new mastering or WAV/stems are claimed.
+
+## Added to the radio: Leave The Kettle On (November 13)
+
+Creator-supplied 2:53.952 original MP3 now lives at `fm/audio/leave-the-kettle-on.mp3`, SHA-256 `c855100c353b8f229c0811bf67c079f5e038dca4316b5a08a90cf10225e08d3d`, 3,925,398 bytes. The song is included in the 21-track shared station clock and Road Shuffle. The newest-single spotlight now plays this song first and continues through the full no-repeat rotation; HaileyLu Bloom remains included. Original album landing is unchanged. No audio re-encoding was performed.
