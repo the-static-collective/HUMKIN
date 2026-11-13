@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const files=[["Noontime Bloom","01_Noontime_Bloom.mp3","269e4447-261c-4377-a648-dfa54e464909",165],["Haileylu Morning","02_Haileylu_Morning.mp3","6ea3fbb4-68a1-4a98-871c-9518185f790c",164],["Bright Blue Rose","03_Bright_Blue_Rose.mp3","8ee1494e-9bec-4971-9080-a97ba81d56f4",183],["Golden Yellow Blue","04_Golden_Yellow_Blue.mp3","8335dfd2-55fd-4eaa-8aeb-ec3abf0ca3d4",133],["Room Enough for Two","05_Room_Enough_for_Two.mp3","d4263d92-5d91-4b21-96ea-67e697217f4d",170],["We Are Still Here","06_We_Are_Still_Here.mp3","f0308a2b-e2b0-4c24-9cfa-e14ba7e61e9e",215],["There's Room for You","07_There_s_Room_for_You.mp3","da615762-de98-4dfc-a219-435afdf001c5",184],["Make a Little Room","08_Make_a_Little_Room.mp3","4a23ba50-25c8-4767-9568-d445d4edcce0",264],["Rose Mary Blooms","09_Rose_Mary_Blooms.mp3","cb564171-30d1-4025-b88f-31314f570d4c",169],["First Light Finds Your Face","10_First_Light_Finds_Your_Face.mp3","503f17f8-198b-4bac-be5d-36f3fb04a44e",159],["I Love You in the Quiet","11_I_Love_You_in_the_Quiet.mp3","0ca3a1f3-f0fa-4506-ad43-9fcf1ed0af82",260],["HaileyLuYAH","12_HaileyLuYAH.mp3","e7c1c00d-891e-478c-b72e-051aba108d65",195]];
 const tracks=files.map((t,i)=>({number:i+1,title:t[0],filename:t[1],source:"https://suno.com/song/"+t[2],duration:t[3]}));
-const $=id=>document.getElementById(id),audio=$("audio");let index=0,shuffle=false,repeat="off";
+const $=id=>document.getElementById(id),audio=$("audio");let index=0,shuffle=false,repeat="off",mixQueue=null,mixCursor=0;
 const url=t=>new URL("audio/"+t.filename,document.baseURI).href;
 const fmt=n=>{n=Math.max(0,Math.floor(Number(n)||0));return Math.floor(n/60)+":"+String(n%60).padStart(2,"0")};
 const announce=s=>{$("announce").textContent=s};
@@ -9,23 +9,26 @@ function highlight(){document.querySelectorAll("[data-row]").forEach(el=>el.clas
 function load(i,play=false){if(i<0||i>=tracks.length)return;index=i;let t=tracks[i];audio.src=url(t);audio.load();$("now-title").textContent=t.title;$("now-sub").textContent="HUMKIN · MUTANT POP";$("elapsed").textContent="0:00";$("remaining").textContent=fmt(t.duration);$("seek").value=0;$("download-current").href=url(t);$("download-current").download="HUMKIN - "+t.title+".mp3";highlight();try{let u=new URL(location.href);u.searchParams.set("track",String(t.number).padStart(2,"0"));history.replaceState({},'',u)}catch{}if(play)start()}
 async function start(){try{await audio.play()}catch{announce("Playback unavailable. The file may not yet be published; see the original song link.")}}
 function toggle(){if(audio.paused)start();else audio.pause()}
-function next(){if(repeat==="one"){audio.currentTime=0;start();return}let i=shuffle?Math.floor(Math.random()*(tracks.length-1)):index+1;if(shuffle&&i>=index)i++;if(i>=tracks.length){if(repeat==="all")i=0;else{audio.pause();return}}load(i,true)}
-function previous(){if(audio.currentTime>3){audio.currentTime=0;return}load((index+tracks.length-1)%tracks.length,true)}
-function setShuffle(v){shuffle=v;$("shuffle").classList.toggle("is-on",v);$("shuffle").setAttribute("aria-pressed",String(v));$("shuffle-all").setAttribute("aria-pressed",String(v));announce(v?"Shuffle enabled":"Shuffle off")}
-document.querySelectorAll("[data-play]").forEach(b=>b.addEventListener("click",()=>load(+b.dataset.play,true)));
-$("play-album").addEventListener("click",()=>{setShuffle(false);load(0,true)});
-$("shuffle-all").addEventListener("click",()=>{setShuffle(true);load(Math.floor(Math.random()*tracks.length),true)});
+function next(){if(mixQueue){if(mixCursor+1<mixQueue.length){mixCursor++;load(mixQueue[mixCursor],true)}else{mixQueue=null;audio.pause();announce("Your three-song postcard is complete. Pass it along. ✳")}return}if(repeat==="one"){audio.currentTime=0;start();return}let i=shuffle?Math.floor(Math.random()*(tracks.length-1)):index+1;if(shuffle&&i>=index)i++;if(i>=tracks.length){if(repeat==="all")i=0;else{audio.pause();return}}load(i,true)}
+function previous(){if(audio.currentTime>3){audio.currentTime=0;return}if(mixQueue){mixCursor=Math.max(0,mixCursor-1);load(mixQueue[mixCursor],true);return}load((index+tracks.length-1)%tracks.length,true)}
+function setShuffle(v){if(v)mixQueue=null;shuffle=v;$("shuffle").classList.toggle("is-on",v);$("shuffle").setAttribute("aria-pressed",String(v));$("shuffle-all").setAttribute("aria-pressed",String(v));announce(v?"Shuffle enabled":"Shuffle off")}
+document.querySelectorAll("[data-play]").forEach(b=>b.addEventListener("click",()=>{mixQueue=null;load(+b.dataset.play,true)}));
+$("play-album").addEventListener("click",()=>{mixQueue=null;setShuffle(false);load(0,true)});
+$("shuffle-all").addEventListener("click",()=>{mixQueue=null;setShuffle(true);load(Math.floor(Math.random()*tracks.length),true)});
 $("play-pause").addEventListener("click",toggle);$("next").addEventListener("click",next);$("prev").addEventListener("click",previous);$("shuffle").addEventListener("click",()=>setShuffle(!shuffle));
 $("repeat").addEventListener("click",()=>{repeat=repeat==="off"?"all":repeat==="all"?"one":"off";$("repeat").classList.toggle("is-on",repeat!=="off");$("repeat").title="Repeat "+repeat;announce($("repeat").title)});
-$("share").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(location.href);announce("Song link copied")}catch{announce("Your song link: "+location.href)}});
+$("share").addEventListener("click",async()=>{const link=new URL(location.pathname,location.origin);link.searchParams.set("track",String(index+1).padStart(2,"0"));try{await navigator.clipboard.writeText(link.href);announce("Song link copied")}catch{announce("Your song link: "+link.href)}});
 $("volume").addEventListener("input",e=>audio.volume=+e.target.value);audio.volume=.9;
 $("seek").addEventListener("input",e=>{if(Number.isFinite(audio.duration))audio.currentTime=audio.duration*(+e.target.value/1000)});
 audio.addEventListener("timeupdate",()=>{$("elapsed").textContent=fmt(audio.currentTime);if(Number.isFinite(audio.duration)&&audio.duration>0)$("seek").value=String(Math.round(audio.currentTime/audio.duration*1000))});
 audio.addEventListener("loadedmetadata",()=>{$("remaining").textContent=fmt(audio.duration)});
-audio.addEventListener("play",()=>{$("play-pause").textContent="Ⅱ";$("play-pause").setAttribute("aria-label","Pause");announce("Playing "+tracks[index].title)});
-audio.addEventListener("pause",()=>{$("play-pause").textContent="▶";$("play-pause").setAttribute("aria-label","Play")});
+audio.addEventListener("play",()=>{document.documentElement.classList.add("is-playing");$("play-pause").textContent="Ⅱ";$("play-pause").setAttribute("aria-label","Pause");announce("Playing "+tracks[index].title)});
+audio.addEventListener("pause",()=>{document.documentElement.classList.remove("is-playing");$("play-pause").textContent="▶";$("play-pause").setAttribute("aria-label","Play")});
 audio.addEventListener("ended",next);
 audio.addEventListener("error",()=>{announce("File not available yet. Original source: "+tracks[index].source);let el=$("source-link");if(!el){el=document.createElement("a");el.id="source-link";el.style="position:fixed;bottom:155px;right:10px;background:#ffdd5e;color:#211b3a;padding:8px 15px;border-radius:30px;z-index:30;font-size:12px;font-weight:900";document.body.append(el)}el.href=tracks[index].source;el.textContent="OPEN ORIGINAL SONG ↗";el.target="_blank";el.rel="noopener noreferrer"});
+function playTrack(number){if(!Number.isInteger(number)||number<1||number>tracks.length)return false;mixQueue=null;setShuffle(false);load(number-1,true);return true}
+function playMixtape(numbers){if(!Array.isArray(numbers)||numbers.length!==3||new Set(numbers).size!==3||!numbers.every(n=>Number.isInteger(n)&&n>=1&&n<=tracks.length))return false;setShuffle(false);repeat="off";mixQueue=numbers.map(n=>n-1);mixCursor=0;load(mixQueue[0],true);announce("Playing your three-song postcard");return true}
+window.HUMKIN_PLAYER=Object.freeze({tracks:tracks.map(t=>({number:t.number,title:t.title,duration:t.duration})),playTrack,playMixtape});
 try{const n=parseInt(new URL(location.href).searchParams.get("track"),10);if(n>=1&&n<=12)index=n-1}catch{}load(index);
 window.addEventListener("keydown",e=>{if(e.code==="Space"&&!e.altKey&&!e.metaKey&&!e.ctrlKey&&!/^(INPUT|BUTTON|A)$/.test(e.target.tagName)){e.preventDefault();toggle()}});
 })();
