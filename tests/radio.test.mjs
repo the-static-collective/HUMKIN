@@ -4,7 +4,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
-const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js");
+const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js");
 for(const p of ["fm/index.html","fm/radio.css","fm/radio.js","fm/rotation.json","fm/manifest.webmanifest","docs/RADIO-OPERATIONS.md"])assert(existsSync(p),"Missing radio file "+p);
 execFileSync(process.execPath,["--check","fm/radio.js"]);
 const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
@@ -65,8 +65,8 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation,cloudRows=[]){
- const elems=new Map(),listeners={},copies=[],time={now:Date.parse(rotation.synced_clock_epoch_utc)+135*1000};
+function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null){
+ const elems=new Map(),listeners={},copies=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn}};
  class Clock extends Date{static now(){return time.now}}
@@ -75,9 +75,14 @@ function fixture(config=rotation,cloudRows=[]){
  const navigator={mediaSession:session,clipboard:{writeText:async s=>{copies.push(s)}}};
  const fetch=async url=>({ok:true,json:async()=>
   String(url).endsWith("rotation.json")?config:
-  String(url).includes("/rest/v1/humkin_radio_tracks")?cloudRows:songs});
+  String(url).includes("/rest/v1/humkin_radio_tracks")?cloudRows:
+  String(url).includes("/rest/v1/humkin_radio_static_overrides")?staticOverrides:
+  String(url).includes("/rest/v1/humkin_radio_programs")?programRows:songs});
  const location=new URL(document.baseURI);
- runInNewContext(js,{window,document,navigator,location,URL,Date:Clock,Math,fetch,AbortController,setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}});
+ const context={window,document,navigator,location,URL,Date:Clock,Math,fetch,AbortController,
+   setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}};
+ runInNewContext(schedulerJs,context);
+ runInNewContext(js,context);
  return {$,time,copies,listeners,session,window,document};
 }
 const newTune=fixture();await flush();
@@ -172,5 +177,35 @@ const clockSource=hiddenClock.$("air").src;
 hiddenClock.time.now+=240000;hiddenClock.$("air").currentTime=15;
 hiddenClock.$("air").emit("timeupdate");await flush();
 assert.equal(hiddenClock.$("air").src,clockSource,"Hidden clock should not force resync mid-song");
+
+const friday=Date.parse("2026-11-13T13:30:00Z"); // 7:30 a.m. Central.
+const cloudUUID="30303030-3030-4030-8030-303030303030";
+const secondUUID="40404040-4040-4040-8040-404040404040";
+const editableCloud=[
+  {id:cloudUUID,title:"Evening Music",artist:"Hailey Lu",album:"Blue Roads",
+   kind:"song",enabled:true,duration_seconds:120,
+   storage_path:cloudUUID+"/"+digest+".mp3"},
+  {id:secondUUID,title:"Station Bumper",artist:"HUMKIN",album:"IDs",
+   kind:"bumper",enabled:true,duration_seconds:10,
+   storage_path:secondUUID+"/"+digest+".mp3"}
+];
+const show={
+ id:"50505050-5050-4050-8050-505050505050",name:"Morning Garden",days:[1,2,3,4,5],
+ start_minute:420,end_minute:540,track_ids:["mutant-pop-01","crate-"+secondUUID,"crate-"+cloudUUID],
+ is_active:true,priority:3
+};
+const managed=fixture(rotation,editableCloud,[
+ {track_id:"mutant-pop-02",title:"Retitled",artist:"Another Credit",album:"Reissues",kind:"song",enabled:false},
+ {track_id:"mutant-pop-03",title:"Radio Ident",artist:"HUMKIN",album:"Bumpers",kind:"bumper",enabled:true}
+],[show],friday);
+await flush();
+assert.equal(managed.window.HUMKIN_RADIO.state.tracks,22,
+  "One hidden original of 21 and two cloud tracks should leave 22 total");
+assert.equal(managed.window.HUMKIN_RADIO.state.programs,1);
+const onAir=managed.window.HUMKIN_RADIO.tuneAt(friday);
+assert.equal(onAir.program,"Morning Garden","Program should override the shared rotation during scheduled hours");
+assert([0,20,21].includes(onAir.index),"Scheduled selection must belong to the show line-up");
+const outside=managed.window.HUMKIN_RADIO.tuneAt(Date.parse("2026-11-13T18:00:00Z"));
+assert.equal(outside.program,undefined,"Outside a show the station must resume ordinary rotation");
 
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");
