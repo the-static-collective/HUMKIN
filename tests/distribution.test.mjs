@@ -14,7 +14,7 @@ assert.equal(album.tracks.length,12);
 for(const entries of Object.values(discovery.presets))assert(entries.length===3&&new Set(entries).size===3&&entries.every(n=>n>=1&&n<=12));
 assert(read("index.html").includes('href="./somewhere.html"'),"Home does not link to station");
 assert(read("sw.js").includes('"./somewhere.js"')&&read("sw.js").includes('"./embed.js"'),"Offline shell must include player assets");
-assert(read("sw.js").includes("humkin-shell-v8"),"Offline shell version not bumped");
+assert(read("sw.js").includes("humkin-shell-v9"),"Offline shell version not bumped");
 for(const [page,script] of [[html,"somewhere.js"],[miniHtml,"embed.js"]]){
  const ids=new Set([...page.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
  for(const match of read(script).matchAll(/\$\("([^"]+)"\)/g))assert(ids.has(match[1]),script+" references missing #"+match[1]);
