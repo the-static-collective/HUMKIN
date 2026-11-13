@@ -58,7 +58,7 @@ function setMediaInfo(track){
   if("mediaSession" in navigator&&typeof MediaMetadata!=="undefined"){
     try{
       navigator.mediaSession.metadata=new MediaMetadata({
-        title:track.title,artist:track.artist||"HUMKIN",album:"HUMKIN RADIO",
+        title:track.title,artist:track.artist||"HUMKIN",album:track.album||"HUMKIN RADIO",
         artwork:[{src:track.artwork||fileUrl("cover.jpg",root),sizes:"512x512",type:"image/jpeg"}]
       });
     }catch{}
@@ -69,7 +69,7 @@ function showTrack(i,position=0){
   index=i;
   const t=tracks[i];
   title.textContent=t.title;
-  artist.textContent=(t.artist||"HUMKIN")+" · "+(config?.station_name||"HUMKIN RADIO");
+  artist.textContent=(t.artist||"HUMKIN")+" · "+(t.album||config?.station_name||"HUMKIN RADIO");
   $("current-art").src=t.artwork||fileUrl("cover.jpg",root);
   $("current-art").alt=t.title+" — HUMKIN radio artwork";
   setMediaInfo(t);
@@ -239,7 +239,7 @@ async function boot(){
     }else if(config.source_type==="track_list"){
       if(!Array.isArray(config.tracks))throw Error("No provided tracks");
       tracks=config.tracks.map(t=>({
-        id:safeText(t.id),title:safeText(t.title),artist:safeText(t.artist)||"HUMKIN",
+        id:safeText(t.id),title:safeText(t.title),artist:safeText(t.artist)||"HUMKIN",album:safeText(t.album),
         duration:Number(t.duration),src:validatedSrc(t.src,here),
         artwork:t.artwork?fileUrl(t.artwork,here):fileUrl("../cover.jpg",here)
       }));
