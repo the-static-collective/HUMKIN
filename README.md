@@ -75,3 +75,11 @@ Six-up printable take-one cards: `/relay.html`, with the already-tested local no
 Keep **https://humkin.abundent.org/** as the existing full 12-track *MUTANT POP* player and artist landing page **through at least the Walmart music submission**. Do not redirect the homepage to the distribution station, replace the album hero, or replace the full player during this period. The separate standalone distribution station lives at **https://humkin.abundent.org/somewhere.html** and remains reachable from the homepage navigation, hero and note section. Do not treat the Walmart submission as complete without actual submission evidence and a separate editorial decision to change the landing experience.
 
 The regression test in `tests/site.test.mjs` guards against unintentionally replacing the home album/player or collapsing the separate station into it.
+
+## Little Music Relay — November 13, 2026
+
+**New standalone surprise-song page:** `https://humkin.abundent.org/surprise.html`. The existing six-up printable cards `/relay.html` now send QR visitors to that page rather than the album homepage. Every new visit without a song selection finds a random HUMKIN track and one manga illustration; playing is explicit, and **KEEP IT / SEND IT / FIND ANOTHER** produce a personal MP3 link, a permanent shareable song/art URL, or another gift. The main album `/` remains untouched until at least the Walmart music submission, and the distribution station remains at `/somewhere.html`.
+
+**Rights readiness:** `docs/RIGHTS-INVENTORY.md` includes every MUTANT POP track with public source references. All are marked **not yet cleared for new direct business or creator licensing** pending source, paid-plan/download, composition, recording, PRO and distributor rights verification. The personal listening relay is not represented as commercial venue music authorization.
+
+**Operations:** The service worker shell is bumped to v8 and caches the new page's assets. `tests/surprise.test.mjs` exercises gift generation, playback, sharing and browser navigation as part of GitHub Actions. The existing full-album poster still routes to the Walmart-safe homepage.

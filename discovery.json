@@ -48,8 +48,11 @@
     "synchronization": "Ask for permission before putting recordings into videos, games, podcasts, or films.",
     "redistribution": "No blanket permission to rehost, repackage, or sublicense the audio.",
     "commercial_public_performance": "May require additional rights/venue permissions; contact us before treating any soundtrack as business-licensed.",
-    "terms": "https://humkin.abundent.org/docs/DISTRIBUTION.md"
+    "terms": "https://humkin.abundent.org/docs/DISTRIBUTION.md",
+    "personal_music_gifts": "Stable one-song links may be shared. Official listening/download terms still apply. QR visits select a random song and artwork; shared links preserve both."
   },
   "analytics": "No application-level visitor analytics or client-side tracking code.",
-  "status": "Static discovery/embedding: live when deployed; public adoptions and downstream usage are not independently tracked or verified."
+  "status": "Static discovery/embedding: live when deployed; public adoptions and downstream usage are not independently tracked or verified.",
+  "surprise_song": "https://humkin.abundent.org/surprise.html",
+  "printable_music_relay": "https://humkin.abundent.org/relay.html"
 }

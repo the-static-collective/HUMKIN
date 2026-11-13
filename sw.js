@@ -1,7 +1,7 @@
 /* HUMKIN Pocket Player. Static first; no tracking, no automatic audio downloads. */
-const SHELL="humkin-shell-v7";
+const SHELL="humkin-shell-v8";
 const MUSIC="humkin-music-v1";
-const FILES=["./","./index.html","./styles.css","./gifts.css","./approved-look.css","./player.js","./gifts.js","./signup.js","./cover.jpg","./tracks.json","./privacy.html","./poster.html","./manifest.webmanifest","./somewhere.html","./somewhere.css","./somewhere.js","./embed.html","./embed.css","./embed.js","./discovery.json","./relay.html"];
+const FILES=["./","./index.html","./styles.css","./gifts.css","./approved-look.css","./player.js","./gifts.js","./signup.js","./cover.jpg","./tracks.json","./privacy.html","./poster.html","./manifest.webmanifest","./somewhere.html","./somewhere.css","./somewhere.js","./embed.html","./embed.css","./embed.js","./discovery.json","./relay.html","./surprise.html","./surprise.css","./surprise.js"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(SHELL).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",event=>{event.waitUntil((async()=>{const names=await caches.keys();await Promise.all(names.filter(n=>n.startsWith("humkin-")&&n!==SHELL&&n!==MUSIC).map(n=>caches.delete(n)));await self.clients.claim()})())});
 async function respondFromCache(request,response){
@@ -24,7 +24,7 @@ self.addEventListener("fetch",event=>{
    event.respondWith((async()=>{const cached=await (await caches.open(MUSIC)).match(url.href);return cached?respondFromCache(request,cached):fetch(request)})());return;
  }
  if(request.mode==="navigate"){
-   event.respondWith(fetch(request).catch(async()=>await (await caches.open(SHELL)).match("./index.html")||Response.error()));return;
+   event.respondWith(fetch(request).catch(async()=>{const shell=await caches.open(SHELL);return await shell.match(new URL(url.pathname,location.origin).href)||await shell.match("./index.html")||Response.error()}));return;
  }
  // Keep interface scripts and markup in sync. Older cache-first workers could
  // serve an obsolete gifts.js alongside freshly deployed HTML, disabling buttons.
