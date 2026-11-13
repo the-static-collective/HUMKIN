@@ -38,13 +38,14 @@ async function getPublishedCrate(){
     const timer=setTimeout(()=>abort.abort(),4500);
     let rows;
     try{
-      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
+      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
         {headers:{apikey:CRATE_KEY},cache:"no-cache",signal:abort.signal});
       if(!response.ok)throw Error("HTTP "+response.status);
       rows=await response.json();
     }finally{clearTimeout(timer)}
     if(!Array.isArray(rows))throw Error("Unexpected catalog response");
     return rows.map(row=>{
+      if(row.enabled===false)return null;
       const storagePath=String(row.storage_path||"");
       if(!/^[0-9a-f-]{36}\/[0-9a-f]{64}\.mp3$/.test(storagePath))return null;
       const src=CRATE_API+"/storage/v1/object/public/humkin-radio-live/"+storagePath;
