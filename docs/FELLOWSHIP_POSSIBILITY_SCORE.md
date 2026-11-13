@@ -1,9 +1,34 @@
 # HUMKIN × Fellowship — THE POSSIBILITY SCORE
 ## Experimental branch / creative field lab (not an announced Fellowship program)
 
-**Field opportunity:** December 4, 2026. The HUMKIN collaborator expects to attend Fellowship but does not yet know the event format or have confirmed operational authority. Build a portable experiment that works as a one-person guest; scale it only with organizers' permission.
+**Field opportunity:** Friday, December 4, 2026. This is **Fellowship: Family & Friends Open Mic Nights**, publicly framed as Revive Church presenting at Riverside Church, 3401 Boardman Street, Minneapolis, MN 55417. The HUMKIN creator is **an involved co-organizer, invited creative host and performer**, not simply a visitor. Paula is independently driving Fellowship and coordinating performers with the pastor's son. The creator reports actively hosting/performing; previous working invitations include approximately 20 minutes of guitar, a Paula duet, and an additional contribution. Exact set times, specific stage/MC authority, AV operator and final run of show require team coordination. Church and site approvals, budgets and final public claims remain with authorized church leads. A visitor-only version is a fallback, not the primary assumption.
 
 **Constraint:** Pretend music postcards, QR players, downloads and free music embeds are already commonplace. None of those may be counted as the innovation. The new unit of value is **an additional useful possibility that becomes real because two people encountered the music and each other**.
+
+## Verified organizing context (Drive/conversation refresh, November 13)
+
+- **One evolving event:** earlier title *Friday Night Alive* became **Fellowship**, with a public invitation *Revive Church Presents: Fellowship — Family & Friends Open Mic Nights*. Current outreach identifies Riverside Church in Minneapolis as venue; specific Revive/Riverside approval and facility authority must be confirmed rather than conflated.
+- **Paula's independent leadership:** She chose to organize Fellowship and is personally driving it; this predates and exceeds the HUMKIN music-relay experiment. Treat her as a principal collaborator and creative originator, not a contact or "distribution point." Her meat pies have been approved as part of planning. She and the pastor's son are coordinating musicians; the son has discussed a roughly 30-minute DJ segment.
+- **Creator's established role:** Active producer/host collaborator, guitarist/performer, roughly 20-minute requested set, duet with Paula and possible additional segment. Open mic, poetry, testimony, karaoke and performer transitions are part of the event, not a hypothetical optional stage permission. The exact speaking role, timing, tech and music lineup are not yet fixed.
+- **Hospitality backbone:** free admission, meal and welcome, pastor's already-existing prayer gathering; supper is associated with an older woman possibly named Deb (confirm identity). Food-shelf participation, craft/vendor tables and childcare are not yet approved delivery promises. The pastor retains final budget authority.
+- **Working clock:** supper ~5 PM, prayer ~7 PM, performances/open mic evening ~7:30/8–9:30 PM; segment times remain proposed. December 4 is confirmed by organizer. Every-other-Friday is the **selected programming cadence**, while later dates, including the January 1 holiday, require venue-calendar approval; four rotating creative hosts are part of the structure.
+- **Actual creative outputs:** a Fellowship concept album has been reported on Suno; a Rose Mary Blooms promotional film is under active edit, with a 00:36.667–00:37 musical drop, crowd, food/cake and neighborhood-action sequences. These visualized futures are artistic proposals, not documentary proof of what has happened. As of Nov 11 a roughly 62-second v3 sync edit and experimental cake-cam cut existed, not necessarily a finished full-length trailer.
+- **Already sent:** November 11 V2 outreach flyers, wallet cards, church announcement slides and invitation material were sent to Paula. Sending materials is not evidence other churches received or approved them.
+- **Already conceived:** Stone Soup / Jubilee Tonight / Who Murdered Tomorrow? / Living Press / four rotating hosts and OFFER–NEED–BUILD–QUESTION have **existing draft plans**. Don't pitch them as newly invented in this branch or as requirements for the launch.
+
+**Primary source doors:** [Reconciled Dec 4 deck](https://docs.google.com/presentation/d/1fqzipJ1vXA5ql3nadUWp_3i0TYCw7Oac/edit); [Fellowship jazz/paper v3 deck](https://docs.google.com/presentation/d/1vgAQRPeoy62qf_Pd4Q7Bx3x03HeqdMhY/edit); [Nov 2 first-night operations](https://docs.google.com/document/d/1PAqIRSLN-0qCqSlMFRYg5uCnPmX4unHlk13XN7tr5jw/edit); [Stone Soup/Jubilee working system](https://docs.google.com/document/d/1wqAzApqktSLezw2l8NCj0ebXwo29NAVtUSbCVu_3qcc/edit).
+
+## Revised Dec 4 role-appropriate integration
+
+Rather than running a separate tiny "new social experiment" in a venue where the creator already helps host and perform, design **one opt-in musical act within the actual run of show**, conditional on Paula and church-side production approval:
+
+1. **Before the room:** ask Paula and the show-caller where a 20–40-second spoken transition fits around the requested guitar set or duet, not during prayer, free supper, or another performer's slot.
+2. **Onstage:** let a performed or played HUMKIN song carry the creative moment. A single clear line offers an invitation that can continue *after* the set: "If there's a small thing you could make easier for someone here, or a thing we could make together, there's room for that conversation tonight."
+3. **Offstage:** a separate optional, staffed table already compatible with the existing OFFER / NEED / BUILD / QUESTION host kit receives only consented small opportunities; no sign-up or hardship disclosure is needed to enjoy the music.
+4. **After closing:** with permission, document exactly one independently confirmed introduction, fulfilled act, future collaborator commitment, or second-host invitation. Report failures too. Avoid collecting private stories publicly or claiming completed help from a promise.
+5. **Across the biweekly cycle:** design a tiny reprise / handoff to the next creative host. A recurring musical refrain may symbolically connect the nights, but no other host is obligated to repeat the experiment.
+
+**Innovation bar:** The event is already a *live venue, participatory open mic, hospitality table and repeatable host cycle*. The novel question is whether the music/performance can create **a measurable additional useful collaboration** without becoming a required activity, marketing funnel or claim of church endorsement. No new software is required to test that.
 
 ## The central invention hypothesis
 
@@ -40,7 +65,7 @@ A person leaves an unfinished but safe, voluntary promise—"I can teach a chord
 
 ## December 4 portable field protocol
 
-### Level 0: visitor, no event permissions or facilities
+### Level 0: fallback when only private conversation is appropriate
 Carry a pen, a few small cards, and a phone with the existing HUMKIN surprise song. Talk privately with willing adults; don't place posters or put out cards without permission.
 
 Conversation opening:
@@ -51,7 +76,7 @@ If the person isn't interested, end the exchange pleasantly. No demand to listen
 ### Level 1: one approved table or counter
 Three plainly labeled slips or bowls: **I CAN**, **I COULD USE**, **WE COULD MAKE**. Small practical exchanges only; no money obligations, no emergency services, no identifying stories exposed publicly. A human steward reviews and matches offers. Visitors may choose a HUMKIN link or card with no further interaction. At most one clear sign: **A SONG IS FREE. A LITTLE HELP IS OPTIONAL.**
 
-### Level 2: a speaking or music slot **only if invited**
+### Level 2: integrated host/performer set, subject to final production approval
 A 30–60 second invitation, not a takeover:
 > "HUMKIN is free music. Tonight we're trying one more thing: whether a song can help two people make something useful happen. If you have something small to share or a little project someone could help with, find us after this. Nothing to sign up for."
 
