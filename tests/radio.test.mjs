@@ -77,7 +77,7 @@ function fixture(config=rotation,cloudRows=[]){
   String(url).endsWith("rotation.json")?config:
   String(url).includes("/rest/v1/humkin_radio_tracks")?cloudRows:songs});
  const location=new URL(document.baseURI);
- runInNewContext(js,{window,document,navigator,location,URL,Date:Clock,Math,fetch,setTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}});
+ runInNewContext(js,{window,document,navigator,location,URL,Date:Clock,Math,fetch,AbortController,setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}});
  return {$,time,copies,listeners,session,window,document};
 }
 const newTune=fixture();await flush();
