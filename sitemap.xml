@@ -2,5 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://humkin.abundent.org/</loc></url>
   <url><loc>https://humkin.abundent.org/somewhere.html</loc></url>
-  <url><loc>https://humkin.abundent.org/poster.html</loc></url>\n  <url><loc>https://humkin.abundent.org/relay.html</loc></url>
+  <url><loc>https://humkin.abundent.org/poster.html</loc></url>
+  <url><loc>https://humkin.abundent.org/relay.html</loc></url>
+  <url><loc>https://humkin.abundent.org/surprise.html</loc></url>
 </urlset>
