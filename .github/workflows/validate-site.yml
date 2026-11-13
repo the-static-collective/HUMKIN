@@ -16,5 +16,6 @@ jobs:
       - run: node tests/distribution.test.mjs
       - run: node tests/surprise.test.mjs
       - run: node tests/commons.test.mjs
+      - run: node tests/harbor-sources.test.mjs
       - run: python3 scripts/build_dj_pack.py
       - run: node tests/dj.test.mjs
