@@ -95,7 +95,7 @@ assert.equal(f.$("listen").disabled,false,"Tune in should be enabled");
 assert.equal(f.$("air").playCount,0,"No radio autoplay");
 assert.equal(f.window.HUMKIN_RADIO.state.tracks,21);
 const sample=f.window.HUMKIN_RADIO.tuneAt(f.time.now);
-assert(sample&&sample.index>=0&&sample.index<12);
+assert(sample&&sample.index>=0&&sample.index<rotation.tracks.length);
 assert(sample.position>=0&&sample.position<initialTracks[sample.index].duration);
 assert.equal(JSON.stringify(f.window.HUMKIN_RADIO.tuneAt(f.time.now)),JSON.stringify(sample),"Shared clock must be deterministic");
 const different=f.window.HUMKIN_RADIO.tuneAt(f.time.now+initialTracks.reduce((a,t)=>a+Math.round(t.duration*1000),0));
