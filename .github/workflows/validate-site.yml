@@ -23,3 +23,4 @@ jobs:
       - run: node tests/dj.test.mjs
       - run: node tests/radio.test.mjs
       - run: node tests/radio-loader.test.mjs
+      - run: python3 tests/radio-convert.test.py
