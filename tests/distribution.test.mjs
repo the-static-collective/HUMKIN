@@ -24,15 +24,15 @@ assert(!html.includes("Google Analytics"),"Unexpected analytics");
 const QR=read("poster.html").match(/const data="([^"]+)"/)?.[1];
 assert(QR&&Buffer.from(QR,"base64").length===172,"Existing local poster QR must survive");
 class El{
- constructor(id){this.id=id;this.value="";this.textContent="";this.disabled=false;this.hidden=false;this.href="";this.src="";this.children=[];this.listeners={};this.attributes={};this.dataset={};this.playCount=0;this.currentTime=0;this.classList={toggle(){}}}
+ constructor(id){this.id=id;this.value="";this.textContent="";this.disabled=false;this.hidden=false;this.href="";this.src="";this.children=[];this.listeners={};this.attributes={};this.dataset={};this.playCount=0;this.currentTime=0;this.paused=true;this.classList={toggle(){}}}
  addEventListener(type,fn){this.listeners[type]=fn}
  setAttribute(k,v){this.attributes[k]=v}
  append(...items){this.children.push(...items)}
  replaceChildren(...items){this.children=items}
  get firstElementChild(){return this.children[0]}
- pause(){}
+ pause(){this.paused=true}
  load(){}
- play(){this.playCount++;return Promise.resolve()}
+ play(){this.paused=false;this.playCount++;return Promise.resolve()}
  click(){assert(this.listeners.click,"Missing click handler on "+this.id);return this.listeners.click({preventDefault(){}})}
  focus(){}
  select(){}
