@@ -76,7 +76,7 @@ function fixture(config=rotation){
  const fetch=async url=>({ok:true,json:async()=>String(url).endsWith("rotation.json")?config:songs});
  const location=new URL(document.baseURI);
  runInNewContext(js,{window,document,navigator,location,URL,Date:Clock,Math,fetch,setTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}});
- return {$,time,copies,listeners,session,window};
+ return {$,time,copies,listeners,session,window,document};
 }
 const newTune=fixture();await flush();
 assert.equal(newTune.$("spotlight").disabled,false);
@@ -136,4 +136,31 @@ const customF=fixture(custom);await flush();
 assert.equal(customF.window.HUMKIN_RADIO.state.tracks,2,"Curated JSON should work without modifying JavaScript");
 assert(customF.$("air").src.includes("/fm/audio/"),"Custom track URLs should resolve relative to the FM directory");
 assert(customF.$("playlist-note").textContent.includes("demo")||customF.$("playlist-note").textContent.length>0);
+
+const locked=fixture();await flush();
+locked.$("mode-shuffle").click();locked.$("listen").click();await flush();
+const lockedAudio=locked.$("air"),firstSource=lockedAudio.src;
+locked.document.visibilityState="hidden";
+let transitionsPaused=0,transitionsLoaded=0;
+const nativePause=lockedAudio.pause.bind(lockedAudio),nativeLoad=lockedAudio.load.bind(lockedAudio);
+lockedAudio.pause=()=>{transitionsPaused++;return nativePause()};
+lockedAudio.load=()=>{transitionsLoaded++;return nativeLoad()};
+lockedAudio.duration=180;lockedAudio.currentTime=179.8;
+lockedAudio.emit("timeupdate");await flush();
+assert.notEqual(lockedAudio.src,firstSource,"Locked-screen shuffle should pre-advance at track end");
+assert.equal(transitionsPaused,0,"A new track must not explicitly pause the media session");
+assert.equal(transitionsLoaded,0,"A new track must not explicitly load and reset the media session");
+assert.equal(locked.session.playbackState,"playing","Media Session must stay playing across track transitions");
+const secondSource=lockedAudio.src;lockedAudio.emit("ended");await flush();
+assert.notEqual(lockedAudio.src,secondSource,"Ended fallback must also advance when screen is hidden");
+locked.$("listen").click();await flush();
+assert.equal(locked.session.playbackState,"paused","Explicit pause should stop the media session");
+const hiddenClock=fixture();await flush();
+hiddenClock.$("listen").click();await flush();
+hiddenClock.document.visibilityState="hidden";
+const clockSource=hiddenClock.$("air").src;
+hiddenClock.time.now+=240000;hiddenClock.$("air").currentTime=15;
+hiddenClock.$("air").emit("timeupdate");await flush();
+assert.equal(hiddenClock.$("air").src,clockSource,"Hidden clock should not force resync mid-song");
+
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");

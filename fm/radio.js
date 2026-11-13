@@ -10,7 +10,7 @@ const message=$("playback-message");
 const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
-let active=false,seekToken=0,failureCount=0,lastLiveCheck=0;
+let active=false,seekToken=0,failureCount=0,lastLiveCheck=0,switching=false;
 let remoteStream=null;
 const EPOCH_FALLBACK="2026-11-13T00:00:00Z";
 const safeText=s=>typeof s==="string"?s:"";
@@ -75,17 +75,36 @@ function showTrack(i,position=0){
   setMediaInfo(t);
   counter.textContent=mode==="clock"?(remoteStream?"LIVE STREAM":"ON THE SHARED CLOCK"):(pad(cursor+1)+" / "+pad(order.length));
 }
-function updateListen(){
-  $("listen").textContent=audio.paused?"▶ TUNE IN":"Ⅱ PAUSE RADIO";
-  status.textContent=audio.paused?"READY TO TUNE IN":"✳ TUNED IN";
-  status.classList.toggle("playing",!audio.paused);
+// An explicit playing state keeps Android's media notification attached while
+// the same <audio> element switches MP3s. It cannot override OS tab suspension.
+function setPlaybackState(state){
+  if("mediaSession" in navigator){
+    try{navigator.mediaSession.playbackState=state}catch{}
+  }
 }
-function pause(){seekToken++;audio.pause();active=false;updateListen();}
+function updateListen(){
+  const playing=active&&(!audio.paused||switching);
+  $("listen").textContent=playing?"Ⅱ PAUSE RADIO":"▶ TUNE IN";
+  status.textContent=playing?"✳ TUNED IN":"READY TO TUNE IN";
+  status.classList.toggle("playing",playing);
+}
+function pause(){
+  seekToken++;switching=false;active=false;
+  audio.pause();setPlaybackState("paused");updateListen();
+}
 function setSource(src,offset,shouldPlay){
   const token=++seekToken;
-  audio.pause();
-  if(audio.src!==src)audio.src=src;
-  audio.load();
+  // The old code called pause() and load() on every song change, releasing the
+  // active media session exactly when a locked phone needed the next song.
+  // Assigning a changed src automatically starts resource selection; don't
+  // explicitly tear down the player during a background transition.
+  switching=shouldPlay;
+  active=shouldPlay;
+  setPlaybackState(shouldPlay?"playing":"paused");
+  if(!shouldPlay&&!audio.paused)audio.pause();
+  const changed=audio.src!==src;
+  if(changed)audio.src=src;
+  if(!shouldPlay)audio.load();
   const seek=()=>{
     if(token!==seekToken||!(offset>0))return;
     const target=Number.isFinite(audio.duration)?Math.min(offset,Math.max(0,audio.duration-.5)):offset;
@@ -94,14 +113,19 @@ function setSource(src,offset,shouldPlay){
   if(offset>0&&audio.readyState<1)audio.addEventListener("loadedmetadata",seek,{once:true});
   else seek();
   if(shouldPlay){
-    // Call play synchronously from a click, before awaiting metadata, to retain user activation.
-    active=true;
-    audio.play().then(()=>{failureCount=0;updateListen()}).catch(()=>{
-      active=false;
-      setMessage("Tap the audio controls to start; your browser may require another gesture.");
+    // Play immediately: no awaits/timers before play(), even for song changes.
+    audio.play().then(()=>{
+      if(token!==seekToken)return;
+      switching=false;failureCount=0;
+      setPlaybackState("playing");updateListen();
+    }).catch(()=>{
+      if(token!==seekToken)return; // A newer track superseded this attempt.
+      switching=false;active=false;
+      setPlaybackState("paused");
+      setMessage("The browser blocked the next track. Tap TUNE IN to resume.");
       updateListen();
     });
-  }else{active=false;updateListen();}
+  }else{switching=false;updateListen();}
 }
 function startClock(shouldPlay){
   if(remoteStream){
@@ -183,8 +207,16 @@ $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!au
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
-audio.addEventListener("play",()=>{active=true;updateListen();setMessage("Playing. Leave this page open to keep listening.")});
-audio.addEventListener("pause",()=>{updateListen()});
+audio.addEventListener("play",()=>{
+  active=true;setPlaybackState("playing");updateListen();
+  setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
+});
+audio.addEventListener("playing",()=>{active=true;setPlaybackState("playing");updateListen()});
+audio.addEventListener("pause",()=>{
+  // A brief internal pause during a src swap is NOT a user stop.
+  if(!switching){active=false;setPlaybackState("paused")}
+  updateListen();
+});
 audio.addEventListener("ended",()=>{
   if(!tracks.length)return;
   if(mode==="shuffle")nextShuffle(true);
@@ -206,7 +238,21 @@ document.addEventListener("visibilitychange",()=>{
   }
 });
 audio.addEventListener("timeupdate",()=>{
-  if(mode!=="clock"||remoteStream||!active||audio.paused)return;
+  if(!active||audio.paused||switching)return;
+  // Switch during the last fraction of a second if a background timeupdate
+  // arrives. The ended event remains the fallback if it doesn't.
+  const remaining=audio.duration-audio.currentTime;
+  if(Number.isFinite(remaining)&&remaining>=0&&remaining<0.35){
+    if(mode==="shuffle"){nextShuffle(true);return}
+    if(mode==="clock"&&!remoteStream){
+      const onAir=tuneAt(Date.now());
+      if(onAir&&onAir.index!==index){startClock(true);return}
+    }
+  }
+  // Don't tear down a healthy foreground media session just to resync the
+  // shared clock while the display is locked. Catch up on the next song end
+  // or on returning to the visible page.
+  if(document.visibilityState!=="visible"||mode!=="clock"||remoteStream)return;
   if(Date.now()-lastLiveCheck<12000)return;lastLiveCheck=Date.now();
   const expected=tuneAt(Date.now());
   if(expected&&(expected.index!==index||Math.abs((audio.currentTime||0)-expected.position)>9))startClock(true);
