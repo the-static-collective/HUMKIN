@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#211a38">
+<meta name="description" content="A small musical gift from HUMKIN. Open a random song, keep it, send it to a friend, or find another. No app, no ads, no account.">
+<meta property="og:type" content="music.song">
+<meta property="og:title" content="A little song found you ✳ HUMKIN">
+<meta property="og:description" content="Something good to listen to while you're waiting. A tiny, free musical surprise.">
+<meta property="og:image" content="https://humkin.abundent.org/cover.jpg">
+<meta property="og:url" content="https://humkin.abundent.org/surprise.html">
+<title>A Little Song Found You ✳ HUMKIN</title>
+<link rel="stylesheet" href="./surprise.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9C%B3%3C/text%3E%3C/svg%3E">
+<script src="./surprise.js" defer></script>
+</head>
+<body>
+<header class="sitehead">
+<a class="wordmark" href="./">HUMKIN <span aria-hidden="true">✳</span></a>
+<a class="station-link" href="./somewhere.html">PUT HUMKIN SOMEWHERE ↗</a>
+</header>
+<main class="main">
+<section class="welcome" aria-labelledby="page-heading">
+<p class="eyebrow">✳ THE LITTLE HUMKIN MUSIC RELAY ✳</p>
+<h1 id="page-heading">YOU FOUND<br><em>A SONG.</em></h1>
+<p class="welcome-copy">Somebody left a little music here. Maybe this one found you at just the right time.</p>
+</section>
+<section class="gift" aria-label="Your little musical gift">
+<div class="art-column"><figure class="art-frame"><img src="./cover.jpg" id="gift-art" width="720" height="720" alt="MUTANT POP illustrated postcard"></figure><p class="stamp" aria-hidden="true">FREE TO<br>LISTEN ✳</p></div>
+<div class="song-column">
+<p class="ticket">A LITTLE SOMETHING FOR YOU <span id="song-number">✳ 01 / 12</span></p>
+<h2 id="song-title">A SONG FOR YOU</h2>
+<p class="artist">HUMKIN · MUTANT POP</p>
+<p class="note" id="gift-note">Nothing plays until you ask it to.</p>
+<button class="play" id="gift-play" type="button" disabled aria-label="Play your HUMKIN song">▶ PLAY MY SONG</button>
+<audio id="gift-audio" preload="none" controls aria-label="Your HUMKIN song"></audio>
+<div class="gift-actions">
+<a id="gift-keep" class="button save" href="./" download aria-disabled="true">↓ KEEP IT</a>
+<button id="gift-send" type="button" class="button" disabled>↗ SEND IT</button>
+<button id="gift-next" type="button" class="button" disabled>✳ FIND ANOTHER</button>
+</div>
+<p id="gift-status" class="status" role="status" aria-live="polite">Finding a little something for you…</p>
+<label class="share-label" for="gift-link">THIS SONG'S PERMANENT GIFT LINK</label>
+<input id="gift-link" type="text" readonly aria-label="Permanent shareable link to this song" value="Loading a song…" />
+</div></section>
+<div class="fine-line"><span>NO ACCOUNT</span><span>NO ADVERTISEMENTS</span><span>NO AUTOPLAY</span><span>JUST A SONG</span></div>
+<section class="more"><h2>GOOD THINGS<br><em>TRAVEL.</em></h2><p>One song can become three. Three songs can find another person. Leave a little music somewhere it might help.</p>
+<div class="more-links"><a href="./#mixtape">MAKE A THREE-SONG POSTCARD ↗</a><a href="./relay.html">PRINT LITTLE MUSIC CARDS ↗</a><a href="./#songs">HEAR THE WHOLE RECORD ↗</a></div>
+<p class="small-print">For personal listening and sharing links. A free MP3 download does not grant permission to place the recording in films, advertisements, or business speaker systems. <a href="./somewhere.html#creators">Ask about other uses ↗</a></p>
+</section>
+</main>
+<footer><span>HUMKIN ✳ MUSIC FOR ORDINARY LIFE</span><a href="./">THE FULL RECORD ↗</a><a href="mailto:us@abundent.org">SAY HELLO ↗</a></footer>
+</body>
+</html>
