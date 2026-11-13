@@ -42,8 +42,8 @@ jobs:
                   raise ValueError(f"{name}: source hash mismatch {digest}")
               with Image.open(BytesIO(original)) as image:
                   image.load()
-                  if image.format != "PNG":
-                      raise ValueError(f"{name}: expected PNG source")
+                  if image.format not in ("JPEG", "PNG", "WEBP"):
+                      raise ValueError(f"{name}: unsupported input format {image.format}")
                   converted = image.convert("RGB")
                   output = directory / f"{name}.webp"
                   converted.save(output, format="WEBP", quality=86, method=6)
