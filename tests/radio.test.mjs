@@ -83,10 +83,11 @@ assert.equal(newTune.$("spotlight").disabled,false);
 assert.equal(newTune.$("air").playCount,0,"Spotlight must never autoplay");
 newTune.$("spotlight").click();await flush();
 assert.equal(newTune.window.HUMKIN_RADIO.state.mode,"shuffle","Spotlight must enter Road Shuffle");
-assert.equal(newTune.window.HUMKIN_RADIO.state.index,20,"Spotlight must select Leave The Kettle On");
-assert(newTune.$("current-title").textContent==="Leave The Kettle On");
-assert(newTune.$("air").src.endsWith("/fm/audio/leave-the-kettle-on.mp3"));
-assert.equal(newTune.$("air").playCount,1,"One click must actually start the new single");
+assert.equal(newTune.window.HUMKIN_RADIO.state.index,19,"Spotlight must select HaileyLu Bloom");
+assert(newTune.$("current-title").textContent==="HaileyLu Bloom");
+assert(newTune.$("air").src.endsWith("/fm/audio/haileylu-bloom.mp3"));
+assert.equal(newTune.$("air").playCount,1,"One click must actually start HaileyLu Bloom");
+assert(html.includes("HEAR THE NEW ONE · HAILEYLU BLOOM"),"Button label must match its song");
 const spotlightPlayed=new Set([newTune.window.HUMKIN_RADIO.state.index]);
 for(let i=0;i<20;i++){newTune.$("next-song").click();await flush();spotlightPlayed.add(newTune.window.HUMKIN_RADIO.state.index)}
 assert.equal(spotlightPlayed.size,21,"Spotlight-first radio must still play all twenty-one tracks without repeats");
