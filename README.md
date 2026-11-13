@@ -83,3 +83,11 @@ The regression test in `tests/site.test.mjs` guards against unintentionally repl
 **Rights readiness:** `docs/RIGHTS-INVENTORY.md` includes every MUTANT POP track with public source references. All are marked **not yet cleared for new direct business or creator licensing** pending source, paid-plan/download, composition, recording, PRO and distributor rights verification. The personal listening relay is not represented as commercial venue music authorization.
 
 **Operations:** The service worker shell is bumped to v8 and caches the new page's assets. `tests/surprise.test.mjs` exercises gift generation, playback, sharing and browser navigation as part of GitHub Actions. The existing full-album poster still routes to the Walmart-safe homepage.
+
+## DJ Desk / downloadable DJ starter crate — November 13, 2026
+
+A dedicated `/dj.html` route offers existing MUTANT POP 12-track MP3s directly to DJs, with on-page auditions, individual downloads, a real deploy-generated `/dj-pack.zip` containing the twelve MP3s, a local-path `/dj-crate.m3u8`, a metadata `/dj-crate.csv`, and `docs/DJ-PERMISSION.md`. Build tool `scripts/build_dj_pack.py` runs before GitHub Pages deployment; CI tests verify its contents. The ZIP is **not** pre-cached. WAV masters, extracted stems, BPM and keys are not fabricated and await real supplied assets.
+
+No-fee DJ use is offered only insofar as HUMKIN controls the applicable rights. Venues/streaming/broadcast have separate licensing rules. The creator reports Premier creation and no third-party remixes, recorded in the rights inventory. Suno-approved download/composition/venue checks remain for expanded licensing.
+
+**Walmart protection:** The homepage remains the full album/player, with only a small DJ nav link. The distribution station links the DJ portal separately. High-bandwidth DJ ZIP downloads may eventually require object storage rather than GitHub Pages' 100GB/month soft limit.
