@@ -1,0 +1,5 @@
+{
+  "schema_version": "commons.sources.v0.1",
+  "remote_catalogs": [],
+  "note": "Only deliberately added, publicly accessible HTTPS Freeport Harbor endpoints will load. No known home server has been connected yet."
+}
