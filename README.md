@@ -68,3 +68,10 @@ Run all three Node tests, merge the PR, verify GitHub Pages Action, then verify 
 ### Physical + embed propagation extension (Nov 13)
 
 Six-up printable take-one cards: `/relay.html`, with the already-tested local no-remote-service QR for the home page. Every embeddable player now has a small **GET THIS PLAYER** link back to the station, so one installation can inspire another without collecting visitor data. Station links to both the existing full poster and six-up cards. Offline shell updated to v7.
+
+
+## Landing-page arrangement — Walmart submission gate (November 13, 2026)
+
+Keep **https://humkin.abundent.org/** as the existing full 12-track *MUTANT POP* player and artist landing page **through at least the Walmart music submission**. Do not redirect the homepage to the distribution station, replace the album hero, or replace the full player during this period. The separate standalone distribution station lives at **https://humkin.abundent.org/somewhere.html** and remains reachable from the homepage navigation, hero and note section. Do not treat the Walmart submission as complete without actual submission evidence and a separate editorial decision to change the landing experience.
+
+The regression test in `tests/site.test.mjs` guards against unintentionally replacing the home album/player or collapsing the separate station into it.
