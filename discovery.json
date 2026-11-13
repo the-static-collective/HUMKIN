@@ -1,0 +1,55 @@
+{
+  "name": "HUMKIN · MUTANT POP",
+  "version": "1.0.0",
+  "description": "Free-to-listen music discovery, player embeds, and human sharing from HUMKIN.",
+  "website": "https://humkin.abundent.org/",
+  "distribution_station": "https://humkin.abundent.org/somewhere.html",
+  "catalog": "https://humkin.abundent.org/tracks.json",
+  "playable_widget": "https://humkin.abundent.org/embed.html",
+  "poster": "https://humkin.abundent.org/poster.html",
+  "contact": "mailto:us@abundent.org?subject=HUMKIN%20music%20use%20request",
+  "presets": {
+    "coffee": [
+      2,
+      1,
+      10
+    ],
+    "work": [
+      4,
+      8,
+      7
+    ],
+    "gym": [
+      3,
+      6,
+      12
+    ],
+    "table": [
+      5,
+      7,
+      9
+    ],
+    "night": [
+      11,
+      6,
+      10
+    ]
+  },
+  "embed_parameters": {
+    "track": "1-based track number 1-12, for a single song",
+    "mix": "three unique 1-based track numbers, zero-padded, period-separated (e.g. 01.05.09)",
+    "all": "1 for all twelve songs"
+  },
+  "permissions": {
+    "listening": "Free, no account or ads.",
+    "linking": "Permitted; share public links.",
+    "embedding": "Use the official HUMKIN iframe player on your webpage without modification.",
+    "personal_download": "Available from the official site as web-optimized MP3s.",
+    "synchronization": "Ask for permission before putting recordings into videos, games, podcasts, or films.",
+    "redistribution": "No blanket permission to rehost, repackage, or sublicense the audio.",
+    "commercial_public_performance": "May require additional rights/venue permissions; contact us before treating any soundtrack as business-licensed.",
+    "terms": "https://humkin.abundent.org/docs/DISTRIBUTION.md"
+  },
+  "analytics": "No application-level visitor analytics or client-side tracking code.",
+  "status": "Static discovery/embedding: live when deployed; public adoptions and downstream usage are not independently tracked or verified."
+}
