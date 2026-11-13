@@ -5,6 +5,8 @@
 **Purpose:** Establish which individual recordings, if any, may be directly licensed for free in-store background playback or for creators' audiovisual projects.  
 **Status:** **Not yet approved for a blanket business-use or sync license.**
 
+**November 13 creator clarification:** The HUMKIN creator reports **all twelve songs were generated while subscribed to Suno Premier**, intentionally prepared as reusable creative material, **not remixes of other artists’ songs**. That updates the paid-tier/remix status as a **creator-reported fact**, not independently audited. Suno-approved download receipts and composition/publishing/venue rights checks remain outstanding for expanded licensing. The DJ Desk offers a narrower no-fee download/local-DJ-use permission to the extent the creator controls the rights; it does not certify venues’ public performance licensing. See [DJ-PERMISSION.md](DJ-PERMISSION.md).
+
 > **Important distinction:** Finding a track in `tracks.json`, a published Suno page, or the site's existing `audio/` directory establishes a catalog reference and a hosted copy, **not proof of ownership, exclusive rights, copyrightability, or sublicensing authority**. A record marked "Not cleared" is a workflow hold, not an allegation of infringement.
 
 ## Current inventory
