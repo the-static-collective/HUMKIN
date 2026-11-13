@@ -19,7 +19,7 @@ for(const [i,track] of album.tracks.entries()){
   assert(existsSync(track.url),"Missing music file: "+track.url);
   assert(track.duration>0);
 }
-for(const id of ["feel","mixtape","received-postcard","received-play","mix-share","mix-copy","mix-play","mix-message","mix-palette","mix-one","mix-two","mix-three","save-offline"])assert(pageIds.has(id),"Missing interface id "+id);
+for(const id of ["feel","mixtape","received-postcard","received-play","mix-share","mix-copy","mix-play","mix-message","mix-one","mix-two","mix-three","save-offline"])assert(pageIds.has(id),"Missing interface id "+id);
 for(const file of ["gifts.css","poster.html","manifest.webmanifest"])assert(existsSync(file));
 assert(existsSync("approved-look.css"),"Approved hand-printed design stylesheet missing");
 assert(html.includes('href="./approved-look.css"'),"Approved design stylesheet not linked");
@@ -46,6 +46,12 @@ for(const art of posterManifest.published){
   assert(/^(cover\.jpg|postcards\/[a-z0-9-]+\.(jpg|png|webp))$/.test(art.src),"Unsafe art path");
   assert(existsSync(art.src),"Unpublished art file: "+art.src);
 }
-for(const id of ["mix-art","mix-preview-art","received-art","mix-preview-art-wrap","received-art-wrap"])assert(pageIds.has(id),"Missing art UI #"+id);
+for(const id of ["mix-preview-art","received-art","mix-preview-art-wrap","received-art-wrap"])assert(pageIds.has(id),"Missing art UI #"+id);
+for(const id of ["mix-art","mix-palette"])assert(!pageIds.has(id),"Manual postcard art/color field should be removed: "+id);
+assert(!/\b(?:artPicker|palette\.value)\b/.test(src),"Postcard code must not read removed selectors");
+assert(src.includes('chosenArtId=randomArtId()'),"A new postcard must get a random published image");
+assert(src.includes('url.searchParams.set("art",chosenArtId)'),"Share link must preserve random illustration");
+assert(src.includes('url.searchParams.set("card",chosenTheme)'),"Share link must preserve random paper color");
+assert(src.includes('drawArt("received",params.get("art")||"mutant-pop")'),"Previously shared postcard art must be preserved");
 
 console.log("HUMKIN site checks passed: 12 emoji tracks, media, postcard art manifest, offline, poster.");
