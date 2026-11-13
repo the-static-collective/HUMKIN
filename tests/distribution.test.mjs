@@ -5,7 +5,7 @@ import {runInNewContext} from "node:vm";
 const read=p=>readFileSync(p,"utf8");
 const album=JSON.parse(read("tracks.json"));
 const html=read("somewhere.html"),miniHtml=read("embed.html");
-for(const path of ["somewhere.html","somewhere.css","somewhere.js","embed.html","embed.css","embed.js","discovery.json","docs/DISTRIBUTION.md"])assert(existsSync(path),"Missing station asset: "+path);
+for(const path of ["somewhere.html","somewhere.css","somewhere.js","embed.html","embed.css","embed.js","discovery.json","docs/DISTRIBUTION.md","relay.html"])assert(existsSync(path),"Missing station asset: "+path);
 for(const js of ["somewhere.js","embed.js"])execFileSync(process.execPath,["--check",js]);
 const discovery=JSON.parse(read("discovery.json"));
 assert.equal(discovery.catalog,"https://humkin.abundent.org/tracks.json");
@@ -14,14 +14,14 @@ assert.equal(album.tracks.length,12);
 for(const entries of Object.values(discovery.presets))assert(entries.length===3&&new Set(entries).size===3&&entries.every(n=>n>=1&&n<=12));
 assert(read("index.html").includes('href="./somewhere.html"'),"Home does not link to station");
 assert(read("sw.js").includes('"./somewhere.js"')&&read("sw.js").includes('"./embed.js"'),"Offline shell must include player assets");
-assert(read("sw.js").includes("humkin-shell-v6"),"Offline shell version not bumped");
+assert(read("sw.js").includes("humkin-shell-v7"),"Offline shell version not bumped");
 for(const [page,script] of [[html,"somewhere.js"],[miniHtml,"embed.js"]]){
  const ids=new Set([...page.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
  for(const match of read(script).matchAll(/\$\("([^"]+)"\)/g))assert(ids.has(match[1]),script+" references missing #"+match[1]);
 }
 assert(html.includes("Commercial sync")||html.includes("Commercial sync,"),"Station must mention actual licensing gate");
 assert(!html.includes("Google Analytics"),"Unexpected analytics");
-const QR=read("poster.html").match(/const data="([^"]+)"/)?.[1];
+assert(html.includes('href="./relay.html"'),"Station does not link six-up physical relay");\nassert(miniHtml.includes('GET THIS PLAYER ↗'),"Embeds must make it possible to create more embeds");\nconst RELAY=read("relay.html");\nassert((RELAY.match(/class="card"/g)||[]).length===6,"Print sheet must have six unique cards");\nconst QR=read("poster.html").match(/const data="([^"]+)"/)?.[1];
 assert(QR&&Buffer.from(QR,"base64").length===172,"Existing local poster QR must survive");
 class El{
  constructor(id){this.id=id;this.value="";this.textContent="";this.disabled=false;this.hidden=false;this.href="";this.src="";this.children=[];this.listeners={};this.attributes={};this.dataset={};this.playCount=0;this.currentTime=0;this.paused=true;this.classList={toggle(){}}}
