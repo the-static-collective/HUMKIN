@@ -32,4 +32,17 @@ assert.equal(parseMix("1.13.5"),null);
 assert.equal(parseMix("not a mix"),null);
 const qr=text("poster.html").match(/const data="([^"]+)"/)?.[1];
 assert(qr&&Buffer.from(qr,"base64").length===172,"Poster QR missing or malformed");
-console.log("HUMKIN site checks passed: scripts, UI bindings, 12 songs, gifts, offline and poster.");
+const emojiButtons=[...html.matchAll(/data-juke="(\d+)"/g)].map(m=>Number(m[1]));
+assert.deepEqual(emojiButtons,Array.from({length:12},(_,i)=>i+1),"Jukebox must expose each track exactly once");
+assert(!html.includes('class="mood-grid"'),"Old bulky song-machine layout must be absent");
+const posterManifest=JSON.parse(text("postcards.json"));
+assert(posterManifest.published.length>=1,"At least one real artwork must be available");
+assert(posterManifest.published.some(a=>a.id==="mutant-pop"),"Original MUTANT POP cover must remain a safe fallback");
+for(const art of posterManifest.published){
+  assert(/^[a-z0-9-]+$/.test(art.id),"Invalid postcard art ID");
+  assert(/^(cover\.jpg|postcards\/[a-z0-9-]+\.(jpg|png|webp))$/.test(art.src),"Unsafe art path");
+  assert(existsSync(art.src),"Unpublished art file: "+art.src);
+}
+for(const id of ["mix-art","mix-preview-art","received-art","mix-preview-art-wrap","received-art-wrap"])assert(pageIds.has(id),"Missing art UI #"+id);
+
+console.log("HUMKIN site checks passed: 12 emoji tracks, media, postcard art manifest, offline, poster.");
