@@ -1,0 +1,60 @@
+/* HUMKIN Little Human Machine — no frameworks, no tracking. */
+.received[hidden],.mix-link-fallback[hidden]{display:none!important}
+.gift-section-inner{max-width:1140px;margin:auto}
+.gift-eyebrow{font-size:12px;letter-spacing:.18em;font-weight:950;text-transform:uppercase;color:#69478b}
+.mood-section{padding:84px 5% 94px;background:#f2e9db;scroll-margin-top:10px}
+.mood-section h2,.mix-section h2{font-size:clamp(45px,7.5vw,104px);line-height:.94;letter-spacing:-.065em;margin:14px 0 22px}
+.mood-section h2 em,.mix-section h2 em{font-style:normal;color:#a3548e}
+.mood-section .gift-section-inner>p:not(.gift-eyebrow){max-width:650px;font-size:18px}
+.mood-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px;margin:35px 0 19px}
+.mood-grid button{background:#fffaf0;border:2px solid #241c39;border-radius:12px;text-align:left;min-height:177px;padding:18px 14px;box-shadow:5px 5px 0 #ddc3db;color:#251a38;display:flex;flex-direction:column;transition:transform .18s ease,box-shadow .18s ease}
+.mood-grid button:hover,.mood-grid button:focus-visible{transform:translateY(-4px);box-shadow:5px 9px 0 #d49cc5}
+.mood-grid button span{font:800 39px/1 Georgia,serif;color:#a0588f;margin-bottom:auto}
+.mood-grid button strong{font-size:16px;line-height:1.14;letter-spacing:-.02em;margin-top:15px}
+.mood-grid button small{margin-top:8px;font-size:12px;color:#655575}
+.mood-status{font-size:14px!important;font-weight:750;color:#5c3f73;min-height:1.8em}
+.mix-section{background:#f5dddf;padding:90px 5% 100px;scroll-margin-top:12px;overflow:hidden}
+.mix-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:clamp(40px,6vw,100px);align-items:center}
+.mix-maker>p:not(.gift-eyebrow){font-size:17px;line-height:1.55;max-width:520px}
+.mix-fields{display:grid;gap:7px;margin:32px 0 20px}
+.mix-fields label{font-weight:950;font-size:11px;letter-spacing:.17em;margin-top:11px;color:#4e3965}
+.mix-fields select,.mix-fields textarea{font:600 15px/1.4 system-ui,sans-serif;width:100%;background:#fffdf6;color:#271e3e;border:2px solid #3b2b4e;border-radius:7px;padding:13px 12px}
+.mix-fields textarea{min-height:80px;resize:vertical}
+.gift-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.gift-buttons button,.gift-buttons a{border-radius:50px;text-decoration:none;font-size:12px;font-weight:950;letter-spacing:.06em;padding:14px 17px;line-height:1.2;cursor:pointer}
+.gift-primary{background:#241a39;color:#fff9e9;border:2px solid #241a39}
+.gift-primary:hover{background:#4a3070}
+.gift-secondary{background:transparent;color:#241a39;border:2px solid #241a39}
+.gift-secondary:hover{background:#fffaf0}
+.gift-status{font-weight:850;font-size:14px;min-height:1.6em;color:#4c3671}
+.gift-status[data-kind="error"]{color:#9d253c}
+.gift-footnote{font-size:12px!important;line-height:1.5!important;opacity:.75;margin-top:15px;max-width:490px}
+.mix-link-fallback{width:100%;padding:10px;background:white;border:2px solid #241a39;border-radius:5px}
+.postcard-paper{background:#ffe6b4;color:#25203b;border:3px solid #28203b;border-radius:8px;box-shadow:14px 14px 0 #302343;position:relative;padding:clamp(28px,5vw,56px);overflow:hidden;isolation:isolate}
+.postcard-paper:after{content:"✳";position:absolute;right:-30px;bottom:-86px;color:#ffffff52;font:900 310px/1 Georgia,serif;z-index:-1}
+.color-sun{background:#ffe6b4}.color-rose{background:#f9ced9}.color-sky{background:#cde9ec}
+.postcard-paper h3{font-size:clamp(38px,4vw,70px);line-height:.95;letter-spacing:-.05em;margin:24px 0}
+.postcard-message{font:italic 21px/1.35 Georgia,serif;margin:24px 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.gift-tracks{list-style:none;padding:0;margin:25px 0 15px;position:relative;z-index:1}
+.gift-tracks li{display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid #271d3f50;font-size:15px;line-height:1.3}
+.gift-tracks li:last-child{border-bottom:1px solid #271d3f50}
+.gift-tracks li span{font-weight:950;opacity:.62}
+.gift-tracks li strong{font-weight:850}
+.preview-stamp{display:inline-block;float:right;transform:rotate(12deg);border:2px solid #7d4d85;padding:12px 10px;text-align:center;border-radius:50%;font-size:9px;font-weight:950;line-height:1.2;color:#7d4d85}
+.postcard-signoff{font-size:11px;letter-spacing:.16em;font-weight:950;margin:35px 0 0}
+.mix-preview-wrap{min-width:0}.mix-preview{transform:rotate(1.4deg)}
+.preview-caption{font-size:12px;text-align:center;margin-top:32px;color:#59455f}
+.received{background:#342146;padding:70px 5%;scroll-margin-top:20px}
+.received-inner{max-width:850px;margin:auto}
+.received .postcard-paper{transform:rotate(-.5deg);padding:clamp(35px,5vw,65px)}
+.received h2{font-size:clamp(45px,7vw,85px);line-height:.91;letter-spacing:-.07em}
+.received h2 em{font-style:normal;color:#98549b}
+.received .gift-tracks{max-width:620px}
+.received .gift-status{margin-bottom:0}
+.is-playing .art-back{animation:humkinFloat 6s ease-in-out infinite alternate}
+.is-playing .cover{animation:humkinTilt 8s ease-in-out infinite alternate}
+@keyframes humkinFloat{to{transform:rotate(-4deg) scale(1.015)}}
+@keyframes humkinTilt{to{transform:rotate(1deg) translateY(-4px)}}
+@media(max-width:980px){.mood-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mix-layout{grid-template-columns:1fr;gap:50px}.mix-preview-wrap{max-width:650px;margin:auto;width:100%}}
+@media(max-width:640px){.mood-section,.mix-section{padding:65px 5% 75px}.mood-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mood-grid button{min-height:149px;padding:13px}.mood-grid button span{font-size:30px}.mood-grid button strong{font-size:14px}.mood-grid button small{font-size:11px}.mood-grid button:last-child{grid-column:1 / -1;min-height:85px;display:grid;grid-template-columns:45px 1fr;align-content:center;gap:0}.mood-grid button:last-child span{grid-row:span 2;margin:0}.mood-grid button:last-child strong{margin:0}.mix-preview{transform:none;box-shadow:7px 7px 0 #302343}.received{padding:45px 5%}.received .postcard-paper{transform:none;box-shadow:7px 7px 0 #302343}.gift-buttons button,.gift-buttons a{padding:12px 15px}.postcard-message{font-size:18px}}
+@media(prefers-reduced-motion:reduce){.is-playing .cover,.is-playing .art-back{animation:none}.mood-grid button{transition:none}.mood-grid button:hover,.mood-grid button:focus-visible{transform:none}}
