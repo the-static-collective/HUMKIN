@@ -1,6 +1,6 @@
 # HUMKIN — everywhere;near you — release gate
 
-**Status:** DRAFT / NOT LIVE. Do not merge until the cover and all seven listening files are present and the author clears publication.
+**Status:** Preview media and cover staged; full release approved for publication of the standalone listening room. This is separate from commercial distributor submission, which still requires verified masters and rights metadata.
 
 The user-approved seven-song sequence is a fluid repeating album experience. The main MUTANT POP homepage must remain intact for the pending Walmart submission, per `README.md`. This release has its own route `/releases/everywhere-near-you/`, with user-started playback, seven-song order, and repeat toggled on by default. No autoplay.
 
@@ -20,9 +20,9 @@ The user-approved seven-song sequence is a fluid repeating album experience. The
 - **Release type:** Artist describes this as an EP. DistroKid says 7+ tracks are generally classified as an album by stores.
 - **Production masters:** Not yet supplied/verified. The seven chat MP3s contain 64 kb/s audio streams; do not transcode the lossy streams to WAV and misrepresent them as lossless distributor masters.
 
-## Files needed before this can be merged
+## Media files for the website
 
-Upload files to the branch with the exact names below. They are deliberately **not present yet** in this pull request.
+The approved cover is staged at `releases/everywhere-near-you/cover.jpg`. The seven correct preview MP3s are stored as verified binary Git parts in `audio/.parts/`; `scripts/assemble-everywhere-near-you.mjs` concatenates and validates them during CI and GitHub Pages deployment. The seven published paths are:
 
 - `releases/everywhere-near-you/cover.jpg` — manga release cover, square, from the approved image.
 - `releases/everywhere-near-you/audio/01_home_with_you.mp3` — **correct** 2:59 recording from `Home With You (1).mp3`, **not** the other 4:03 recording.
@@ -33,7 +33,7 @@ Upload files to the branch with the exact names below. They are deliberately **n
 - `releases/everywhere-near-you/audio/06_there_by_two.mp3`
 - `releases/everywhere-near-you/audio/07_blue_bowl_rings.mp3`
 
-The complete upload-ready static release directory, image exports, MP3 previews, rights checklist, metadata CSV, and outreach copy were prepared in a downloadable **release kit** in the conversation. Upload the media from that kit to this branch before merging.
+The preview file byte sequences and artwork checksums are tested on the PR before publication. The separate complete release kit remains available in the conversation. Do not confuse this preview publication with DSP distribution.
 
 ## Before publishing / distributing
 
@@ -41,8 +41,8 @@ The complete upload-ready static release directory, image exports, MP3 previews,
 2. Retrieve approved lossless masters. Distributing the 64 kb/s chat MP3 previews is discouraged.
 3. Fill missing songwriter/collaborator legal names, release date, explicit flags, genre, existing ISRCs (if any), and any preexisting distributor obligations.
 4. Verify the square artwork against distributor standards. The 3000px JPG exported from the 1254px original is an upscale, not new source detail.
-5. Confirm real on-device playback of all seven tracks, deep-link `?track=07`, next/previous, repeat on/off, no autoplay, working artwork, HTTPS, and no broken links.
-6. Only after that, add a discreet link from the main HUMKIN page and distribution station. Preserve the existing full MUTANT POP landing/player and random postcard functionality.
+5. Confirm actual live/mobile playback of all seven tracks after deployment, deep-link `?track=07`, next/previous, repeat on/off, no autoplay, working artwork, HTTPS, and no broken links. GitHub Actions assembly and repository tests are necessary but not sufficient.
+6. Do not redirect or replace the main HUMKIN landing page before the Walmart submission. A separate listening room may be published at `/releases/everywhere-near-you/` without changing existing navigation. Add a discreet cross-link only after actual live verification and when the submission-sensitive front page may change.
 
 **Business placement:** A personal listening URL, public MP3, or QR card is not an automatic business public-performance license. Follow the separate `docs/RIGHTS-INVENTORY.md` gate and venue-specific clearance.
 
