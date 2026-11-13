@@ -64,3 +64,7 @@
 .mix-preview .postcard-art{margin-top:15px}
 .received .postcard-art{max-width:570px}
 @media(max-width:640px){.postcard-art{aspect-ratio:4/3}.emoji-jukebox-scroll{scroll-padding:0 20px}}
+
+/* Postcard art: show complete square, portrait, and extra-wide manga illustrations without cropping. */
+.postcard-art{aspect-ratio:auto}
+.postcard-art img{width:100%;height:auto;object-fit:contain;object-position:center;display:block}
