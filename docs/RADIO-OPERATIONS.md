@@ -108,3 +108,9 @@ A phone's ordinary browser can send audio to car stereo by Bluetooth or USB, dep
 A browser-simulated rotation adds no standing server instance, though file serving, site traffic and storage have real limits. An actual live stream costs network bandwidth and an always-on host. Scaling beyond a small pilot should prioritize a stable host/relay, audio pipeline, copyright compliance and access to existing radio directories rather than buying promotion.
 
 **The release gate for this first PR:** Only the station page and demo rotation may go live. Do **not** claim the creator's new unpublished playlist or a continuously transmitting 24/7 stream was uploaded or activated.
+
+## Verified expansion: `everywhere;near you` (November 13)
+
+The first additional album was already published independently at `/releases/everywhere-near-you/` with seven assembled and SHA-256 verified **web preview** MP3s. We have now included those seven in the radio rotation, making **19 total selections**: 12 from `MUTANT POP`, seven from `everywhere;near you`. Each entry declares its album, accurate file duration, relative source path and album cover. `fm/rotation.json` uses `source_type: track_list` and `status: expanded_rotation`. Playback still represents browser radio, not a remote live broadcast.
+
+The seven new files are 64 kb/s preview encodes, materially below intended radio-quality audio, so they should be replaced with approved original-quality audio exports prior to promoting a serious broadcast or distributing the radio station to directories. The creator's separate *radio-vibes* playlist is not yet published. Updated CI assembles the verified MP3 parts before checking all nineteen actual files and shuffle/clock behavior.
