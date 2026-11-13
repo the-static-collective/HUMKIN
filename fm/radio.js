@@ -86,21 +86,22 @@ function setSource(src,offset,shouldPlay){
   audio.pause();
   if(audio.src!==src)audio.src=src;
   audio.load();
-  const begin=()=>{
-    if(token!==seekToken)return;
-    if(Number.isFinite(offset)&&offset>0&&Number.isFinite(audio.duration)){
-      try{audio.currentTime=Math.min(offset,Math.max(0,audio.duration-.5))}catch{}
-    }else if(Number.isFinite(offset)&&offset>0){
-      try{audio.currentTime=offset}catch{}
-    }
-    if(shouldPlay){
-      active=true;
-      audio.play().then(()=>{failureCount=0;updateListen()}).catch(()=>{active=false;setMessage("Tap the audio controls to start; your browser may require another gesture.");updateListen()});
-    }else{active=false;updateListen();}
+  const seek=()=>{
+    if(token!==seekToken||!(offset>0))return;
+    const target=Number.isFinite(audio.duration)?Math.min(offset,Math.max(0,audio.duration-.5)):offset;
+    try{audio.currentTime=target}catch{}
   };
-  if(offset>0&&audio.readyState<1){
-    audio.addEventListener("loadedmetadata",begin,{once:true});
-  }else begin();
+  if(offset>0&&audio.readyState<1)audio.addEventListener("loadedmetadata",seek,{once:true});
+  else seek();
+  if(shouldPlay){
+    // Call play synchronously from a click, before awaiting metadata, to retain user activation.
+    active=true;
+    audio.play().then(()=>{failureCount=0;updateListen()}).catch(()=>{
+      active=false;
+      setMessage("Tap the audio controls to start; your browser may require another gesture.");
+      updateListen();
+    });
+  }else{active=false;updateListen();}
 }
 function startClock(shouldPlay){
   if(remoteStream){
@@ -198,7 +199,7 @@ audio.addEventListener("timeupdate",()=>{
 });
 if("mediaSession" in navigator){
   try{
-    navigator.mediaSession.setActionHandler("play",startRadio);
+    navigator.mediaSession.setActionHandler("play",()=>{if(audio.paused)startRadio()});
     navigator.mediaSession.setActionHandler("pause",pause);
     navigator.mediaSession.setActionHandler("stop",pause);
     navigator.mediaSession.setActionHandler("nexttrack",()=>{if(mode==="shuffle")nextShuffle(true)});
