@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "published": [
+    {
+      "id": "mutant-pop",
+      "title": "Mutant Pop • The First Room",
+      "family": "home",
+      "era": "young",
+      "src": "cover.jpg",
+      "alt": "MUTANT POP album art: the original manga couple together in their colorful music-filled room.",
+      "aspect": "square"
+    }
+  ],
+  "ideas": [
+    {
+      "id": "blue-cup-morning",
+      "title": "Blue Cup Morning",
+      "scene": "They share tea beside a kitchen window; blue-rimmed chipped cup and peaches."
+    },
+    {
+      "id": "walk-home",
+      "title": "Walk Home",
+      "scene": "They walk home with groceries in pink-blue dusk; casual laughter."
+    },
+    {
+      "id": "rosemary-garden",
+      "title": "Rosemary Garden",
+      "scene": "They plant rosemary by a fence in midday sun; warm garden dirt."
+    },
+    {
+      "id": "under-the-stars",
+      "title": "Under the Stars",
+      "scene": "They sit under a quilt after sunset, guitar nearby, fireflies above."
+    },
+    {
+      "id": "rainy-window",
+      "title": "Rain at the Window",
+      "scene": "They sit with mugs watching a rainy town; tender quiet."
+    },
+    {
+      "id": "table-for-two",
+      "title": "Another Chair",
+      "scene": "They make room at a humble communal table with folding chairs."
+    },
+    {
+      "id": "home-doorway",
+      "title": "Door Left Open",
+      "scene": "One opens a painted blue door while the other carries plants home."
+    },
+    {
+      "id": "years-later",
+      "title": "Years Later",
+      "scene": "Older couple, longer-haired bearded man wearing black-framed glasses, comfortable after decades of ordinary days."
+    }
+  ]
+}

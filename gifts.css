@@ -2,17 +2,15 @@
 .received[hidden],.mix-link-fallback[hidden]{display:none!important}
 .gift-section-inner{max-width:1140px;margin:auto}
 .gift-eyebrow{font-size:12px;letter-spacing:.18em;font-weight:950;text-transform:uppercase;color:#69478b}
-.mood-section{padding:84px 5% 94px;background:#f2e9db;scroll-margin-top:10px}
-.mood-section h2,.mix-section h2{font-size:clamp(45px,7.5vw,104px);line-height:.94;letter-spacing:-.065em;margin:14px 0 22px}
-.mood-section h2 em,.mix-section h2 em{font-style:normal;color:#a3548e}
-.mood-section .gift-section-inner>p:not(.gift-eyebrow){max-width:650px;font-size:18px}
-.mood-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px;margin:35px 0 19px}
-.mood-grid button{background:#fffaf0;border:2px solid #241c39;border-radius:12px;text-align:left;min-height:177px;padding:18px 14px;box-shadow:5px 5px 0 #ddc3db;color:#251a38;display:flex;flex-direction:column;transition:transform .18s ease,box-shadow .18s ease}
-.mood-grid button:hover,.mood-grid button:focus-visible{transform:translateY(-4px);box-shadow:5px 9px 0 #d49cc5}
-.mood-grid button span{font:800 39px/1 Georgia,serif;color:#a0588f;margin-bottom:auto}
-.mood-grid button strong{font-size:16px;line-height:1.14;letter-spacing:-.02em;margin-top:15px}
-.mood-grid button small{margin-top:8px;font-size:12px;color:#655575}
-.mood-status{font-size:14px!important;font-weight:750;color:#5c3f73;min-height:1.8em}
+.emoji-jukebox{background:#f2e9db;padding:14px 3%;scroll-margin-top:8px;border-top:1px solid #e2d4dc;border-bottom:1px solid #e2d4dc}
+.emoji-jukebox-scroll{display:flex;align-items:center;justify-content:center;gap:clamp(5px,1vw,14px);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#ae94bd transparent;max-width:1090px;margin:auto;padding:8px 2px 12px}
+.juke-emoji{flex:0 0 auto;width:clamp(51px,5.2vw,72px);height:clamp(52px,5.2vw,72px);border:2px solid transparent;border-radius:16px;background:transparent;display:grid;place-items:center;font-size:clamp(24px,2.9vw,34px);line-height:1;scroll-snap-align:center;box-shadow:none;transition:background .18s ease,transform .18s ease,border .18s ease}
+.juke-emoji:hover,.juke-emoji:focus-visible{background:#fffaf0;border-color:#d9bad7;transform:translateY(-3px)}
+.juke-emoji.is-selected{background:#ffefbd;border-color:#3e2b58;box-shadow:3px 3px 0 #b99ec1}
+.juke-emoji span{filter:drop-shadow(0 1px 0 #fff7)}
+.mix-section h2{font-size:clamp(45px,7.5vw,104px);line-height:.94;letter-spacing:-.065em;margin:14px 0 22px}
+.mix-section h2 em{font-style:normal;color:#a3548e}
+@media(max-width:850px){.emoji-jukebox{padding:9px 3%}.emoji-jukebox-scroll{justify-content:flex-start;gap:6px}.juke-emoji{width:55px;height:55px;font-size:28px}}
 .mix-section{background:#f5dddf;padding:90px 5% 100px;scroll-margin-top:12px;overflow:hidden}
 .mix-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:clamp(40px,6vw,100px);align-items:center}
 .mix-maker>p:not(.gift-eyebrow){font-size:17px;line-height:1.55;max-width:520px}
@@ -58,3 +56,11 @@
 @media(max-width:980px){.mood-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mix-layout{grid-template-columns:1fr;gap:50px}.mix-preview-wrap{max-width:650px;margin:auto;width:100%}}
 @media(max-width:640px){.mood-section,.mix-section{padding:65px 5% 75px}.mood-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mood-grid button{min-height:149px;padding:13px}.mood-grid button span{font-size:30px}.mood-grid button strong{font-size:14px}.mood-grid button small{font-size:11px}.mood-grid button:last-child{grid-column:1 / -1;min-height:85px;display:grid;grid-template-columns:45px 1fr;align-content:center;gap:0}.mood-grid button:last-child span{grid-row:span 2;margin:0}.mood-grid button:last-child strong{margin:0}.mix-preview{transform:none;box-shadow:7px 7px 0 #302343}.received{padding:45px 5%}.received .postcard-paper{transform:none;box-shadow:7px 7px 0 #302343}.gift-buttons button,.gift-buttons a{padding:12px 15px}.postcard-message{font-size:18px}}
 @media(prefers-reduced-motion:reduce){.is-playing .cover,.is-playing .art-back{animation:none}.mood-grid button{transition:none}.mood-grid button:hover,.mood-grid button:focus-visible{transform:none}}
+
+/* Illustration slot: future artwork becomes available by adding a manifest entry. */
+.postcard-art{border:2px solid #312542;border-radius:8px;overflow:hidden;background:#fff9e7;margin:18px 0 22px;aspect-ratio:8/5;position:relative;box-shadow:4px 4px 0 #31254266}
+.postcard-art[hidden]{display:none!important}
+.postcard-art img{width:100%;height:100%;object-fit:cover;object-position:center 47%;display:block}
+.mix-preview .postcard-art{margin-top:15px}
+.received .postcard-art{max-width:570px}
+@media(max-width:640px){.postcard-art{aspect-ratio:4/3}.emoji-jukebox-scroll{scroll-padding:0 20px}}
