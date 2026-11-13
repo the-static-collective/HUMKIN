@@ -15,7 +15,7 @@ const a=JSON.parse(read("tracks.json")),arts=JSON.parse(read("postcards.json"));
 assert.equal(a.tracks.length,12);
 const rights=read("docs/RIGHTS-INVENTORY.md");
 for(const t of a.tracks)assert(rights.includes(t.source)&&rights.includes(t.title),"Rights ledger missing "+t.title);
-assert.equal((rights.match(/\*\*Not cleared\*\*/g)||[]).length,12,"No songs may be assumed licensed for business playback");
+assert.equal(rights.split("\n").filter(line=>/^\|\s*\d{2}\s*\|/.test(line)&&line.includes("**Not cleared**")).length,12,"No songs may be assumed licensed for business playback");
 const relay=read("relay.html");
 const poster=read("poster.html");
 const qr=relay.match(/const size=37,data="([^"]+)"/)?.[1];
