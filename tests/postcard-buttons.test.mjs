@@ -46,7 +46,7 @@ function boot(href){
   const log={mixtapes:[],copies:[],shares:[]};
   const player={
     tracks:Array.from({length:12},(_,i)=>({number:i+1,title:"Song "+(i+1)})),
-    playMixtape:ids=>{log.mixtapes.push(ids);return true},
+    playMixtape:ids=>{log.mixtapes.push(Array.from(ids));return true},
     playTrack:()=>true,currentTrack:1
   };
   const window={HUMKIN_PLAYER:player,addEventListener(){},isSecureContext:true};
