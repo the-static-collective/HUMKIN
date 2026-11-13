@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#271d42"><meta name="robots" content="noindex,nofollow">
+<title>HUMKIN RADIO · Station Manager</title>
+<link rel="stylesheet" href="../radio.css">
+<style>
+:root{color-scheme:light;--ink:#261d3e;--rose:#ffe3e2;--cream:#fff8eb;--lemon:#ffe77a;--mint:#caffdf}
+body{background:var(--cream);color:var(--ink)}
+main{max-width:1110px;margin:0 auto;padding:20px 14px 100px}
+h1{font-size:clamp(3rem,8vw,6rem);line-height:.92;letter-spacing:-.06em;margin:12px 0 20px}
+h2{margin:.1em 0 .6em;font-size:clamp(1.5rem,4vw,2.1rem)}
+h3{margin:0;font-size:1.06rem}
+p{line-height:1.48}
+section,.block{border:3px solid var(--ink);background:white;border-radius:13px;box-shadow:5px 6px 0 var(--ink);padding:17px;margin:17px 0}
+.rose{background:var(--rose)}.mint{background:var(--mint)}
+button,.button,select,input:not([type=checkbox]),textarea{font:inherit;color:var(--ink)}
+button,.button{background:var(--lemon);border:2px solid var(--ink);border-radius:9px;font-weight:800;padding:10px 14px;cursor:pointer;display:inline-block;text-decoration:none;line-height:1.2}
+button.primary{background:var(--mint)}button.secondary{background:white}button.danger{background:#ffbec5}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid #ec8fb6}
+input:not([type=checkbox]),select{border:2px solid var(--ink);border-radius:8px;padding:9px;background:#fff;max-width:100%;box-sizing:border-box}
+input[type=checkbox]{width:21px;height:21px;accent-color:var(--ink);vertical-align:middle}
+label{display:block;font-weight:800;margin:7px 0}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+.pill{font-size:.77rem;font-weight:900;border:1px solid var(--ink);border-radius:12px;padding:3px 8px;background:#f4f0ff}
+.sub{font-size:.85rem;color:#5a536b;overflow-wrap:anywhere}
+#auth-status,#manager-msg{font-weight:800;min-height:26px}
+#now{font-size:1.2rem;font-weight:800}
+#stats{font-size:1.13rem;font-weight:800}
+#track-search{min-width:220px;flex:1}
+#catalog{max-height:720px;overflow:auto;padding:2px}
+.track{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;border-bottom:1px solid #cec5d2;padding:12px 2px}
+.track:last-child{border:0}
+.track.disabled{opacity:.55}
+.track-title{font-size:1.04rem;font-weight:900;word-break:break-word}
+.track-info{font-size:.81rem;opacity:.85;overflow-wrap:anywhere}
+.track-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.track-actions button{padding:6px 9px;font-size:.83rem}
+.tagline{margin:7px 0}
+#show-list{display:grid;gap:9px}
+.show{border:2px solid var(--ink);border-radius:9px;padding:12px;background:#fffbf2}
+.show.inactive{opacity:.6}
+.show small{display:block;margin:6px 0}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.form-grid input,.form-grid select{width:100%}
+.days{display:flex;flex-wrap:wrap;gap:7px}
+.days label{padding:7px 8px;border:1px solid var(--ink);border-radius:6px;background:#fff;margin:0;white-space:nowrap}
+#slot-list{margin:10px 0;padding-left:28px;max-height:310px;overflow:auto}
+#slot-list li{padding:6px 2px;border-bottom:1px solid #c8bebe}
+#slot-list button{padding:3px 8px}
+audio{width:100%;max-width:450px;margin-top:8px}
+dialog{border:3px solid var(--ink);border-radius:14px;box-shadow:10px 10px 0 var(--ink);padding:24px;background:var(--cream);color:var(--ink);width:min(94vw,540px)}
+dialog::backdrop{background:rgba(18,10,31,.68)}
+dialog input:not([type=checkbox]),dialog select{width:100%}
+#edit-source{word-break:break-all}
+.hidden{display:none!important}
+@media(max-width:740px){.grid,.form-grid{grid-template-columns:1fr}.track{grid-template-columns:auto 1fr}.track-actions{grid-column:2;justify-content:flex-start}}
+</style>
+<script defer src="../scheduler.js"></script>
+<script type="module" src="./manager.js"></script>
+</head><body>
+<header class="topline"><a href="../" class="brand">HUMKIN <span>✳</span></a><span class="station-id">STATION MANAGER / PRIVATE</span><a href="../" class="dj-link">← RADIO</a></header>
+<main>
+<p class="eyebrow">BACKSTAGE · CONTROL DESK / 001</p>
+<h1>RUN THE<br><em>DIAL.</em></h1>
+<p>Rename recordings, distinguish repeated titles, air or hide tracks, mark station IDs and bumpers, and build repeating shows for different parts of the day. Your original audio is never edited when you change metadata.</p>
+<section class="rose">
+<h2>✳ Owner access</h2>
+<p id="auth-status" role="status">Checking your existing HUMKIN sign-in…</p>
+<div class="row"><a class="button" id="login-link" href="../load/">SIGN IN VIA THE CRATE LOADER ↗</a><button class="secondary" id="refresh">REFRESH DESK</button><button class="secondary" id="logout">SIGN OUT</button></div>
+<p class="sub">This backstage screen shares your existing Supabase session with the crate loader. It does not reveal private controls to ordinary listeners.</p>
+</section>
+<div class="grid">
+<section class="mint">
+<h2>ON THE AIR</h2>
+<p id="now">Reading the station clock…</p>
+<p id="stats">Reading the library…</p>
+<p class="sub">All recurring show times use <strong>America/Chicago (Central)</strong>, including daylight-saving changes. Scheduled programming affects the <strong>Same-Time</strong> player after refresh; Road Shuffle remains your personal all-music rotation.</p>
+</section>
+<section>
+<h2>Preview player</h2>
+<p class="sub" id="preview-label">Press PREVIEW beside a track. Nothing autoplays.</p>
+<audio id="preview" controls preload="none"></audio>
+<div class="row"><a class="button" href="../load/">LOAD MORE SONGS ↗</a><a class="button secondary" href="../">HEAR THE STATION ↗</a></div>
+</section>
+</div>
+<section id="library">
+<h2>01 · The record library</h2>
+<div class="row">
+<input type="search" id="track-search" placeholder="Find title, artist, album, filename…" aria-label="Search songs">
+<select id="filter" aria-label="Library filter">
+<option value="all">ALL RECORDINGS</option><option value="songs">SONGS</option>
+<option value="bumpers">BUMPERS / STATION IDs</option><option value="hidden">OFF AIR</option>
+<option value="cloud">CLOUD UPLOADS</option><option value="static">ORIGINAL 21</option>
+</select>
+</div>
+<p class="sub">Each row shows the <strong>original filename or source ID</strong> so two different songs can share a display title. The original 21 are managed as metadata overrides; their website audio files cannot be permanently deleted here.</p>
+<div id="catalog" aria-live="polite"><p>Loading tracks…</p></div>
+<div class="row"><button class="secondary" id="bulk-on">ENABLE SELECTED</button><button class="secondary" id="bulk-off">HIDE SELECTED</button><button class="secondary" id="clear-selected">CLEAR CHECKS</button><span class="sub" id="selected-count">0 selected</span></div>
+</section>
+<section id="programming">
+<h2>02 · Program the day</h2>
+<p>Build a recurring block—Morning Drive, Midnight Garden, Sunday Gospel, whatever fits. Add tracks in order; repeat a short bumper anywhere in the list. When a block ends, the normal station rotation returns.</p>
+<div id="show-list"><p>Loading scheduled shows…</p></div>
+<div class="row"><button id="new-show" class="primary">+ MAKE A NEW SHOW</button></div>
+<div class="block hidden" id="show-form">
+<h3 id="show-editor-title">NEW TIME SLOT</h3>
+<div class="form-grid">
+<div><label for="show-name">Show name</label><input id="show-name" maxlength="100" placeholder="Blue Hour Radio"></div>
+<div><label for="show-priority">Priority (overlap winner)</label><input id="show-priority" type="number" min="0" max="100" value="0"></div>
+<div><label for="show-start">Start / Central Time</label><input id="show-start" type="time" value="07:00"></div>
+<div><label for="show-end">End / Central Time</label><input id="show-end" type="time" value="09:00"></div>
+</div>
+<p><strong>Repeat on these days</strong></p>
+<div id="show-days" class="days">
+<label><input type="checkbox" name="show-day" value="0" checked> SUN</label>
+<label><input type="checkbox" name="show-day" value="1" checked> MON</label>
+<label><input type="checkbox" name="show-day" value="2" checked> TUE</label>
+<label><input type="checkbox" name="show-day" value="3" checked> WED</label>
+<label><input type="checkbox" name="show-day" value="4" checked> THU</label>
+<label><input type="checkbox" name="show-day" value="5" checked> FRI</label>
+<label><input type="checkbox" name="show-day" value="6" checked> SAT</label>
+</div>
+<label><input type="checkbox" id="show-active" checked> SHOW ENABLED / ON SCHEDULE</label>
+<p><strong>Running order (songs and bumpers)</strong></p>
+<div class="row"><select id="slot-select" aria-label="Recording to add"><option value="">Choose a recording…</option></select><button id="slot-add" class="secondary">+ ADD TO SHOW</button></div>
+<ol id="slot-list"><li>No songs assigned yet.</li></ol>
+<p class="sub" id="slot-duration">Approximate program loop: 0:00</p>
+<p class="sub">Each program is a repeating sequence synchronized to its start time. Shows cannot cross midnight in one block—use two blocks for overnight programming. Changes reach listeners when they reload or retune.</p>
+<div class="row"><button id="save-show" class="primary">SAVE PROGRAM ↗</button><button id="cancel-show" class="secondary">CANCEL</button></div>
+</div>
+</section>
+<p id="manager-msg" role="status" aria-live="polite"></p>
+</main>
+<dialog id="edit-dialog" aria-labelledby="edit-heading">
+<h2 id="edit-heading">Edit recording</h2>
+<p class="sub" id="edit-source"></p>
+<label for="edit-title">On-air title</label><input id="edit-title" maxlength="240">
+<label for="edit-artist">Artist / credit</label><input id="edit-artist" maxlength="160">
+<label for="edit-album">Album / collection</label><input id="edit-album" maxlength="160">
+<label for="edit-kind">Recording type</label>
+<select id="edit-kind"><option value="song">SONG (regular rotation)</option><option value="bumper">BUMPER / STATION ID (programs only)</option></select>
+<label><input type="checkbox" id="edit-enabled"> ENABLED / AVAILABLE ON AIR</label>
+<p class="sub" id="edit-warning"></p>
+<div class="row"><button id="edit-save" class="primary">SAVE CHANGES ↗</button><button id="edit-delete" class="danger">DELETE AUDIO</button><button id="edit-close" class="secondary">CLOSE</button></div>
+</dialog>
+<footer><a href="../">← HUMKIN RADIO</a> · STATION CONTROL DESK · CENTRAL TIME</footer>
+</body></html>

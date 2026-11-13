@@ -11,10 +11,26 @@ const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,lastLiveCheck=0,switching=false;
-let remoteStream=null;
+let remoteStream=null,programs=[];
+const timezone="America/Chicago";
 const EPOCH_FALLBACK="2026-11-13T00:00:00Z";
 const CRATE_API="https://kbhqacsdvjsstzyplqij.supabase.co";
 const CRATE_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // RLS-protected public key.
+async function fetchExtras(table,columns,filter=""){
+  try{
+    const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),4500);
+    try{
+      const response=await fetch(CRATE_API+"/rest/v1/"+table+"?select="+columns+filter,
+        {headers:{apikey:CRATE_KEY},cache:"no-cache",signal:abort.signal});
+      if(!response.ok)throw Error("HTTP "+response.status);
+      const result=await response.json();
+      return Array.isArray(result)?result:[];
+    }finally{clearTimeout(timer)}
+  }catch(error){
+    console.warn("Optional HUMKIN station settings unavailable",error);
+    return [];
+  }
+}
 async function getPublishedCrate(){
   try{
     // Published rows only; anonymous reads are constrained by Postgres RLS.
@@ -22,13 +38,14 @@ async function getPublishedCrate(){
     const timer=setTimeout(()=>abort.abort(),4500);
     let rows;
     try{
-      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,duration_seconds,storage_path&published_at=not.is.null&order=published_at.asc&limit=1000",
+      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
         {headers:{apikey:CRATE_KEY},cache:"no-cache",signal:abort.signal});
       if(!response.ok)throw Error("HTTP "+response.status);
       rows=await response.json();
     }finally{clearTimeout(timer)}
     if(!Array.isArray(rows))throw Error("Unexpected catalog response");
     return rows.map(row=>{
+      if(row.enabled===false)return null;
       const storagePath=String(row.storage_path||"");
       if(!/^[0-9a-f-]{36}\/[0-9a-f]{64}\.mp3$/.test(storagePath))return null;
       const src=CRATE_API+"/storage/v1/object/public/humkin-radio-live/"+storagePath;
@@ -36,7 +53,8 @@ async function getPublishedCrate(){
       if(!(duration>0&&duration<14400))return null;
       return {id:"crate-"+row.id,title:String(row.title||"").slice(0,240),
         artist:String(row.artist||"HUMKIN"),album:String(row.album||"HUMKIN RADIO"),
-        duration,src,artwork:fileUrl("cover.jpg",root)};
+        duration,src,kind:row.kind==="bumper"?"bumper":"song",
+        source:"cloud",artwork:fileUrl("cover.jpg",root)};
     }).filter(t=>t?.title);
   }catch(error){console.warn("HUMKIN additional crate unavailable; using original radio rotation.",error);return []}
 }
@@ -51,14 +69,22 @@ function seededShuffle(n,seed){
   for(let i=n-1;i>0;i--){const j=Math.floor(random()*(i+1));[list[i],list[j]]=[list[j],list[i]]}
   return list;
 }
+function musicIndices(){
+  // Station IDs and bumpers only play where a programmed show places them.
+  return tracks.map((t,i)=>t.kind==="bumper"?-1:i).filter(i=>i!==-1);
+}
 function tuneAt(ms){
-  const total=tracks.reduce((s,t)=>s+Math.round(t.duration*1000),0);
-  if(!tracks.length||total<1)return null;
+  const program=window.HUMKIN_SCHEDULE?.currentProgram(programs,ms);
+  const selected=window.HUMKIN_SCHEDULE?.scheduledAt(program,ms,tracks);
+  if(selected)return selected;
+  const eligible=musicIndices();
+  const total=eligible.reduce((s,i)=>s+Math.round(tracks[i].duration*1000),0);
+  if(!eligible.length||total<1)return null;
   const base=Number.isFinite(Date.parse(config?.synced_clock_epoch_utc))?Date.parse(config.synced_clock_epoch_utc):Date.parse(EPOCH_FALLBACK);
   const elapsed=Math.max(0,ms-base);
   const rotation=Math.floor(elapsed/total);
   const within=elapsed%total;
-  const sequence=seededShuffle(tracks.length,rotation);
+  const sequence=seededShuffle(eligible.length,rotation).map(i=>eligible[i]);
   let soFar=0;
   for(let i=0;i<sequence.length;i++){
     const track=tracks[sequence[i]];
@@ -165,21 +191,22 @@ function startClock(shouldPlay){
   cycle=selection.cycle;cursor=selection.slot;
   showTrack(selection.index,selection.position);
   setSource(tracks[selection.index].src,selection.position,shouldPlay);
-  setMessage("On the shared station clock. Approximate sync; ordinary phone buffering can differ.");
+  setMessage(selection.program?"NOW AIRING · "+selection.program+" · Central Time":"On the shared station clock. Approximate sync; ordinary phone buffering can differ.");
 }
 function buildShuffle(previous=-1){
-  order=Array.from({length:tracks.length},(_,i)=>i);
+  order=musicIndices();
   for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
   if(order.length>1&&order[0]===previous)[order[0],order[1]]=[order[1],order[0]];
   cursor=0;
 }
 function startShuffle(shouldPlay){
   if(!order.length)buildShuffle(index);
+  if(!order.length)return;
   showTrack(order[cursor]);setSource(tracks[order[cursor]].src,0,shouldPlay);
   setMessage("Your road shuffle is ready. No song repeats until the rotation completes.");
 }
 function nextShuffle(shouldPlay){
-  if(!tracks.length)return;
+  if(!order.length)return;
   const previous=order[cursor];
   cursor+=1;
   if(cursor>=order.length)buildShuffle(previous);
@@ -332,7 +359,19 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    const cloud=await getPublishedCrate();
+    const [cloud,overrides,schedule]=await Promise.all([
+      getPublishedCrate(),
+      fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind","&limit=1000"),
+      fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority","&is_active=eq.true&limit=100")
+    ]);
+    const mapped=new Map(overrides.map(o=>[o.track_id,o]));
+    tracks=tracks.map(t=>{
+      const o=mapped.get(t.id);
+      return {...t,source:"static",kind:o?.kind==="bumper"?"bumper":"song",
+        title:o?.title||t.title,artist:o?.artist||t.artist,album:o?.album||t.album,
+        enabled:o?.enabled!==false};
+    }).filter(t=>t.enabled);
+    programs=schedule;
     const originalCount=tracks.length;
     const baseIds=new Set(tracks.map(t=>t.id));
     tracks.push(...cloud.filter(t=>!baseIds.has(t.id)));
@@ -349,6 +388,8 @@ async function boot(){
     setMessage("The radio could not load its songs. Check the connection and refresh.");
   }
 }
-window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,get state(){return {mode,index,cycle,cursor,tracks:tracks.length,stream:remoteStream}}});
+window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
+  get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
+    programs:programs.length,stream:remoteStream}}});
 boot();
 })();
