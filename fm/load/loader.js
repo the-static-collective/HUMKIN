@@ -261,11 +261,49 @@ $("clear").addEventListener("click",()=>{selected=[];$("pick").value="";drawQueu
 $("publish").addEventListener("click",publish);
 $("refresh-drafts").addEventListener("click",async()=>{try{await ensureSession();await loadKnown()}catch(e){feedback(e.message)}});
 $("send-link").addEventListener("click",async()=>{
- $("auth-message").textContent="Requesting sign-in link…";
+ $("auth-message").textContent="Requesting a fresh sign-in link…";
  const email=$("email").value.trim().toLowerCase();
  if(email!==OWNER){$("auth-message").textContent="Only the HUMKIN owner's verified email can publish.";return}
- const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+"/fm/load/",shouldCreateUser:true}});
- $("auth-message").textContent=error?"Email error: "+error.message:"Check your email. Open the sign-in link on this device; it should return to the crate loader.";
+ $("send-link").disabled=true;
+ try{
+   const {error}=await db.auth.signInWithOtp({
+     email,options:{emailRedirectTo:location.origin+"/fm/load/",shouldCreateUser:false}
+   });
+   $("auth-message").textContent=error
+     ?"Email error: "+error.message
+     :"New link requested. Until Supabase's localhost redirect is fixed, COPY the link address in the email (do not tap it), and paste it below.";
+ }catch(error){$("auth-message").textContent="Could not request a link: "+error.message}
+ finally{$("send-link").disabled=false}
+});
+// One-time link recovery avoids an incorrect default Supabase redirect. Never log,
+// store, navigate to, or send the pasted secret anywhere except our configured Auth API.
+$("verify-link").addEventListener("click",async()=>{
+ const input=$("paste-link");
+ const raw=input.value.trim();
+ input.value=""; // Prevent leaving the one-time token in the visible DOM.
+ $("auth-message").textContent="Checking your email link…";
+ let token,type;
+ try{
+   const link=new URL(raw);
+   if(link.origin!==API||link.pathname!=="/auth/v1/verify")throw Error("That is not a HUMKIN Supabase confirmation link.");
+   token=link.searchParams.get("token");
+   type=link.searchParams.get("type");
+   if(!/^[a-fA-F0-9]{40,256}$/.test(token||"")||!["signup","magiclink","email"].includes(type))
+     throw Error("The email link is incomplete. Copy its entire address from a fresh message.");
+ }catch(error){$("auth-message").textContent=error.message||"Invalid email link.";return}
+ $("verify-link").disabled=true;
+ try{
+   const {data,error}=await db.auth.verifyOtp({token_hash:token,type});
+   if(error)throw error;
+   if(data?.user?.email?.toLowerCase()!==OWNER){
+     await db.auth.signOut();throw Error("This is not the designated HUMKIN account.");
+   }
+   $("auth-message").textContent="Owner verified. Crate unlocked.";
+   await updateSession();
+ }catch(error){
+   $("auth-message").textContent="Link expired or verification failed: "+error.message+
+     ". Request a NEW email and copy its link without opening it.";
+ }finally{$("verify-link").disabled=false;token=null}
 });
 $("sign-out").addEventListener("click",async()=>{await db.auth.signOut();activeUser=null;drafts=[];known=[];drawAuth();$("draft-list").textContent="Sign in to view drafts."});
 async function updateSession(){
