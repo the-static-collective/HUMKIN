@@ -39,6 +39,8 @@ button.warn{background:#ffd3d3}
 #draft-list{list-style:none;padding:0;max-height:240px;overflow:auto}
 #draft-list li{padding:8px;border-bottom:1px solid #bbb}
 #auth-message,#feedback{font-weight:700;min-height:24px}
+.link-recovery{margin-top:22px;border-top:2px dashed #211b3a;padding-top:14px}
+.link-recovery input[type=password]{width:100%;padding:13px;border:2px solid #211b3a;border-radius:8px;font:inherit;background:#fff}
 footer{padding:20px;text-align:center}
 @media(max-width:720px){.deck{grid-template-columns:1fr}.panel{padding:15px}h1{font-size:3.5rem}}
 </style>
@@ -55,7 +57,15 @@ footer{padding:20px;text-align:center}
 <section class="panel tint" aria-labelledby="login-title">
 <h2 id="login-title">01 · Unlock your crate</h2>
 <p class="small">Only the verified owner of <strong>us@abundent.org</strong> can upload or publish. Sign-in uses an email link—no password embedded in the site.</p>
-<div id="signed-out"><label for="email">Email</label><br><input id="email" type="email" value="us@abundent.org" autocomplete="email"><br><button id="send-link">EMAIL ME THE KEY ↗</button></div>
+<div id="signed-out"><label for="email">Email</label><br><input id="email" type="email" value="us@abundent.org" autocomplete="email"><br><button id="send-link">EMAIL ME A FRESH LINK ↗</button>
+<div class="link-recovery">
+<p class="small"><strong>Temporary sign-in fix:</strong> Supabase may send you to <code>localhost:3000</code> instead of back here. When the new email arrives, <strong>long-press the sign-in button in the email and COPY the link address without opening it.</strong> Return here and paste that private link below. The link is checked entirely in your browser against our Supabase project. Never share it in a chat.</p>
+<label for="paste-link">Paste your new, unopened email link</label><br>
+<input id="paste-link" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="Paste the private link here">
+<div class="row"><button id="verify-link" type="button" class="accent">UNLOCK FROM EMAIL LINK ↗</button></div>
+<p class="small">Already tapped the old link and got localhost? That link may be spent. Request a fresh one above. The ordinary one-tap link will work once the Supabase redirect configuration is corrected.</p>
+</div>
+</div>
 <div id="signed-in" class="hidden"><p id="signed-label"></p><button id="sign-out" class="warn">LOCK THE CRATE</button></div>
 <p id="auth-message" role="status" aria-live="polite"></p>
 </section>

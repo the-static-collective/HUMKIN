@@ -38,3 +38,19 @@ This requires FFmpeg + ffprobe, scans supported audio recursively, skips identic
 - 1 GB free storage is a **quota**, not an assurance that large uploads will not hit limits or be interrupted. The 700 MiB app check is a safety aid; monitor Supabase organization usage.
 - Tracks appear when the station reloads. Existing listeners keep the rotation they loaded until the next refresh.
 - Cloud-uploaded titles come from local filenames; album/artist use HUMKIN radio defaults. Curated tags/artwork/review can be enhanced later.
+
+## November 13: owner email link sent to localhost:3000 (confirmed)
+
+The owner attempted to sign in from Android. Supabase Auth logs show the app correctly requested a redirect to `https://humkin.abundent.org/fm/load/`, but the generated verification email link used `redirect_to=http://localhost:3000`; the phone then displayed `ERR_CONNECTION_REFUSED` and `access_denied`. The owner email account exists and has already been confirmed. This establishes a **hosted Auth redirect allowlist/default Site URL issue**, not a missing GitHub Pages route. Clicking the same one-time link again can result in an expired-link error.
+
+**Permanent configuration change (not available via the connected Supabase tools):** In the **pantry-gate** project, open **Authentication → URL Configuration → Redirect URLs**, add this exact allowed URL:
+
+```
+https://humkin.abundent.org/fm/load/
+```
+
+Save it. This is sufficient for the `emailRedirectTo` already sent by the loader. Changing the **Site URL** from `http://localhost:3000` would change the default for *all* applications sharing pantry-gate, so do not change it blindly without auditing other applications.
+
+**Interim workaround now included in the owner-only loader:** Request a NEW email link. On the phone, long-press its link and choose **Copy link address** **without visiting it**. Return to `/fm/load/`, paste it in the masked **Paste your new, unopened email link** field, and press **UNLOCK FROM EMAIL LINK**. The app accepts only exact `https://kbhqacsdvjsstzyplqij.supabase.co/auth/v1/verify` URLs with a valid-looking token hash and an appropriate email verification type. It uses `supabase.auth.verifyOtp({token_hash,type})` to exchange the token for a session locally and immediately clears the paste field. Never paste auth links into chats, logs, external websites or issue trackers.
+
+**Proof boundary:** Automated checks cover the presence of this recovery path, not a real email client login. A newly requested link and a live phone test are still needed to confirm that both direct verification and the normal redirect work.
