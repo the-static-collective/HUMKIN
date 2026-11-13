@@ -1,0 +1,4 @@
+HUMKIN postcard art staging folder.
+Upload all ten .webp files from HUMKIN_postcards_ready.zip into this folder before merging the pull request.
+The site manifest already references the exact filenames.
+Delete this placeholder after uploading the ten assets, if desired.
