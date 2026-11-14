@@ -24,5 +24,6 @@ jobs:
       - run: node tests/radio.test.mjs
       - run: node tests/radio-loader.test.mjs
       - run: node tests/radio-manager.test.mjs
+      - run: node tests/living-discography.test.mjs
       - run: python3 tests/radio-broadcast.test.py
       - run: python3 tests/radio-convert.test.py

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>HUMKIN RADIO · Living Discography Desk</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#2b233d;background:#fff8ee}*{box-sizing:border-box}body{margin:0}
+header{background:#2b233d;color:white;padding:18px 5vw}header a{color:#ffe38b}main{max-width:1040px;margin:auto;padding:20px 16px 65px}
+h1{font-size:clamp(2.5rem,7vw,5.6rem);letter-spacing:-.06em;line-height:.95;margin:.3em 0}
+h2{font-size:1.5rem}section,article{background:white;border:2px solid #2b233d;border-radius:12px;box-shadow:4px 5px 0 #2b233d;padding:18px;margin:18px 0}
+label{display:block;font-weight:700;margin:12px 0 5px}select,textarea,input{font:inherit;border:2px solid #716687;border-radius:7px;padding:9px;width:100%;background:white}
+textarea{min-height:95px}button,.button{font:inherit;font-weight:750;background:#f9d883;color:#242039;border:2px solid #242039;border-radius:8px;padding:10px 14px;cursor:pointer;margin:4px 5px 4px 0}
+button:hover{background:#bff8d3}button:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #ae77c7}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.hint{color:#5a526d;font-size:.93rem}.small{font-size:.84rem}
+.badge{display:inline-block;border:1px solid #333;border-radius:20px;padding:2px 8px;font-size:.78rem;margin-right:5px;background:#eae5ff}
+#cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:15px}#cards article{margin:0;background:#fffef9}
+.status{font-weight:900;text-transform:uppercase}#message{min-height:1.6em;font-weight:700}
+footer{background:#2b233d;color:white;padding:23px;text-align:center}footer a{color:#ffe38b}
+@media(max-width:650px){.grid{grid-template-columns:1fr}section,article{padding:13px}}
+</style>
+<script defer src="./engine.js"></script><script defer src="./desk.js"></script></head>
+<body><header><a href="../">← HUMKIN RADIO</a> &nbsp; / &nbsp; <a href="../manage/">STATION MANAGER</a></header>
+<main><p class="hint">THE PRODUCER'S WORKBENCH / EXPERIMENT 001</p><h1>THE LIVING<br>DISCOGRAPHY.</h1>
+<p>Find connections between real recordings. Prepare little on-air stories. Let confirmed broadcasts accumulate a history that can influence future programming — without mistaking a suggestion for something that happened.</p>
+<section><h2>1 · Hear a relationship</h2><p class="hint">A connection starts as your interpretation or proposal, not a claim that an algorithm heard it. The source catalog is the 21 verified static recordings. New cloud uploads are not automatically imported yet.</p>
+<div class="grid"><div><label for="first">First recording</label><select id="first"></select></div><div><label for="second">Second recording</label><select id="second"></select></div>
+<div><label for="relation">Musical connection</label><select id="relation"><option value="echo">Echo</option><option value="answer">Answer</option><option value="contrast">Contrast</option><option value="reprise">Reprise</option><option value="sequence">Sequence</option><option value="other">Something stranger</option></select></div>
+<div><label for="mode">What kind of claim?</label><select id="mode"><option value="interpretation">Interpretation</option><option value="observation">Source-backed observation</option><option value="proposal">Creative proposal</option></select></div></div>
+<label for="reason">What connects them? What should a human listen for?</label><textarea id="reason" maxlength="2000" placeholder="I hear a question in the first and a possible answer in the second…"></textarea>
+<button id="draft">+ SAVE A DRAFT</button><p id="message" role="status" aria-live="polite"></p></section>
+<section><h2>2 · Station memory</h2><p id="memory">Nothing confirmed on air. Prepared ideas do not count as history.</p>
+<p class="hint">The distinction comes from our Kinship Radio producer pilots: <strong>prepared ≠ ready ≠ aired ≠ returned</strong>. HUMKIN is independent; this desk does not connect to Kinship systems or carry their listeners' information.</p></section>
+<section><h2>3 · Producer cards</h2><p class="hint">Ready requires a named human reviewer. Air requires confirmation of an actual occurrence. Returned cards preserve KEEP / WEIRD / COMPOST verdicts. Re-open makes a new draft without overwriting history.</p><div id="cards" aria-live="polite"></div></section>
+<section><h2>4 · Carry the show</h2><p>The rundown exports only READY cards, in creation order. This is a <strong>proposal</strong> for an operator; it does not schedule the station, publish anything, or claim a broadcast occurred.</p>
+<button id="rundown">↓ EXPORT PROPOSED RUNDOWN</button><button id="export">↓ BACK UP DESK</button>
+<label for="import">Restore a compatible HUMKIN desk JSON backup (local only)</label><input id="import" type="file" accept="application/json,.json"><p class="hint small">Local browser storage is not a secure vault. Don't enter sensitive personal, prayer, donor, or volunteer material. Back up before clearing browser data.</p></section>
+</main><footer>HUMKIN RADIO · A SONG MAY REMEMBER ANOTHER SONG · <a href="../">TUNE IN</a></footer></body></html>
