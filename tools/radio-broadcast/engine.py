@@ -195,10 +195,14 @@ def equal_power_mix(a,b):
     if sys.byteorder!="little":out.byteswap()
     return out.tobytes()
 
-def output_process(destination,bitrate):
+def output_process(destination,bitrate,realtime=True):
+    # -re limits the feed to real time for Icecast. An on-demand file render
+    # must run as fast as CPU permits, especially on billed cloud compute.
+    inputs=(["-re"] if realtime else [])+[
+      "-f","s16le","-ar",str(RATE),"-ac","2","-i","pipe:0"]
     return subprocess.Popen([
       "ffmpeg","-nostdin","-hide_banner","-loglevel","warning",
-      "-re","-f","s16le","-ar",str(RATE),"-ac","2","-i","pipe:0",
+      *inputs,
       "-af","dynaudnorm=f=250:g=15:p=0.9",
       "-codec:a","libmp3lame","-b:a",str(bitrate)+"k",
       "-content_type","audio/mpeg","-f","mp3",destination
@@ -214,7 +218,7 @@ def streaming(catalog,args):
         raise RuntimeError("HUMKIN_ICECAST_URL must start with icecast://")
     station=Station(catalog)
     cache=Path(args.cache).expanduser().resolve()
-    encoder=output_process(output,args.bitrate)
+    encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output))
     written=0
     maximum=int(args.seconds*RATE*FRAME_BYTES) if args.seconds else None
     def write(chunk):
