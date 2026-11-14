@@ -13,6 +13,26 @@ let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
 let remoteStream=null,programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 let artAssets=new Map();
+const shufflePolicy=window.HUMKIN_ROTATION_MEMORY;
+const lastPlayed=shufflePolicy?.load(window.localStorage,Date.now())||new Map();
+const warmSignal=new window.HUMKIN_WARM_SIGNAL.WarmSignal(audio,{window});
+function setWarmStatus(){
+ const btn=$("warm-toggle");
+ btn.textContent=warmSignal.enabled?"◉ WARM SIGNAL · ON":"✳ WARM SIGNAL · OFF";
+ btn.setAttribute("aria-pressed",String(warmSignal.enabled));
+ const value=$("warm-intensity");
+ $("warm-level").textContent=value.value+"%";
+ $("warm-status").textContent=warmSignal.enabled?
+   "A soft independent static bed, tiny analogue pops and occasional signal dips. Music stays on its direct player path.":
+   "Sound effects OFF. Your music stays untouched until you enable the atmosphere.";
+}
+warmSignal.onchange=setWarmStatus;
+try{
+ const stored=Number(window.localStorage?.getItem?.(window.HUMKIN_WARM_SIGNAL.SAVE_KEY));
+ if(Number.isInteger(stored)&&stored>=0&&stored<=100)warmSignal.setIntensity(stored);
+}catch{}
+$("warm-intensity").value=String(warmSignal.intensity);
+setWarmStatus();
 // Only explicit TUNE IN / CATCH UP seeks into the shared clock. Track-to-track
 // changes always begin at zero; re-tuning at every song end previously skipped
 // openings (often ~18 seconds) whenever loading or buffering ran behind.
@@ -87,6 +107,32 @@ function bumperIndices(){
 function withStationIds(music){
   return window.HUMKIN_AUTODJ?.insertBumpers(music,bumperIndices(),stationSettings.bumper_every)||music;
 }
+function rememberShuffleTrack(){
+  if(mode!=="shuffle"||index<0||tracks[index]?.kind==="bumper")return;
+  lastPlayed.set(tracks[index].id,Date.now());
+  shufflePolicy?.save(window.localStorage,lastPlayed,Date.now());
+  // Move still-fresh tracks toward the back of this rotation's unplayed songs.
+  prepareUpcomingShuffle();
+}
+function prepareUpcomingShuffle(){
+  if(mode!=="shuffle"||!order.length||cursor+1>=order.length)return;
+  const slot=cursor+1;
+  if(tracks[order[slot]]?.kind==="bumper")return;
+  const p=shufflePolicy?.chooseSlot(order,slot,tracks,lastPlayed,Date.now())??slot;
+  if(p>=slot&&p!==slot)[order[slot],order[p]]=[order[p],order[slot]];
+  updateOnDeck();
+}
+function chooseShuffleCandidate(){
+  if(!order.length)return -1;
+  const slot=cursor+1;
+  if(slot<order.length){
+    if(tracks[order[slot]]?.kind==="bumper")return order[slot];
+    const p=shufflePolicy?.chooseSlot(order,slot,tracks,lastPlayed,Date.now())??slot;
+    return order[p]??-1;
+  }
+  // New shuffle rotation is only constructed when the old one is consumed.
+  return -1;
+}
 function tuneAt(ms){
   const program=window.HUMKIN_SCHEDULE?.currentProgram(programs,ms);
   const selected=window.HUMKIN_SCHEDULE?.scheduledAt(program,ms,tracks);
@@ -116,7 +162,7 @@ function updateModeUI(){
   $("catch-up").hidden=mode!=="clock"||Boolean(remoteStream);
   $("next-song").hidden=mode!=="shuffle";
   modeHelp.textContent=mode==="shuffle"
-   ?"Your own continuous, no-repeat shuffle. Next Song works here; audio continues through the entire crate."
+   ?"Your own radio shuffle remembers songs for one hour. If all have been heard recently, it chooses the least-recently played."
    :remoteStream
    ?"Tuning an independent continuous broadcast stream. Everyone connected to that stream receives the same live program."
    :"Same-time radio approximates a shared broadcast clock using official MP3s. It isn't a real server broadcast; playback may drift with buffering.";
@@ -139,7 +185,7 @@ function updateOnDeck(){
   const names=[];
   if(mode==="shuffle"&&order.length){
     for(let n=1;n<=3;n++){
-      const next=order[(cursor+n)%order.length];
+      const next=n===1?chooseShuffleCandidate():order[(cursor+n)%order.length];
       if(tracks[next])names.push(tracks[next].title);
     }
   }else if(mode==="clock"&&!remoteStream&&tracks.length){
@@ -158,7 +204,7 @@ function updateOnDeck(){
     "ON DECK · Tune in to hear the road ahead.";
 }
 function expectedNextIndex(){
-  if(mode==="shuffle"&&order.length)return order[(cursor+1)%order.length];
+  if(mode==="shuffle"&&order.length)return chooseShuffleCandidate();
   if(mode==="clock"&&!remoteStream&&clockBoundaryMs>0){
     return tuneAt(clockBoundaryMs+40)?.index??-1;
   }
@@ -266,6 +312,7 @@ function updateListen(){
   $("listen").textContent=playing?"Ⅱ PAUSE RADIO":"▶ TUNE IN";
   status.textContent=playing?"✳ TUNED IN":"READY TO TUNE IN";
   status.classList.toggle("playing",playing);
+  warmSignal.setPlayback(playing);
 }
 function pause(){
   seekToken++;switching=false;active=false;
@@ -300,6 +347,7 @@ function setSource(src,offset,shouldPlay){
       if(token!==seekToken)return;
       switching=false;failureCount=0;
       setPlaybackState("playing");updateListen();
+      rememberShuffleTrack();
       preloadNext();
     }).catch(()=>{
       if(token!==seekToken)return; // A newer track superseded this attempt.
@@ -344,21 +392,40 @@ function nextClock(shouldPlay){
 function buildShuffle(previous=-1){
   const songs=musicIndices();
   for(let i=songs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[songs[i],songs[j]]=[songs[j],songs[i]]}
-  if(songs.length>1&&songs[0]===previous)[songs[0],songs[1]]=[songs[1],songs[0]];
-  order=withStationIds(songs); // Never repeat a song before the shuffle cycle ends.
+  // Keep the shuffle random while putting anything played in the last hour at
+  // the back of the new cycle. The listener's history survives page refreshes.
+  const sorted=shufflePolicy?.freshFirst(songs,tracks,lastPlayed,Date.now())||songs;
+  if(sorted.length>1&&sorted[0]===previous){
+    const alternative=sorted.findIndex((i,j)=>j>0&&i!==previous&&
+      (shufflePolicy?.fresh(lastPlayed,tracks[i]?.id,Date.now())??true));
+    // Only fall back to the next candidate when the entire catalog was recent.
+    const swap=alternative>=0?alternative:1;
+    [sorted[0],sorted[swap]]=[sorted[swap],sorted[0]];
+  }
+  order=withStationIds(sorted);
   cursor=0;
 }
 function startShuffle(shouldPlay){
   if(!order.length)buildShuffle(index);
   if(!order.length)return;
   showTrack(order[cursor]);setTrackSource(order[cursor],0,shouldPlay);
-  setMessage("Your road shuffle is ready. No song repeats until the rotation completes.");
+  setMessage("Road Shuffle remembers every recording for 60 minutes, even after refresh. A small library falls back to least-recently heard.");
 }
 function nextShuffle(shouldPlay){
   if(!order.length)return;
   const previous=order[cursor];
   cursor+=1;
   if(cursor>=order.length)buildShuffle(previous);
+  if(tracks[order[cursor]]?.kind!=="bumper"){
+    let chosen=shufflePolicy?.chooseSlot(order,cursor,tracks,lastPlayed,Date.now())??cursor;
+    if(chosen>=cursor&&chosen!==cursor)[order[cursor],order[chosen]]=[order[chosen],order[cursor]];
+    // If every remaining slot was heard recently but an older song elsewhere
+    // exists, prefer the hour rule over completing this rotation.
+    const fresh=shufflePolicy?.fresh(lastPlayed,tracks[order[cursor]]?.id,Date.now())??true;
+    if(!fresh&&shufflePolicy?.anyFresh(musicIndices(),tracks,lastPlayed,Date.now())){
+      buildShuffle(previous);
+    }
+  }
   showTrack(order[cursor]);
   setTrackSource(order[cursor],0,shouldPlay);
 }
@@ -392,7 +459,7 @@ async function startRadio(){
     startShuffle(true);
   }else{
     active=true;
-    try{await audio.play();preloadNext()}catch{active=false;setMessage("Your browser couldn't start playback. Tap the built-in player.");}
+    try{await audio.play();rememberShuffleTrack();preloadNext()}catch{active=false;setMessage("Your browser couldn't start playback. Tap the built-in player.");}
     updateListen();
   }
 }
@@ -439,10 +506,28 @@ $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
 $("phone-playlist").addEventListener("click",downloadNativePlaylist);
+$("warm-toggle").addEventListener("click",async()=>{
+  const button=$("warm-toggle");
+  button.disabled=true;
+  try{
+    await warmSignal.toggle();
+    warmSignal.setPlayback(active&&!audio.paused);
+    setWarmStatus();
+  }catch(err){
+    $("warm-status").textContent="Atmosphere unavailable in this browser: "+err.message;
+  }finally{button.disabled=false}
+});
+$("warm-intensity").addEventListener("input",event=>{
+  const value=Number(event.target.value);
+  warmSignal.setIntensity(value);
+  try{window.localStorage?.setItem?.(window.HUMKIN_WARM_SIGNAL.SAVE_KEY,String(value))}catch{}
+  setWarmStatus();
+});
 audio.addEventListener("play",()=>{
   active=true;setPlaybackState("playing");updateListen();
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
   preloadNext();
+  rememberShuffleTrack();
 });
 audio.addEventListener("playing",()=>{active=true;setPlaybackState("playing");updateListen()});
 audio.addEventListener("pause",()=>{
@@ -574,6 +659,7 @@ async function boot(){
 window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
   get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
     programs:programs.length,bumperEvery:stationSettings.bumper_every,
+    hourWindowMs:shufflePolicy?.WINDOW_MS||3600000,warmSignal:warmSignal.status(),
     bumperCount:bumperIndices().length,stream:remoteStream}}});
 boot();
 })();

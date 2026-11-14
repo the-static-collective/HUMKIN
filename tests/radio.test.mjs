@@ -4,7 +4,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
-const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js");
+const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js"),memoryJs=read("fm/rotation-memory.js"),warmJs=read("fm/warm-signal.js");
 for(const p of ["fm/index.html","fm/radio.css","fm/radio.js","fm/rotation.json","fm/manifest.webmanifest","docs/RADIO-OPERATIONS.md"])assert(existsSync(p),"Missing radio file "+p);
 execFileSync(process.execPath,["--check","fm/radio.js"]);
 const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
@@ -59,7 +59,7 @@ class E {
  get src(){return this._src}
  set src(src){this._src=src;this.currentTime=0}
  addEventListener(t,fn){(this.listeners[t]??=[]).push(fn)}
- emit(t){for(const fn of this.listeners[t]||[])fn()}
+ emit(t){for(const fn of this.listeners[t]||[])fn({type:t,target:this})}
  setAttribute(k,v){this.attributes[k]=v}
  pause(){const was=this.paused;this.paused=true;if(!was)this.emit("pause")}
  load(){this.currentTime=0}
@@ -108,6 +108,8 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
  runInNewContext(schedulerJs,context);
  runInNewContext(autodjJs,context);
  runInNewContext(artJs,context);
+ runInNewContext(memoryJs,context);
+ runInNewContext(warmJs,context);
  runInNewContext(js,context);
  return {$,time,copies,listeners,session,window,document,requests,URLMock,downloads};
 }
@@ -327,5 +329,15 @@ assert(programmedCover.$("current-art").src.endsWith(showPath),
  "Active program cover must override any track artwork");
 assert(programmedCover.session.metadata.artwork[0].src.endsWith(showPath),
  "Media Session cover art must also prioritize the scheduled program cover");
+
+
+assert.equal(newTune.window.HUMKIN_RADIO.state.hourWindowMs,3600000,
+ "Road Shuffle must expose the one-hour repeat exclusion policy");
+assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.enabled,false,
+ "The radio must not start with unexpected static or popping");
+assert.equal(newTune.$("warm-toggle").attributes["aria-pressed"],"false");
+newTune.$("warm-intensity").value="65";
+newTune.$("warm-intensity").emit("input");await flush();
+assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.intensity,65);
 
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");
