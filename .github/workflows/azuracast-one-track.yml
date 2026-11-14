@@ -1,0 +1,80 @@
+name: HUMKIN Radio → hosted transmitter (one approved track)
+on:
+  workflow_dispatch:
+    inputs:
+      track_id:
+        description: "Exact HUMKIN published recording ID (not another station's media)"
+        required: true
+        type: string
+      permission_reference:
+        description: "Public-safe rights/release reference, NOT private data; required"
+        required: true
+        type: string
+      confirmation:
+        description: "Type I_CONFIRM_HUMKIN_BROADCAST_RIGHTS to approve this one upload"
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  transfer-one:
+    name: Human-reviewed single-recording transfer
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AZURACAST_HOST_URL: ${{ secrets.AZURACAST_HOST_URL }}
+      AZURACAST_STATION_ID: ${{ secrets.AZURACAST_STATION_ID }}
+      AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
+      TRACK_ID: ${{ inputs.track_id }}
+      PERMISSION_REFERENCE: ${{ inputs.permission_reference }}
+      OWNER_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fail closed without station credentials or owner's exact approval
+        shell: bash
+        run: |
+          if [[ "$OWNER_CONFIRMATION" != "I_CONFIRM_HUMKIN_BROADCAST_RIGHTS" ]]; then
+            echo "::error::No valid explicit human broadcast rights confirmation."
+            exit 1
+          fi
+          if [[ -z "$AZURACAST_HOST_URL" || -z "$AZURACAST_STATION_ID" || -z "$AZURACAST_API_KEY" ]]; then
+            echo "::error::Hosted AzuraCast credentials are missing; station is not connected."
+            exit 1
+          fi
+          if [[ -z "$TRACK_ID" || -z "$PERMISSION_REFERENCE" ]]; then
+            echo "::error::Track and non-sensitive rights reference are mandatory."
+            exit 1
+          fi
+      - name: Generate manifest from current public HUMKIN recordings
+        shell: bash
+        run: python3 tools/radio-broadcast/azuracast_media_bridge.py --export-review-manifest > /tmp/humkin-review.json
+      - name: Approve only the selected owned/cleared recording for this run
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib
+          path=pathlib.Path("/tmp/humkin-review.json")
+          d=json.loads(path.read_text())
+          tracks=[t for t in d["tracks"] if t["id"]==os.environ["TRACK_ID"]]
+          if len(tracks)!=1:
+            raise SystemExit("Requested HUMKIN public recording ID not found; nothing uploaded.")
+          t=tracks[0]
+          t["rights"]="cleared_for_internet_radio"
+          t["permission_ref"]=os.environ["PERMISSION_REFERENCE"][:300]
+          path.write_text(json.dumps(d),encoding="utf-8")
+          print("Rights-gated, one recording selected for transfer.")
+          PY
+      - name: Transfer exactly one approved MP3 to private host
+        shell: bash
+        run: |
+          python3 tools/radio-broadcast/azuracast_media_bridge.py \
+            --manifest /tmp/humkin-review.json \
+            --upload-id "$TRACK_ID" --confirm-owner-rights
+      - name: Important broadcast separation
+        run: |
+          echo "The selected media upload may be playable by the hosted AutoDJ."
+          echo "Publication and scheduling are controlled inside your hosted station."
+          echo "HUMKIN's public website stream URL is not changed by this workflow."
