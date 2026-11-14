@@ -207,6 +207,17 @@
       "script": "The Department of Questions has received your question. Unfortunately, the Department of Answers is still being established. HUMKIN RADIO. Back to the music."
     },
     {
+      "id": "id-lumi-001",
+      "department": "station_id",
+      "label": "LUMI — Management Is Under Control (11-Minute Radio Ident)",
+      "role": "Lumi — The Assistant Station Manager",
+      "expected_seconds": 16,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Warm, personable, almost sotto voce. Dry and affectionate, not robotic; one tiny wry pause after 'under control.' The original Lantern three-note motif precedes the voice, with one modest analog click. Use as a 12–20 second station ID around every 11 minutes AFTER its actual audio is recorded, approved, and published. No cut into a playing song.",
+      "script": "You're listening to HUMKIN RADIO. I'm Lumi, the assistant station manager. Management assures me everything is under control. They haven't specified whose. But the music is still here. Keep the dial right where it is."
+    },
+    {
       "id": "id-004",
       "department": "station_id",
       "label": "STATION ID — Good Company",

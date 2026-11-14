@@ -5,7 +5,7 @@ import {createRequire} from "node:module";
 const require=createRequire(import.meta.url),read=p=>readFileSync(p,"utf8");
 const B=require("../fm/studio/bible.js"),Clock=require("../fm/studio/clock.js");
 const book=B.validate(JSON.parse(read("fm/studio/station-bible.json")));
-assert.equal(book.scenes.length,12,"Twelve original ready-to-produce scene cards");
+assert.equal(book.scenes.length,13,"Thirteen original ready-to-produce scene cards");
 assert.equal(book.roles.length,5,"Five founding staff voices");
 assert.equal(book.dayparts.length,6,"Six broad proposed dayparts");
 assert.equal(book.sonic_signature.tempo_bpm,92);
@@ -17,6 +17,12 @@ assert.equal(beatCards.length,7,"Seven pilot placeholders with actual scripts");
 assert.equal(beatCards.filter(s=>s.kind==="real_template").length,1,
  "The pilot has one explicitly unverified community segment");
 assert(book.scenes.some(s=>s.label.includes("Good Company")),"Warm station identification must be available");
+const lumi=book.scenes.find(s=>s.id==="id-lumi-001");
+assert(lumi&&lumi.role.includes("Lumi")&&lumi.department==="station_id",
+ "Lumi has an original short ID ready for synthetic voice acting");
+assert(lumi.expected_seconds<=20,"Lumi's eleven-minute station ID should be brief");
+assert(!lumi.in_pilot,"The preexisting first-day pilot retains seven spoken beats");
+assert(/11.minutes/i.test(lumi.direction),"Lumi's cadence is a target, not a prerecorded or auto-aired claim");
 assert(book.scenes.some(s=>s.id.includes("night")),"Night shift identity must be available");
 assert(book.show_rules.some(s=>s.includes("recorded is not approved")),"Kinship provenance should persist");
 for(const s of book.scenes){
