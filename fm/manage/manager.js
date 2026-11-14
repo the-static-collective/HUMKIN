@@ -123,6 +123,114 @@ async function loadDesk(){
   renderArtShelf();renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
  }catch(err){note("Could not read station: "+err.message);$("auth-status").textContent="Signed in · data unavailable"}
 }
+
+function artMap(){return new Map(artAssets.map(asset=>[asset.id,asset]))}
+function coverUrl(artId,fallback="../../cover.jpg"){
+ const asset=artAssets.find(a=>a.id===artId);
+ return asset?.url||fallback;
+}
+function renderArtSelect(id,chosen=null){
+ const field=$(id);field.replaceChildren();
+ const first=el("option",id==="show-art"?"No program cover — use the song art":"No custom cover — use existing art");
+ first.value="";field.append(first);
+ for(const asset of artAssets){
+   const option=el("option",asset.label+" · "+asset.id.slice(0,8));
+   option.value=asset.id;field.append(option);
+ }
+ field.value=chosen&&artAssets.some(a=>a.id===chosen)?chosen:"";
+}
+function updateArtPreview(kind){
+ const isProgram=kind==="show";
+ const input=$(isProgram?"show-art":"edit-art");
+ const preview=$(isProgram?"show-art-preview":"edit-art-preview");
+ const track=library.find(t=>t.id===editing);
+ const fallback=isProgram?"../../cover.jpg":track?.artwork||"../../cover.jpg";
+ preview.src=coverUrl(input.value,fallback);
+ preview.alt=(isProgram?"Program":"Track")+" cover preview";
+}
+function selectArtwork(id){
+ if($("edit-dialog").open){
+   renderArtSelect("edit-art",id);updateArtPreview("edit");
+   $("art-status").textContent="Selected for the open track. Press SAVE CHANGES to assign it.";
+ }else if(!$("show-form").classList.contains("hidden")){
+   renderArtSelect("show-art",id);updateArtPreview("show");
+   $("art-status").textContent="Selected for this program. Press SAVE PROGRAM to assign it.";
+ }else{
+   $("art-status").textContent="Artwork ready. Open a track's EDIT screen or a show's editor to assign it.";
+ }
+}
+function renderArtShelf(){
+ const shelf=$("art-library");shelf.replaceChildren();
+ const bytes=artAssets.reduce((s,a)=>s+(Number(a.bytes)||0),0);
+ $("art-count").textContent=artAssets.length+" reusable covers · "+(bytes/1024/1024).toFixed(1)+" MiB";
+ if(!artAssets.length){
+   shelf.append(el("p","No covers added yet. Upload your first image above."));
+ }
+ for(const asset of artAssets){
+   const tile=button("","", "art-tile"); // The selector remains a button for keyboard accessibility.
+   // Remove the default click action; this tile chooses art for an open editor.
+   const picture=el("img");picture.src=asset.url;picture.alt=asset.label+" cover";
+   picture.loading="lazy";
+   tile.replaceChildren(picture,el("span",asset.label));
+   tile.addEventListener("click",()=>selectArtwork(asset.id));
+   tile.title="Use "+asset.label+" in the open editor";
+   shelf.append(tile);
+ }
+}
+async function sha256(file){
+ const data=await file.arrayBuffer(),hash=await crypto.subtle.digest("SHA-256",data);
+ return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function uploadArtwork(original){
+ if(busy)return;
+ setBusy(true);
+ const status=$("art-status");
+ status.textContent="Preparing cover locally; original image will not be uploaded…";
+ try{
+   await requireOwner();
+   const prepared=await prepareCover(original);
+   const fingerprint=await sha256(prepared.file);
+   const existing=artAssets.find(x=>x.sha256===fingerprint);
+   if(existing){
+     setBusy(false);selectArtwork(existing.id);
+     status.textContent="This exact cover is already in the shelf — reused without another upload.";
+     return;
+   }
+   const storagePath=user.id+"/"+fingerprint+".jpg";
+   status.textContent="Uploading square JPEG ("+(prepared.file.size/1024).toFixed(0)+" KB)…";
+   const uploaded=await db.storage.from(ART).upload(storagePath,prepared.file,{
+     contentType:"image/jpeg",cacheControl:"3600",upsert:false
+   });
+   if(uploaded.error){
+     // An interrupted prior save can leave the immutable content-addressed JPEG
+     // in Storage. Only allow metadata retry when its exact hash/path already exists.
+     if(!/(duplicate|already exists|409)/i.test(uploaded.error.message||""))throw uploaded.error;
+   }
+   const label=(original.name||"HUMKIN cover").replace(/\.(jpeg|jpg|png|webp)$/i,"")
+      .replace(/[_-]+/g," ").trim().slice(0,120)||"HUMKIN cover";
+   const row={owner_id:user.id,sha256:fingerprint,storage_path:storagePath,
+     label,width:prepared.width,height:prepared.height,bytes:prepared.file.size};
+   const {data,error}=await db.from("humkin_radio_art_assets")
+      .insert(row).select("id,sha256,storage_path,label,width,height,bytes").single();
+   if(error){
+     if(error.code==="23505"){
+       const prior=await db.from("humkin_radio_art_assets")
+         .select("id").eq("sha256",fingerprint).maybeSingle();
+       if(prior.error||!prior.data)throw error;
+       setBusy(false);await loadDesk();selectArtwork(prior.data.id);
+       status.textContent="Existing artwork recovered and selected.";
+       return;
+     }
+     throw Error("JPEG uploaded, but catalog registration failed: "+error.message+
+       ". Retry the same image; the content-addressed file is reusable.");
+   }
+   setBusy(false);await loadDesk();selectArtwork(data.id);
+   status.textContent="Added "+label+". Choose a track or show and save to publish its cover.";
+ }catch(err){
+   setBusy(false);status.textContent="Cover upload failed: "+err.message;
+ }
+}
+
 function renderNow(){
  const usable=library.filter(trackAvailable);
  const songs=usable.filter(t=>t.kind!=="bumper");
