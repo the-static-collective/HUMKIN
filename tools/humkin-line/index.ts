@@ -17,7 +17,7 @@ const escape=(str)=>String(str).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;","
 const say=(text)=>"<Say>"+escape(text)+"</Say>";
 const noMessage=()=>xml("");
 const ready=()=>enabled()&&!!env("TWILIO_AUTH_TOKEN")&&
- SID.call.test(env("TWILIO_ACCOUNT_SID").replace(/^AC/,"CA"))&&
+ /^AC[0-9a-fA-F]{32}$/.test(env("TWILIO_ACCOUNT_SID"))&&
  E164.test(env("HUMKIN_LINE_NUMBER"))&&
  env("HUMKIN_LINE_CALLER_PEPPER").length>=20&&
  !!env("SUPABASE_URL")&&!!env("SUPABASE_SERVICE_ROLE_KEY");
@@ -158,7 +158,7 @@ Deno.serve(async req=>{
  const sub=route.pathname.slice(new URL(BASE).pathname.length);
  if(req.method==="GET"&&sub==="/health")
   return json({service:"humkin-radio-line",version:1,ready:ready(),enabled:ready(),
-   provider_number_purchased:false,ai_host_connected:false,
+   ai_host_connected:false,
    auto_broadcast:false,outbound_sms:false});
  if(req.method!=="POST"||!["/sms","/voice","/choose","/consent","/recording","/done"].includes(sub))
   return json({error:"not_found"},404);
