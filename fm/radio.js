@@ -12,6 +12,7 @@ const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
 let remoteStream=null,programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
+let artAssets=new Map();
 // Only explicit TUNE IN / CATCH UP seeks into the shared clock. Track-to-track
 // changes always begin at zero; re-tuning at every song end previously skipped
 // openings (often ~18 seconds) whenever loading or buffering ran behind.
@@ -46,7 +47,7 @@ async function getPublishedCrate(){
     const timer=setTimeout(()=>abort.abort(),4500);
     let rows;
     try{
-      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
+      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,art_asset_id,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
         {headers:{apikey:CRATE_KEY},cache:"no-cache",signal:abort.signal});
       if(!response.ok)throw Error("HTTP "+response.status);
       rows=await response.json();
@@ -62,7 +63,7 @@ async function getPublishedCrate(){
       return {id:"crate-"+row.id,title:String(row.title||"").slice(0,240),
         artist:String(row.artist||"HUMKIN"),album:String(row.album||"HUMKIN RADIO"),
         duration,src,kind:row.kind==="bumper"?"bumper":"song",
-        source:"cloud",artwork:fileUrl("cover.jpg",root)};
+        source:"cloud",art_asset_id:row.art_asset_id||null,artwork:fileUrl("cover.jpg",root)};
     }).filter(t=>t?.title);
   }catch(error){console.warn("HUMKIN additional crate unavailable; using original radio rotation.",error);return []}
 }
@@ -241,11 +242,15 @@ function showTrack(i,position=0){
   if(!tracks[i])return;
   index=i;
   const t=tracks[i];
+  const currentShow=mode==="clock"&&!remoteStream?
+     window.HUMKIN_SCHEDULE?.currentProgram(programs,Date.now()):null;
+  const cover=window.HUMKIN_ART?.effective(t,currentShow,artAssets)||t.artwork||fileUrl("cover.jpg",root);
   title.textContent=t.title;
   artist.textContent=(t.artist||"HUMKIN")+" · "+(t.album||config?.station_name||"HUMKIN RADIO");
-  $("current-art").src=t.artwork||fileUrl("cover.jpg",root);
-  $("current-art").alt=t.title+" — HUMKIN radio artwork";
-  setMediaInfo(t);
+  $("current-art").src=cover;
+  $("current-art").alt=(currentShow?.art_asset_id&&artAssets.has(currentShow.art_asset_id)?
+      currentShow.name+" program cover":t.title+" cover")+" — HUMKIN RADIO";
+  setMediaInfo({...t,artwork:cover});
   counter.textContent=mode==="clock"?(remoteStream?"LIVE STREAM":"ON THE SHARED CLOCK"):(pad(cursor+1)+" / "+pad(order.length));
   updateOnDeck();
 }
@@ -528,22 +533,24 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    const [cloud,overrides,schedule,settings]=await Promise.all([
+    const [cloud,overrides,schedule,settings,artRows]=await Promise.all([
       getPublishedCrate(),
-      fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind","&limit=1000"),
-      fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority","&is_active=eq.true&limit=100"),
-      fetchExtras("humkin_radio_settings","id,bumper_every,station_label","&id=eq.main&limit=1")
+      fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind,art_asset_id","&limit=1000"),
+      fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority,art_asset_id","&is_active=eq.true&limit=100"),
+      fetchExtras("humkin_radio_settings","id,bumper_every,station_label","&id=eq.main&limit=1"),
+      fetchExtras("humkin_radio_art_assets","id,storage_path","&limit=1000")
     ]);
     stationSettings={
       bumper_every:window.HUMKIN_AUTODJ?.cadenceValue(settings[0]?.bumper_every)||0,
       station_label:String(settings[0]?.station_label||"HUMKIN RADIO")
     };
+    artAssets=window.HUMKIN_ART?.libraryMap(artRows)||new Map();
     const mapped=new Map(overrides.map(o=>[o.track_id,o]));
     tracks=tracks.map(t=>{
       const o=mapped.get(t.id);
       return {...t,source:"static",kind:o?.kind==="bumper"?"bumper":"song",
         title:o?.title||t.title,artist:o?.artist||t.artist,album:o?.album||t.album,
-        enabled:o?.enabled!==false};
+        art_asset_id:o?.art_asset_id||null,enabled:o?.enabled!==false};
     }).filter(t=>t.enabled);
     programs=schedule;
     const originalCount=tracks.length;
