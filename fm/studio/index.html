@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#231a37">
+<title>HUMKIN RADIO · The Production Room</title>
+<link rel="stylesheet" href="../radio.css">
+<style>
+body{background:#fbf3de;color:#271d3f}main{max-width:1180px;margin:auto;padding:18px 15px 75px}
+h1{font-size:clamp(3.2rem,9vw,7rem);line-height:.88;letter-spacing:-.07em;margin:22px 0}
+h2{font-size:clamp(1.5rem,4vw,2.2rem);margin:0 0 10px}
+p{line-height:1.5}small,.muted{color:#64556d}.muted{font-size:.89rem}
+section{border:3px solid #291d40;box-shadow:6px 7px 0 #b6a4ba;border-radius:14px;background:#fffef9;padding:17px;margin:24px 0}
+section.rose{background:#ffdfdf}section.mint{background:#d3f6df}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:18px}.columns section{margin:8px 0}
+button,.button{font:900 13px/1.3 inherit;cursor:pointer;border:2px solid #291d40;background:#ffe47c;border-radius:8px;
+padding:10px 12px;color:#261a39;text-decoration:none;display:inline-block}
+button:disabled{opacity:.45;cursor:not-allowed}button.primary{background:#b9edcd}
+button.danger{background:#ffbfc3}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #b45d91}
+input,select,textarea{box-sizing:border-box;max-width:100%;width:100%;padding:11px;border-radius:8px;border:2px solid #51425e;background:white;color:#261a39;font:inherit}
+label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:9px 0}
+.row>*{min-width:0}.row>.button,.row>button{width:auto}.fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#carts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:15px 0}
+.cart{background:#fff9e7;border:2px solid #291d40;border-radius:12px;padding:11px}
+.cart h3{font-size:1rem;margin:4px 0 8px;word-break:break-word}.cart p{font-size:.84rem}
+.badge{border:1px solid #806183;background:#f2e4fb;border-radius:20px;font-weight:900;font-size:.66rem;letter-spacing:.07em;padding:4px 7px}
+#rundown{list-style:none;padding:0;margin:16px 0;max-height:600px;overflow-y:auto}
+#rundown li{border-bottom:1px solid #bcb0c6;padding:9px 0;display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:8px;align-items:center}
+#rundown li.script{background:#fff1d3}#rundown li .script-note{font-size:.8rem;opacity:.8;display:block}
+#rundown li button{padding:5px 7px}#rundown li .controls{display:flex;gap:3px;flex-wrap:wrap;padding:0;box-shadow:none;background:transparent;border:0}
+.note{border-left:4px solid #82547c;padding:9px 11px;background:#fff8e7;font-size:.88rem}
+#auth,#feedback{font-weight:850;min-height:20px}#cue{width:100%;max-width:600px;margin:8px 0}
+.hidden{display:none!important}
+@media(max-width:760px){.columns,.fieldset{grid-template-columns:1fr}#rundown li{grid-template-columns:57px minmax(0,1fr)}
+#rundown li .controls{grid-column:2}.cart{padding:9px}}
+</style>
+<script defer src="./clock.js"></script>
+<script type="module" src="./studio.js"></script></head>
+<body>
+<header class="topline"><a class="brand" href="../">HUMKIN <span>✳</span></a>
+<span class="station-id">PRODUCTION ROOM / PRIVATE</span><a href="../manage/" class="dj-link">STATION MANAGER ↗</a></header>
+<main>
+<p class="eyebrow">HUMKIN RADIO · AN ORGANIZATION THAT MIGHT EXIST</p>
+<h1>THE CART<br><em>MACHINE.</em></h1>
+<p>A mobile-friendly backstage production room: label recordings as news, station IDs, advertisements, comedy, and community reports; cue them without interrupting public radio; assemble the first hour of our very questionable station.</p>
+<section class="rose"><h2>✳ Access</h2>
+<p id="auth" role="status">Checking private studio access…</p>
+<a class="button" href="../load/" id="sign-in">SIGN IN AT CRATE LOADER ↗</a>
+<p class="muted">Your saved carts and pilot draft are private to the station owner. Public listeners never see this board.</p>
+</section>
+<div id="workbench" class="hidden">
+<section class="mint">
+<h2>LOCAL REHEARSAL MONITOR</h2>
+<p id="cue-name">Cue a recording from a cart or the library. This monitor plays only on <em>your device</em>—it cannot interrupt the public station.</p>
+<audio id="cue" controls preload="none" aria-label="Local cue monitor"></audio>
+</section>
+<div class="columns">
+<section>
+<h2>1 · STOCK THE CARTS</h2>
+<p class="muted">Upload speech, jingles and other recordings through the existing Crate Loader; publish them, mark non-music as BUMPER in Station Manager, then assign one to a department here.</p>
+<div class="row"><a class="button" href="../load/">UPLOAD AUDIO ↗</a><a class="button" href="../manage/">EDIT RECORDINGS ↗</a></div>
+<label for="cart-track">Recording</label><select id="cart-track"></select>
+<label for="cart-department">Department</label><select id="cart-department"></select>
+<label for="cart-label">Cart label</label><input id="cart-label" maxlength="120" placeholder="The Newsman — First Day Report">
+<label for="cart-notes">Producer notes (not broadcast)</label><textarea id="cart-notes" maxlength="1000" rows="3" placeholder="Who, what, when, clearance, punchline…"></textarea>
+<div class="row"><button id="save-cart" class="primary">+ SAVE TO CARTRIDGE SHELF</button></div>
+<p class="muted" id="cart-count">Reading the station carts…</p>
+<div id="carts"></div>
+</section>
+<section>
+<h2>2 · BUILD THE HOUR</h2>
+<label for="draft-title">Program title</label><input id="draft-title" maxlength="120" value="HUMKIN RADIO · THE FIRST DAY">
+<div class="row"><button id="pilot" class="primary">✳ DRAFT THE FIRST DAY</button><button id="clear" class="danger">CLEAR RUNDOWN</button></div>
+<p class="note">The pilot starts with an imaginary station purchase, suspicious news department, advertising fiasco and a real community bulletin. Spoken beats are <strong>scripts until recordings are assigned</strong>. This is a production document, not an invented audio transmission.</p>
+<label for="song-pick">Add a published song</label><select id="song-pick"></select>
+<div class="row"><button id="song-add">+ ADD SONG TO RUNDOWN</button></div>
+<p id="clock" class="muted">Rundown clock: 0:00</p>
+<ol id="rundown"></ol>
+<div class="row"><button id="save-draft" class="primary">SAVE PRIVATE DRAFT</button>
+<button id="save-show">CREATE PAUSED SHOW</button><button id="export">EXPORT SCRIPT ↗</button></div>
+<p class="muted">Private draft syncs across your signed-in devices. A paused show is never on-air; it must be explicitly enabled later in Station Manager. All script placeholders need a real recording before a paused show can be created.</p>
+<p id="draft-status" role="status" class="muted"></p>
+</section>
+</div>
+</div>
+<p id="feedback" role="status"></p>
+</main><footer><a href="../">← LIVE RADIO</a><span>ON AIR SOMEWHERE · OFF AIR HERE</span><a href="../manage/">STATION MANAGER</a></footer>
+</body></html>
