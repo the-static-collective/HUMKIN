@@ -221,7 +221,7 @@ assert.equal(automix.window.HUMKIN_RADIO.state.bumperEvery,3,"Owner-selected cad
 assert.equal(automix.window.HUMKIN_RADIO.state.bumperCount,1,"Actual station ID is loaded");
 automix.$("mode-shuffle").click();automix.$("listen").click();await flush();
 const autoSpins=[];
-for(let i=0;i<27;i++){
+for(let i=0;i<28;i++){
  autoSpins.push(automix.window.HUMKIN_RADIO.state.index);
  automix.$("next-song").click();await flush();
 }
