@@ -155,3 +155,16 @@ The station's `HEAR THE NEW ONE` button prioritizes the new single and then resu
 5. If either mode stalls on the first locked-screen boundary, the reliable escalation is a **single continuous HTTPS audio stream** (Icecast/AzuraCast or equivalent) or a native Android media service. Web JavaScript and Media Session metadata alone cannot force a suspended browser to execute track changes.
 
 Do not announce verified lock-screen reliability until the device test is completed. `live_stream_url` remains `null`; no true broadcast server was created by this change.
+
+## November 14: track-boundary gap + late-start fix
+
+An Android listening test exposed two problems. First, ordinary Same-Time RADIO track changes called `startClock(true)`, using the wall-clock offset *after* MP3 load latency, so a new song could begin 18 seconds in. The 12-second clock checks and visibility-change handler could also forcibly skip while music was already playing. Second, Android/Brave can suspend background JavaScript so the website cannot guarantee that the `timeupdate` or `ended` callback will run while the screen is locked.
+
+**Browser improvements (PR #30):**
+- On initial TUNE IN (and explicit CATCH UP), shared-clock seeking remains optional and expected. **Automatic song changes now start at 0 seconds**, following a theoretical slot boundary instead of real-time network lag.
+- Remove periodic unsolicited clock re-synchronization and the foreground unlock jump; these were causing audible skipped song introductions.
+- While each song is playing, bounded-prefetch the next public MP3 (up to 18 MiB), storing it in a temporary Blob URL for faster transition. The code aborts abandoned requests, releases old Blob URLs, and falls back to direct MP3 URLs if CORS/bandwidth/data-saver disallows prefetch. This improves readiness but cannot guarantee a zero-gap transition or background JS execution.
+- `PHONE PLAYER PLAYLIST` creates an Extended M3U file using approved, currently enabled public track URLs. Open `HUMKIN-RADIO.m3u` in VLC Android or another native playlist-capable media app. Native players own the media queue and generally handle locked-screen song changes more reliably than suspended browser JavaScript. **The M3U is a downloadable URL list, not offline MP3 media, nor a synchronized live broadcast**; any programmed show schedule is not embedded.
+- A continuous HTTPS Icecast stream remains the only robust way for the *browser* radio to play the same program in the background without executing JavaScript per-song.
+
+No catalog or station settings changed. Validate in Android/Brave and Chrome with 3 successive boundaries (foreground and locked screen), and separately validate opening the M3U in VLC. Browser playback remains subject to mobile policy and network performance.
