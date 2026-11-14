@@ -59,7 +59,7 @@ class E {
  get src(){return this._src}
  set src(src){this._src=src;this.currentTime=0}
  addEventListener(t,fn){(this.listeners[t]??=[]).push(fn)}
- emit(t){for(const fn of this.listeners[t]||[])fn()}
+ emit(t){for(const fn of this.listeners[t]||[])fn({type:t,target:this})}
  setAttribute(k,v){this.attributes[k]=v}
  pause(){const was=this.paused;this.paused=true;if(!was)this.emit("pause")}
  load(){this.currentTime=0}
