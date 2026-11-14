@@ -74,21 +74,30 @@ const effect=new F.WarmSignal(media,{window:fauxWin,intensity:26});
 assert.equal(effect.status().enabled,false,"Effects must always start OFF");
 await effect.enable();
 assert.equal(effect.status().enabled,true);
+assert.equal(new F.WarmSignal(media,{window:fauxWin}).status().intensity,37.8);
 assert.equal(media.volume,.8,"Enabling effects must not change music volume by itself");
 effect.setPlayback(true);
 assert(effect.gain.gain.value>0,"Playing music should allow very soft static");
+assert.equal(effect.popBus.gain.value,1,"Pops must pass through gated radio bus");
 assert.equal(F.RADIO_BPM,92,"Radio rhythm must be based on 92 BPM");
 assert(Math.abs(F.BEAT_SECONDS-60/92)<1e-10);
 assert(Math.abs(F.SWELL_HZ-92/240)<1e-10,"One sine swell per four beats");
 assert.equal(effect.swell.type,"sine");
 assert.equal(effect.swell.frequency.value,F.SWELL_HZ);
 assert(Math.abs(effect.swellDepth.gain.value-effect.gain.gain.value*.115)<.000001,
-  "Warm static gently rises and falls around its existing 42% bed");
+  "Warm static gently rises and falls around its radio-only bed");
 const beatInterval=F.beatMappedInterval(()=>.45,42);
 assert(Math.abs(beatInterval/F.BEAT_SECONDS-Math.round(beatInterval/F.BEAT_SECONDS))<1e-9,
   "Random atmospheric events should respect the soft 92 BPM timing grid");
 effect.sag();
 assert(media.volume<.8&&media.volume>.6,"Short signal dip should be modest");
+effect.setPlayback(false);
+assert.equal(media.volume,.8,"Switching away restores music volume");
+assert.equal(effect.gain.gain.value,0,"Switching away mutes static");
+assert.equal(effect.popBus.gain.value,0,"Switching away mutes pops");
+assert.equal(effect.swellDepth.gain.value,0,"Switching away mutes swell");
+effect.setPlayback(true);
+effect.sag();
 for(const [id,callback] of [...timers]){if(id===effect.restoreTimer)callback()}
 assert.equal(media.volume,.8,"Signal dip must restore the listener's prior volume");
 effect.disable();
@@ -102,7 +111,7 @@ for(const id of ["warm-toggle","warm-intensity","warm-status","warm-level"]){
   assert(!page.includes('id="'+id+'"'),"Radio atmosphere should not be presented as a separate feature");
 }
 assert(!css.includes(".warm-dial"),"Remove no-longer-used atmosphere control CSS");
-assert(radio.includes("intensity:42"),"Automatically use the established 42% station texture");
+assert(radio.includes("intensity:37.8"),"Automatically use the 37.8% radio-only station texture");
 assert(radio.includes("startStationSound();"),"Start the texture from a listening gesture");
 assert(F.WarmSignal&&F.noiseGain(42)>F.noiseGain(26),
   "The analogue engine still supports the chosen warmth");

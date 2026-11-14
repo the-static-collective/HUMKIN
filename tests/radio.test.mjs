@@ -67,7 +67,7 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[],serverAheadMs=null){
+function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[],serverAheadMs=null,effectClass=null){
  const elems=new Map(),listeners={},copies=[],downloads=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn},
@@ -114,6 +114,7 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
  runInNewContext(artJs,context);
  runInNewContext(memoryJs,context);
  runInNewContext(warmJs,context);
+ if(effectClass)window.HUMKIN_WARM_SIGNAL={WarmSignal:effectClass};
  runInNewContext(clockJs,context);
  runInNewContext(js,context);
  return {$,time,copies,listeners,session,window,document,requests,URLMock,downloads};
@@ -338,14 +339,35 @@ assert(programmedCover.session.metadata.artwork[0].src.endsWith(showPath),
 
 assert.equal(newTune.window.HUMKIN_RADIO.state.hourWindowMs,3600000,
  "Road Shuffle must expose the one-hour repeat exclusion policy");
-assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.intensity,42,
- "The station should have a fixed 42% analogue listening profile");
+assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.intensity,37.8,
+ "The station should have a fixed 37.8% analogue listening profile");
 assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.enabled,false,
  "The browser must not start effects before a listening gesture");
 assert(!html.includes('id="warm-toggle"')&&!html.includes('id="warm-intensity"'),
  "The audio texture should be part of radio, without a separate control panel");
 assert(js.includes("startStationSound();"),
  "Listening events should activate the station's sound without user configuration");
+class MockAtmosphere{
+ constructor(_audio,options){this.intensity=options.intensity;this.enabled=false;this.playing=false}
+ enable(){this.enabled=true;return Promise.resolve(true)}
+ setPlayback(value){this.playing=!!value}
+ status(){return {enabled:this.enabled,playing:this.playing,intensity:this.intensity}}
+}
+const modes=fixture(rotation,[],[],[],null,[],false,[],null,MockAtmosphere);
+await flush();
+modes.$("listen").click();await flush();
+assert.equal(modes.window.HUMKIN_RADIO.state.warmSignal.playing,true,
+ "Same-time radio turns on analogue static");
+modes.$("mode-shuffle").click();await flush();
+assert.equal(modes.$("air").paused,false,"Road Shuffle leaves music playing");
+assert.equal(modes.window.HUMKIN_RADIO.state.warmSignal.playing,false,
+ "Road Shuffle must play cleanly");
+modes.$("mode-clock").click();await flush();
+assert.equal(modes.window.HUMKIN_RADIO.state.warmSignal.playing,true,
+ "Same-time radio restores the atmosphere");
+modes.$("spotlight").click();await flush();
+assert.equal(modes.window.HUMKIN_RADIO.state.warmSignal.playing,false,
+ "The new single must play cleanly");
 
 // Two receivers should reference the same server clock, even when one device's
 // wall clock runs a second behind. JOIN can adjust its first song after
