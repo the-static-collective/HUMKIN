@@ -16,7 +16,6 @@ let artAssets=new Map();
 const shufflePolicy=window.HUMKIN_ROTATION_MEMORY;
 const lastPlayed=shufflePolicy?.load(window.localStorage,Date.now())||new Map();
 const warmSignal=new window.HUMKIN_WARM_SIGNAL.WarmSignal(audio,{window});
-let warmInitialized=false;
 function setWarmStatus(){
  const btn=$("warm-toggle");
  btn.textContent=warmSignal.enabled?"◉ WARM SIGNAL · ON":"✳ WARM SIGNAL · OFF";
@@ -163,7 +162,7 @@ function updateModeUI(){
   $("catch-up").hidden=mode!=="clock"||Boolean(remoteStream);
   $("next-song").hidden=mode!=="shuffle";
   modeHelp.textContent=mode==="shuffle"
-   ?"Your own continuous, no-repeat shuffle. Next Song works here; audio continues through the entire crate."
+   ?"Your own radio shuffle remembers songs for one hour. If all have been heard recently, it chooses the least-recently played."
    :remoteStream
    ?"Tuning an independent continuous broadcast stream. Everyone connected to that stream receives the same live program."
    :"Same-time radio approximates a shared broadcast clock using official MP3s. It isn't a real server broadcast; playback may drift with buffering.";
@@ -396,7 +395,13 @@ function buildShuffle(previous=-1){
   // Keep the shuffle random while putting anything played in the last hour at
   // the back of the new cycle. The listener's history survives page refreshes.
   const sorted=shufflePolicy?.freshFirst(songs,tracks,lastPlayed,Date.now())||songs;
-  if(sorted.length>1&&sorted[0]===previous)[sorted[0],sorted[1]]=[sorted[1],sorted[0]];
+  if(sorted.length>1&&sorted[0]===previous){
+    const alternative=sorted.findIndex((i,j)=>j>0&&i!==previous&&
+      (shufflePolicy?.fresh(lastPlayed,tracks[i]?.id,Date.now())??true));
+    // Only fall back to the next candidate when the entire catalog was recent.
+    const swap=alternative>=0?alternative:1;
+    [sorted[0],sorted[swap]]=[sorted[swap],sorted[0]];
+  }
   order=withStationIds(sorted);
   cursor=0;
 }
@@ -404,7 +409,7 @@ function startShuffle(shouldPlay){
   if(!order.length)buildShuffle(index);
   if(!order.length)return;
   showTrack(order[cursor]);setTrackSource(order[cursor],0,shouldPlay);
-  setMessage("Your road shuffle is ready. No song repeats until the rotation completes.");
+  setMessage("Road Shuffle remembers every recording for 60 minutes, even after refresh. A small library falls back to least-recently heard.");
 }
 function nextShuffle(shouldPlay){
   if(!order.length)return;
