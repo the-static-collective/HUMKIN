@@ -167,7 +167,7 @@ function renderArtShelf(){
    shelf.append(el("p","No covers added yet. Upload your first image above."));
  }
  for(const asset of artAssets){
-   const tile=button("","", "art-tile"); // The selector remains a button for keyboard accessibility.
+   const tile=button("",()=>{},"art-tile"); // Keyboard-accessible gallery tile.
    // Remove the default click action; this tile chooses art for an open editor.
    const picture=el("img");picture.src=asset.url;picture.alt=asset.label+" cover";
    picture.loading="lazy";
