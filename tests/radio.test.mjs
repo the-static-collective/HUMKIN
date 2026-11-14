@@ -333,11 +333,13 @@ assert(programmedCover.session.metadata.artwork[0].src.endsWith(showPath),
 
 assert.equal(newTune.window.HUMKIN_RADIO.state.hourWindowMs,3600000,
  "Road Shuffle must expose the one-hour repeat exclusion policy");
+assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.intensity,42,
+ "The station should have a fixed 42% analogue listening profile");
 assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.enabled,false,
- "The radio must not start with unexpected static or popping");
-assert.equal(newTune.$("warm-toggle").attributes["aria-pressed"],"false");
-newTune.$("warm-intensity").value="65";
-newTune.$("warm-intensity").emit("input");await flush();
-assert.equal(newTune.window.HUMKIN_RADIO.state.warmSignal.intensity,65);
+ "The browser must not start effects before a listening gesture");
+assert(!html.includes('id="warm-toggle"')&&!html.includes('id="warm-intensity"'),
+ "The audio texture should be part of radio, without a separate control panel");
+assert(js.includes("startStationSound();"),
+ "Listening events should activate the station's sound without user configuration");
 
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");
