@@ -51,10 +51,12 @@
       <button id="catch-up" type="button" disabled>⟳ CATCH UP TO AIR</button>
       <button id="next-song" type="button" hidden disabled>NEXT SONG →</button>
       <button id="share-station" type="button">↗ SHARE STATION</button>
+      <button id="phone-playlist" type="button" disabled>⇩ PHONE PLAYER PLAYLIST</button>
     </div>
-    <audio id="air" preload="none" controls aria-label="HUMKIN RADIO audio playback"></audio>
+    <audio id="air" preload="auto" controls aria-label="HUMKIN RADIO audio playback"></audio>
     <div class="status-row"><span id="playback-message" role="status" aria-live="polite">Choose TUNE IN to begin.</span><span id="counter" aria-label="Current rotation progress">✳</span></div>
 <p id="on-deck" class="preview-note" aria-live="off">ON DECK · The station is getting its records together.</p>
+<p class="mode-help" style="margin-top:12px"><strong>Screen-off listening:</strong> For dependable background track changes on Android, export the <strong>PHONE PLAYER PLAYLIST</strong> above and open its .m3u file in VLC or another native playlist-capable music player. This downloads the playlist, not the songs; internet is still needed. It does not carry timed shows. The browser radio may pause when Android suspends its tab.</p>
   </div>
 </section>
 <div class="strip" aria-hidden="true">✳ &nbsp; THE ROAD IS LONG · THE MUSIC IS FREE &nbsp; ✳ &nbsp; THE ROAD IS LONG · THE MUSIC IS FREE &nbsp; ✳</div>
