@@ -6,7 +6,7 @@
  * Noise/pops have real stereo width, with brief mono-centered signal fades and
  * a gentle temporary playback-volume sag for the "tuning" impression.
  *
- * Starts after a listening gesture; defaults to the station's 42% texture. No uploads.
+ * Starts after a listening gesture; defaults to the station's 37.8% texture. No uploads.
  */
 (function(root){
 "use strict";
@@ -15,7 +15,7 @@ const RADIO_BPM=92;
 const BEAT_SECONDS=60/RADIO_BPM;
 const PHRASE_BEATS=4; // one slow rising/falling breath per four radio beats
 const SWELL_HZ=RADIO_BPM/60/PHRASE_BEATS;
-const SWELL_DEPTH=.115; // ±11.5% of the 42% static mix, never an audible tremolo
+const SWELL_DEPTH=.115; // ±11.5% of the static mix, never an audible tremolo
 function beatMappedInterval(random,intensity){
  // Subtle hiss events land in the station's 92 BPM grid, not a rigid tick.
  return Math.max(BEAT_SECONDS,
@@ -38,8 +38,8 @@ class WarmSignal{
   this.media=media;
   this.win=options.window||root;
   this.enabled=false;this.playing=false;
-  this.intensity=clamp(options.intensity??42,0,100);
-  this.ctx=null;this.noise=null;this.gain=null;this.merger=null;
+  this.intensity=clamp(options.intensity??37.8,0,100);
+  this.ctx=null;this.noise=null;this.gain=null;this.merger=null;this.popBus=null;
   this.swell=null;this.swellDepth=null;
   this.widthNodes=[];this.timer=null;this.restoreTimer=null;
   this.baseVolume=Number.isFinite(media.volume)?media.volume:1;
@@ -92,6 +92,8 @@ class WarmSignal{
   this.gain=ctx.createGain();this.gain.gain.value=0;
   merge.connect(high);high.connect(low);low.connect(this.gain);
   this.gain.connect(ctx.destination);
+  this.popBus=ctx.createGain();this.popBus.gain.value=0;
+  this.popBus.connect(ctx.destination);
   // WebAudio-native sine LFO keeps moving when JS timers are throttled.
   // It modulates ONLY the independent static bed, not the music signal.
   const swell=ctx.createOscillator();
@@ -113,12 +115,27 @@ class WarmSignal{
  }
  applyGain(){
   if(!this.gain||!this.ctx)return;
-  const volume=this.enabled&&this.playing?noiseGain(this.intensity):0;
-  this.gain.gain.setTargetAtTime(volume,this.ctx.currentTime,.14);
-  this.swellDepth?.gain.setTargetAtTime(volume*SWELL_DEPTH,this.ctx.currentTime,.14);
+  const on=this.enabled&&this.playing,now=this.ctx.currentTime;
+  const volume=on?noiseGain(this.intensity):0;
+  if(on){
+   this.gain.gain.setTargetAtTime(volume,now,.14);
+   this.swellDepth?.gain.setTargetAtTime(volume*SWELL_DEPTH,now,.14);
+  }else{
+   // Cut the whole ambience immediately on switching to clean playback.
+   this.gain.gain.cancelScheduledValues?.(now);
+   this.gain.gain.setValueAtTime(0,now);
+   this.swellDepth?.gain.cancelScheduledValues?.(now);
+   this.swellDepth?.gain.setValueAtTime(0,now);
+  }
+  this.popBus?.gain.setValueAtTime(on?1:0,now);
  }
  setPlayback(playing){
   this.playing=!!playing;
+  if(!this.playing){
+   if(this.restoreTimer!==null){this.win.clearTimeout(this.restoreTimer);this.restoreTimer=null}
+   this.setWidth(1);
+   this.setVolume(this.baseVolume);
+  }
   this.applyGain();
  }
  setVolume(value){
@@ -151,7 +168,7 @@ class WarmSignal{
   const level=(.012+this.intensity/100*.055)*(.4+Math.random()*.55);
   g.gain.setValueAtTime(level,now);
   g.gain.exponentialRampToValueAtTime(.0001,now+frames/ctx.sampleRate);
-  src.connect(high);high.connect(g);g.connect(ctx.destination);
+  src.connect(high);high.connect(g);g.connect(this.popBus);
   src.onended=()=>{src.disconnect();high.disconnect();g.disconnect()};
   src.start(now);src.stop(now+frames/ctx.sampleRate);
  }
@@ -189,7 +206,7 @@ class WarmSignal{
   }
  }
  disable(){
-  this.enabled=false;
+  this.enabled=false;this.playing=false;
   if(this.timer!==null){this.win.clearTimeout(this.timer);this.timer=null}
   if(this.restoreTimer!==null){this.win.clearTimeout(this.restoreTimer);this.restoreTimer=null}
   this.setWidth(1);
@@ -205,6 +222,7 @@ class WarmSignal{
   try{this.swell?.stop()}catch{}
   try{this.swell?.disconnect()}catch{}
   try{this.swellDepth?.disconnect()}catch{}
+  try{this.popBus?.disconnect()}catch{}
   if(this.ctx){this.ctx.close().catch?.(()=>{});this.ctx=null}
   this.swell=null;this.swellDepth=null;
  }

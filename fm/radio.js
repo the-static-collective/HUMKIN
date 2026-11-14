@@ -47,16 +47,16 @@ function beginHostedMetadata(){
 let artAssets=new Map();
 const shufflePolicy=window.HUMKIN_ROTATION_MEMORY;
 const lastPlayed=shufflePolicy?.load(window.localStorage,Date.now())||new Map();
-// Radio's established 42% atmosphere is part of playback, not a separate
-// control or setting. It starts within a listener gesture for Web Audio safety.
-const warmSignal=new window.HUMKIN_WARM_SIGNAL.WarmSignal(audio,{window,intensity:42});
+// Analogue static belongs ONLY to same-time radio (37.8%, down 4.2 points).
+// Start within a listener gesture for Web Audio safety.
+const warmSignal=new window.HUMKIN_WARM_SIGNAL.WarmSignal(audio,{window,intensity:37.8});
 let warmStarting=false;
 function startStationSound(){
-  if(warmSignal.enabled||warmStarting)return;
+  if(mode!=="clock"||warmSignal.enabled||warmStarting)return;
   warmStarting=true;
   // Never delay or interrupt the MP3 player, even if browser Web Audio fails.
   Promise.resolve(warmSignal.enable()).then(()=>{
-    warmSignal.setPlayback(active&&!audio.paused);
+    warmSignal.setPlayback(mode==="clock"&&active&&!audio.paused);
   }).catch(()=>{}).finally(()=>{warmStarting=false});
 }
 // Only explicit TUNE IN / CATCH UP seeks into the shared clock. Track-to-track
@@ -372,7 +372,7 @@ function updateListen(){
   $("listen").textContent=playing?"Ⅱ PAUSE RADIO":"▶ TUNE IN";
   status.textContent=playing?"✳ TUNED IN":"READY TO TUNE IN";
   status.classList.toggle("playing",playing);
-  warmSignal.setPlayback(playing);
+  warmSignal.setPlayback(mode==="clock"&&playing);
 }
 function pause(){
   seekToken++;switching=false;active=false;
@@ -499,8 +499,8 @@ function nextShuffle(shouldPlay){
 function spotlight(id){
   const chosen=tracks.findIndex(t=>t.id===id);
   if(chosen<0)return;
-  startStationSound();
   mode="shuffle";pendingClockJoin=null;resetRate();
+  warmSignal.setPlayback(false);
   buildShuffle();
   const slot=order.indexOf(chosen);
   if(slot>0)[order[0],order[slot]]=[order[slot],order[0]];
@@ -513,15 +513,18 @@ function spotlight(id){
 function changeMode(target){
   if(target!=="clock"&&target!=="shuffle")return;
   const wasPlaying=!audio.paused&&active;
-  mode=target;order=[];pendingClockJoin=null;resetRate();updateModeUI();
+  mode=target;order=[];pendingClockJoin=null;resetRate();
+  if(target==="shuffle")warmSignal.setPlayback(false);
+  else if(wasPlaying)startStationSound();
+  updateModeUI();
   if(target==="clock")startClock(wasPlaying);
   else startShuffle(wasPlaying);
 }
 async function startRadio(){
   if(!tracks.length&&!remoteStream)return;
   if(!audio.paused){pause();return}
-  startStationSound();
   if(mode==="clock"){
+    startStationSound();
     // A stale paused session must catch up to the shared air clock.
     startClock(true);
   }else if(index<0||!audio.src){
