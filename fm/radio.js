@@ -387,7 +387,7 @@ async function startRadio(){
     startShuffle(true);
   }else{
     active=true;
-    try{await audio.play()}catch{active=false;setMessage("Your browser couldn't start playback. Tap the built-in player.");}
+    try{await audio.play();preloadNext()}catch{active=false;setMessage("Your browser couldn't start playback. Tap the built-in player.");}
     updateListen();
   }
 }
@@ -437,6 +437,7 @@ $("phone-playlist").addEventListener("click",downloadNativePlaylist);
 audio.addEventListener("play",()=>{
   active=true;setPlaybackState("playing");updateListen();
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
+  preloadNext();
 });
 audio.addEventListener("playing",()=>{active=true;setPlaybackState("playing");updateListen()});
 audio.addEventListener("pause",()=>{
