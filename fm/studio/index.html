@@ -30,10 +30,27 @@ label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
 .note{border-left:4px solid #82547c;padding:9px 11px;background:#fff8e7;font-size:.88rem}
 #auth,#feedback{font-weight:850;min-height:20px}#cue{width:100%;max-width:600px;margin:8px 0}
 .hidden{display:none!important}
+
+.script-vault{background:#eff5e8!important}
+#script-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:13px;margin:14px 0}
+.scene-card{border:2px solid #291d40;border-radius:12px;padding:14px;background:#fff8ee;min-width:0}
+.scene-card h3{font-size:1.04rem;line-height:1.24;margin:9px 0}
+.scene-card .story-text{font-size:.91rem;line-height:1.5;white-space:pre-wrap}
+.scene-card .direction{font-size:.8rem;color:#5c4d65;line-height:1.4;margin:10px 0}
+.scene-card .badge{display:inline-block;line-height:1.4}
+.scene-card .row button{font-size:.79rem}
+.scene-card.real{background:#fff1cf;border-style:dashed}
+.producer-roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px}
+.producer-roles article{border:1px solid #8d8292;border-radius:8px;padding:9px;background:#fff}
+.producer-roles h4{margin:6px 0}.producer-roles p{font-size:.82rem;line-height:1.4}
+.daypart-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:12px 0}
+.daypart-list article{border-left:4px solid #836b92;padding:7px;background:#f8f2e8;font-size:.82rem}
+.daypart-list strong{display:block}
 @media(max-width:760px){.columns,.fieldset{grid-template-columns:1fr}#rundown li{grid-template-columns:57px minmax(0,1fr)}
 #rundown li .controls{grid-column:2}.cart{padding:9px}}
 </style>
 <script defer src="./clock.js"></script>
+<script defer src="./bible.js"></script>
 <script type="module" src="./studio.js"></script></head>
 <body>
 <header class="topline"><a class="brand" href="../">HUMKIN <span>✳</span></a>
@@ -43,6 +60,7 @@ label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
 <h1>THE CART<br><em>MACHINE.</em></h1>
 <p><a href="../network/">✳ RADIO HOUSE ↗</a> · <a href="../line/manage/">☎ LISTENER INBOX ↗</a> · <a href="../line/">REQUEST LINE ↗</a></p>
 <p>A mobile-friendly backstage production room: label recordings as news, station IDs, advertisements, comedy, and community reports; cue them without interrupting public radio; assemble the first hour of our very questionable station.</p>
+<p class="row"><a class="button" href="#script-vault">✳ OPEN THE SCRIPT VAULT &amp; STATION STAFF ↘</a></p>
 <section class="rose"><h2>✳ Access</h2>
 <p id="auth" role="status">Checking private studio access…</p>
 <a class="button" href="../load/" id="sign-in">SIGN IN AT CRATE LOADER ↗</a>
@@ -82,6 +100,18 @@ label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
 <p id="draft-status" role="status" class="muted"></p>
 </section>
 </div>
+<section id="script-vault" class="script-vault">
+<h2>3 · THE STATION BIBLE &amp; SCRIPT VAULT</h2>
+<p class="muted">Our original radio world: five recurring voices, six proposed dayparts, twelve short production scripts, and one three-note station signature. No imitation of existing game audio. Every script here is unrecorded until you make it.</p>
+<p id="script-status" role="status" class="muted">Opening the station's notebooks…</p>
+<div id="station-signature" class="note"></div>
+<h3>THE STAFF</h3><div id="station-staff" class="producer-roles"></div>
+<h3>THE PROGRAM CLOCK <small class="muted">proposed, not scheduled</small></h3>
+<div id="station-dayparts" class="daypart-list"></div>
+<h3>THE SCRIPT CARDS</h3>
+<p class="note">A fictional sketch is not real news. A Community Desk card is a HOLD template, not a published announcement. Copy a script to your production tool, or add it as an <strong>unrecorded placeholder</strong> to the rundown. Only an actual uploaded recording may replace it.</p>
+<div id="script-cards"></div>
+</section>
 </div>
 <p id="feedback" role="status"></p>
 </main><footer><a href="../">← LIVE RADIO</a><span>ON AIR SOMEWHERE · OFF AIR HERE</span><a href="../manage/">STATION MANAGER</a></footer>

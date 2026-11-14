@@ -5,10 +5,12 @@ const OWNER="us@abundent.org",BUCKET="humkin-radio-live";
 const db=createClient(API,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 const CLOCK=window.HUMKIN_STUDIO_CLOCK;
+const BIBLE=window.HUMKIN_STATION_BIBLE;
 const labels=new Map(CLOCK.DEPARTMENTS);
 const ORIGIN="https://humkin.abundent.org/fm/";
 let user=null,tracks=[],carts=[],draftId=null,rundown=[],busy=false;
 let draftSavedAt=0;
+let stationBible=null;
 const el=(tag,value)=>{const x=document.createElement(tag);if(value!==undefined)x.textContent=String(value);return x};
 function feedback(text){$("feedback").textContent=text}
 function status(text){$("draft-status").textContent=text}
@@ -100,6 +102,71 @@ function renderCarts(){
   card.append(row);shelf.append(card);
  }
  if(!carts.length)shelf.append(el("p","No carts yet. Add a recorded station ID, news item, jingle or sketch using the controls above."));
+}
+
+function addSceneToRundown(scene){
+ if(rundown.length>=CLOCK.MAX_SLOTS)return status("Rundown is full.");
+ rundown.push(BIBLE.asRundown(scene));
+ renderRundown();
+ status((scene.kind==="real_template"?"Unverified producer template":"Unrecorded scripted fiction")+
+   " added to the visible rundown. This is NOT an audio file and cannot be scheduled until recorded, reviewed and uploaded.");
+}
+async function copyScene(scene){
+ const text=BIBLE.copyText(scene);
+ try{
+  if(!navigator.clipboard?.writeText)throw Error("Clipboard unavailable");
+  await navigator.clipboard.writeText(text);
+  status("Copied \""+scene.label+"\" for recording. The script is not on air.");
+ }catch{
+  // Mobile browsers without clipboard permissions can save the same source.
+  const url=URL.createObjectURL(new Blob([text+"\\n"],{type:"text/plain"}));
+  const link=el("a");link.href=url;
+  link.download="HUMKIN-"+scene.id+".txt";
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  status("Saved the script as a text file for recording.");
+ }
+}
+function renderBible(){
+ const panel=$("script-cards"),staff=$("station-staff"),dayparts=$("station-dayparts");
+ for(const node of [panel,staff,dayparts])node.replaceChildren();
+ if(!stationBible){
+  $("script-status").textContent="Station-bible scripts unavailable right now. Existing cart and rundown tools still work.";
+  return;
+ }
+ $("script-status").textContent=stationBible.scenes.length+
+  " original scripts · "+stationBible.roles.length+" cast voices · "+
+  stationBible.dayparts.length+" proposed dayparts · human review before broadcast.";
+ const signature=stationBible.sonic_signature;
+ $("station-signature").textContent="THE LANTERN · "+signature.notes.join(" → ")+
+  " · "+signature.tempo_bpm+" BPM · "+signature.direction;
+ for(const role of stationBible.roles){
+  const card=el("article");
+  card.append(el("h4",role.name+" · "+role.job),el("p",role.principle),
+   el("p","VOICE: "+role.voice));
+  staff.append(card);
+ }
+ for(const day of stationBible.dayparts){
+  const card=el("article");
+  card.append(el("strong",day.time+" · "+day.name),el("span",day.format));
+  dayparts.append(card);
+ }
+ for(const scene of stationBible.scenes){
+  const card=el("article");card.className="scene-card"+
+    (scene.kind==="real_template"?" real":"");
+  const badge=el("span",scene.kind==="real_template"?
+   "VERIFY FIRST · NOT FOR AIR":"ORIGINAL FICTION · NOT RECORDED","badge");
+  const heading=el("h3",scene.label);
+  const info=el("p",scene.role+" · "+CLOCK.prettyTime(scene.expected_seconds));
+  info.className="muted";
+  const direction=el("p",scene.direction,"direction");
+  const dialogue=el("p",scene.script,"story-text");
+  const actions=el("div");actions.className="row";
+  actions.append(button("COPY SCRIPT",()=>copyScene(scene),"primary"),
+    button("+ RUNDOWN",()=>addSceneToRundown(scene)));
+  card.append(badge,heading,info,direction,dialogue,actions);
+  panel.append(card);
+ }
 }
 function recordTime(rows){
  return CLOCK.timeOf(rows,new Map(tracks.map(t=>[t.id,t])));
@@ -214,17 +281,22 @@ async function boot(){
   await requireOwner();
   $("auth").textContent="UNLOCKED · "+user.email+" · this production room is private.";
   $("sign-in").classList.add("hidden");
-  const [response,cloud,overrides]=await Promise.all([
+  const [response,cloud,overrides,bibleRes]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks").select("id,title,artist,album,duration_seconds,storage_path,enabled,kind,published_at")
      .limit(1500),
-   db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,kind,enabled").limit(1000)
+   db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,kind,enabled").limit(1000),
+   fetch("./station-bible.json",{cache:"no-store"}).catch(()=>null)
   ]);
   if(!response.ok)throw Error("Cannot read published station catalog");
   if(cloud.error||overrides.error)throw Error(cloud.error?.message||overrides.error?.message);
   const config=await response.json();
+  try{
+   stationBible=bibleRes?.ok?BIBLE.validate(await bibleRes.json()):null;
+  }catch{stationBible=null}
   tracks=buildLibrary(config,cloud.data,overrides.data);
   renderPickers();
+  renderBible();
   await refreshContent();
   $("workbench").classList.remove("hidden");
   feedback("Production room ready · "+tracks.filter(available).length+" available recordings.");
@@ -306,11 +378,12 @@ $("save-cart").addEventListener("click",saveCart);
 $("song-add").addEventListener("click",()=>{const t=track($("song-pick").value);if(t)addRundownTrack(t)});
 $("pilot").addEventListener("click",()=>{
  if(rundown.length&&!confirm("Replace the UNSAVED visible rundown with a fresh First Day pilot? Saved draft remains until you press SAVE PRIVATE DRAFT."))return;
- const built=CLOCK.pilot(tracks);
+ const beats=stationBible?BIBLE.pilotBeats(stationBible):undefined;
+ const built=CLOCK.pilot(tracks,14,beats);
  rundown=built.rundown;$("draft-title").value="HUMKIN RADIO · THE FIRST DAY";
  renderRundown();
  status("Pilot assembled: "+built.songCount+" real music slots and "+built.unrecorded+
-  " scripted spoken beats awaiting recordings. Estimated "+CLOCK.prettyTime(built.totalSeconds)+
+  " scripted spoken beats awaiting recordings (including one HOLD for real, verified community news). Estimated "+CLOCK.prettyTime(built.totalSeconds)+
   ". Save the private draft to make it durable.");
 });
 $("clear").addEventListener("click",()=>{

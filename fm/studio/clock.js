@@ -48,7 +48,12 @@ function seededRandom(seed){
    x^=x+Math.imul(x^(x>>>7),x|61);
    return ((x^(x>>>14))>>>0)/4294967296};
 }
-function pilot(tracks,seed=14){
+function pilot(tracks,seed=14,beats=PILOT_BEATS){
+ if(!Array.isArray(beats)||beats.length<2||beats.length>30||
+    beats.some(s=>!Array.isArray(s)||s.length!==4||
+      typeof s[1]!=="string"||typeof s[2]!=="string"||
+      !Number.isInteger(s[3])||s[3]<5||s[3]>600))
+   throw Error("Invalid scripted program beats.");
  const songs=(Array.isArray(tracks)?tracks:[])
   .filter(x=>x?.kind==="song"&&x?.enabled&&x?.published&&x?.duration>0)
   .sort((a,b)=>String(a.id).localeCompare(String(b.id)));
@@ -68,16 +73,16 @@ function pilot(tracks,seed=14){
   const t=songs[i++];result.push({type:"track",trackId:t.id,label:t.title});
   seconds+=t.duration;return true;
  };
- addScript(PILOT_BEATS[0]);
- for(let n=1;n<PILOT_BEATS.length;n++){
-  const futureBeats=PILOT_BEATS.slice(n).reduce((a,b)=>a+b[3],0);
+ addScript(beats[0]);
+ for(let n=1;n<beats.length;n++){
+  const futureBeats=beats.slice(n).reduce((a,b)=>a+b[3],0);
   // Aim for the full hour while distributing musical blocks across all beats.
   // A song that causes an overrun is deferred; all spoken slots remain placeholders.
   const room=3600-futureBeats-90;
-  const target=(n/(PILOT_BEATS.length-1))*room;
+  const target=(n/(beats.length-1))*room;
   while(i<songs.length&&seconds+songs[i].duration<target&&result.length<MAX_SLOTS-3)
    addTrack();
-  addScript(PILOT_BEATS[n]);
+  addScript(beats[n]);
  }
  // Do not overrun the hour; a short reserved gap leaves space for live talk.
  while(i<songs.length&&seconds+songs[i].duration<=3600&&result.length<MAX_SLOTS)
