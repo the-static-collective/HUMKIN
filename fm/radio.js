@@ -11,7 +11,39 @@ const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
-let remoteStream=null,programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
+let remoteStream=null,hostedNowPlayingUrl=null,hostedPollTimer=null;
+let programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
+async function refreshHostedMetadata(){
+ if(!remoteStream||!hostedNowPlayingUrl)return;
+ try{
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),7000);
+  let response;
+  try{
+   response=await fetch(hostedNowPlayingUrl,{cache:"no-store",signal:controller.signal});
+   if(!response.ok)throw Error("Station status unavailable");
+  }finally{clearTimeout(timer)}
+  const data=window.HUMKIN_HOSTED_NOWPLAYING?.parse(await response.json());
+  if(!data||!remoteStream||mode!=="clock")return;
+  title.textContent=data.title;
+  artist.textContent=data.artist+" · LIVE STREAM";
+  if(data.artwork){
+   $("current-art").src=data.artwork;
+   $("current-art").alt=data.title+" cover";
+  }
+  setMediaInfo({...data,album:"HUMKIN RADIO",artwork:data.artwork||fileUrl("cover.jpg",root)});
+  counter.textContent=data.listeners===null?"ON THE AIR":
+    "ON THE AIR · "+data.listeners+" LISTENING";
+  $("on-deck").textContent=data.online?"✳ ONE TRANSMITTER · ONE SHARED SIGNAL":
+    "✳ TRANSMITTER STATUS UNKNOWN · RETRYING";
+ }catch{} // The stream itself never depends on an optional metadata endpoint.
+}
+function beginHostedMetadata(){
+ if(hostedPollTimer!==null)clearInterval(hostedPollTimer);
+ if(!remoteStream||!hostedNowPlayingUrl)return;
+ refreshHostedMetadata();
+ hostedPollTimer=setInterval(refreshHostedMetadata,17000);
+}
 let artAssets=new Map();
 const shufflePolicy=window.HUMKIN_ROTATION_MEMORY;
 const lastPlayed=shufflePolicy?.load(window.localStorage,Date.now())||new Map();
@@ -623,8 +655,10 @@ async function boot(){
     if(!Number.isFinite(epoch))throw Error("Invalid clock");
     if(config.live_stream_url){
       const url=new URL(config.live_stream_url);
-      if(url.protocol==="https:")remoteStream=url.href;
+      if(url.protocol==="https:"&&!url.username&&!url.password)remoteStream=url.href;
     }
+    if(remoteStream&&config.live_nowplaying_url)
+      hostedNowPlayingUrl=window.HUMKIN_HOSTED_NOWPLAYING?.safeHttps(config.live_nowplaying_url)||null;
     if(config.source_type==="existing_catalog"){
       const res=await fetch(fileUrl(config.catalog||"../tracks.json",here),{cache:"no-cache"});
       if(!res.ok)throw Error("Album data unavailable");
@@ -677,6 +711,7 @@ async function boot(){
       (stationIds&&stationSettings.bumper_every?" STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
+    beginHostedMetadata();
     setMessage("Press TUNE IN. No autoplay; you're in control.");
     status.textContent="✳ THE DIAL IS READY";
   }catch(err){

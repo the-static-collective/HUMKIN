@@ -198,6 +198,7 @@
   ],
   "synced_clock_epoch_utc": "2026-11-13T00:00:00Z",
   "live_stream_url": null,
+  "live_nowplaying_url": null,
   "metadata_url": null,
   "request_stems_url": "../dj.html",
   "creator_email": "us@abundent.org",

@@ -1,0 +1,33 @@
+name: Check a real HUMKIN Radio cloud transmitter
+on:
+  workflow_dispatch:
+    inputs:
+      stream_url:
+        description: "Verified PUBLIC HTTPS listener MP3 mount URL (no passwords)"
+        required: true
+        type: string
+      nowplaying_url:
+        description: "PUBLIC AzuraCast /api/nowplaying/HUMKIN_SHORTCODE URL (no passwords)"
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      STREAM_URL: ${{ inputs.stream_url }}
+      NOWPLAYING_URL: ${{ inputs.nowplaying_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify both public endpoints without publishing or spending
+        shell: bash
+        run: |
+          python3 tools/radio-broadcast/host_preflight.py \
+            --stream-url "$STREAM_URL" --nowplaying-url "$NOWPLAYING_URL"
+      - name: Do not cut over the public HUMKIN receiver automatically
+        run: echo "Passing tests only proves these endpoints are reachable now; apply website config separately after review."

@@ -1,0 +1,85 @@
+{
+  "schema_version": "humkin.radio-house.sources/v1",
+  "reviewed_at": "2026-11-14",
+  "editorial_contract": {
+    "statement": "HUMKIN is an independent station; related source worlds retain their own editorial, media and publication authority.",
+    "no_partner_claim": true,
+    "require_explicit_license_before_rebroadcast": true,
+    "inherit_private_material": false
+  },
+  "worlds": [
+    {
+      "id": "humkin",
+      "name": "HUMKIN RADIO",
+      "owner": "HUMKIN / The Static Collective",
+      "relationship": "this_station",
+      "authority": "owner_controlled",
+      "site": "https://humkin.abundent.org/fm/",
+      "live_audio": null,
+      "rebroadcast_permission": "own_recordings_subject_to_rights_review",
+      "contribution": "Original music, station identity, entertainment, studio production, and the existing private Station Manager.",
+      "adaptations": [
+        "Station Manager, cover shelf, 92 BPM warm signal, one-hour rotation memory",
+        "Private cart machine and pilot rundown",
+        "Existing owned audio catalog; actual cloud transmitter still pending"
+      ],
+      "listener_portal": "https://humkin.abundent.org/fm/"
+    },
+    {
+      "id": "kinship",
+      "name": "Kinship Radio",
+      "owner": "Kinship Radio (independent)",
+      "relationship": "independent_source_world",
+      "authority": "kinship_only",
+      "site": "https://kinshipradio.org/main/",
+      "live_audio": null,
+      "rebroadcast_permission": "not_granted",
+      "contribution": "Producer workflow ancestry: sourced claims, explicit review, private prayer/volunteer boundaries, on-air confirmation, station memory and editorial return.",
+      "adaptations": [
+        "KINSHIP-001 source-linked radio candidate with observed / derived / interpretation / metaphor claim modes",
+        "KINSHIP-002–005 Fall Share Room: READY is not AIRED; receipt only after actual confirmed air",
+        "Shift handoffs, consent-and-license review, KEEP / WEIRD / COMPOST memory",
+        "Optional independent official Community Calendar and Morning Show links; no private prayer ingest"
+      ],
+      "sources": [
+        {
+          "label": "Official station",
+          "url": "https://kinshipradio.org/main/"
+        },
+        {
+          "label": "Volunteer & ambassador doors",
+          "url": "https://kinshipradio.org/main/ambassador-and-volunteer-faqs/"
+        },
+        {
+          "label": "Community calendar",
+          "url": "https://kinshipradio.org/main/events/"
+        }
+      ],
+      "upstream": "https://github.com/the-static-collective/static-live/blob/main/docs/KINSHIP-001.md"
+    },
+    {
+      "id": "rock-impact",
+      "name": "Rock Impact Makers International",
+      "owner": "Rock Impact Makers International Believers Ministry (independent, Nigeria)",
+      "relationship": "independent_source_world",
+      "authority": "rock_impact_only",
+      "site": "https://rockimpactmakersglobal.org/",
+      "live_audio": null,
+      "rebroadcast_permission": "not_granted",
+      "contribution": "Remote production and service-stream craft: OBS-based broadcast console, preflight, verified recording-before-streaming, scene changes and preservation when connectivity fails.",
+      "adaptations": [
+        "STREAM-001: GO LIVE → CHANGE SCENE → END + PRESERVE",
+        "Recording required before live streaming; network failure does not erase local witness",
+        "GHoT radio-house proposals for signed work, media priority, local operator approval",
+        "No observed transatlantic broadcast, verified OBS connection, or granted media license"
+      ],
+      "sources": [
+        {
+          "label": "Official ministry",
+          "url": "https://rockimpactmakersglobal.org/"
+        }
+      ],
+      "upstream": "https://github.com/the-static-collective/static-live/blob/main/examples/stream-001/README.md"
+    }
+  ]
+}
