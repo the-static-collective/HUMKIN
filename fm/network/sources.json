@@ -15,14 +15,15 @@
       "relationship": "this_station",
       "authority": "owner_controlled",
       "site": "https://humkin.abundent.org/fm/",
-      "live_audio": "https://humkin.abundent.org/fm/",
+      "live_audio": null,
       "rebroadcast_permission": "own_recordings_subject_to_rights_review",
       "contribution": "Original music, station identity, entertainment, studio production, and the existing private Station Manager.",
       "adaptations": [
         "Station Manager, cover shelf, 92 BPM warm signal, one-hour rotation memory",
         "Private cart machine and pilot rundown",
         "Existing owned audio catalog; actual cloud transmitter still pending"
-      ]
+      ],
+      "listener_portal": "https://humkin.abundent.org/fm/"
     },
     {
       "id": "kinship",
