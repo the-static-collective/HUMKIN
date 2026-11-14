@@ -11,6 +11,16 @@
 (function(root){
 "use strict";
 const SAVE_KEY="humkin-warm-signal-intensity-v1";
+const RADIO_BPM=92;
+const BEAT_SECONDS=60/RADIO_BPM;
+const PHRASE_BEATS=4; // one slow rising/falling breath per four radio beats
+const SWELL_HZ=RADIO_BPM/60/PHRASE_BEATS;
+const SWELL_DEPTH=.115; // ±11.5% of the 42% static mix, never an audible tremolo
+function beatMappedInterval(random,intensity){
+ // Subtle hiss events land in the station's 92 BPM grid, not a rigid tick.
+ return Math.max(BEAT_SECONDS,
+   Math.round(intervalSeconds(random,intensity)/BEAT_SECONDS)*BEAT_SECONDS);
+}
 function clamp(v,min,max){
  const n=Number(v);
  return Number.isFinite(n)?Math.max(min,Math.min(max,n)):min;
@@ -30,6 +40,7 @@ class WarmSignal{
   this.enabled=false;this.playing=false;
   this.intensity=clamp(options.intensity??42,0,100);
   this.ctx=null;this.noise=null;this.gain=null;this.merger=null;
+  this.swell=null;this.swellDepth=null;
   this.widthNodes=[];this.timer=null;this.restoreTimer=null;
   this.baseVolume=Number.isFinite(media.volume)?media.volume:1;
   this.internalVolume=this.baseVolume;
@@ -81,7 +92,14 @@ class WarmSignal{
   this.gain=ctx.createGain();this.gain.gain.value=0;
   merge.connect(high);high.connect(low);low.connect(this.gain);
   this.gain.connect(ctx.destination);
-  source.start();
+  // WebAudio-native sine LFO keeps moving when JS timers are throttled.
+  // It modulates ONLY the independent static bed, not the music signal.
+  const swell=ctx.createOscillator();
+  swell.type="sine";swell.frequency.value=SWELL_HZ;
+  const swellDepth=ctx.createGain();swellDepth.gain.value=0;
+  swell.connect(swellDepth);swellDepth.connect(this.gain.gain);
+  this.swell=swell;this.swellDepth=swellDepth;
+  source.start();swell.start();
   this.setWidth(1);
  }
  setWidth(value){
@@ -97,6 +115,7 @@ class WarmSignal{
   if(!this.gain||!this.ctx)return;
   const volume=this.enabled&&this.playing?noiseGain(this.intensity):0;
   this.gain.gain.setTargetAtTime(volume,this.ctx.currentTime,.14);
+  this.swellDepth?.gain.setTargetAtTime(volume*SWELL_DEPTH,this.ctx.currentTime,.14);
  }
  setPlayback(playing){
   this.playing=!!playing;
@@ -139,7 +158,7 @@ class WarmSignal{
  queue(){
   if(this.timer!==null){this.win.clearTimeout(this.timer);this.timer=null}
   if(!this.enabled)return;
-  const delay=intervalSeconds(Math.random,this.intensity)*1000;
+  const delay=beatMappedInterval(Math.random,this.intensity)*1000;
   this.timer=this.win.setTimeout(()=>{
    this.timer=null;
    if(this.enabled&&this.playing){
@@ -183,10 +202,15 @@ class WarmSignal{
   this.disable();
   try{this.noise?.stop()}catch{}
   try{this.noise?.disconnect()}catch{}
+  try{this.swell?.stop()}catch{}
+  try{this.swell?.disconnect()}catch{}
+  try{this.swellDepth?.disconnect()}catch{}
   if(this.ctx){this.ctx.close().catch?.(()=>{});this.ctx=null}
+  this.swell=null;this.swellDepth=null;
  }
 }
-const api=Object.freeze({WarmSignal,clamp,intervalSeconds,noiseGain,SAVE_KEY});
+const api=Object.freeze({WarmSignal,clamp,intervalSeconds,noiseGain,
+  beatMappedInterval,RADIO_BPM,BEAT_SECONDS,SWELL_HZ,SWELL_DEPTH,SAVE_KEY});
 if(typeof module!=="undefined"&&module.exports)module.exports=api;
 root.HUMKIN_WARM_SIGNAL=api;
 })(typeof window!=="undefined"?window:globalThis);

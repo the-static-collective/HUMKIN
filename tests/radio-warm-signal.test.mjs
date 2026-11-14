@@ -59,6 +59,7 @@ class Context{
  createBufferSource(){return new Node()}
  createGain(){return new Node()}
  createBiquadFilter(){return new Node()}
+ createOscillator(){return new Node()}
  createChannelSplitter(){return new Node()}
  createChannelMerger(){return new Node()}
  createMediaElementSource(){throw Error("Must not capture music: CORS failure can mute radio")}
@@ -76,6 +77,16 @@ assert.equal(effect.status().enabled,true);
 assert.equal(media.volume,.8,"Enabling effects must not change music volume by itself");
 effect.setPlayback(true);
 assert(effect.gain.gain.value>0,"Playing music should allow very soft static");
+assert.equal(F.RADIO_BPM,92,"Radio rhythm must be based on 92 BPM");
+assert(Math.abs(F.BEAT_SECONDS-60/92)<1e-10);
+assert(Math.abs(F.SWELL_HZ-92/240)<1e-10,"One sine swell per four beats");
+assert.equal(effect.swell.type,"sine");
+assert.equal(effect.swell.frequency.value,F.SWELL_HZ);
+assert(Math.abs(effect.swellDepth.gain.value-effect.gain.gain.value*.115)<.000001,
+  "Warm static gently rises and falls around its existing 42% bed");
+const beatInterval=F.beatMappedInterval(()=>.45,42);
+assert(Math.abs(beatInterval/F.BEAT_SECONDS-Math.round(beatInterval/F.BEAT_SECONDS))<1e-9,
+  "Random atmospheric events should respect the soft 92 BPM timing grid");
 effect.sag();
 assert(media.volume<.8&&media.volume>.6,"Short signal dip should be modest");
 for(const [id,callback] of [...timers]){if(id===effect.restoreTimer)callback()}
@@ -83,6 +94,7 @@ assert.equal(media.volume,.8,"Signal dip must restore the listener's prior volum
 effect.disable();
 assert.equal(effect.status().enabled,false);
 assert.equal(effect.gain.gain.value,0,"Signal layer must fade out when disabled");
+assert.equal(effect.swellDepth.gain.value,0,"The sine swell must stop modulating when paused");
 assert.equal(media.volume,.8,"Disabling the layer must not leave music attenuated");
 
 const page=read("fm/index.html"),css=read("fm/radio.css"),radio=read("fm/radio.js");

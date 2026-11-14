@@ -30,7 +30,41 @@ function startStationSound(){
 // Only explicit TUNE IN / CATCH UP seeks into the shared clock. Track-to-track
 // changes always begin at zero; re-tuning at every song end previously skipped
 // openings (often ~18 seconds) whenever loading or buffering ran behind.
-let clockBoundaryMs=0;
+let clockBoundaryMs=0,clockOffsetMs=0,clockCalibrated=false;
+// A new listener may join mid-song; correct THAT initial join once playback
+// actually begins, not each subsequent track. Natural transitions never seek.
+let pendingClockJoin=null;
+const stationNow=()=>Date.now()+clockOffsetMs;
+function resetRate(){
+  try{if(Math.abs((audio.playbackRate||1)-1)>.001)audio.playbackRate=1}catch{}
+}
+function finishClockJoin(){
+  if(pendingClockJoin===null||remoteStream||mode!=="clock"||audio.paused)return;
+  const chosen=pendingClockJoin;
+  pendingClockJoin=null;
+  if(index!==chosen)return;
+  const expected=tuneAt(stationNow());
+  if(!expected||expected.index!==index)return;
+  // This is explicitly tuned-in audio. Delayed MP3 decoding and network
+  // buffering have elapsed since the user pressed TUNE IN, so use NOW here.
+  // Do not do this at ordinary automatic song boundaries.
+  const duration=Number.isFinite(audio.duration)?audio.duration:tracks[index]?.duration;
+  const target=Math.max(0,Math.min(expected.position,Math.max(0,(duration||0)-.5)));
+  if(Number.isFinite(target)&&Math.abs((audio.currentTime||0)-target)>.15){
+    try{audio.currentTime=target}catch{}
+  }
+}
+function gentlyAlignClock(){
+  if(mode!=="clock"||remoteStream||!active||audio.paused||switching||
+      pendingClockJoin!==null||index<0)return resetRate();
+  const expected=tuneAt(stationNow());
+  if(!expected||expected.index!==index)return resetRate();
+  // ±1.8% is almost imperceptible. Drift >2.4 sec is left alone rather than
+  // skipping introductions: CATCH UP is the explicit action for large errors.
+  const rate=window.HUMKIN_CLOCK_SYNC?.rateForDrift(
+    expected.position-Number(audio.currentTime))||1;
+  try{if(Math.abs((audio.playbackRate||1)-rate)>.002)audio.playbackRate=rate}catch{}
+}
 // Preload one bounded MP3 over HTTP during the current song, not at its end.
 // Prefetch failure is harmless: the native <audio> element uses its URL.
 let prepared=null, activeBlobUrl=null, preloadGeneration=0;
@@ -183,7 +217,7 @@ function updateOnDeck(){
       if(tracks[next])names.push(tracks[next].title);
     }
   }else if(mode==="clock"&&!remoteStream&&tracks.length){
-    let when=Date.now();
+    let when=stationNow();
     let current=tuneAt(when);
     for(let n=0;n<3&&current;n++){
       const duration=tracks[current.index]?.duration||0;
@@ -283,7 +317,7 @@ function showTrack(i,position=0){
   index=i;
   const t=tracks[i];
   const currentShow=mode==="clock"&&!remoteStream?
-     window.HUMKIN_SCHEDULE?.currentProgram(programs,Date.now()):null;
+     window.HUMKIN_SCHEDULE?.currentProgram(programs,stationNow()):null;
   const cover=window.HUMKIN_ART?.effective(t,currentShow,artAssets)||t.artwork||fileUrl("cover.jpg",root);
   title.textContent=t.title;
   artist.textContent=(t.artist||"HUMKIN")+" · "+(t.album||config?.station_name||"HUMKIN RADIO");
@@ -310,10 +344,12 @@ function updateListen(){
 }
 function pause(){
   seekToken++;switching=false;active=false;
+  pendingClockJoin=null;resetRate();
   audio.pause();setPlaybackState("paused");updateListen();
 }
 function setSource(src,offset,shouldPlay){
   const token=++seekToken;
+  resetRate();
   // The old code called pause() and load() on every song change, releasing the
   // active media session exactly when a locked phone needed the next song.
   // Assigning a changed src automatically starts resource selection; don't
@@ -354,15 +390,18 @@ function setSource(src,offset,shouldPlay){
 }
 function startClock(shouldPlay){
   if(remoteStream){
+    pendingClockJoin=null;
     index=-1;title.textContent="HUMKIN RADIO · LIVE";artist.textContent="THE ACTUAL STREAM";counter.textContent="LIVE STREAM";
     setMediaInfo({title:"HUMKIN RADIO LIVE",artist:"HUMKIN"});
     setSource(remoteStream,0,shouldPlay);return;
   }
-  const now=Date.now();
+  const now=stationNow();
   const selection=tuneAt(now);
   if(!selection)return;
   cycle=selection.cycle;cursor=selection.slot;
   clockBoundaryMs=now-selection.position*1000+tracks[selection.index].duration*1000;
+  // Set before src/play(): some browsers dispatch their play event promptly.
+  pendingClockJoin=shouldPlay?selection.index:null;
   showTrack(selection.index,selection.position);
   setTrackSource(selection.index,selection.position,shouldPlay);
   setMessage(selection.program?"NOW AIRING · "+selection.program+" · Central Time":
@@ -370,6 +409,7 @@ function startClock(shouldPlay){
 }
 function nextClock(shouldPlay){
   if(remoteStream)return startClock(shouldPlay);
+  pendingClockJoin=null;
   if(!tracks.length||clockBoundaryMs<=0)return startClock(shouldPlay);
   // Select the next *scheduled* record from the theoretical boundary, not the
   // wall-clock time AFTER audio/network buffering. Never skip its introduction.
@@ -400,6 +440,7 @@ function buildShuffle(previous=-1){
   cursor=0;
 }
 function startShuffle(shouldPlay){
+  pendingClockJoin=null;resetRate();
   if(!order.length)buildShuffle(index);
   if(!order.length)return;
   showTrack(order[cursor]);setTrackSource(order[cursor],0,shouldPlay);
@@ -427,7 +468,7 @@ function spotlight(id){
   const chosen=tracks.findIndex(t=>t.id===id);
   if(chosen<0)return;
   startStationSound();
-  mode="shuffle";
+  mode="shuffle";pendingClockJoin=null;resetRate();
   buildShuffle();
   const slot=order.indexOf(chosen);
   if(slot>0)[order[0],order[slot]]=[order[slot],order[0]];
@@ -440,7 +481,7 @@ function spotlight(id){
 function changeMode(target){
   if(target!=="clock"&&target!=="shuffle")return;
   const wasPlaying=!audio.paused&&active;
-  mode=target;order=[];updateModeUI();
+  mode=target;order=[];pendingClockJoin=null;resetRate();updateModeUI();
   if(target==="clock")startClock(wasPlaying);
   else startShuffle(wasPlaying);
 }
@@ -509,7 +550,11 @@ audio.addEventListener("play",()=>{
   preloadNext();
   rememberShuffleTrack();
 });
-audio.addEventListener("playing",()=>{active=true;setPlaybackState("playing");updateListen()});
+audio.addEventListener("playing",()=>{
+  active=true;setPlaybackState("playing");updateListen();
+  finishClockJoin();
+  gentlyAlignClock();
+});
 audio.addEventListener("pause",()=>{
   // A brief internal pause during a src swap is NOT a user stop.
   if(!switching){active=false;setPlaybackState("paused")}
@@ -537,6 +582,7 @@ document.addEventListener("visibilitychange",()=>{
 });
 audio.addEventListener("timeupdate",()=>{
   if(!active||audio.paused||switching)return;
+  gentlyAlignClock();
   // Switch during the last fraction of a second if a background timeupdate
   // arrives. The ended event remains the fallback if it doesn't.
   const remaining=audio.duration-audio.currentTime;
@@ -598,13 +644,17 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    const [cloud,overrides,schedule,settings,artRows]=await Promise.all([
+    const [cloud,overrides,schedule,settings,artRows,clockSample]=await Promise.all([
       getPublishedCrate(),
       fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind,art_asset_id","&limit=1000"),
       fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority,art_asset_id","&is_active=eq.true&limit=100"),
       fetchExtras("humkin_radio_settings","id,bumper_every,station_label","&id=eq.main&limit=1"),
-      fetchExtras("humkin_radio_art_assets","id,storage_path","&limit=1000")
+      fetchExtras("humkin_radio_art_assets","id,storage_path","&limit=1000"),
+      window.HUMKIN_CLOCK_SYNC?.calibrate(fetch,CRATE_API,CRATE_KEY,()=>Date.now())
+        ||Promise.resolve({offsetMs:0,synced:false})
     ]);
+    clockOffsetMs=clockSample?.synced?clockSample.offsetMs:0;
+    clockCalibrated=Boolean(clockSample?.synced);
     stationSettings={
       bumper_every:window.HUMKIN_AUTODJ?.cadenceValue(settings[0]?.bumper_every)||0,
       station_label:String(settings[0]?.station_label||"HUMKIN RADIO")
@@ -640,6 +690,7 @@ window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
   get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
     programs:programs.length,bumperEvery:stationSettings.bumper_every,
     hourWindowMs:shufflePolicy?.WINDOW_MS||3600000,warmSignal:warmSignal.status(),
+    clockOffsetMs,clockCalibrated,playbackRate:Number(audio.playbackRate)||1,
     bumperCount:bumperIndices().length,stream:remoteStream}}});
 boot();
 })();
