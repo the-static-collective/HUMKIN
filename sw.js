@@ -1,5 +1,5 @@
 /* HUMKIN Pocket Player. Static first; no tracking, no automatic audio downloads. */
-const SHELL="humkin-shell-v20";
+const SHELL="humkin-shell-v21";
 const MUSIC="humkin-music-v1";
 const FILES=["./","./index.html","./styles.css","./gifts.css","./approved-look.css","./player.js","./gifts.js","./signup.js","./cover.jpg","./tracks.json","./privacy.html","./poster.html","./manifest.webmanifest","./somewhere.html","./somewhere.css","./somewhere.js","./embed.html","./embed.css","./embed.js","./discovery.json","./relay.html","./surprise.html","./surprise.css","./surprise.js","./commons.html","./commons.css","./commons.mjs","./commons/catalog.json","./dj.html","./dj.css","./dj.js","./dj-crate.csv","./dj-crate.m3u8","./fm/","./fm/index.html","./fm/radio.css","./fm/radio.js","./fm/scheduler.js","./fm/autodj.js","./fm/art-library.js","./fm/rotation-memory.js","./fm/warm-signal.js","./fm/rotation.json","./fm/manage/","./fm/manage/index.html","./fm/manage/manager.js","./fm/manage/art-upload.js","./fm/manifest.webmanifest"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(SHELL).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});

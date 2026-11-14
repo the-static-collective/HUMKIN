@@ -8,22 +8,3 @@
 @media(max-width:900px){.desk{grid-template-columns:1fr;max-width:650px;padding:55px 5% 75px}.poster{max-width:470px;margin:0 auto 35px}.about{grid-template-columns:1fr;gap:10px;padding:65px 6%}}
 @media(max-width:480px){.station-id{display:none}.masthead{padding:40px 4% 45px}h1{font-size:clamp(67px,17vw,95px)}.desk{gap:20px;padding:35px 5% 60px}.poster{max-width:300px;margin:0 auto 22px}.poster img{border-width:7px;box-shadow:7px 7px 0 #b1a1c7}.seal{width:86px;height:86px;font-size:11px;right:-9px;bottom:-22px}.controls{padding:23px 17px;box-shadow:6px 6px 0 var(--pink)}.mode button{font-size:11px;padding:9px 10px}.mode-help{min-height:0}.subcontrols button{font-size:10px}.about,.road-notes{padding:58px 5%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-
-/* HUMKIN RADIO: gentle analogue airwaves, opt-in and CPU-light */
-.warm-dial{margin:19px 0 15px;padding:16px 18px;border:2px solid #65526e;
- border-radius:14px;background:linear-gradient(145deg,#f8ecdf,#eee2e6);
- box-shadow:3px 4px 0 #b4a3bd}
-.warm-heading{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;
- font-size:12px;font-weight:1000;letter-spacing:.095em;color:#48334e;margin-bottom:13px}
-.warm-label{font-size:9px;border:1px solid #6c546c;padding:4px 7px;border-radius:999px}
-#warm-toggle{padding:10px 16px;background:#2f263e;color:#ffedc5;border:2px solid #2f263e;
- border-radius:25px;font-weight:900;font-size:12px;letter-spacing:.09em;cursor:pointer}
-#warm-toggle[aria-pressed="true"]{background:#d9edc6;color:#2d4030;border-color:#48613e}
-#warm-toggle:disabled{opacity:.55;cursor:wait}
-.warm-slider{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;margin:17px 0 7px}
-.warm-slider label,.warm-slider output{font-size:11px;font-weight:950;letter-spacing:.06em}
-.warm-slider input{width:100%;min-width:0;accent-color:#6b3e72}
-#warm-status{font-size:12px;font-weight:750;margin:8px 0 0;color:#453652}
-.warm-note{font-size:11px;line-height:1.55;color:#645870;margin:7px 0 0}
-.warm-note em{font-style:normal;font-weight:800}
-@media(max-width:480px){.warm-dial{padding:14px 11px}.warm-slider{grid-template-columns:1fr auto}.warm-slider input{grid-column:1 / -1;grid-row:2}}

@@ -15,24 +15,18 @@ let remoteStream=null,programs=[],stationSettings={bumper_every:0,station_label:
 let artAssets=new Map();
 const shufflePolicy=window.HUMKIN_ROTATION_MEMORY;
 const lastPlayed=shufflePolicy?.load(window.localStorage,Date.now())||new Map();
-const warmSignal=new window.HUMKIN_WARM_SIGNAL.WarmSignal(audio,{window});
-function setWarmStatus(){
- const btn=$("warm-toggle");
- btn.textContent=warmSignal.enabled?"◉ WARM SIGNAL · ON":"✳ WARM SIGNAL · OFF";
- btn.setAttribute("aria-pressed",String(warmSignal.enabled));
- const value=$("warm-intensity");
- $("warm-level").textContent=value.value+"%";
- $("warm-status").textContent=warmSignal.enabled?
-   "A soft independent static bed, tiny analogue pops and occasional signal dips. Music stays on its direct player path.":
-   "Sound effects OFF. Your music stays untouched until you enable the atmosphere.";
+// Radio's established 42% atmosphere is part of playback, not a separate
+// control or setting. It starts within a listener gesture for Web Audio safety.
+const warmSignal=new window.HUMKIN_WARM_SIGNAL.WarmSignal(audio,{window,intensity:42});
+let warmStarting=false;
+function startStationSound(){
+  if(warmSignal.enabled||warmStarting)return;
+  warmStarting=true;
+  // Never delay or interrupt the MP3 player, even if browser Web Audio fails.
+  Promise.resolve(warmSignal.enable()).then(()=>{
+    warmSignal.setPlayback(active&&!audio.paused);
+  }).catch(()=>{}).finally(()=>{warmStarting=false});
 }
-warmSignal.onchange=setWarmStatus;
-try{
- const stored=Number(window.localStorage?.getItem?.(window.HUMKIN_WARM_SIGNAL.SAVE_KEY));
- if(Number.isInteger(stored)&&stored>=0&&stored<=100)warmSignal.setIntensity(stored);
-}catch{}
-$("warm-intensity").value=String(warmSignal.intensity);
-setWarmStatus();
 // Only explicit TUNE IN / CATCH UP seeks into the shared clock. Track-to-track
 // changes always begin at zero; re-tuning at every song end previously skipped
 // openings (often ~18 seconds) whenever loading or buffering ran behind.
@@ -432,6 +426,7 @@ function nextShuffle(shouldPlay){
 function spotlight(id){
   const chosen=tracks.findIndex(t=>t.id===id);
   if(chosen<0)return;
+  startStationSound();
   mode="shuffle";
   buildShuffle();
   const slot=order.indexOf(chosen);
@@ -452,6 +447,7 @@ function changeMode(target){
 async function startRadio(){
   if(!tracks.length&&!remoteStream)return;
   if(!audio.paused){pause();return}
+  startStationSound();
   if(mode==="clock"){
     // A stale paused session must catch up to the shared air clock.
     startClock(true);
@@ -506,24 +502,8 @@ $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
 $("phone-playlist").addEventListener("click",downloadNativePlaylist);
-$("warm-toggle").addEventListener("click",async()=>{
-  const button=$("warm-toggle");
-  button.disabled=true;
-  try{
-    await warmSignal.toggle();
-    warmSignal.setPlayback(active&&!audio.paused);
-    setWarmStatus();
-  }catch(err){
-    $("warm-status").textContent="Atmosphere unavailable in this browser: "+err.message;
-  }finally{button.disabled=false}
-});
-$("warm-intensity").addEventListener("input",event=>{
-  const value=Number(event.target.value);
-  warmSignal.setIntensity(value);
-  try{window.localStorage?.setItem?.(window.HUMKIN_WARM_SIGNAL.SAVE_KEY,String(value))}catch{}
-  setWarmStatus();
-});
 audio.addEventListener("play",()=>{
+  startStationSound();
   active=true;setPlaybackState("playing");updateListen();
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
   preloadNext();
