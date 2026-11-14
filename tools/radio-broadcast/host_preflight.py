@@ -75,10 +75,12 @@ def main():
     try:
         stream=public_https(args.stream_url)
         nowplaying=public_https(args.nowplaying_url)
-        if urllib.parse.urlsplit(stream).hostname!=urllib.parse.urlsplit(nowplaying).hostname:
-            raise ValueError("Now-playing API must be on the same public host for this first integration.")
+        # Managed providers may serve the audio mount on a different public
+        # CDN hostname than their station dashboard. Both must use HTTPS.
         now=check_nowplaying(nowplaying)
         sound=check_stream(stream)
+        if not now["is_online"]:
+            raise RuntimeError("AzuraCast reports station offline; do not mark a live listener ready.")
         print(json.dumps({"verified_listener":True,"stream_url":stream,
             "nowplaying_url":nowplaying,"nowplaying":now,"stream":sound,
             "website_configuration":{
