@@ -56,6 +56,8 @@ assert(read("sitemap.xml").includes("https://humkin.abundent.org/fm/"),"Sitemap 
 
 class E {
  constructor(name){this.name=name;this.disabled=false;this.hidden=false;this.paused=true;this.readyState=1;this.duration=180;this.currentTime=0;this.src="";this.textContent="";this.alt="";this.listeners={};this.attributes={};this.style={};this.classList={toggle:(k,v)=>{this.attributes["class-"+k]=v}};this.playCount=0}
+ get src(){return this._src}
+ set src(src){this._src=src;this.currentTime=0}
  addEventListener(t,fn){(this.listeners[t]??=[]).push(fn)}
  emit(t){for(const fn of this.listeners[t]||[])fn()}
  setAttribute(k,v){this.attributes[k]=v}
@@ -65,27 +67,47 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[]){
- const elems=new Map(),listeners={},copies=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
+function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false){
+ const elems=new Map(),listeners={},copies=[],downloads=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
- const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn}};
+ const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn},
+ createElement:()=>({href:"",download:"",click(){downloads.push({href:this.href,name:this.download})},remove(){}}),
+ body:{appendChild:()=>{}}};
  class Clock extends Date{static now(){return time.now}}
  const window={isSecureContext:true,addEventListener:(k,fn)=>{listeners[k]=fn}};
  const session={setActionHandler:(k,fn)=>{session[k]=fn}};
  const navigator={mediaSession:session,clipboard:{writeText:async s=>{copies.push(s)}}};
- const fetch=async url=>({ok:true,json:async()=>
-  String(url).endsWith("rotation.json")?config:
-  String(url).includes("/rest/v1/humkin_radio_tracks")?cloudRows:
-  String(url).includes("/rest/v1/humkin_radio_static_overrides")?staticOverrides:
-  String(url).includes("/rest/v1/humkin_radio_programs")?programRows:
-  String(url).includes("/rest/v1/humkin_radio_settings")?settingsRows:songs});
+ const requests=[];
+ const fetch=async url=>{
+   const href=String(url);
+   if(/\.mp3(?:$|[?#])/i.test(href)){
+     requests.push(href);
+     if(!prefetchAudio)return {ok:false,status:403};
+     return {ok:true,headers:{get:()=>String(4096)},
+       blob:async()=>new Blob([new Uint8Array(4096)],{type:"audio/mpeg"})};
+   }
+   return {ok:true,json:async()=>
+     href.endsWith("rotation.json")?config:
+     href.includes("/rest/v1/humkin_radio_tracks")?cloudRows:
+     href.includes("/rest/v1/humkin_radio_static_overrides")?staticOverrides:
+     href.includes("/rest/v1/humkin_radio_programs")?programRows:
+     href.includes("/rest/v1/humkin_radio_settings")?settingsRows:songs};
+ };
+ class URLMock extends URL{
+   static createObjectURL(blob){
+     const url="blob:humkin-test-"+(++URLMock.created);
+     URLMock.blobs.set(url,blob);return url;
+   }
+   static revokeObjectURL(url){URLMock.revoked.push(url)}
+ }
+ URLMock.created=0;URLMock.revoked=[];URLMock.blobs=new Map();
  const location=new URL(document.baseURI);
- const context={window,document,navigator,location,URL,Date:Clock,Math,fetch,AbortController,
+ const context={window,document,navigator,location,URL:URLMock,Blob,Date:Clock,Math,fetch,AbortController,
    setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}};
  runInNewContext(schedulerJs,context);
  runInNewContext(autodjJs,context);
  runInNewContext(js,context);
- return {$,time,copies,listeners,session,window,document};
+ return {$,time,copies,listeners,session,window,document,requests,URLMock,downloads};
 }
 const newTune=fixture();await flush();
 const uuid="10293847-1029-4837-9029-abcdefabcdef";
@@ -154,7 +176,7 @@ assert.equal(customF.window.HUMKIN_RADIO.state.tracks,2,"Curated JSON should wor
 assert(customF.$("air").src.includes("/fm/audio/"),"Custom track URLs should resolve relative to the FM directory");
 assert(customF.$("playlist-note").textContent.includes("demo")||customF.$("playlist-note").textContent.length>0);
 
-const locked=fixture();await flush();
+const locked=fixture(rotation,[],[],[],null,[],true);await flush();
 locked.$("mode-shuffle").click();locked.$("listen").click();await flush();
 const lockedAudio=locked.$("air"),firstSource=lockedAudio.src;
 locked.document.visibilityState="hidden";
@@ -179,6 +201,47 @@ const clockSource=hiddenClock.$("air").src;
 hiddenClock.time.now+=240000;hiddenClock.$("air").currentTime=15;
 hiddenClock.$("air").emit("timeupdate");await flush();
 assert.equal(hiddenClock.$("air").src,clockSource,"Hidden clock should not force resync mid-song");
+
+// Regression: a slow first request must never cause the NEXT song to be
+// entered at +18 seconds. Only a manual CATCH UP may seek into an ongoing song.
+const delayed=fixture();await flush();
+delayed.$("listen").click();await flush();
+const firstClock=delayed.$("air").src;
+delayed.time.now+=18000; // Simulate 18 seconds of buffering after an ended event.
+delayed.$("air").emit("ended");await flush();
+assert.notEqual(delayed.$("air").src,firstClock,"Shared station should advance to the next scheduled recording");
+assert.equal(delayed.$("air").currentTime,0,
+  "Successor recording must begin at zero despite slow network/wall-clock drift");
+const nextClockSource=delayed.$("air").src;
+delayed.time.now+=25000;
+delayed.document.visibilityState="visible";
+delayed.listeners.visibilitychange();await flush();
+delayed.$("air").currentTime=27;delayed.$("air").emit("timeupdate");await flush();
+assert.equal(delayed.$("air").src,nextClockSource,
+  "Returning to the foreground must not re-tune or jump over a song's opening");
+assert.equal(delayed.$("air").currentTime,27,
+  "Periodic wall-clock re-syncs must not seek mid-song");
+delayed.$("catch-up").click();await flush();
+assert.notEqual(delayed.$("air").currentTime,27,
+  "Explicit CATCH UP remains available for listener-controlled re-sync");
+
+// A second predownloaded audio file can switch from local Blob without pausing
+// or calling load() during a normal background event. This tests the JS if its
+// events execute, not whether Android keeps a suspended browser alive.
+assert(locked.URLMock.created>0,"Next track should be preloaded into a Blob URL when network allows");
+
+// An Android-native playlist removes the screen-off JavaScript boundary entirely
+// for tracks in this snapshot. It must contain public MP3 URLs, not Blob tokens.
+const portable=fixture();await flush();
+assert.equal(portable.$("phone-playlist").disabled,false);
+portable.$("phone-playlist").click();await flush();
+assert.equal(portable.downloads.length,1,"Native playlist export must download once");
+assert.equal(portable.downloads[0].name,"HUMKIN-RADIO.m3u");
+const m3u=await portable.URLMock.blobs.get(portable.downloads[0].href).text();
+assert(m3u.startsWith("#EXTM3U\n"),"Must export Extended M3U format");
+assert.equal(m3u.split("\n").filter(s=>s.startsWith("#EXTINF:")).length,21);
+assert(m3u.includes("https://humkin.abundent.org/fm/audio/haileylu-bloom.mp3"));
+assert(!m3u.includes("blob:humkin"),"Do not leak temporary playlist audio Blob URLs");
 
 const friday=Date.parse("2026-11-13T13:30:00Z"); // 7:30 a.m. Central.
 const cloudUUID="30303030-3030-4030-8030-303030303030";

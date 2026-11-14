@@ -10,8 +10,16 @@ const message=$("playback-message");
 const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
-let active=false,seekToken=0,failureCount=0,lastLiveCheck=0,switching=false;
+let active=false,seekToken=0,failureCount=0,switching=false;
 let remoteStream=null,programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
+// Only explicit TUNE IN / CATCH UP seeks into the shared clock. Track-to-track
+// changes always begin at zero; re-tuning at every song end previously skipped
+// openings (often ~18 seconds) whenever loading or buffering ran behind.
+let clockBoundaryMs=0;
+// Preload one bounded MP3 over HTTP during the current song, not at its end.
+// Prefetch failure is harmless: the native <audio> element uses its URL.
+let prepared=null, activeBlobUrl=null, preloadGeneration=0;
+const PRELOAD_LIMIT=18*1024*1024;
 const timezone="America/Chicago";
 const EPOCH_FALLBACK="2026-11-13T00:00:00Z";
 const CRATE_API="https://kbhqacsdvjsstzyplqij.supabase.co";
@@ -148,6 +156,87 @@ function updateOnDeck(){
   target.textContent=names.length?"ON DECK · "+names.join("  ✳  "):
     "ON DECK · Tune in to hear the road ahead.";
 }
+function expectedNextIndex(){
+  if(mode==="shuffle"&&order.length)return order[(cursor+1)%order.length];
+  if(mode==="clock"&&!remoteStream&&clockBoundaryMs>0){
+    return tuneAt(clockBoundaryMs+40)?.index??-1;
+  }
+  return -1;
+}
+function releaseObjectUrl(url){
+  if(url&&typeof URL.revokeObjectURL==="function"){
+    try{URL.revokeObjectURL(url)}catch{}
+  }
+}
+function abandonPrepared(){
+  preloadGeneration++;
+  if(!prepared)return;
+  if(prepared.controller)prepared.controller.abort();
+  releaseObjectUrl(prepared.blobUrl);
+  prepared=null;
+}
+async function preloadNext(){
+  if(!active||remoteStream||audio.paused)return;
+  const nextIndex=expectedNextIndex();
+  if(nextIndex<0||nextIndex===index||!tracks[nextIndex])return;
+  if(prepared?.index===nextIndex)return;
+  abandonPrepared();
+  const track=tracks[nextIndex],id=preloadGeneration;
+  const controller=new AbortController();
+  const loading={index:nextIndex,src:track.src,controller,blobUrl:null};
+  prepared=loading;
+  try{
+    // Streaming audio can't be made gapless by metadata alone. Fetch the *next*
+    // MP3 while the current song plays, so switching does not wait for the
+    // network when the browser permits this request.
+    const response=await fetch(track.src,{signal:controller.signal,cache:"force-cache"});
+    if(!response.ok)throw Error("HTTP "+response.status);
+    const size=Number(response.headers?.get?.("content-length")||0);
+    if(size>PRELOAD_LIMIT)throw Error("Song exceeds mobile preload limit");
+    let blob;
+    if(response.body&&typeof response.body.getReader==="function"){
+      const reader=response.body.getReader(),parts=[];
+      let total=0;
+      try{
+        while(true){
+          const {done,value}=await reader.read();
+          if(done)break;
+          total+=value.byteLength;
+          if(total>PRELOAD_LIMIT)throw Error("Song exceeds mobile preload limit");
+          parts.push(value);
+        }
+      }finally{reader.releaseLock?.()}
+      blob=new Blob(parts,{type:"audio/mpeg"});
+    }else{
+      blob=await response.blob();
+      if(blob.size>PRELOAD_LIMIT)throw Error("Song exceeds mobile preload limit");
+    }
+    if(prepared!==loading||id!==preloadGeneration||!active)return;
+    if(typeof URL.createObjectURL!=="function")return;
+    loading.blobUrl=URL.createObjectURL(blob);
+  }catch(error){
+    // CORS, data saver, storage/network errors and aborted preloads are normal
+    // fallbacks. Never block the radio because preloading was denied.
+    if(prepared===loading){prepared=null}
+    if(error.name!=="AbortError")console.debug("Next-track preload unavailable",error.message);
+  }
+}
+function setTrackSource(i,offset,shouldPlay){
+  const old=activeBlobUrl;
+  let src=tracks[i]?.src;
+  if(prepared?.index===i&&prepared.blobUrl){
+    src=prepared.blobUrl;
+    activeBlobUrl=src;
+    // Take ownership of this Blob URL before cancelling the old request.
+    prepared=null;
+    preloadGeneration++;
+  }else{
+    activeBlobUrl=null;
+    abandonPrepared();
+  }
+  setSource(src,offset,shouldPlay);
+  if(old&&old!==activeBlobUrl)releaseObjectUrl(old);
+}
 function showTrack(i,position=0){
   if(!tracks[i])return;
   index=i;
@@ -188,21 +277,25 @@ function setSource(src,offset,shouldPlay){
   setPlaybackState(shouldPlay?"playing":"paused");
   if(!shouldPlay&&!audio.paused)audio.pause();
   const changed=audio.src!==src;
-  if(changed)audio.src=src;
-  if(!shouldPlay)audio.load();
   const seek=()=>{
     if(token!==seekToken||!(offset>0))return;
     const target=Number.isFinite(audio.duration)?Math.min(offset,Math.max(0,audio.duration-.5)):offset;
     try{audio.currentTime=target}catch{}
   };
-  if(offset>0&&audio.readyState<1)audio.addEventListener("loadedmetadata",seek,{once:true});
-  else seek();
+  // Install metadata-seeking handler BEFORE changing src so mobile browsers
+  // cannot lose the event or mistakenly seek with the previous song's metadata.
+  if(offset>0)audio.addEventListener("loadedmetadata",seek,{once:true});
+  if(changed)audio.src=src;
+  else if(offset===0){try{audio.currentTime=0}catch{}}
+  if(!shouldPlay)audio.load();
+  if(offset>0&&audio.readyState>=1)seek();
   if(shouldPlay){
     // Play immediately: no awaits/timers before play(), even for song changes.
     audio.play().then(()=>{
       if(token!==seekToken)return;
       switching=false;failureCount=0;
       setPlaybackState("playing");updateListen();
+      preloadNext();
     }).catch(()=>{
       if(token!==seekToken)return; // A newer track superseded this attempt.
       switching=false;active=false;
@@ -218,12 +311,30 @@ function startClock(shouldPlay){
     setMediaInfo({title:"HUMKIN RADIO LIVE",artist:"HUMKIN"});
     setSource(remoteStream,0,shouldPlay);return;
   }
-  const selection=tuneAt(Date.now());
+  const now=Date.now();
+  const selection=tuneAt(now);
   if(!selection)return;
   cycle=selection.cycle;cursor=selection.slot;
+  clockBoundaryMs=now-selection.position*1000+tracks[selection.index].duration*1000;
   showTrack(selection.index,selection.position);
-  setSource(tracks[selection.index].src,selection.position,shouldPlay);
-  setMessage(selection.program?"NOW AIRING · "+selection.program+" · Central Time":"On the shared station clock. Approximate sync; ordinary phone buffering can differ.");
+  setTrackSource(selection.index,selection.position,shouldPlay);
+  setMessage(selection.program?"NOW AIRING · "+selection.program+" · Central Time":
+    "Tuned to the approximate shared clock. Song changes play from the beginning.");
+}
+function nextClock(shouldPlay){
+  if(remoteStream)return startClock(shouldPlay);
+  if(!tracks.length||clockBoundaryMs<=0)return startClock(shouldPlay);
+  // Select the next *scheduled* record from the theoretical boundary, not the
+  // wall-clock time AFTER audio/network buffering. Never skip its introduction.
+  const expected=tuneAt(clockBoundaryMs+40);
+  if(!expected)return;
+  const nextStart=clockBoundaryMs+40-expected.position*1000;
+  cycle=expected.cycle;cursor=expected.slot;
+  clockBoundaryMs=nextStart+tracks[expected.index].duration*1000;
+  showTrack(expected.index,0);
+  setTrackSource(expected.index,0,shouldPlay);
+  setMessage(expected.program?"NOW AIRING · "+expected.program+" · Central Time":
+    "Next record. Full song, from the beginning.");
 }
 function buildShuffle(previous=-1){
   const songs=musicIndices();
@@ -235,7 +346,7 @@ function buildShuffle(previous=-1){
 function startShuffle(shouldPlay){
   if(!order.length)buildShuffle(index);
   if(!order.length)return;
-  showTrack(order[cursor]);setSource(tracks[order[cursor]].src,0,shouldPlay);
+  showTrack(order[cursor]);setTrackSource(order[cursor],0,shouldPlay);
   setMessage("Your road shuffle is ready. No song repeats until the rotation completes.");
 }
 function nextShuffle(shouldPlay){
@@ -244,7 +355,7 @@ function nextShuffle(shouldPlay){
   cursor+=1;
   if(cursor>=order.length)buildShuffle(previous);
   showTrack(order[cursor]);
-  setSource(tracks[order[cursor]].src,0,shouldPlay);
+  setTrackSource(order[cursor],0,shouldPlay);
 }
 function spotlight(id){
   const chosen=tracks.findIndex(t=>t.id===id);
@@ -256,7 +367,7 @@ function spotlight(id){
   cursor=0;
   updateModeUI();
   showTrack(chosen);
-  setSource(tracks[chosen].src,0,true);
+  setTrackSource(chosen,0,true);
   setMessage("New single: "+tracks[chosen].title+". Road Shuffle will keep playing afterward.");
 }
 function changeMode(target){
@@ -276,9 +387,37 @@ async function startRadio(){
     startShuffle(true);
   }else{
     active=true;
-    try{await audio.play()}catch{active=false;setMessage("Your browser couldn't start playback. Tap the built-in player.");}
+    try{await audio.play();preloadNext()}catch{active=false;setMessage("Your browser couldn't start playback. Tap the built-in player.");}
     updateListen();
   }
+}
+function downloadNativePlaylist(){
+  if(!tracks.length){setMessage("No recordings to export yet.");return}
+  // Native media apps own their background service and can continue to the next
+  // URL when Android suspends the browser tab. This is a snapshot playlist, not
+  // synchronized live radio or an offline download of all MP3s.
+  const rows=mode==="shuffle"&&order.length?order:withStationIds(musicIndices());
+  const clean=value=>String(value||"").replace(/[\r\n,]+/g," ").trim();
+  const lines=["#EXTM3U","#PLAYLIST:HUMKIN RADIO"];
+  for(const i of rows){
+    const t=tracks[i];
+    if(!t?.src)continue;
+    // No private files, Blob URLs, data: URLs, or secrets enter the playlist.
+    if(!/^https:\/\//i.test(t.src))continue;
+    lines.push("#EXTINF:"+Math.max(1,Math.round(t.duration))+","+
+      clean(t.artist||"HUMKIN")+" - "+clean(t.title));
+    lines.push(t.src);
+  }
+  if(lines.length<4){setMessage("No public songs are ready for the native player.");return}
+  if(typeof URL.createObjectURL!=="function"){
+    setMessage("This browser cannot export playlists; use a different browser.");return;
+  }
+  const blob=new Blob([lines.join("\n")+"\n"],{type:"audio/x-mpegurl;charset=utf-8"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="HUMKIN-RADIO.m3u";
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>releaseObjectUrl(url),30000);
+  setMessage("Playlist downloaded. Open HUMKIN-RADIO.m3u in VLC (or another music app) for native screen-off playback. This is a streamed playlist, not downloaded MP3s.");
 }
 async function share(){
   const link=new URL("./",here).href;
@@ -294,9 +433,11 @@ $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!au
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
+$("phone-playlist").addEventListener("click",downloadNativePlaylist);
 audio.addEventListener("play",()=>{
   active=true;setPlaybackState("playing");updateListen();
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
+  preloadNext();
 });
 audio.addEventListener("playing",()=>{active=true;setPlaybackState("playing");updateListen()});
 audio.addEventListener("pause",()=>{
@@ -308,7 +449,7 @@ audio.addEventListener("ended",()=>{
   if(!tracks.length)return;
   if(mode==="shuffle")nextShuffle(true);
   else if(remoteStream){setMessage("Stream ended. Tune in again to reconnect.");pause();}
-  else startClock(true);
+  else nextClock(true);
 });
 audio.addEventListener("error",()=>{
   if(!tracks.length&&!remoteStream)return;
@@ -316,33 +457,28 @@ audio.addEventListener("error",()=>{
   if(failureCount>2){pause();setMessage("The station lost the audio feed. Check your connection and tune in again.");return}
   setMessage("Couldn't load that recording. Trying to continue…");
   if(mode==="shuffle")nextShuffle(true);
-  else if(!remoteStream)setTimeout(()=>startClock(true),1300);
+  else if(!remoteStream)setTimeout(()=>nextClock(true),1300);
 });
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="visible"&&mode==="clock"&&!remoteStream&&active&&!audio.paused){
-    const expected=tuneAt(Date.now());
-    if(expected&&(expected.index!==index||Math.abs((audio.currentTime||0)-expected.position)>8))startClock(true);
-  }
+  // Don't interrupt a song when the screen is unlocked after a background gap.
+  // Android may pause JavaScript in a locked browser tab. Media Session and
+  // prefetch are best-effort; they cannot guarantee an ended event will run.
+  if(document.visibilityState==="visible"&&active&&!audio.paused)preloadNext();
 });
 audio.addEventListener("timeupdate",()=>{
   if(!active||audio.paused||switching)return;
   // Switch during the last fraction of a second if a background timeupdate
   // arrives. The ended event remains the fallback if it doesn't.
   const remaining=audio.duration-audio.currentTime;
-  if(Number.isFinite(remaining)&&remaining>=0&&remaining<0.35){
+  // If the next MP3 is completely cached, hand off near the natural end. If
+  // not, allow native 'ended' to fire rather than cutting off a song early.
+  if(Number.isFinite(remaining)&&remaining>=0&&remaining<0.25&&
+      prepared?.index===expectedNextIndex()&&prepared.blobUrl){
     if(mode==="shuffle"){nextShuffle(true);return}
-    if(mode==="clock"&&!remoteStream){
-      const onAir=tuneAt(Date.now());
-      if(onAir&&onAir.index!==index){startClock(true);return}
-    }
+    if(mode==="clock"&&!remoteStream){nextClock(true);return}
   }
-  // Don't tear down a healthy foreground media session just to resync the
-  // shared clock while the display is locked. Catch up on the next song end
-  // or on returning to the visible page.
-  if(document.visibilityState!=="visible"||mode!=="clock"||remoteStream)return;
-  if(Date.now()-lastLiveCheck<12000)return;lastLiveCheck=Date.now();
-  const expected=tuneAt(Date.now());
-  if(expected&&(expected.index!==index||Math.abs((audio.currentTime||0)-expected.position)>9))startClock(true);
+  // The former periodic wall-clock correction force-jumped mid-track (9–20s)
+  // after a slow network transition. The CATCH UP button now owns that action.
 });
 if("mediaSession" in navigator){
   try{
@@ -417,7 +553,7 @@ async function boot(){
     $("playlist-note").textContent=(config.status_note||"Continuous music from the HUMKIN catalog.")+
       (tracks.length>originalCount?" PLUS "+(tracks.length-originalCount)+" new creator-loaded recordings on the dial.":"")+
       (stationIds&&stationSettings.bumper_every?" STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
-    for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight"])$(id).disabled=false;
+    for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     setMessage("Press TUNE IN. No autoplay; you're in control.");
     status.textContent="✳ THE DIAL IS READY";
