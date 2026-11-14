@@ -4,7 +4,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
-const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js");
+const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js");
 for(const p of ["fm/index.html","fm/radio.css","fm/radio.js","fm/rotation.json","fm/manifest.webmanifest","docs/RADIO-OPERATIONS.md"])assert(existsSync(p),"Missing radio file "+p);
 execFileSync(process.execPath,["--check","fm/radio.js"]);
 const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
@@ -65,7 +65,7 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null){
+function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[]){
  const elems=new Map(),listeners={},copies=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn}};
@@ -77,11 +77,13 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
   String(url).endsWith("rotation.json")?config:
   String(url).includes("/rest/v1/humkin_radio_tracks")?cloudRows:
   String(url).includes("/rest/v1/humkin_radio_static_overrides")?staticOverrides:
-  String(url).includes("/rest/v1/humkin_radio_programs")?programRows:songs});
+  String(url).includes("/rest/v1/humkin_radio_programs")?programRows:
+  String(url).includes("/rest/v1/humkin_radio_settings")?settingsRows:songs});
  const location=new URL(document.baseURI);
  const context={window,document,navigator,location,URL,Date:Clock,Math,fetch,AbortController,
    setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}};
  runInNewContext(schedulerJs,context);
+ runInNewContext(autodjJs,context);
  runInNewContext(js,context);
  return {$,time,copies,listeners,session,window,document};
 }
@@ -207,5 +209,27 @@ assert.equal(onAir.program,"Morning Garden","Program should override the shared 
 assert([0,20,21].includes(onAir.index),"Scheduled selection must belong to the show line-up");
 const outside=managed.window.HUMKIN_RADIO.tuneAt(Date.parse("2026-11-13T18:00:00Z"));
 assert.equal(outside.program,undefined,"Outside a show the station must resume ordinary rotation");
+
+// AutoDJ adds *real marked recordings*, never fictional or duplicated songs.
+const automix=fixture(rotation,[{
+ id:"77777777-7777-4777-8777-777777777777",title:"HUMKIN Ident",artist:"HUMKIN",album:"ID",
+ kind:"bumper",enabled:true,duration_seconds:12,
+ storage_path:"77777777-7777-4777-8777-777777777777/"+digest+".mp3"
+}],[],[],null,[{id:"main",bumper_every:3,station_label:"HUMKIN RADIO"}]);
+await flush();
+assert.equal(automix.window.HUMKIN_RADIO.state.bumperEvery,3,"Owner-selected cadence must propagate");
+assert.equal(automix.window.HUMKIN_RADIO.state.bumperCount,1,"Actual station ID is loaded");
+automix.$("mode-shuffle").click();automix.$("listen").click();await flush();
+const autoSpins=[];
+for(let i=0;i<28;i++){
+ autoSpins.push(automix.window.HUMKIN_RADIO.state.index);
+ automix.$("next-song").click();await flush();
+}
+const bumperIndex=21; // 21 static recordings plus one cloud bumper.
+assert.equal(autoSpins.filter(i=>i===bumperIndex).length,7,"Station ID occurs after each group of three songs");
+assert.equal(new Set(autoSpins.filter(i=>i!==bumperIndex)).size,21,"Each song airs once before the shuffle repeats");
+assert(automix.$("on-deck").textContent.includes("ON DECK"),"On-deck display missing");
+const at=automix.window.HUMKIN_RADIO.tuneAt(Date.parse(rotation.synced_clock_epoch_utc)+1000);
+assert(at&&at.index>=0&&at.index<22,"Same-Time AutoDJ cannot select an invalid index");
 
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");

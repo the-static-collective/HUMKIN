@@ -8,6 +8,7 @@ const db=createClient(API,KEY,{auth:{persistSession:true,autoRefreshToken:true,d
 const $=id=>document.getElementById(id);
 const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 let user=null,library=[],shows=[],staticList=[],editing=null,editingShow=null,slots=[],busy=false;
+let stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 const selected=new Set();
 function el(tag,value,className){
  const node=document.createElement(tag);
@@ -47,7 +48,7 @@ async function requireOwner(){
 }
 function setBusy(v){
  busy=v;
- for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off"])
+ for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off","auto-save"])
    $(id).disabled=v;
 }
 async function checkOne(result,action){
@@ -70,17 +71,18 @@ async function loadDesk(){
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
  try{
-  const [configResponse,cloudResult,staticResult,showsResult]=await Promise.all([
+  const [configResponse,cloudResult,staticResult,showsResult,settingsResult]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks")
     .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,published_at,created_at")
     .order("created_at",{ascending:false}).limit(2000),
    db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind").limit(1000),
    db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at")
-    .order("start_minute",{ascending:true}).limit(500)
+    .order("start_minute",{ascending:true}).limit(500),
+   db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label").eq("id","main").limit(1)
   ]);
   if(!configResponse.ok)throw Error("Original rotation not reachable");
-  for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult]])
+  for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult],["station settings",settingsResult]])
     if(result.error)throw Error(name+": "+result.error.message);
   const config=await configResponse.json();
   if(!Array.isArray(config.tracks))throw Error("Original rotation is incomplete");
@@ -106,8 +108,12 @@ async function loadDesk(){
   }));
   library=[...cloud,...staticList];
   shows=showsResult.data||[];
+  stationSettings={
+    bumper_every:Number(settingsResult.data?.[0]?.bumper_every)||0,
+    station_label:settingsResult.data?.[0]?.station_label||"HUMKIN RADIO"
+  };
   for(const id of [...selected])if(!library.find(t=>t.id===id))selected.delete(id);
-  renderLibrary();renderShows();renderSlots();renderNow();note("");
+  renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
  }catch(err){note("Could not read station: "+err.message);$("auth-status").textContent="Signed in · data unavailable"}
 }
 function renderNow(){
@@ -163,6 +169,40 @@ function renderLibrary(){
  }
  $("selected-count").textContent=selected.size+" selected";
 }
+
+function renderAutoDj(){
+ const value=String(stationSettings.bumper_every);
+ const option=[...$("bumper-frequency").options].some(opt=>opt.value===value);
+ $("bumper-frequency").value=option?value:"0";
+ $("station-label").value=stationSettings.station_label;
+ const active=library.filter(t=>t.kind==="bumper"&&trackAvailable(t));
+ const cadence=stationSettings.bumper_every;
+ $("auto-status").textContent=active.length+" recorded station ID(s) enabled. "+
+   (cadence&&active.length?"A station ID will play every "+cadence+" music tracks.":
+   cadence?"Cadence set, but nothing will play until you enable a bumper in the library.":
+   "Automatic station IDs are currently OFF. The station plays music as before.");
+}
+async function saveAutoDj(){
+ if(busy)return;
+ const frequency=Number($("bumper-frequency").value);
+ const label=$("station-label").value.trim();
+ if(!Number.isInteger(frequency)||frequency<0||frequency>20||!label||label.length>90){
+   note("Choose a valid frequency and station name.");return;
+ }
+ setBusy(true);
+ try{
+   await requireOwner();
+   const row={id:"main",owner_id:user.id,bumper_every:frequency,
+      station_label:label,updated_at:new Date().toISOString()};
+   const response=await db.from("humkin_radio_settings")
+      .upsert(row,{onConflict:"id"}).select("id").single();
+   await checkOne(response,"AutoDJ settings");
+   setBusy(false);await loadDesk();
+   note("Saved AutoDJ: "+(frequency?"station IDs every "+frequency+" songs":"OFF")+
+     ". Listeners refresh to receive the change.");
+ }catch(err){setBusy(false);note("Could not save AutoDJ: "+err.message)}
+}
+
 function preview(track){
  const player=$("preview");
  if(!track.url){note("That private draft is not published. Use the loader to put it on air.");return}
@@ -359,6 +399,7 @@ async function deleteShow(program){
  }catch(err){setBusy(false);note("Schedule delete failed: "+err.message)}
 }
 $("refresh").addEventListener("click",loadDesk);
+$("auto-save").addEventListener("click",saveAutoDj);
 $("track-search").addEventListener("input",renderLibrary);
 $("filter").addEventListener("change",renderLibrary);
 $("bulk-on").addEventListener("click",()=>bulk(true));
