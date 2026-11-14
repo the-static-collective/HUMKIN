@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="./radio.css">
 <link rel="manifest" href="./manifest.webmanifest">
 <script defer src="./scheduler.js"></script>
+<script defer src="./autodj.js"></script>
 <script defer src="./radio.js"></script>
 </head>
 <body>
@@ -53,6 +54,7 @@
     </div>
     <audio id="air" preload="none" controls aria-label="HUMKIN RADIO audio playback"></audio>
     <div class="status-row"><span id="playback-message" role="status" aria-live="polite">Choose TUNE IN to begin.</span><span id="counter" aria-label="Current rotation progress">✳</span></div>
+<p id="on-deck" class="preview-note" aria-live="off">ON DECK · The station is getting its records together.</p>
   </div>
 </section>
 <div class="strip" aria-hidden="true">✳ &nbsp; THE ROAD IS LONG · THE MUSIC IS FREE &nbsp; ✳ &nbsp; THE ROAD IS LONG · THE MUSIC IS FREE &nbsp; ✳</div>
