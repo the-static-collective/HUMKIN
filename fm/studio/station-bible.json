@@ -1,6 +1,6 @@
 {
   "schema_version": "humkin.radio.station-bible/v1",
-  "version": "001",
+  "version": "002",
   "title": "HUMKIN RADIO — THE STATION AT THE END OF THE DIAL",
   "short_mission": "Good music. Good company. Useful connections. A signal worth keeping.",
   "fiction_notice": "Fictional newsroom and management characters are scripted entertainment. Real reports require independent verification, consent and human editorial approval.",
@@ -249,6 +249,17 @@
       "in_pilot": false,
       "direction": "Producer-only compliance reminder. NOT A BROADCAST SEGMENT. Verify identity, details, urgency, and rights separately.",
       "script": "[PRODUCER NOTE — NEVER BROADCAST AS WRITTEN.] Source and timestamp: ____. Consent for publication: ____. Safe contact channel: ____. Verifier: ____. Approved on-air wording: ____. Expiration / takedown: ____. No sensitive details or private contact data."
+    },
+    {
+      "id": "id-lumi-static-001",
+      "department": "station_id",
+      "label": "LUMI — The Department of Static",
+      "role": "Lumi — The Assistant Station Manager",
+      "expected_seconds": 13,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Dry, warm, wry, matter-of-fact. Tiny original relay click and optional original Lantern G4-B4-E5 sting at 92 BPM before the voice; no baked radio hiss/static because warm texture is Same-Time-only. Never interrupt a playing song. A HeyGen speech preview exists, but the finished station cart is not yet mastered, uploaded or approved.",
+      "script": "This is Lumi at HUMKIN RADIO. We've moved the static back to its proper department. Road Shuffle is innocent. The new single is innocent. Management remains under investigation. Stay tuned."
     }
   ]
 }
