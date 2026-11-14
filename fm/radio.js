@@ -124,6 +124,30 @@ function setMediaInfo(track){
     }catch{}
   }
 }
+function updateOnDeck(){
+  const target=$("on-deck");
+  if(!target)return;
+  const names=[];
+  if(mode==="shuffle"&&order.length){
+    for(let n=1;n<=3;n++){
+      const next=order[(cursor+n)%order.length];
+      if(tracks[next])names.push(tracks[next].title);
+    }
+  }else if(mode==="clock"&&!remoteStream&&tracks.length){
+    let when=Date.now();
+    let current=tuneAt(when);
+    for(let n=0;n<3&&current;n++){
+      const duration=tracks[current.index]?.duration||0;
+      when+=Math.max(250,Math.ceil((duration-current.position)*1000)+350);
+      const next=tuneAt(when);
+      if(!next)break;
+      if(tracks[next.index])names.push(tracks[next.index].title);
+      current=next;
+    }
+  }
+  target.textContent=names.length?"ON DECK · "+names.join("  ✳  "):
+    "ON DECK · Tune in to hear the road ahead.";
+}
 function showTrack(i,position=0){
   if(!tracks[i])return;
   index=i;
@@ -134,6 +158,7 @@ function showTrack(i,position=0){
   $("current-art").alt=t.title+" — HUMKIN radio artwork";
   setMediaInfo(t);
   counter.textContent=mode==="clock"?(remoteStream?"LIVE STREAM":"ON THE SHARED CLOCK"):(pad(cursor+1)+" / "+pad(order.length));
+  updateOnDeck();
 }
 // An explicit playing state keeps Android's media notification attached while
 // the same <audio> element switches MP3s. It cannot override OS tab suspension.
