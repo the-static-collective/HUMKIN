@@ -1,0 +1,48 @@
+name: Render a PRIVATE HUMKIN radio preview (Modal)
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "Private listening preview length. No streaming and no automatic publication."
+        required: true
+        type: choice
+        default: "5"
+        options:
+          - "1"
+          - "5"
+          - "10"
+          - "20"
+          - "30"
+          - "60"
+permissions:
+  contents: read
+jobs:
+  render:
+    name: Cloud mix / explicit manual run
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    environment: radio-preview
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Confirm private Modal credentials exist
+        shell: bash
+        run: |
+          if [[ -z "$MODAL_TOKEN_ID" || -z "$MODAL_TOKEN_SECRET" ]]; then
+            echo "::error::Private Modal credentials missing. Set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET in the repository or environment."
+            exit 1
+          fi
+      - name: Install pinned Modal CLI
+        run: python -m pip install "modal==1.6.1"
+      - name: Render private cloud preview
+        run: modal run tools/radio-broadcast/modal_hour.py --minutes "${{ inputs.minutes }}"
+      - name: Explain where the output lives
+        run: |
+          echo "This manual workflow does not expose a public Icecast station."
+          echo "The resulting MP3 is stored in private Modal Volume humkin-radio-renders."
+          echo "Use modal volume get or Modal storage UI to retrieve it before publishing anything."
