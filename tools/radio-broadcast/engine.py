@@ -259,9 +259,17 @@ def streaming(catalog,args):
     except StopIteration:
         print("Local timed broadcast sample complete.",flush=True)
     finally:
+        # An interrupted preview must not leave decoder processes holding pipes.
+        for proc in [locals().get("decode_current"),locals().get("head_process")]:
+            if proc is not None and proc.poll() is None:
+                proc.kill()
+                try:proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:pass
         try:encoder.stdin.close()
         except (BrokenPipeError,OSError):pass
-        encoder.wait(timeout=45)
+        try:encoder.wait(timeout=45)
+        except subprocess.TimeoutExpired:
+            encoder.kill();encoder.wait()
 
 def main():
     p=argparse.ArgumentParser(description="HUMKIN always-on audio source; physical server setup required")
