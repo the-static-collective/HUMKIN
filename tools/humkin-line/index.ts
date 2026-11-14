@@ -10,7 +10,7 @@ const enabled=()=>env("HUMKIN_LINE_ENABLE")==="true";
 const E164=/^\+[1-9][0-9]{7,14}$/;
 const SID={call:/^CA[0-9a-fA-F]{32}$/,message:/^(SM|MM)[0-9a-fA-F]{32}$/,record:/^RE[0-9a-fA-F]{32}$/};
 const XML_HEADERS={"content-type":"text/xml; charset=utf-8","cache-control":"no-store"};
-const JSON_HEADERS={"cache-control":"no-store"};
+const JSON_HEADERS={"cache-control":"no-store","access-control-allow-origin":"https://humkin.abundent.org","vary":"Origin"};
 const xml=(body)=>new Response('<?xml version="1.0" encoding="UTF-8"?><Response>'+body+"</Response>",{headers:XML_HEADERS});
 const json=(object,status=200)=>Response.json(object,{status,headers:JSON_HEADERS});
 const escape=(str)=>String(str).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c]));
