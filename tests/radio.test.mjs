@@ -4,7 +4,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
-const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js"),memoryJs=read("fm/rotation-memory.js"),warmJs=read("fm/warm-signal.js");
+const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js"),memoryJs=read("fm/rotation-memory.js"),warmJs=read("fm/warm-signal.js"),clockJs=read("fm/clock-sync.js");
 for(const p of ["fm/index.html","fm/radio.css","fm/radio.js","fm/rotation.json","fm/manifest.webmanifest","docs/RADIO-OPERATIONS.md"])assert(existsSync(p),"Missing radio file "+p);
 execFileSync(process.execPath,["--check","fm/radio.js"]);
 const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
@@ -55,7 +55,7 @@ assert(read("index.html").includes('href="./fm/"'),"Homepage must link the stand
 assert(read("sitemap.xml").includes("https://humkin.abundent.org/fm/"),"Sitemap entry missing");
 
 class E {
- constructor(name){this.name=name;this.disabled=false;this.hidden=false;this.paused=true;this.readyState=1;this.duration=180;this.currentTime=0;this.src="";this.textContent="";this.alt="";this.listeners={};this.attributes={};this.style={};this.classList={toggle:(k,v)=>{this.attributes["class-"+k]=v}};this.playCount=0}
+ constructor(name){this.name=name;this.disabled=false;this.hidden=false;this.paused=true;this.readyState=1;this.duration=180;this.currentTime=0;this.src="";this.textContent="";this.alt="";this.listeners={};this.attributes={};this.style={};this.classList={toggle:(k,v)=>{this.attributes["class-"+k]=v}};this.playCount=0;this.playbackRate=1}
  get src(){return this._src}
  set src(src){this._src=src;this.currentTime=0}
  addEventListener(t,fn){(this.listeners[t]??=[]).push(fn)}
@@ -67,7 +67,7 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[]){
+function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[],serverAheadMs=null){
  const elems=new Map(),listeners={},copies=[],downloads=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn},
@@ -80,6 +80,10 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
  const requests=[];
  const fetch=async url=>{
    const href=String(url);
+   if(href.includes("/rest/v1/rpc/humkin_radio_clock_ms")){
+     return {ok:serverAheadMs!==null,
+       json:async()=>time.now+(serverAheadMs||0)};
+   }
    if(/\.mp3(?:$|[?#])/i.test(href)){
      requests.push(href);
      if(!prefetchAudio)return {ok:false,status:403};
@@ -110,6 +114,7 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
  runInNewContext(artJs,context);
  runInNewContext(memoryJs,context);
  runInNewContext(warmJs,context);
+ runInNewContext(clockJs,context);
  runInNewContext(js,context);
  return {$,time,copies,listeners,session,window,document,requests,URLMock,downloads};
 }
@@ -341,5 +346,31 @@ assert(!html.includes('id="warm-toggle"')&&!html.includes('id="warm-intensity"')
  "The audio texture should be part of radio, without a separate control panel");
 assert(js.includes("startStationSound();"),
  "Listening events should activate the station's sound without user configuration");
+
+// Two receivers should reference the same server clock, even when one device's
+// wall clock runs a second behind. JOIN can adjust its first song after
+// buffering, but subsequent track transitions never skip the opening.
+const synced=fixture(rotation,[],[],[],null,[],false,[],1000);
+await flush();
+assert.equal(synced.window.HUMKIN_RADIO.state.clockCalibrated,true);
+assert.equal(synced.window.HUMKIN_RADIO.state.clockOffsetMs,1000);
+synced.$("listen").click();await flush();
+const expectedSynced=synced.window.HUMKIN_RADIO.tuneAt(synced.time.now+1000);
+synced.$("air").currentTime=Math.max(0,expectedSynced.position-1.1);
+synced.$("air").emit("playing");await flush();
+assert(Math.abs(synced.$("air").currentTime-expectedSynced.position)<.2,
+ "First actual playback should correct network latency against the common clock");
+synced.$("air").currentTime=expectedSynced.position-.85;
+synced.$("air").emit("timeupdate");await flush();
+assert(synced.$("air").playbackRate>1&&synced.$("air").playbackRate<1.019,
+ "A receiver behind the station can gradually catch up without skipping");
+synced.$("air").currentTime=expectedSynced.position+.85;
+synced.$("air").emit("timeupdate");await flush();
+assert(synced.$("air").playbackRate<1&&synced.$("air").playbackRate>.981,
+ "A receiver ahead of station time should gradually settle backward");
+synced.$("air").currentTime=expectedSynced.position-18;
+synced.$("air").emit("timeupdate");await flush();
+assert.equal(synced.$("air").playbackRate,1,
+ "A long buffering gap cannot trigger extreme speed-up or involuntary seek");
 
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");
