@@ -5,7 +5,7 @@ import {createRequire} from "node:module";
 const require=createRequire(import.meta.url),read=p=>readFileSync(p,"utf8");
 const B=require("../fm/studio/bible.js"),Clock=require("../fm/studio/clock.js");
 const book=B.validate(JSON.parse(read("fm/studio/station-bible.json")));
-assert.equal(book.scenes.length,13,"Thirteen original ready-to-produce scene cards");
+assert.equal(book.scenes.length,14,"Fourteen original ready-to-produce scene cards");
 assert.equal(book.roles.length,5,"Five founding staff voices");
 assert.equal(book.dayparts.length,6,"Six broad proposed dayparts");
 assert.equal(book.sonic_signature.tempo_bpm,92);
@@ -23,6 +23,11 @@ assert(lumi&&lumi.role.includes("Lumi")&&lumi.department==="station_id",
 assert(lumi.expected_seconds<=20,"Lumi's eleven-minute station ID should be brief");
 assert(!lumi.in_pilot,"The preexisting first-day pilot retains seven spoken beats");
 assert(/11.minutes/i.test(lumi.direction),"Lumi's cadence is a target, not a prerecorded or auto-aired claim");
+const lumiStatic=book.scenes.find(s=>s.id==="id-lumi-static-001");
+assert(lumiStatic&&lumiStatic.role.includes("Lumi")&&lumiStatic.department==="station_id",
+ "Department of Static must be a real canonical script card");
+assert(lumiStatic.direction.includes("no baked radio hiss/static"),
+ "Radio-only analogue effects must not be baked into a universal bumper");
 assert(book.scenes.some(s=>s.id.includes("night")),"Night shift identity must be available");
 assert(book.show_rules.some(s=>s.includes("recorded is not approved")),"Kinship provenance should persist");
 for(const s of book.scenes){
@@ -79,4 +84,9 @@ assert(studio.includes('BIBLE.asRundown(scene)'),"Scene additions must stay unre
 assert(studio.includes('BIBLE.copyText(scene)'),"Producer must be able to copy speech to a voice tool");
 assert(studio.includes('renderBible();'),"Producer UI must display dayparts and scripts");
 assert(read("sw.js").includes('"./fm/studio/station-bible.json"'),"Cache station bible for mobile continuity");
-console.log("HUMKIN Radio First Day production bible passed: 12 scripts, 5 voices, 24h proposal, 92 BPM ID, 60m pilot and no fake-airing gates.");
+const finisher=read("fm/studio/lumi-static/index.html");
+assert(finisher.includes("OfflineAudioContext")&&finisher.includes("wavFromBuffer"),
+ "Lumi finisher must create its own local WAV master");
+assert(finisher.includes("no static")&&finisher.includes("../../load/"),
+ "Finisher must keep effects clean and link to the existing owner loader");
+console.log("HUMKIN Radio production bible passed: 14 scripts, 5 voices, 24h proposal, 92 BPM ID, local Lumi cart finisher, 60m pilot and no fake-airing gates.");
