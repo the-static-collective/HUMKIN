@@ -11,7 +11,7 @@ const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,lastLiveCheck=0,switching=false;
-let remoteStream=null,programs=[];
+let remoteStream=null,programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 const timezone="America/Chicago";
 const EPOCH_FALLBACK="2026-11-13T00:00:00Z";
 const CRATE_API="https://kbhqacsdvjsstzyplqij.supabase.co";
@@ -70,21 +70,28 @@ function seededShuffle(n,seed){
   return list;
 }
 function musicIndices(){
-  // Station IDs and bumpers only play where a programmed show places them.
   return tracks.map((t,i)=>t.kind==="bumper"?-1:i).filter(i=>i!==-1);
+}
+function bumperIndices(){
+  return tracks.map((t,i)=>t.kind==="bumper"?i:-1).filter(i=>i!==-1);
+}
+function withStationIds(music){
+  return window.HUMKIN_AUTODJ?.insertBumpers(music,bumperIndices(),stationSettings.bumper_every)||music;
 }
 function tuneAt(ms){
   const program=window.HUMKIN_SCHEDULE?.currentProgram(programs,ms);
   const selected=window.HUMKIN_SCHEDULE?.scheduledAt(program,ms,tracks);
   if(selected)return selected;
   const eligible=musicIndices();
-  const total=eligible.reduce((s,i)=>s+Math.round(tracks[i].duration*1000),0);
+  // One fixed bumper order per cycle keeps every cycle exactly the same length.
+  const totalOrder=withStationIds(eligible);
+  const total=totalOrder.reduce((s,i)=>s+Math.round(tracks[i].duration*1000),0);
   if(!eligible.length||total<1)return null;
   const base=Number.isFinite(Date.parse(config?.synced_clock_epoch_utc))?Date.parse(config.synced_clock_epoch_utc):Date.parse(EPOCH_FALLBACK);
   const elapsed=Math.max(0,ms-base);
   const rotation=Math.floor(elapsed/total);
   const within=elapsed%total;
-  const sequence=seededShuffle(eligible.length,rotation).map(i=>eligible[i]);
+  const sequence=withStationIds(seededShuffle(eligible.length,rotation).map(i=>eligible[i]));
   let soFar=0;
   for(let i=0;i<sequence.length;i++){
     const track=tracks[sequence[i]];
@@ -194,9 +201,10 @@ function startClock(shouldPlay){
   setMessage(selection.program?"NOW AIRING · "+selection.program+" · Central Time":"On the shared station clock. Approximate sync; ordinary phone buffering can differ.");
 }
 function buildShuffle(previous=-1){
-  order=musicIndices();
-  for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
-  if(order.length>1&&order[0]===previous)[order[0],order[1]]=[order[1],order[0]];
+  const songs=musicIndices();
+  for(let i=songs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[songs[i],songs[j]]=[songs[j],songs[i]]}
+  if(songs.length>1&&songs[0]===previous)[songs[0],songs[1]]=[songs[1],songs[0]];
+  order=withStationIds(songs); // Never repeat a song before the shuffle cycle ends.
   cursor=0;
 }
 function startShuffle(shouldPlay){
@@ -359,11 +367,16 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    const [cloud,overrides,schedule]=await Promise.all([
+    const [cloud,overrides,schedule,settings]=await Promise.all([
       getPublishedCrate(),
       fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind","&limit=1000"),
-      fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority","&is_active=eq.true&limit=100")
+      fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority","&is_active=eq.true&limit=100"),
+      fetchExtras("humkin_radio_settings","id,bumper_every,station_label","&id=eq.main&limit=1")
     ]);
+    stationSettings={
+      bumper_every:window.HUMKIN_AUTODJ?.cadenceValue(settings[0]?.bumper_every)||0,
+      station_label:String(settings[0]?.station_label||"HUMKIN RADIO")
+    };
     const mapped=new Map(overrides.map(o=>[o.track_id,o]));
     tracks=tracks.map(t=>{
       const o=mapped.get(t.id);
@@ -375,8 +388,10 @@ async function boot(){
     const originalCount=tracks.length;
     const baseIds=new Set(tracks.map(t=>t.id));
     tracks.push(...cloud.filter(t=>!baseIds.has(t.id)));
+    const stationIds=bumperIndices().length;
     $("playlist-note").textContent=(config.status_note||"Continuous music from the HUMKIN catalog.")+
-      (tracks.length>originalCount?" PLUS "+(tracks.length-originalCount)+" new creator-loaded songs on the dial.":"");
+      (tracks.length>originalCount?" PLUS "+(tracks.length-originalCount)+" new creator-loaded recordings on the dial.":"")+
+      (stationIds&&stationSettings.bumper_every?" STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     setMessage("Press TUNE IN. No autoplay; you're in control.");
@@ -390,6 +405,7 @@ async function boot(){
 }
 window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
   get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
-    programs:programs.length,stream:remoteStream}}});
+    programs:programs.length,bumperEvery:stationSettings.bumper_every,
+    bumperCount:bumperIndices().length,stream:remoteStream}}});
 boot();
 })();
