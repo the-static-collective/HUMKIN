@@ -50,6 +50,14 @@ label{display:block;font-weight:800;margin:7px 0}
 #slot-list{margin:10px 0;padding-left:28px;max-height:310px;overflow:auto}
 #slot-list li{padding:6px 2px;border-bottom:1px solid #c8bebe}
 #slot-list button{padding:3px 8px}
+.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:11px;margin:14px 0}
+.art-tile{border:2px solid var(--ink);border-radius:10px;padding:7px;background:#fff;overflow:hidden;min-width:0;text-align:left}
+.art-tile img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px}
+.art-tile span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:6px 0 0;font-weight:800;font-size:.81rem}
+.cover-preview{display:block;width:156px;height:156px;object-fit:cover;background:#f3ebee;border:2px solid var(--ink);border-radius:10px;margin:9px 0}
+.track-thumb{width:62px;height:62px;object-fit:cover;border-radius:7px;border:1px solid var(--ink);margin:5px 0}
+#art-upload{max-width:100%;width:100%}
+.art-note{font-size:.88rem;max-width:760px}
 audio{width:100%;max-width:450px;margin-top:8px}
 dialog{border:3px solid var(--ink);border-radius:14px;box-shadow:10px 10px 0 var(--ink);padding:24px;background:var(--cream);color:var(--ink);width:min(94vw,540px)}
 dialog::backdrop{background:rgba(18,10,31,.68)}
@@ -59,6 +67,7 @@ dialog input:not([type=checkbox]),dialog select{width:100%}
 @media(max-width:740px){.grid,.form-grid{grid-template-columns:1fr}.track{grid-template-columns:auto 1fr}.track-actions{grid-column:2;justify-content:flex-start}}
 </style>
 <script defer src="../scheduler.js"></script>
+<script defer src="../art-library.js"></script>
 <script type="module" src="./manager.js"></script>
 </head><body>
 <header class="topline"><a href="../" class="brand">HUMKIN <span>✳</span></a><span class="station-id">STATION MANAGER / PRIVATE</span><a href="../" class="dj-link">← RADIO</a></header>
@@ -91,6 +100,16 @@ dialog input:not([type=checkbox]),dialog select{width:100%}
 <p>From the Kinship producer experiments: connect real recordings, draft little on-air stories, preserve competing interpretations, and remember only what a human confirms actually aired.</p>
 <p class="sub">A separate local-first workbench. It currently reads the original 21 published songs, not private cloud uploads. Nothing you do there changes the live playlist or sends private station data anywhere.</p>
 <a class="button" href="../living/">OPEN THE PRODUCER DESK ↗</a>
+</section>
+<section id="art-shelf" class="rose">
+<h2>00 · THE COVER ART SHELF</h2>
+<p>Upload an image once, reuse it across any number of songs, bumpers, and scheduled programs. Your original image stays on your device; HUMKIN creates a square listening cover. The published artwork URLs are public.</p>
+<label for="art-upload">Add cover art (JPG, PNG, WebP)</label>
+<input id="art-upload" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp">
+<p class="art-note">Images are center-cropped and converted to a maximum 1024 × 1024 JPEG on your device. Choose an image under 10 MB. To replace one image later, upload a new version and assign it; shared artwork is never deleted automatically.</p>
+<p id="art-count" class="sub">Reading the artwork shelf…</p>
+<p id="art-status" class="sub" role="status"></p>
+<div id="art-library" class="art-grid"></div>
 </section>
 <section id="library">
 <h2>01 · The record library</h2>
@@ -148,6 +167,9 @@ dialog input:not([type=checkbox]),dialog select{width:100%}
 <label><input type="checkbox" name="show-day" value="6" checked> SAT</label>
 </div>
 <label><input type="checkbox" id="show-active" checked> SHOW ENABLED / ON SCHEDULE</label>
+<label for="show-art">Program cover — overrides individual song art during this show</label>
+<select id="show-art"><option value="">No program cover (show track art)</option></select>
+<img id="show-art-preview" class="cover-preview" src="../../cover.jpg" alt="Program cover preview">
 <p><strong>Running order (songs and bumpers)</strong></p>
 <div class="row"><select id="slot-select" aria-label="Recording to add"><option value="">Choose a recording…</option></select><button id="slot-add" class="secondary">+ ADD TO SHOW</button></div>
 <ol id="slot-list"><li>No songs assigned yet.</li></ol>
@@ -167,6 +189,10 @@ dialog input:not([type=checkbox]),dialog select{width:100%}
 <label for="edit-kind">Recording type</label>
 <select id="edit-kind"><option value="song">SONG (regular rotation)</option><option value="bumper">BUMPER / STATION ID (programs only)</option></select>
 <label><input type="checkbox" id="edit-enabled"> ENABLED / AVAILABLE ON AIR</label>
+<label for="edit-art">Track cover — choose one from the reusable shelf</label>
+<select id="edit-art"><option value="">No custom art (use existing cover)</option></select>
+<img id="edit-art-preview" class="cover-preview" src="../../cover.jpg" alt="Selected track cover preview">
+<p class="sub">To use a new image, upload it into the cover art shelf first; then choose it here and save.</p>
 <p class="sub" id="edit-warning"></p>
 <div class="row"><button id="edit-save" class="primary">SAVE CHANGES ↗</button><button id="edit-delete" class="danger">DELETE AUDIO</button><button id="edit-close" class="secondary">CLOSE</button></div>
 </dialog>
