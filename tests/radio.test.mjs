@@ -4,7 +4,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
-const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js");
+const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js");
 for(const p of ["fm/index.html","fm/radio.css","fm/radio.js","fm/rotation.json","fm/manifest.webmanifest","docs/RADIO-OPERATIONS.md"])assert(existsSync(p),"Missing radio file "+p);
 execFileSync(process.execPath,["--check","fm/radio.js"]);
 const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
@@ -67,7 +67,7 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false){
+function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[]){
  const elems=new Map(),listeners={},copies=[],downloads=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn},
@@ -91,7 +91,8 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
      href.includes("/rest/v1/humkin_radio_tracks")?cloudRows:
      href.includes("/rest/v1/humkin_radio_static_overrides")?staticOverrides:
      href.includes("/rest/v1/humkin_radio_programs")?programRows:
-     href.includes("/rest/v1/humkin_radio_settings")?settingsRows:songs};
+     href.includes("/rest/v1/humkin_radio_settings")?settingsRows:
+     href.includes("/rest/v1/humkin_radio_art_assets")?artRows:songs};
  };
  class URLMock extends URL{
    static createObjectURL(blob){
@@ -106,6 +107,7 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
    setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}};
  runInNewContext(schedulerJs,context);
  runInNewContext(autodjJs,context);
+ runInNewContext(artJs,context);
  runInNewContext(js,context);
  return {$,time,copies,listeners,session,window,document,requests,URLMock,downloads};
 }
@@ -294,5 +296,36 @@ assert.equal(new Set(autoSpins.filter(i=>i!==bumperIndex)).size,21,"Each song ai
 assert(automix.$("on-deck").textContent.includes("ON DECK"),"On-deck display missing");
 const at=automix.window.HUMKIN_RADIO.tuneAt(Date.parse(rotation.synced_clock_epoch_utc)+1000);
 assert(at&&at.index>=0&&at.index<22,"Same-Time AutoDJ cannot select an invalid index");
+
+
+const ownerID="aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const trackCoverID="ffffffff-0000-4000-8000-ffffffffffff";
+const showCoverID="eeeeeeee-0000-4000-8000-eeeeeeeeeeee";
+const trackPath=ownerID+"/"+("1".repeat(64))+".jpg";
+const showPath=ownerID+"/"+("2".repeat(64))+".jpg";
+const incomingArts=[
+ {id:trackCoverID,storage_path:trackPath},
+ {id:showCoverID,storage_path:showPath}
+];
+const coverFixture=fixture(rotation,[],[
+ {track_id:"haileylu-bloom",title:"HaileyLu Bloom",artist:"HUMKIN",
+  album:"Radio",kind:"song",enabled:true,art_asset_id:trackCoverID}
+],[],null,[],false,incomingArts);
+await flush();
+coverFixture.$("spotlight").click();await flush();
+assert(coverFixture.$("current-art").src.endsWith(trackPath),
+ "Current track should use its reusable artwork instead of the default album cover");
+assert(coverFixture.session.metadata.artwork[0].src.endsWith(trackPath),
+ "Android Media Session should display the assigned track cover");
+const showWithArt={...show,art_asset_id:showCoverID};
+const programmedCover=fixture(rotation,[],[
+ {track_id:"mutant-pop-01",title:"Song",artist:"HUMKIN",album:"Radio",kind:"song",enabled:true,
+  art_asset_id:trackCoverID}
+],[showWithArt],friday,[],false,incomingArts);
+await flush();
+assert(programmedCover.$("current-art").src.endsWith(showPath),
+ "Active program cover must override any track artwork");
+assert(programmedCover.session.metadata.artwork[0].src.endsWith(showPath),
+ "Media Session cover art must also prioritize the scheduled program cover");
 
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");
