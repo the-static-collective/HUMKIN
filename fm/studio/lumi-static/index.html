@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#271b40"><meta name="robots" content="noindex,nofollow">
+<title>HUMKIN RADIO — Lumi Cart Finisher</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7edd7;color:#251c3d;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:780px;padding:20px 16px 65px;margin:auto}
+header{background:#291b44;color:#fff5d8;padding:14px 16px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+a{color:inherit}header a{font-weight:800}h1{font-size:clamp(2.4rem,8vw,4.8rem);line-height:1;letter-spacing:-.055em;margin:20px 0}
+h2{font-size:1.35rem;margin:0 0 12px}.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-weight:850;font-size:.72rem}
+section{background:#fffdf4;border:3px solid #281c43;border-radius:14px;padding:18px;margin:20px 0;box-shadow:6px 6px 0 #b7a8b6}
+label{display:block;font-weight:800;margin:16px 0 7px}
+input[type=file]{display:block;width:100%;padding:16px;background:#f0ecf7;border:2px dashed #4c3a62;border-radius:10px}
+button,.button{display:inline-block;cursor:pointer;background:#f8d96e;color:#241938;font:850 15px system-ui,sans-serif;border:2px solid #26183f;border-radius:9px;padding:12px 16px;text-decoration:none;margin:8px 6px 8px 0}
+button:disabled{opacity:.5;cursor:not-allowed}.green{background:#bde9ce}.note{padding:11px 13px;border-left:4px solid #8e678d;background:#f5ecfc}
+audio{display:block;width:100%;margin:14px 0}#result[hidden]{display:none}#status{font-weight:750;min-height:1.6em}
+small{color:#5d5168}blockquote{border-left:4px solid #a886aa;margin:12px 0;padding:7px 15px;background:#fff8e5}
+</style></head>
+<body>
+<header><a href="../../">HUMKIN RADIO ✳</a><span>THE CART MACHINE / LOCAL FINISHER</span><a href="../">BACK TO STUDIO ↗</a></header>
+<main>
+<p class="eyebrow">DEPARTMENT OF STATIC · CART # LUMI-STATIC-001</p>
+<h1>THE LANTERN<br>+ <em>LUMI.</em></h1>
+<p>Turn the dry Lumi voice into a single, downloadable station-identification recording. Original three-note Lantern logo, a tiny mechanical switch click, and the performed voice. Nothing is transmitted or uploaded while you mix.</p>
+<section>
+<h2>1 · FEED THE MACHINE</h2>
+<p>Use the <strong>download</strong> button under the Lumi voice clip in the ChatGPT conversation. Save that MP3 to your phone or computer, then select it here.</p>
+<label for="dry">Original dry Lumi voice (MP3 or WAV)</label>
+<input id="dry" type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,.mp3,.wav">
+<p class="note">Local processing only. No speech synthesizer, secret key, login, server, or new credit charge required.</p>
+<button id="finish" class="green">✳ FINISH THE RADIO CART</button>
+<p id="status" role="status" aria-live="polite">No file chosen. Nothing has been aired.</p>
+</section>
+<section id="result" hidden>
+<h2>2 · AUDITION AND SAVE</h2>
+<p>Listen for the click, three-note Lantern theme, and Lumi. The final WAV preserves the separate original dry take on your device.</p>
+<audio id="player" controls preload="metadata"></audio>
+<a id="download" class="button" download="HUMKIN_Lumi_Department_of_Static_master.wav">DOWNLOAD MASTER WAV ↓</a>
+<p><small>This is a proposed cart, not an aired recording. Review the performance, station branding, and provider usage terms before approving it.</small></p>
+</section>
+<section>
+<h2>3 · LOAD THE CARTRIDGE</h2>
+<p>After approval: upload the WAV through the owner-only Crate Loader (it can convert WAV to MP3). Publish the resulting recording, set its kind to <strong>BUMPER</strong> in Station Manager, and assign it to the <strong>station_id</strong> department in the Cart Machine. The station's current intended spacing is every 3 songs, at natural boundaries.</p>
+<p><a class="button" href="../../load/">OPEN CRATE LOADER ↗</a> <a class="button" href="../../manage/">STATION MANAGER ↗</a> <a class="button" href="../">CART MACHINE ↗</a></p>
+<p class="note"><strong>Important:</strong> The radio's 37.8% warm static treatment is for Same-Time Radio only. This export intentionally contains <strong>no static</strong>, so Road Shuffle and New Single remain clean.</p>
+</section>
+<blockquote>This is Lumi at HUMKIN RADIO. We've moved the static back to its proper department. Road Shuffle is innocent. The new single is innocent. Management remains under investigation. Stay tuned.</blockquote>
+</main>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const SR=48000,BPM=92,BEAT=60/BPM;
+const VOICE_START=1.43;
+let outputURL=null;
+function wavFromBuffer(buffer){
+ const samples=buffer.getChannelData(0),bytes=new ArrayBuffer(44+samples.length*2),view=new DataView(bytes);
+ function word(offset,s){for(let i=0;i<s.length;i++)view.setUint8(offset+i,s.charCodeAt(i))}
+ word(0,"RIFF");view.setUint32(4,36+samples.length*2,true);word(8,"WAVE");
+ word(12,"fmt ");view.setUint32(16,16,true);view.setUint16(20,1,true);
+ view.setUint16(22,1,true);view.setUint32(24,SR,true);view.setUint32(28,SR*2,true);
+ view.setUint16(32,2,true);view.setUint16(34,16,true);word(36,"data");
+ view.setUint32(40,samples.length*2,true);
+ let peak=0;for(let i=0;i<samples.length;i++)peak=Math.max(peak,Math.abs(samples[i]));
+ const scale=peak>0.97?0.97/peak:1;
+ for(let i=0;i<samples.length;i++){const v=Math.max(-1,Math.min(1,samples[i]*scale));view.setInt16(44+i*2,Math.round(v<0?v*32768:v*32767),true)}
+ return new Blob([bytes],{type:"audio/wav"});
+}
+function note(context,freq,start,duration,level){
+ for(const [harmonic,amp] of [[1,1],[2,.16],[3,.04]]){
+  const oscillator=context.createOscillator(),gain=context.createGain();
+  oscillator.type="sine";oscillator.frequency.value=freq*harmonic;
+  gain.gain.setValueAtTime(.0001,start);
+  gain.gain.linearRampToValueAtTime(level*amp,start+.016);
+  gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+  oscillator.connect(gain).connect(context.destination);
+  oscillator.start(start);oscillator.stop(start+duration+.015);
+ }
+}
+function click(context){
+ const n=Math.floor(SR*.009),b=context.createBuffer(1,n,SR),a=b.getChannelData(0);
+ for(let i=0;i<n;i++){const t=i/SR;a[i]=.07*Math.exp(-1550*t)*Math.sin(2*Math.PI*900*t)}
+ const source=context.createBufferSource();source.buffer=b;source.connect(context.destination);source.start(.055);
+}
+async function finish(){
+ const file=$("dry").files[0];
+ if(!file)return $("status").textContent="Select the downloaded dry voice MP3 or WAV first.";
+ if(!/\.(mp3|wav)$/i.test(file.name))return $("status").textContent="Choose an MP3 or WAV file.";
+ if(file.size>50*1024*1024)return $("status").textContent="File is over 50 MiB.";
+ $("finish").disabled=true;$("status").textContent="Decoding voice and assembling original Lantern signal…";
+ let decodeContext=null;
+ try{
+  const Audio=window.AudioContext||window.webkitAudioContext;
+  if(!Audio||!window.OfflineAudioContext)throw Error("This browser cannot render local audio.");
+  decodeContext=new Audio();
+  const dry=await decodeContext.decodeAudioData(await file.arrayBuffer());
+  const length=Math.ceil((VOICE_START+dry.duration+.5)*SR);
+  const offline=new OfflineAudioContext(1,length,SR);
+  const voice=offline.createBufferSource(),voiceGain=offline.createGain();
+  voice.buffer=dry;voiceGain.gain.value=.78;voice.connect(voiceGain).connect(offline.destination);
+  voice.start(VOICE_START);
+  click(offline);
+  const durations=[.5*BEAT,.5*BEAT,2*BEAT],frequencies=[392,493.8833,659.2551];
+  let start=.20;
+  for(let i=0;i<3;i++){note(offline,frequencies[i],start,durations[i]+(i===2?.35:.075),i===2?.18:.17);start+=durations[i]}
+  const rendered=await offline.startRendering(),blob=wavFromBuffer(rendered);
+  if(outputURL)URL.revokeObjectURL(outputURL);
+  outputURL=URL.createObjectURL(blob);
+  $("player").src=outputURL;$("download").href=outputURL;
+  $("result").hidden=false;
+  $("status").textContent="LOCAL MASTER READY · "+rendered.duration.toFixed(1)+" seconds · WAV. Nothing has been broadcast.";
+  $("result").scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(e){$("status").textContent="Could not mix this file: "+(e.message||String(e))}
+ finally{$("finish").disabled=false;if(decodeContext)try{await decodeContext.close()}catch(e){}}
+}
+$("finish").addEventListener("click",finish);
+window.addEventListener("pagehide",()=>{if(outputURL)URL.revokeObjectURL(outputURL)});
+})();
+</script>
+</body></html>
