@@ -87,11 +87,16 @@ assert.equal(media.volume,.8,"Disabling the layer must not leave music attenuate
 
 const page=read("fm/index.html"),css=read("fm/radio.css"),radio=read("fm/radio.js");
 for(const id of ["warm-toggle","warm-intensity","warm-status","warm-level"]){
-  assert(page.includes('id="'+id+'"'),"Missing radio atmosphere control "+id);
+  assert(!page.includes('id="'+id+'"'),"Radio atmosphere should not be presented as a separate feature");
 }
+assert(!css.includes(".warm-dial"),"Remove no-longer-used atmosphere control CSS");
+assert(radio.includes("intensity:42"),"Automatically use the established 42% station texture");
+assert(radio.includes("startStationSound();"),"Start the texture from a listening gesture");
+assert(F.WarmSignal&&F.noiseGain(42)>F.noiseGain(26),
+  "The analogue engine still supports the chosen warmth");
 assert(page.indexOf('rotation-memory.js')<page.indexOf('radio.js'));
 assert(page.indexOf('warm-signal.js')<page.indexOf('radio.js'));
-assert(css.includes(".warm-dial"),"Warm signal styling should be present");
+
 assert(radio.includes("rememberShuffleTrack"),"Radio should record played music");
 assert(radio.includes("chooseShuffleCandidate"),"Radio prefetch must honor 1-hour guard");
 assert(radio.includes("shufflePolicy?.save"),"Radio should remember history after refresh");
