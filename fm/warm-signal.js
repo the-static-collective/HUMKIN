@@ -6,7 +6,7 @@
  * Noise/pops have real stereo width, with brief mono-centered signal fades and
  * a gentle temporary playback-volume sag for the "tuning" impression.
  *
- * Disabled by default. Starts only after a direct user gesture. No uploads.
+ * Starts after a listening gesture; defaults to the station's 42% texture. No uploads.
  */
 (function(root){
 "use strict";
@@ -28,7 +28,7 @@ class WarmSignal{
   this.media=media;
   this.win=options.window||root;
   this.enabled=false;this.playing=false;
-  this.intensity=clamp(options.intensity??26,0,100);
+  this.intensity=clamp(options.intensity??42,0,100);
   this.ctx=null;this.noise=null;this.gain=null;this.merger=null;
   this.widthNodes=[];this.timer=null;this.restoreTimer=null;
   this.baseVolume=Number.isFinite(media.volume)?media.volume:1;
