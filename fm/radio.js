@@ -391,6 +391,34 @@ async function startRadio(){
     updateListen();
   }
 }
+function downloadNativePlaylist(){
+  if(!tracks.length){setMessage("No recordings to export yet.");return}
+  // Native media apps own their background service and can continue to the next
+  // URL when Android suspends the browser tab. This is a snapshot playlist, not
+  // synchronized live radio or an offline download of all MP3s.
+  const rows=mode==="shuffle"&&order.length?order:withStationIds(musicIndices());
+  const clean=value=>String(value||"").replace(/[\r\n,]+/g," ").trim();
+  const lines=["#EXTM3U","#PLAYLIST:HUMKIN RADIO"];
+  for(const i of rows){
+    const t=tracks[i];
+    if(!t?.src)continue;
+    // No private files, Blob URLs, data: URLs, or secrets enter the playlist.
+    if(!/^https:\/\//i.test(t.src))continue;
+    lines.push("#EXTINF:"+Math.max(1,Math.round(t.duration))+","+
+      clean(t.artist||"HUMKIN")+" - "+clean(t.title));
+    lines.push(t.src);
+  }
+  if(lines.length<4){setMessage("No public songs are ready for the native player.");return}
+  if(typeof URL.createObjectURL!=="function"){
+    setMessage("This browser cannot export playlists; use a different browser.");return;
+  }
+  const blob=new Blob([lines.join("\n")+"\n"],{type:"audio/x-mpegurl;charset=utf-8"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="HUMKIN-RADIO.m3u";
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>releaseObjectUrl(url),30000);
+  setMessage("Playlist downloaded. Open HUMKIN-RADIO.m3u in VLC (or another music app) for native screen-off playback. This is a streamed playlist, not downloaded MP3s.");
+}
 async function share(){
   const link=new URL("./",here).href;
   const detail={title:"HUMKIN RADIO",text:"Music for the long way home.",url:link};
@@ -405,6 +433,7 @@ $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!au
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
+$("phone-playlist").addEventListener("click",downloadNativePlaylist);
 audio.addEventListener("play",()=>{
   active=true;setPlaybackState("playing");updateListen();
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
@@ -523,7 +552,7 @@ async function boot(){
     $("playlist-note").textContent=(config.status_note||"Continuous music from the HUMKIN catalog.")+
       (tracks.length>originalCount?" PLUS "+(tracks.length-originalCount)+" new creator-loaded recordings on the dial.":"")+
       (stationIds&&stationSettings.bumper_every?" STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
-    for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight"])$(id).disabled=false;
+    for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     setMessage("Press TUNE IN. No autoplay; you're in control.");
     status.textContent="✳ THE DIAL IS READY";
