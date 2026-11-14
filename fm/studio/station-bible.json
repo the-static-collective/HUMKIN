@@ -1,0 +1,243 @@
+{
+  "schema_version": "humkin.radio.station-bible/v1",
+  "version": "001",
+  "title": "HUMKIN RADIO — THE STATION AT THE END OF THE DIAL",
+  "short_mission": "Good music. Good company. Useful connections. A signal worth keeping.",
+  "fiction_notice": "Fictional newsroom and management characters are scripted entertainment. Real reports require independent verification, consent and human editorial approval.",
+  "transmitter_status": "A shared, always-on stream is not yet connected. These are production plans and scripts, not confirmed broadcasts.",
+  "show_rules": [
+    "Music leads. Most airtime should remain original HUMKIN recordings; speech must earn the interruption.",
+    "Nobody is a punchline merely for needing help. Laugh at systems, management, or ourselves, not vulnerable listeners.",
+    "Every factual community bulletin must be verified and approved by a person; never invent contact information or imply a fictional emergency is real.",
+    "Permission to leave a voicemail or send an SMS is not permission to air it. Never publish unreviewed callers.",
+    "A proposed segment is not recorded; recorded is not approved; approved is not aired. Preserve exact state and source.",
+    "Use an original three-note sonic signature; don't imitate any existing game's recordings, scripts or licensed music.",
+    "Keep speech short, distinctive and infrequent. If a moment wants silence, give it silence.",
+    "No surprises on a live transmitter: completed audio is prepared, rights-reviewed, manually scheduled and actually confirmed aired."
+  ],
+  "sonic_signature": {
+    "title": "The Lantern",
+    "tempo_bpm": 92,
+    "notes": [
+      "G4",
+      "B4",
+      "E5"
+    ],
+    "rhythm_beats": [
+      0.5,
+      0.5,
+      2
+    ],
+    "instrument": "Warm electric piano or lightly detuned bell, soft tape coloration, a breath of station hiss.",
+    "direction": "Play three original notes, ascending, the last held through the beginning of a song. Build as an original recording; this notation is a composition sketch, not an MP3.",
+    "usage": "Station IDs, hourly top-of-hour return, emergency signoff, and opening credit. Do not saturate every break."
+  },
+  "roles": [
+    {
+      "id": "newsman",
+      "name": "The Newsman",
+      "job": "Newsroom",
+      "principle": "Believes reporting deserves evidence; takes ridiculous institutional confusion terribly seriously.",
+      "voice": "Measured, earnest, slightly exhausted. A long pause says more than shouting.",
+      "recurring": "Attempts to identify the station's owner, then learns the owner has filed a missing-person report on management."
+    },
+    {
+      "id": "manager",
+      "name": "The Station Manager",
+      "job": "Administration",
+      "principle": "Always confident. Never entirely in possession of the facts.",
+      "voice": "Bright executive optimism; accidental confessions.",
+      "recurring": "Relabels a problem a 'new department' before anyone can fix it."
+    },
+    {
+      "id": "farm",
+      "name": "The Farm Correspondent",
+      "job": "Agricultural desk",
+      "principle": "Offers genuinely useful field knowledge even when nobody asked the question.",
+      "voice": "Grounded, dry, rural; no caricature.",
+      "recurring": "Treats the station as a weather event with livestock implications."
+    },
+    {
+      "id": "hailey",
+      "name": "Hailey Lou",
+      "job": "Evening host",
+      "principle": "The station's human center. Lets songs and listeners breathe.",
+      "voice": "Warm, unhurried, intimate. Never sentimental for sentiment's sake.",
+      "recurring": "Returns from every absurdity to what people are actually trying to say."
+    },
+    {
+      "id": "assistant",
+      "name": "The Assistant Station Manager",
+      "job": "Operations",
+      "principle": "Keeps the station running and maintains receipts, while declining management's impossible demands.",
+      "voice": "Matter-of-fact, gently comic; not confused with this actual ChatGPT session.",
+      "recurring": "A mysterious stack of completed forms reveals that management has forgotten to invent the departments they belong to."
+    }
+  ],
+  "dayparts": [
+    {
+      "time": "06:00–09:00",
+      "name": "MORNING AGAIN",
+      "format": "Music-forward early show, opening station ID, one brief verified Community Desk bulletin."
+    },
+    {
+      "time": "09:00–12:00",
+      "name": "THE LONG WAY HOME",
+      "format": "Discovery rotation; fewer voices, more songs, a short Newsman dispatch."
+    },
+    {
+      "time": "12:00–15:00",
+      "name": "THE DEPARTMENT OF AFTERNOONS",
+      "format": "Music with sparing fictional management notices and one farm report."
+    },
+    {
+      "time": "15:00–18:00",
+      "name": "ROADSIDE REQUESTS",
+      "format": "Approved song requests and listener stories, never unreviewed callers."
+    },
+    {
+      "time": "18:00–22:00",
+      "name": "HAILEY LOU'S PORCH",
+      "format": "Human-scale evening music, occasional poems and verified offers of help."
+    },
+    {
+      "time": "22:00–06:00",
+      "name": "THE NIGHT SHIFT",
+      "format": "Long uninterrupted music sets; one gentle ID at the hour, no urgent-sounding fictional alerts."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "open-001",
+      "department": "station_id",
+      "label": "THE FIRST DAY — Opening Transmission",
+      "role": "The Announcer",
+      "expected_seconds": 45,
+      "kind": "fiction",
+      "in_pilot": true,
+      "direction": "A tiny click. The 42% radio bed is already underneath; the original three-note Lantern motif enters once. Read as if people have been hearing this station for years.",
+      "script": "Good morning. If you're hearing this, congratulations. Something still works. You're listening to HUMKIN RADIO. We don't know how far this signal reaches. Frankly, we're having some difficulty determining where it's coming from. Management assures us these are unrelated problems. Nevertheless, we've got music, we've got coffee, and someone has brought a goat into the newsroom. So things are looking up. Stay with us. We'll figure something out."
+    },
+    {
+      "id": "news-001",
+      "department": "news",
+      "label": "THE NEWSMAN — Ownership Investigation",
+      "role": "The Newsman",
+      "expected_seconds": 55,
+      "kind": "fiction",
+      "in_pilot": true,
+      "direction": "Dead serious delivery. No fictional disaster presented as real breaking news. One dry typewriter key before the first sentence.",
+      "script": "Good morning. This is the newsroom. We have confirmed that the station was purchased yesterday by an organization that does not appear in any official record. We contacted the organization's president for comment. He referred us to the station manager, who referred us to the president. We contacted the president again and received a statement from the station manager. The statement reads, 'We are encouraged by these developments.' Our investigation continues. In other news, the newsroom goat has been appointed acting treasurer. Management says this is unrelated."
+    },
+    {
+      "id": "ad-001",
+      "department": "sponsor",
+      "label": "THE AD DEPARTMENT — Kackslacks",
+      "role": "The Advertising Department",
+      "expected_seconds": 35,
+      "kind": "fiction",
+      "in_pilot": true,
+      "direction": "Obviously fictional in-world comedy advertisement. Do not claim real product availability, prices, endorsements, or business sponsorships.",
+      "script": "A message from our advertising department. Are your trousers prepared for the responsibilities of tomorrow? Introducing the concept of KACKSLACKS: the relaxed confidence of festival pants with the solemn dignity of a spreadsheet. Perfect for casual Friday, provided the office has a flexible understanding of Friday. KACKSLACKS: management has approved the name. The product, manufacturing, availability, and this advertisement remain under review. And now, back to actual music."
+    },
+    {
+      "id": "community-001",
+      "department": "community",
+      "label": "THE COMMUNITY DESK — Verified Bulletin Slot",
+      "role": "The Community Desk",
+      "expected_seconds": 50,
+      "kind": "real_template",
+      "in_pilot": true,
+      "direction": "HOLD / DO NOT AIR until a real community item is verified, permission for on-air details is documented, and contact instructions are safe. Do not use fictional goat/tomato anecdotes as genuine reports.",
+      "script": "You're listening to the Community Desk on HUMKIN RADIO. Today we're sharing [VERIFIED OFFER OR NEED, PLAIN LANGUAGE]. This is happening in [GENERAL AREA ONLY]. If you can help, or if the offer would help you, use [APPROVED PUBLIC CONTACT METHOD THAT DOES NOT EXPOSE PRIVATE INFORMATION]. The details were confirmed by [HUMAN PRODUCER NAME / DATE]. Thank you for keeping a little room for your neighbors. [REMOVE THIS TEMPLATE AND RECORD A VERIFIED VERSION BEFORE AIRING.]"
+    },
+    {
+      "id": "farm-001",
+      "department": "field_report",
+      "label": "THE FARM REPORT — Livestock and Management",
+      "role": "The Farm Correspondent",
+      "expected_seconds": 42,
+      "kind": "fiction",
+      "in_pilot": true,
+      "direction": "Keep the correspondent competent and the bureaucracy ridiculous. Don't invent actual local weather or agronomic advisories.",
+      "script": "This is the Farm Report. Conditions at the station remain difficult to classify. The lights are on, which is usually a good sign. The management appears to be experiencing a shortage of management. A goat has been reported indoors, which can happen when doors are open. We recommend checking the fences before declaring a financial recovery. We'll return with actual agricultural news once someone assigns us a farm."
+    },
+    {
+      "id": "management-001",
+      "department": "comedy",
+      "label": "THE MANAGER — Department Reorganization",
+      "role": "The Station Manager",
+      "expected_seconds": 48,
+      "kind": "fiction",
+      "in_pilot": true,
+      "direction": "Upbeat, proud, never villainous. Allow one silent beat before the reveal.",
+      "script": "Good afternoon, team. Following an extensive review, I've decided the station is now operating under a bold new structure. The Engineering Department will report to Programming, Programming will report to the Newsroom, and the Newsroom will report directly to the goat. The goat has declined this appointment. Accordingly, I am creating a Department of Goat Relations. Please direct all questions there. We are making progress, ladies and gentlemen. Tremendous progress. Where is the microphone? Oh. We're live."
+    },
+    {
+      "id": "outro-001",
+      "department": "station_id",
+      "label": "THE FIRST DAY — We Are Still Here",
+      "role": "Hailey Lou",
+      "expected_seconds": 40,
+      "kind": "fiction",
+      "in_pilot": true,
+      "direction": "Drop the joke. The last line leads into a full unbroken song. Do not use exaggerated dramatic disaster audio.",
+      "script": "There's something I like about a station that keeps showing up. Nobody has all the answers here. We barely have a filing system. But the music is here, and you're here, and somewhere somebody's making room for somebody else. Whatever the road looked like before you got here, you don't have to listen to it alone. This is HUMKIN RADIO. There's room for you."
+    },
+    {
+      "id": "id-002",
+      "department": "station_id",
+      "label": "STATION ID — The Signal Still Works",
+      "role": "The Announcer",
+      "expected_seconds": 16,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "One Lantern motif. Light FM patina. Fit neatly between any two songs.",
+      "script": "You're listening to HUMKIN RADIO. Management is unavailable. The music isn't. Stay with us."
+    },
+    {
+      "id": "id-003",
+      "department": "station_id",
+      "label": "STATION ID — New Department",
+      "role": "The Assistant Station Manager",
+      "expected_seconds": 19,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "A quick stack-of-papers shuffle, followed by a thoughtful beat.",
+      "script": "The Department of Questions has received your question. Unfortunately, the Department of Answers is still being established. HUMKIN RADIO. Back to the music."
+    },
+    {
+      "id": "id-004",
+      "department": "station_id",
+      "label": "STATION ID — Good Company",
+      "role": "Hailey Lou",
+      "expected_seconds": 15,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "No effects beyond the gentle station bed; directly into music.",
+      "script": "It's good to have somebody out there. It's good to have music in here. HUMKIN RADIO. Good company for the long way home."
+    },
+    {
+      "id": "night-001",
+      "department": "promo",
+      "label": "THE NIGHT SHIFT — We Still Have Electricity",
+      "role": "The Night Announcer",
+      "expected_seconds": 28,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "After 10 PM. Low energy. Don't awaken anyone with alarms or simulated emergency tones.",
+      "script": "The hour is late. The office is quiet. We've turned off every light except the one that makes the transmitter feel less lonely. If you're working, traveling, or simply not ready to sleep, there's room for you here. HUMKIN RADIO. We still have electricity. Enjoy the next few songs."
+    },
+    {
+      "id": "desk-002",
+      "department": "community",
+      "label": "COMMUNITY DESK — Consent Check",
+      "role": "The Producer",
+      "expected_seconds": 25,
+      "kind": "real_template",
+      "in_pilot": false,
+      "direction": "Producer-only compliance reminder. NOT A BROADCAST SEGMENT. Verify identity, details, urgency, and rights separately.",
+      "script": "[PRODUCER NOTE — NEVER BROADCAST AS WRITTEN.] Source and timestamp: ____. Consent for publication: ____. Safe contact channel: ____. Verifier: ____. Approved on-air wording: ____. Expiration / takedown: ____. No sensitive details or private contact data."
+    }
+  ]
+}
