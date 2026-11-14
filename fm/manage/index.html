@@ -100,8 +100,26 @@ dialog input:not([type=checkbox]),dialog select{width:100%}
 <div id="catalog" aria-live="polite"><p>Loading tracks…</p></div>
 <div class="row"><button class="secondary" id="bulk-on">ENABLE SELECTED</button><button class="secondary" id="bulk-off">HIDE SELECTED</button><button class="secondary" id="clear-selected">CLEAR CHECKS</button><span class="sub" id="selected-count">0 selected</span></div>
 </section>
+<section id="auto-dj" class="mint">
+<h2>02 · AUTOMATIC DJ</h2>
+<p>Drop a real recorded station ID between songs without programming every appearance. Mark a short recording <strong>BUMPER / STATION ID</strong> in the library first, then choose how often the station plays one.</p>
+<div class="row">
+<div><label for="bumper-frequency">Station ID frequency</label>
+<select id="bumper-frequency"><option value="0">OFF · MUSIC ONLY</option>
+<option value="2">Every 2 songs</option><option value="3">Every 3 songs</option>
+<option value="4">Every 4 songs</option><option value="5">Every 5 songs</option>
+<option value="6">Every 6 songs</option><option value="7">Every 7 songs</option>
+<option value="8">Every 8 songs</option><option value="10">Every 10 songs</option>
+<option value="12">Every 12 songs</option><option value="15">Every 15 songs</option>
+<option value="20">Every 20 songs</option></select></div>
+<div><label for="station-label">Station name</label><input id="station-label" maxlength="90" value="HUMKIN RADIO"></div>
+</div>
+<p id="auto-status" role="status" class="sub">Reading station automation settings…</p>
+<div class="row"><button id="auto-save" class="primary">SAVE AUTO DJ SETTINGS ↗</button><a href="../load/" class="button secondary">UPLOAD A BUMPER ↗</a></div>
+<p class="sub">Automatic IDs play in both Same-Time RADIO and Road Shuffle. Explicitly scheduled shows retain their own ordered playlists. Changes take effect when listeners refresh. Default is OFF; no unexpected interruptions.</p>
+</section>
 <section id="programming">
-<h2>02 · Program the day</h2>
+<h2>03 · Program the day</h2>
 <p>Build a recurring block—Morning Drive, Midnight Garden, Sunday Gospel, whatever fits. Add tracks in order; repeat a short bumper anywhere in the list. When a block ends, the normal station rotation returns.</p>
 <div id="show-list"><p>Loading scheduled shows…</p></div>
 <div class="row"><button id="new-show" class="primary">+ MAKE A NEW SHOW</button></div>
