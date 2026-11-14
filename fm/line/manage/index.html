@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#271e3e">
+<title>HUMKIN RADIO · Request Line Desk</title><link rel="stylesheet" href="../../radio.css">
+<style>body{background:#fbf3e4;color:#261e35}main{max-width:1050px;margin:auto;padding:22px 17px 70px}
+h1{font-size:clamp(2.8rem,9vw,6rem);letter-spacing:-.06em;line-height:.9}h2{font-size:1.7rem}
+.panel{padding:19px;margin:24px 0;border:3px solid #271e3e;background:white;border-radius:12px;box-shadow:5px 6px 0 #bcb0ca}
+#inbox{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.item{padding:16px;border:2px solid #372d4b;border-radius:12px;background:#fdf9ea;min-width:0}
+.item p{line-height:1.5;overflow-wrap:anywhere}.item h3{margin:5px 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row select{min-width:150px;flex:1}
+select,textarea{font:inherit;padding:9px;border:2px solid #3c3150;border-radius:8px;background:white;max-width:100%}
+textarea{width:100%;min-height:65px;box-sizing:border-box}
+button,.action{border:2px solid #2a203e;border-radius:8px;padding:10px 12px;font-weight:900;background:#e0eecb;cursor:pointer;color:#241b38;text-decoration:none;display:inline-block}
+button:disabled{opacity:.5;cursor:wait}.meta{font-size:.78rem;color:#6b5771;letter-spacing:.03em}
+.hidden{display:none}.note{font-size:.85rem;padding:10px;background:#ffedd7;border-left:4px solid #ac805b}
+.status{font-weight:800}label{display:block;font-weight:850;margin:9px 0 5px}
+</style><script type="module" src="./inbox.js"></script></head>
+<body><header class="topline"><a href="../../" class="brand">HUMKIN <span>✳</span></a><span class="station-id">PRIVATE SWITCHBOARD</span><a href="../../studio/" class="dj-link">← STUDIO</a></header>
+<main><p class="eyebrow">HUMKIN RADIO · NOT YET THE OPERATOR'S VOICE</p><h1>THE<br><em>INBOX.</em></h1>
+<p>Listener requests and recordings wait here for a human producer. Nothing in this room is automatically public, read on air, or passed to an AI.</p>
+<section class="panel"><h2>✳ OPERATOR ACCESS</h2>
+<p id="auth" class="status" role="status">Checking owner session…</p>
+<a href="../../load/" id="login" class="action">SIGN IN THROUGH CRATE LOADER ↗</a>
+<button type="button" id="refresh">REFRESH INBOX</button>
+<p class="note">A voicemail is stored at your Twilio provider, not publicly hosted on HUMKIN. Its SID lets you locate it in the provider's secure recording console. Do not read or rebroadcast listener messages without checking permission and context. Private contact numbers are not stored in this database.</p>
+</section>
+<section id="desk" class="panel hidden"><h2>ON THE PRODUCER'S DESK</h2>
+<p class="meta" id="count">Loading messages…</p><div id="inbox"></div>
+<p class="meta">REQUEST → HOLD / REJECT / CLEAR → confirmed AIRED → RETURNED. Human review only. Broadcast permission must be independently verified and recorded.</p>
+</section>
+<p id="feedback" role="status"></p>
+</main><footer><a href="../">← THE REQUEST LINE</a><span>INBOX ≠ PERMISSION ≠ AIRTIME</span></footer>
+</body></html>
