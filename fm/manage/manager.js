@@ -1,13 +1,15 @@
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.57.0";
+import {prepareCover} from "./art-upload.js";
 
 // Publishable key only. Every write is checked again by owner-only Postgres RLS.
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
-const OWNER="us@abundent.org",LIVE="humkin-radio-live",INBOX="humkin-radio-inbox";
+const OWNER="us@abundent.org",LIVE="humkin-radio-live",INBOX="humkin-radio-inbox",ART="humkin-radio-art";
 const db=createClient(API,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 let user=null,library=[],shows=[],staticList=[],editing=null,editingShow=null,slots=[],busy=false;
+let artAssets=[];
 let stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 const selected=new Set();
 function el(tag,value,className){
@@ -48,7 +50,7 @@ async function requireOwner(){
 }
 function setBusy(v){
  busy=v;
- for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off","auto-save"])
+ for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off","auto-save","art-upload"])
    $(id).disabled=v;
 }
 async function checkOne(result,action){
@@ -71,21 +73,24 @@ async function loadDesk(){
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
  try{
-  const [configResponse,cloudResult,staticResult,showsResult,settingsResult]=await Promise.all([
+  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks")
-    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,published_at,created_at")
+    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,art_asset_id,published_at,created_at")
     .order("created_at",{ascending:false}).limit(2000),
-   db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind").limit(1000),
-   db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at")
+   db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind,art_asset_id").limit(1000),
+   db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at,art_asset_id")
     .order("start_minute",{ascending:true}).limit(500),
-   db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label").eq("id","main").limit(1)
+   db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label").eq("id","main").limit(1),
+   db.from("humkin_radio_art_assets").select("id,owner_id,sha256,storage_path,label,width,height,bytes,created_at")
+    .order("created_at",{ascending:false}).limit(500)
   ]);
   if(!configResponse.ok)throw Error("Original rotation not reachable");
-  for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult],["station settings",settingsResult]])
+  for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult],["station settings",settingsResult],["art shelf",artResult]])
     if(result.error)throw Error(name+": "+result.error.message);
   const config=await configResponse.json();
   if(!Array.isArray(config.tracks))throw Error("Original rotation is incomplete");
+  artAssets=[...window.HUMKIN_ART.libraryMap(artResult.data||[]).values()];
   const overrides=new Map((staticResult.data||[]).map(t=>[t.track_id,t]));
   staticList=config.tracks.map(track=>{
    const override=overrides.get(track.id);
@@ -93,14 +98,16 @@ async function loadDesk(){
      artist:override?.artist||track.artist||"HUMKIN",
      album:override?.album||track.album||"HUMKIN RADIO",
      kind:override?.kind==="bumper"?"bumper":"song",
-     enabled:override?.enabled!==false,published:true,
+     enabled:override?.enabled!==false,published:true,art_asset_id:override?.art_asset_id||null,
+     artwork:new URL(track.artwork||"../cover.jpg","https://humkin.abundent.org/fm/").href,
      duration:Number(track.duration),url:new URL(track.src,"https://humkin.abundent.org/fm/").href,
      originalName:String(track.src),bytes:null};
   });
   const cloud=(cloudResult.data||[]).map(track=>({
    id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,
    artist:track.artist,album:track.album,kind:track.kind,
-   enabled:track.enabled,published:!!track.published_at,
+   enabled:track.enabled,published:!!track.published_at,art_asset_id:track.art_asset_id||null,
+   artwork:new URL("../../cover.jpg",location.href).href,
    duration:Number(track.duration_seconds),bytes:track.bytes,
    originalName:track.original_name,
    url:track.published_at?publicSrc(track.storage_path):"",
@@ -113,7 +120,7 @@ async function loadDesk(){
     station_label:settingsResult.data?.[0]?.station_label||"HUMKIN RADIO"
   };
   for(const id of [...selected])if(!library.find(t=>t.id===id))selected.delete(id);
-  renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
+  renderArtShelf();renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
  }catch(err){note("Could not read station: "+err.message);$("auth-status").textContent="Signed in · data unavailable"}
 }
 function renderNow(){
@@ -151,6 +158,10 @@ function renderLibrary(){
      $("selected-count").textContent=selected.size+" selected";
    });
    const content=el("div");
+   const thumbnail=el("img",null,"track-thumb");
+   thumbnail.src=coverUrl(track.art_asset_id,track.artwork);
+   thumbnail.alt=track.title+" cover";
+   thumbnail.loading="lazy";content.append(thumbnail);
    content.append(el("div",track.title,"track-title"));
    const status=el("div",null,"row");
    for(const label of [track.artist,track.kind==="bumper"?"BUMPER":"SONG",
@@ -217,6 +228,8 @@ function openEdit(track){
  $("edit-album").value=track.album;
  $("edit-kind").value=track.kind==="bumper"?"bumper":"song";
  $("edit-enabled").checked=track.enabled;
+ renderArtSelect("edit-art",track.art_asset_id||null);
+ updateArtPreview("edit");
  $("edit-source").textContent=(track.source==="cloud"?"CLOUD FILE":"ORIGINAL WEBSITE ASSET")+
   " · "+track.originalName+" · ID "+track.id;
  $("edit-delete").hidden=track.source!=="cloud";
@@ -227,6 +240,9 @@ function openEdit(track){
 }
 async function persistTrack(track,fields){
  await requireOwner();
+ // Static legacy tracks use UPSERT. Always preserve the previous art reference
+ // during a hide/enable/bulk toggle, even if the caller edits other fields.
+ fields={art_asset_id:track.art_asset_id||null,...fields};
  if(track.source==="cloud"){
    await checkOne(await db.from("humkin_radio_tracks")
       .update({...fields,updated_at:new Date().toISOString()})
@@ -241,7 +257,7 @@ async function saveEdit(){
  const track=library.find(t=>t.id===editing);if(!track||busy)return;
  const fields={title:$("edit-title").value.trim(),artist:$("edit-artist").value.trim(),
    album:$("edit-album").value.trim(),kind:$("edit-kind").value,
-   enabled:$("edit-enabled").checked};
+   enabled:$("edit-enabled").checked,art_asset_id:$("edit-art").value||null};
  if(!fields.title||!fields.artist||!fields.album){note("Title, artist, and album cannot be empty.");return}
  setBusy(true);
  try{await persistTrack(track,fields);$("edit-dialog").close();note("Saved "+fields.title);setBusy(false);await loadDesk()}
@@ -328,6 +344,8 @@ function showEditor(show=null){
  $("show-end").value=formatMinute(show?.end_minute??540);
  $("show-priority").value=show?.priority??0;
  $("show-active").checked=show?.is_active!==false;
+ renderArtSelect("show-art",show?.art_asset_id||null);
+ updateArtPreview("show");
  document.querySelectorAll('input[name="show-day"]').forEach(input=>{
    input.checked=(show?.days||[0,1,2,3,4,5,6]).includes(Number(input.value));
  });
@@ -339,6 +357,12 @@ function renderShows(){
  if(!shows.length){list.append(el("p","No scheduled shows yet. Same-Time RADIO currently plays the all-songs rotation."));return}
  for(const program of shows){
   const card=el("div",null,"show"+(!program.is_active?" inactive":""));
+  if(program.art_asset_id){
+    const picture=el("img",null,"track-thumb");
+    picture.src=coverUrl(program.art_asset_id);
+    picture.alt=program.name+" program art";picture.loading="lazy";
+    card.append(picture);
+  }
   card.append(el("h3",program.name));
   const description=program.days.map(d=>days[d]||"?").join(" ")+" · "+
     formatMinute(program.start_minute)+"–"+formatMinute(program.end_minute)+" Central"+
@@ -367,7 +391,8 @@ async function saveShow(){
  const missing=slots.filter(id=>!library.some(t=>t.id===id&&trackAvailable(t)));
  if(missing.length){note("Remove hidden, unpublished or missing recordings from the show before saving.");return}
  const fields={name,days:chosen,start_minute:start,end_minute:end,priority,
-   is_active:$("show-active").checked,track_ids:[...slots],updated_at:new Date().toISOString()};
+   is_active:$("show-active").checked,track_ids:[...slots],
+   art_asset_id:$("show-art").value||null,updated_at:new Date().toISOString()};
  setBusy(true);
  try{
    await requireOwner();
@@ -399,6 +424,12 @@ async function deleteShow(program){
  }catch(err){setBusy(false);note("Schedule delete failed: "+err.message)}
 }
 $("refresh").addEventListener("click",loadDesk);
+$("art-upload").addEventListener("change",async event=>{
+ const file=event.target.files?.[0];event.target.value="";
+ if(file)await uploadArtwork(file);
+});
+$("edit-art").addEventListener("change",()=>updateArtPreview("edit"));
+$("show-art").addEventListener("change",()=>updateArtPreview("show"));
 $("auto-save").addEventListener("click",saveAutoDj);
 $("track-search").addEventListener("input",renderLibrary);
 $("filter").addEventListener("change",renderLibrary);
