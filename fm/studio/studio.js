@@ -146,7 +146,7 @@ async function loadFieldCarts(){
    list.append(box);
   }
   fieldCartsLoaded=true;
-  msg.textContent=manifest.assets.length+" source/edited recordings in the production archive. Some edits may already be in the station rotation; check Station Manager for individual on-air status. Private staging does not air anything.";
+  msg.textContent=manifest.assets.length+" total source/edited recordings. The 14 finished edited carts are on air through the cloud or website allowlist; original M4A takes remain archive-only. Private staging does not make duplicates live.";
  }catch(error){msg.textContent="Audition shelf unavailable: "+error.message}
 }
 async function stageFieldCart(a,action,box){
