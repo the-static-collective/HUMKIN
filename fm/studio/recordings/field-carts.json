@@ -1,7 +1,7 @@
 {
   "schema_version": "humkin.radio.field-carts/v1",
   "editorial_status": "RECORDED / EDITED — pending rights review and owner approval; NOT on air",
-  "provenance": "User's November 15, 2026 field microphone take and two original HUMKIN bell/AM preview mixes.",
+  "provenance": "Original HUMKIN field microphone takes from November 15, 2026, plus station-identification edits. Each raw source preserved unchanged.",
   "assets": [
     {
       "id": "field-raw-001",
@@ -35,6 +35,28 @@
       "bytes": 190844,
       "can_stage": true,
       "note": "Warm vintage narrowband-style microphone treatment and chimes. No added radio static."
+    },
+    {
+      "id": "field-raw-002",
+      "title": "You Found Some Music — Original Microphone Take",
+      "file": "humkin-you-found-music-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 12.842667,
+      "sha256": "71d84865903f753b52b8f9a1c72d04b8135ae4c01b5b86ca4fba12395862c512",
+      "bytes": 311799,
+      "can_stage": false,
+      "note": "Original recording preserved exactly: the opening shaker/rattle, little beep and deliberate pauses are part of the performance. Unprocessed reference."
+    },
+    {
+      "id": "field-fm-002",
+      "title": "You Found Some Music — Lantern Bells",
+      "file": "humkin-you-found-music-lantern-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 14.576327,
+      "sha256": "1bb0ba374f97aa314a10ba8e4994a27d40846c7c94ad86f12f907fc9fb31a24b",
+      "bytes": 233682,
+      "can_stage": true,
+      "note": "Ready-to-review between-song radio liner. Original speech, shaker and pauses retained, with subtle G–B–E Lantern bells after 'more music.' No artificial radio static."
     }
   ]
 }
