@@ -46,6 +46,8 @@ label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
 .daypart-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:12px 0}
 .daypart-list article{border-left:4px solid #836b92;padding:7px;background:#f8f2e8;font-size:.82rem}
 .daypart-list strong{display:block}
+.field-assets audio{width:100%;max-width:100%;display:block}.field-assets .cart{min-width:0}.field-assets .cart h3{overflow-wrap:anywhere}.field-assets .cart button{font-size:.84rem}
+
 @media(max-width:760px){.columns,.fieldset{grid-template-columns:1fr}#rundown li{grid-template-columns:57px minmax(0,1fr)}
 #rundown li .controls{grid-column:2}.cart{padding:9px}}
 </style>
@@ -67,6 +69,14 @@ label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
 <p class="muted">Your saved carts and pilot draft are private to the station owner. Public listeners never see this board.</p>
 </section>
 <div id="workbench" class="hidden">
+<section class="rose field-assets" id="field-carts">
+<h2>✳ FIELD RECORDINGS · OH, HEY THERE!</h2>
+<p>We brought your original microphone take and both edited radio-bell options straight into the Production Room. <strong>No need to upload a file from your phone.</strong> Play either candidate, then select the one to stage as a <strong>private, disabled bumper</strong> if you want to work on it inside the owner-only Crate Loader.</p>
+<p class="note"><strong>Review gate:</strong> These source previews live in the publicly accessible HUMKIN site repository, although they are not scheduled in radio rotation. Staging creates a private cloud draft only. It does <strong>not</strong> publish, enable, schedule or air a recording.</p>
+<p id="field-carts-status" role="status" class="muted">Reading field-recording evidence…</p>
+<div id="field-carts-list" class="producer-roles"></div>
+<p><a href="../load/" class="button">OPEN PRIVATE CRATE LOADER ↗</a></p>
+</section>
 <section class="mint">
 <h2>LOCAL REHEARSAL MONITOR</h2>
 <p id="cue-name">Cue a recording from a cart or the library. This monitor plays only on <em>your device</em>—it cannot interrupt the public station.</p>
