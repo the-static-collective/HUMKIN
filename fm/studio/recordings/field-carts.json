@@ -1,7 +1,7 @@
 {
   "schema_version": "humkin.radio.field-carts/v1",
   "editorial_status": "RECORDED / EDITED — pending rights review and owner approval; NOT on air",
-  "provenance": "Original HUMKIN RADIO spoken station-ID recordings supplied November 15, 2026, alongside independent small-market radio edits. Original source takes preserved and checksum-verified.",
+  "provenance": "HUMKIN RADIO owner-submitted spoken recordings, original untouched M4As and reviewed radio-style MP3 edit candidates. Recordings are public source previews, not aired, scheduled, or approved for broadcast.",
   "assets": [
     {
       "id": "field-raw-001",
@@ -167,6 +167,94 @@
       "bytes": 429356,
       "can_stage": true,
       "note": "Original deadpan timing preserved, with small mechanical ticks during natural pauses, a console relay click, warm speech EQ and original G4–B4–E5 chimes after the final line. No hiss/static baked in. The spoken '1:25' is part of the character's fictional clock, not the actual time. Unscheduled audition; owner approval required."
+    },
+    {
+      "id": "field-raw-008",
+      "title": "That Song There — Thank You for Your Sounds (Original)",
+      "file": "humkin-that-song-there-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 52.309333,
+      "sha256": "88f90f36edaa1a8f4cf8462a08a11247748e21134bc3f8660485e96d23d6cb41",
+      "bytes": 1269785,
+      "can_stage": false,
+      "note": "Original after-song/next-song meditation: thanks the preceding song for its sounds, considers upcoming sounds; all original pauses and field-recording ambience intact."
+    },
+    {
+      "id": "field-fm-008",
+      "title": "That Song There — Thank You for Your Sounds (Radio Bells)",
+      "file": "humkin-that-song-there-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 55.68,
+      "sha256": "9cc409b6512cce29a7bde0992f23919e9aa4ab929b6d08276e1128e25c275394",
+      "bytes": 1114124,
+      "can_stage": true,
+      "note": "Full spoken between-song meditation with a faint opening bell and original G4–B4–E5 Lantern chimes after the last line. No added static; editorial approval and suitable between-song placement required."
+    },
+    {
+      "id": "field-raw-009",
+      "title": "Happy Bottom of the Hour — Original",
+      "file": "humkin-bottom-of-hour-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 35.84,
+      "sha256": "e1306a4f0a84cf739e3ff904fb2547a9d04991f1b78d57e1647999abc8997d77",
+      "bytes": 871306,
+      "can_stage": false,
+      "note": "Original improvisation explaining why the minute hand points down at :30 on an analog clock; preserves outdoor environmental sounds and pauses. This is a fictional station segment, not a live time signal."
+    },
+    {
+      "id": "field-fm-009",
+      "title": "Happy Bottom of the Hour — Clock & Bells",
+      "file": "humkin-bottom-of-hour-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 40.176,
+      "sha256": "30ec9367437deaf9fe42ab1048f8a5ca49025dbb09a6ccb2e94b83d3ed10b2c1",
+      "bytes": 804044,
+      "can_stage": true,
+      "note": "Original voice with unobtrusive mechanical clock ticks and concluding original Lantern chimes. The 'bottom of the hour' label is performed comedy; DO NOT schedule as an actual real-time hourly announcement without time verification. No baked-in static."
+    },
+    {
+      "id": "field-raw-010",
+      "title": "Top of the Hour — A Beauty Day (Original)",
+      "file": "humkin-top-of-hour-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 42.88,
+      "sha256": "59165b8eee60a8509a03c61a2a73ab3e50121adba49e2c543ff1cfbe31811fa5",
+      "bytes": 1041680,
+      "can_stage": false,
+      "note": "Original grateful top-of-hour greeting, including 'It's probably just me still' and sunlight observations. Weather and daylight are statements made during recording, not live current conditions."
+    },
+    {
+      "id": "field-fm-010",
+      "title": "Top of the Hour — What a Beauty Day (Radio Bells)",
+      "file": "humkin-top-of-hour-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 47.208,
+      "sha256": "0a6299379214cff0a78a0577ae170ba14c0aef0236beaac5da58cc2781e7e519",
+      "bytes": 944684,
+      "can_stage": true,
+      "note": "Gentle opening chimes; natural outdoor sounds and original vocal performance, finished with three-note Lantern. Intended daytime/optimistic rotation after editorial approval; MUST NOT be treated as verified top-of-hour time or live sunshine report. No added static."
+    },
+    {
+      "id": "field-raw-011",
+      "title": "Requests? — Original Station Announcement",
+      "file": "humkin-taking-requests-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 64.213333,
+      "sha256": "9b78ebc6695c8864ecba40f32f4a3eb8568a57c231a9bd98c0bbf8e920eb5896",
+      "bytes": 1557545,
+      "can_stage": false,
+      "note": "Original improvised invitation to make music requests through whatever working methods exist, acknowledging a contact form may not exist yet. Do not claim a staffed, approved request service."
+    },
+    {
+      "id": "field-fm-011",
+      "title": "Requests? — We're Taking Requests (Radio Bells)",
+      "file": "humkin-taking-requests-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 67.464,
+      "sha256": "c3d3a943cc7917e6050a935831e6402e53e06cf1c01a8ea1f988b1168106d65d",
+      "bytes": 1349804,
+      "can_stage": true,
+      "note": "Original, humorously uncertain request-line announcement, preserved complete; console relay click and Lantern bells. No radio static. HOLD FOR REQUEST-CONTACT REVIEW: publish only after a functioning, privacy-safe request intake method and request moderation have actually been verified. No automatic airing."
     }
   ]
 }
