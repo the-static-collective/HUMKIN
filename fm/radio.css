@@ -8,3 +8,16 @@
 @media(max-width:900px){.desk{grid-template-columns:1fr;max-width:650px;padding:55px 5% 75px}.poster{max-width:470px;margin:0 auto 35px}.about{grid-template-columns:1fr;gap:10px;padding:65px 6%}}
 @media(max-width:480px){.station-id{display:none}.masthead{padding:40px 4% 45px}h1{font-size:clamp(67px,17vw,95px)}.desk{gap:20px;padding:35px 5% 60px}.poster{max-width:300px;margin:0 auto 22px}.poster img{border-width:7px;box-shadow:7px 7px 0 #b1a1c7}.seal{width:86px;height:86px;font-size:11px;right:-9px;bottom:-22px}.controls{padding:23px 17px;box-shadow:6px 6px 0 var(--pink)}.mode button{font-size:11px;padding:9px 10px}.mode-help{min-height:0}.subcontrols button{font-size:10px}.about,.road-notes{padding:58px 5%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Station Records: visual fiction only, intentionally separate from the audio stream. */
+.archive-passage{background:#30253e;color:#fff5e2;padding:70px max(6vw,calc((100vw - 1150px)/2));display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,70px);align-items:center}
+.archive-passage h2{font-size:clamp(36px,5vw,66px);line-height:.94;letter-spacing:-.075em;margin:10px 0 20px}
+.archive-passage h2 em{font-style:normal;color:#f1c678}
+.archive-passage p:not(.eyebrow){font-size:17px;line-height:1.5}
+.archive-passage .button{display:inline-block;margin-top:16px;background:#f8d87b;color:#231932}
+.archive-ticket{position:relative;border:2px solid #62516d;border-left:12px solid #e6b870;box-shadow:9px 12px 0 #1b1426;background:#faf0d8;color:#31243a;padding:clamp(23px,3vw,38px);transform:rotate(-1deg)}
+.archive-ticket .archive-ticket-stamp{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;font-size:11px!important;font-weight:900;letter-spacing:.08em;border-bottom:1px solid #7b6b74;padding-bottom:12px}
+.archive-ticket h3{font-size:clamp(23px,3vw,38px);line-height:1.1;letter-spacing:-.05em;margin:22px 0 17px}
+.archive-ticket p{font-size:16px!important}
+.archive-ticket small{display:block;font-size:10px;font-weight:900;letter-spacing:.07em;border-top:1px solid #7b6b74;padding-top:14px;margin-top:25px}
+@media(max-width:900px){.archive-passage{grid-template-columns:1fr;padding:58px 6%}}

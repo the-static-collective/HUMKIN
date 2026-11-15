@@ -5,11 +5,16 @@ import {createRequire} from "node:module";
 const require=createRequire(import.meta.url),read=p=>readFileSync(p,"utf8");
 const B=require("../fm/studio/bible.js"),Clock=require("../fm/studio/clock.js");
 const book=B.validate(JSON.parse(read("fm/studio/station-bible.json")));
-assert.equal(book.scenes.length,14,"Fourteen original ready-to-produce scene cards");
+assert.equal(book.scenes.length,24,"Twenty-four original ready-to-produce scene cards");
 assert.equal(book.roles.length,5,"Five founding staff voices");
 assert.equal(book.dayparts.length,6,"Six broad proposed dayparts");
 assert.equal(book.sonic_signature.tempo_bpm,92);
 assert.deepEqual(book.sonic_signature.notes,["G4","B4","E5"]);
+const recovered=book.scenes.filter(s=>s.id.startsWith("archive-"));
+assert.equal(recovered.length,10,"Ten fictional station-history continuity scripts");
+assert(recovered.every(s=>s.kind==="fiction"&&!s.in_pilot),
+ "Recovered-tape lore must never be real history or alter the pilot");
+assert(recovered.some(s=>s.role.includes("Hailey Lou")),"Archive needs a gentle night-shift voice");
 const distinct=new Set(book.scenes.map(s=>s.id));
 assert.equal(distinct.size,book.scenes.length);
 const beatCards=book.scenes.filter(s=>s.in_pilot);
@@ -84,9 +89,23 @@ assert(studio.includes('BIBLE.asRundown(scene)'),"Scene additions must stay unre
 assert(studio.includes('BIBLE.copyText(scene)'),"Producer must be able to copy speech to a voice tool");
 assert(studio.includes('renderBible();'),"Producer UI must display dayparts and scripts");
 assert(read("sw.js").includes('"./fm/studio/station-bible.json"'),"Cache station bible for mobile continuity");
+const archive=require("../fm/archive/ledger.js");
+assert.equal(archive.entries.length,12,"A dozen fictional archival cards should be present");
+assert(archive.entries.every(e=>e.code&&e.era&&e.title&&e.text),"Every archive slip must be readable");
+assert(archive.todayIndex(Date.UTC(2026,10,15))>=0&&
+ archive.todayIndex(Date.UTC(2026,10,15))<archive.entries.length,"Date indexing stays in bounds");
+const archivePage=read("fm/archive/index.html");
+const radioPage=read("fm/index.html");
+assert(archivePage.includes("fictional radio world")&&archivePage.includes('id="archive-ledger"'),
+ "Public archive identifies itself as fiction and renders a catalog");
+assert(radioPage.includes('src="./archive/ledger.js"')&&radioPage.includes('id="archive-ticket-code"'),
+ "Radio homepage has a daily archive window");
+assert(read("sw.js").includes('"./fm/archive/ledger.js"'),
+ "The offline station shell caches the archive ledger");
+execFileSync(process.execPath,["--check","fm/archive/ledger.js"]);
 const finisher=read("fm/studio/lumi-static/index.html");
 assert(finisher.includes("OfflineAudioContext")&&finisher.includes("wavFromBuffer"),
  "Lumi finisher must create its own local WAV master");
 assert(finisher.includes("no static")&&finisher.includes("../../load/"),
  "Finisher must keep effects clean and link to the existing owner loader");
-console.log("HUMKIN Radio production bible passed: 14 scripts, 5 voices, 24h proposal, 92 BPM ID, local Lumi cart finisher, 60m pilot and no fake-airing gates.");
+console.log("HUMKIN Radio production bible passed: 24 scripts including 10 fictional archive pieces, 5 voices, 24h proposal, 92 BPM ID, local Lumi cart finisher, 60m pilot and no fake-airing gates.");
