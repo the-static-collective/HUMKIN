@@ -146,7 +146,7 @@ async function loadFieldCarts(){
    list.append(box);
   }
   fieldCartsLoaded=true;
-  msg.textContent=manifest.assets.length+" source/edited auditions available. NONE are on air. Staging needs owner approval.";
+  msg.textContent=manifest.assets.length+" source/edited recordings in the production archive. Some edits may already be in the station rotation; check Station Manager for individual on-air status. Private staging does not air anything.";
  }catch(error){msg.textContent="Audition shelf unavailable: "+error.message}
 }
 async function stageFieldCart(a,action,box){
