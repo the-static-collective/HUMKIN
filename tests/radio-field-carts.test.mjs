@@ -26,24 +26,41 @@ assert.equal(manifest.assets.filter(a=>a.can_stage).length,14);
 // All other auditions remain private-stage-only. This never invents audio.
 const airPack=JSON.parse(read("fm/air-carts.json"));
 assert.equal(airPack.schema_version,"humkin.radio.air-carts/v1");
-assert.equal(airPack.carts.length,3,"Three selected field-cart edits are now live");
-const airIds=new Set();
+assert.equal(airPack.carts.length,9,"Nine distinct site-hosted edits; five cloud-hosted edits already on air");
+assert(airPack.owner_approval.includes("just make em all live"),
+ "All radio edits were explicitly cleared for rotation by the owner");
+const alreadyInCloud=new Set([
+ "c551b49c56f29fd5a7fbb9d54d09cae7d44e68e851c60d3a443072074ce17f2f",
+ "1bb0ba374f97aa314a10ba8e4994a27d40846c7c94ad86f12f907fc9fb31a24b",
+ "a0e6421b1d9a96b3cadbe6d52f20507624fb358639bd4e1d67cfc54c9543d3da",
+ "150edab64f854f246d12dd3608f69444ddd49d0d3d6ed1b5c683b5d2c191b05f",
+ "21cd59043e0c0689be0bc8dba297a7f8bc93de4fb539c1150490ea923d76017e"
+]);
+const allEdited=manifest.assets.filter(a=>a.kind==="bumper"&&a.can_stage);
+assert.equal(allEdited.length,14,"All fourteen edits retained in the studio");
+assert.equal(alreadyInCloud.size+airPack.carts.length,allEdited.length,
+ "Each finished edit must be on air from exactly one catalog source");
+const onAirIds=new Set();
+const onAirShas=new Set();
 for(const cart of airPack.carts){
- assert(!airIds.has(cart.id),"Air carts may not appear twice");
- airIds.add(cart.id);
- const manifestCart=manifest.assets.find(a=>a.id===cart.id);
- assert(manifestCart&&manifestCart.kind==="bumper"&&manifestCart.can_stage===true,
-  "Only real verified edited station carts can be selected for air");
- assert(!/HOLD FOR/i.test(manifestCart.note),"Editorial holds must never auto-air");
- assert(cart.sha256===manifestCart.sha256&&cart.duration_seconds===manifestCart.duration_seconds,
-  "Air pack must preserve approved audio checksum and duration");
- assert(cart.src==="./studio/recordings/"+manifestCart.file,
-  "The radio can serve only existing original reviewed MP3s");
+ assert(!onAirIds.has(cart.id),"Air carts may not appear twice");
+ onAirIds.add(cart.id);
+ const candidate=allEdited.find(a=>a.id===cart.id);
+ assert(candidate,"Only recorded source-proven edited station carts may air");
+ assert(!alreadyInCloud.has(candidate.sha256),"Do not double-air an identical cloud bumper");
+ assert(!onAirShas.has(cart.sha256),"No duplicate audio in the on-air pack");
+ onAirShas.add(cart.sha256);
+ assert(cart.sha256===candidate.sha256&&cart.duration_seconds===candidate.duration_seconds,
+  "Air pack must preserve recorded source integrity");
+ assert(cart.src==="./studio/recordings/"+candidate.file,
+  "Only existing original edited MP3s can enter the radio");
 }
-assert(!airIds.has("field-fm-005")&&!airIds.has("field-fm-009")&&
- !airIds.has("field-fm-010")&&!airIds.has("field-fm-011")&&
- !airIds.has("field-fm-012")&&!airIds.has("field-fm-013"),
- "Time/daypart, request-line, closing and unfinished takes remain on hold");
+for(const item of allEdited)
+ assert(alreadyInCloud.has(item.sha256)||onAirShas.has(item.sha256),
+  "Every completed original HUMKIN edited bumper must now be on air: "+item.id);
+for(const code of ["field-fm-009","field-fm-010","field-fm-011","field-fm-012","field-fm-013"])
+ assert(airPack.carts.some(c=>c.id===code&&c.editorial_context),
+  "Formerly held or situational recordings must keep their audible-context caveats");
 for(let i=8;i<=13;i++){
  const code=String(i).padStart(3,"0");
  assert(manifest.assets.some(a=>a.id==="field-raw-"+code&&a.file.endsWith(".m4a")),"Preserve field recording "+code);

@@ -1,7 +1,7 @@
 {
   "schema_version": "humkin.radio.air-carts/v1",
-  "description": "Selected, already-public recorded HUMKIN production carts for the musical AutoDJ. The original microphone sources stay on the Production Room shelf.",
-  "policy": "Only recorded, original, producer-selected MP3s. No live time/weather claims, request-intake claims, or held/truncated auditions. Other source recordings stay off air.",
+  "description": "All approved unique recorded HUMKIN radio-cart mixes. Existing matching cloud bumpers are not duplicated here.",
+  "policy": "Owner directly authorized every completed edited bumper for immediate public radio rotation on 2026-11-15. Reference M4A takes remain preserved off rotation; archived speech is not live time, weather, request-line or sign-off information.",
   "carts": [
     {
       "id": "field-fm-001",
@@ -11,11 +11,20 @@
       "sha256": "3eb99cc97fa5db1fa657b96b1c37304999041b20c131f3d3966a3a42fe374ab8"
     },
     {
+      "id": "field-fm-005",
+      "title": "Sunday Morning Church Drive — Bell Choir",
+      "src": "./studio/recordings/humkin-sunday-church-bells.mp3",
+      "duration_seconds": 14.08,
+      "sha256": "37585babd6b3dc62e4ff5a60e23e01488f7e940880e823a5e3d66dd20154e948",
+      "editorial_context": "Sunday-drive themed recording; plays at any hour, not a verified Sunday bulletin."
+    },
+    {
       "id": "field-fm-007",
       "title": "It's HUMKIN Time Then — Fictional Clock Cart",
       "src": "./studio/recordings/humkin-time-then-clock-bells.mp3",
       "duration_seconds": 26.808,
-      "sha256": "16488c281d4bdffa9c8f5194c0ea029b86016c300d20f08b7094e9cec1874fe8"
+      "sha256": "16488c281d4bdffa9c8f5194c0ea029b86016c300d20f08b7094e9cec1874fe8",
+      "editorial_context": "Clock time mentioned in the recorded sketch is not live."
     },
     {
       "id": "field-fm-008",
@@ -23,6 +32,47 @@
       "src": "./studio/recordings/humkin-that-song-there-bells.mp3",
       "duration_seconds": 55.68,
       "sha256": "9cc409b6512cce29a7bde0992f23919e9aa4ab929b6d08276e1128e25c275394"
+    },
+    {
+      "id": "field-fm-009",
+      "title": "Happy Bottom of the Hour — Recorded Clock Comedy",
+      "src": "./studio/recordings/humkin-bottom-of-hour-bells.mp3",
+      "duration_seconds": 40.176,
+      "sha256": "30ec9367437deaf9fe42ab1048f8a5ca49025dbb09a6ccb2e94b83d3ed10b2c1",
+      "editorial_context": "The phrase bottom of the hour is recorded comedy, not the current time."
+    },
+    {
+      "id": "field-fm-010",
+      "title": "Top of the Hour — What a Beauty Day (Recorded)",
+      "src": "./studio/recordings/humkin-top-of-hour-bells.mp3",
+      "duration_seconds": 47.208,
+      "sha256": "0a6299379214cff0a78a0577ae170ba14c0aef0236beaac5da58cc2781e7e519",
+      "editorial_context": "Recorded daylight/weather observation; not current conditions."
+    },
+    {
+      "id": "field-fm-011",
+      "title": "Requests? — We're Taking Requests (Fictional Announcement)",
+      "src": "./studio/recordings/humkin-taking-requests-bells.mp3",
+      "duration_seconds": 67.464,
+      "sha256": "c3d3a943cc7917e6050a935831e6402e53e06cf1c01a8ea1f988b1168106d65d",
+      "editorial_context": "Recorded request-line fiction; not evidence of an active telephone or staffed request service."
+    },
+    {
+      "id": "field-fm-012",
+      "title": "Hey Now There — Signing Off (Recorded Farewell)",
+      "src": "./studio/recordings/humkin-signing-off-field-radio.mp3",
+      "duration_seconds": 46.28898,
+      "sha256": "65efa6c4f316192fc5e48120fd3d847fd6192919cfdcba7a7516ab718682033b",
+      "editorial_context": "Character sign-off; does not mean station playback has stopped."
+    },
+    {
+      "id": "field-fm-013",
+      "title": "Good Day, Y'all — Studio Thank You (Field Edit)",
+      "src": "./studio/recordings/humkin-good-day-yall-field-radio.mp3",
+      "duration_seconds": 23.327347,
+      "sha256": "49ff9d6b7c15d967a8d3fba53ed0248d371b1b5545e4d60937354d766cf456dd",
+      "editorial_context": "Original take ends abruptly; owner explicitly accepted airing all recorded edits."
     }
-  ]
+  ],
+  "owner_approval": "2026-11-15: 'just make em all live / it'll work out' — applies to all completed edited radio carts, including previously held or daypart-specific takes."
 }

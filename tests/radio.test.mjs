@@ -292,10 +292,10 @@ const approvedField=fixture(rotation,[],[],[],null,
  [{id:"main",bumper_every:3,station_label:"HUMKIN RADIO"}],
  false,[],null,null,approvedAirCarts);
 await flush();
-assert.equal(approvedAirCarts.carts.length,3,"Exactly three reviewed field carts in this release");
-assert.equal(approvedField.window.HUMKIN_RADIO.state.tracks,24,
- "21 songs plus 3 static field recordings");
-assert.equal(approvedField.window.HUMKIN_RADIO.state.bumperCount,3,
+assert.equal(approvedAirCarts.carts.length,9,"All nine unique site-hosted field edits now approved");
+assert.equal(approvedField.window.HUMKIN_RADIO.state.tracks,30,
+ "21 songs plus 9 field recordings");
+assert.equal(approvedField.window.HUMKIN_RADIO.state.bumperCount,9,
  "New recorded bumpers are actually discovered by the radio");
 approvedField.$("mode-shuffle").click();approvedField.$("listen").click();await flush();
 const heardFields=[];
@@ -305,7 +305,7 @@ for(let i=0;i<28;i++){
  approvedField.$("next-song").click();await flush();
 }
 assert.equal(heardFields.length,7,"Field cart appears after each three songs");
-assert.equal(new Set(heardFields).size,3,"All three new carts rotate across a cycle");
+assert.equal(new Set(heardFields).size,7,"Seven distinct of nine new carts rotate across 21 test songs");
 assert(approvedField.$("playlist-note").textContent.includes("STATION IDs EVERY 3 SONGS"),
  "On-air field cards must be shown as activated station IDs");
 
