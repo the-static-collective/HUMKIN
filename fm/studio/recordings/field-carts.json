@@ -1,7 +1,7 @@
 {
   "schema_version": "humkin.radio.field-carts/v1",
-  "editorial_status": "RECORDED / EDITED — pending rights review and owner approval; NOT on air",
-  "provenance": "HUMKIN RADIO owner-submitted spoken recordings, original untouched M4As and reviewed radio-style MP3 edit candidates. Recordings are public source previews, not aired, scheduled, or approved for broadcast.",
+  "editorial_status": "ALL 14 COMPLETED EDITED BUMPERS ARE APPROVED FOR PUBLIC ROTATION; 13 UNEDITED SOURCE TAKES STAY ARCHIVED",
+  "provenance": "HUMKIN owner-supplied voice recordings. Original M4As preserved as reference. Finished edited MP3s are approved for air by the owner (2026-11-15): five stored in the public cloud crate and nine served from the website's on-air allowlist. Source-specific historical HOLD notes remain recorded as editorial context, not current broadcasting status.",
   "assets": [
     {
       "id": "field-raw-001",
