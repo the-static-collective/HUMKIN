@@ -1,0 +1,41 @@
+name: Render new HUMKIN field bumpers
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'fm/studio/recordings/humkin-signing-off-original.m4a'
+      - 'fm/studio/recordings/humkin-good-day-yall-original.m4a'
+      - '.github/workflows/render-new-field-bumpers.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render original field takes as radio-ready MP3s
+        shell: bash
+        run: |
+          set -euo pipefail
+          ffmpeg -hide_banner -loglevel error -y -i fm/studio/recordings/humkin-signing-off-original.m4a \
+            -af 'highpass=f=72,acompressor=threshold=-22dB:ratio=1.8:attack=14:release=170,loudnorm=I=-17:TP=-1.5:LRA=12' \
+            -codec:a libmp3lame -b:a 96k -ar 44100 fm/studio/recordings/humkin-signing-off-field-radio.mp3
+          ffmpeg -hide_banner -loglevel error -y -i fm/studio/recordings/humkin-good-day-yall-original.m4a \
+            -af 'highpass=f=72,acompressor=threshold=-22dB:ratio=1.8:attack=14:release=170,loudnorm=I=-17:TP=-1.5:LRA=12' \
+            -codec:a libmp3lame -b:a 96k -ar 44100 fm/studio/recordings/humkin-good-day-yall-field-radio.mp3
+          ffprobe -v error -show_entries format=duration,size -of json fm/studio/recordings/humkin-signing-off-field-radio.mp3
+          ffprobe -v error -show_entries format=duration,size -of json fm/studio/recordings/humkin-good-day-yall-field-radio.mp3
+      - name: Commit converted recordings
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "humkin-field-cart-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add fm/studio/recordings/humkin-signing-off-field-radio.mp3 fm/studio/recordings/humkin-good-day-yall-field-radio.mp3
+          if ! git diff --cached --quiet; then
+            git commit -m "Render two HUMKIN field bumpers for Studio audition"
+            git push origin HEAD:main
+          fi
