@@ -255,6 +255,50 @@
       "bytes": 1349804,
       "can_stage": true,
       "note": "Original, humorously uncertain request-line announcement, preserved complete; console relay click and Lantern bells. No radio static. HOLD FOR REQUEST-CONTACT REVIEW: publish only after a functioning, privacy-safe request intake method and request moderation have actually been verified. No automatic airing."
+    },
+    {
+      "id": "field-raw-012",
+      "title": "Hey Now There — Signing Off (Original Field Take)",
+      "file": "humkin-signing-off-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 46.250667,
+      "sha256": "ea7237cfed481ba7a638b0f7768cea9768ac271ce4f270c28c00dcf5528e9539",
+      "bytes": 1123102,
+      "can_stage": false,
+      "note": "Owner-supplied outdoor radio sign-off with dogs, wind, hesitant delivery and natural pauses intact. A character sign-off, not a verified station shutdown."
+    },
+    {
+      "id": "field-fm-012",
+      "title": "Hey Now There — Signing Off (Field Radio Edit)",
+      "file": "humkin-signing-off-field-radio.mp3",
+      "kind": "bumper",
+      "duration_seconds": 46.28898,
+      "sha256": "65efa6c4f316192fc5e48120fd3d847fd6192919cfdcba7a7516ab718682033b",
+      "bytes": 556047,
+      "can_stage": true,
+      "note": "Preserves the original sign-off performance, barking dogs and pauses with low-cut wind control, gentle compression and broadcast loudness. No baked-in static. HOLD FOR EDITORIAL PLACEMENT: character farewell/endcap, not an actual station closure; may be privately staged for owner review."
+    },
+    {
+      "id": "field-raw-013",
+      "title": "Well Good Day, Y'all — Studio Thank You (Original Field Take)",
+      "file": "humkin-good-day-yall-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 23.296,
+      "sha256": "1cf751107f89780eaa2eaae935cf09fc1f2df7e5a121dea822939207236e440d",
+      "bytes": 567996,
+      "can_stage": false,
+      "note": "Owner-supplied greeting, HUMKIN Radio day announcement and thank-you to whoever left the speaker a studio; ambient dog calls preserved. The original take ends abruptly during the studio thought; preserve as recorded."
+    },
+    {
+      "id": "field-fm-013",
+      "title": "Good Day, Y'all — Studio Thank You (Field Radio Edit)",
+      "file": "humkin-good-day-yall-field-radio.mp3",
+      "kind": "bumper",
+      "duration_seconds": 23.327347,
+      "sha256": "49ff9d6b7c15d967a8d3fba53ed0248d371b1b5545e4d60937354d766cf456dd",
+      "bytes": 280507,
+      "can_stage": true,
+      "note": "Original outdoor greeting and dogs, light low-cut wind filtering, speech compression and broadcast loudness. No artificial static or synthetic bells. HOLD FOR EDITORIAL REVIEW: take may end in a truncated sentence; audition before scheduling or airplay."
     }
   ]
 }
