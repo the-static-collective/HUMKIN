@@ -141,7 +141,7 @@ async function getOnAirFieldCarts(){
    seen.add(cart.id);
    const src=validatedSrc(cart.src,here),url=src&&new URL(src);
    if(!url||url.origin!==here.origin||!url.pathname.startsWith(base.pathname)||
-     !/^[a-z0-9-]+\\.mp3$/.test(url.pathname.slice(base.pathname.length)))return null;
+     !/^[a-z0-9-]+[.]mp3$/.test(url.pathname.slice(base.pathname.length)))return null;
    const duration=Number(cart.duration_seconds);
    if(!(duration>1&&duration<=120))return null;
    const title=String(cart.title||"").trim().slice(0,180);
