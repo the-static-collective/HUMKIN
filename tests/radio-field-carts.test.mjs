@@ -6,7 +6,7 @@ import {execFileSync} from "node:child_process";
 const read=path=>readFileSync(path,"utf8");
 const manifest=JSON.parse(read("fm/studio/recordings/field-carts.json"));
 assert.equal(manifest.schema_version,"humkin.radio.field-carts/v1");
-assert.equal(manifest.assets.length,15,"Preserve seven microphone takes and eight radio-bumper edits");
+assert.equal(manifest.assets.length,23,"Preserve eleven original microphone takes and twelve radio edits");
 const ids=new Set(),names=new Set();
 for(const a of manifest.assets){
  assert(!ids.has(a.id)&&!names.has(a.file),"Every source recording must be unique");
@@ -17,11 +17,17 @@ for(const a of manifest.assets){
  assert.equal(statSync(path).size,a.bytes);
  assert.equal(createHash("sha256").update(bytes).digest("hex"),a.sha256,
    "Exact recorded original bytes in repository: "+a.id);
- assert(a.duration_seconds>1&&a.duration_seconds<40,"Radio liners may include longer comedic pauses");
+ assert(a.duration_seconds>1&&a.duration_seconds<120,"Radio liners and short hosted monologues can run up to two minutes");
  assert(a.kind==="reference"||a.kind==="bumper");
  assert(a.can_stage===true?a.file.endsWith(".mp3"):true);
 }
-assert.equal(manifest.assets.filter(a=>a.can_stage).length,8);
+assert.equal(manifest.assets.filter(a=>a.can_stage).length,12);
+for(let i=8;i<=11;i++){
+ const code=String(i).padStart(3,"0");
+ assert(manifest.assets.some(a=>a.id==="field-raw-"+code&&a.file.endsWith(".m4a")),"Preserve field recording "+code);
+ assert(manifest.assets.some(a=>a.id==="field-fm-"+code&&a.file.endsWith(".mp3")),"Prepare radio mix "+code);
+}
+assert(manifest.assets.find(a=>a.id==="field-fm-011").note.includes("HOLD FOR REQUEST-CONTACT REVIEW"),"Do not broadcast unverified request routing");
 assert(manifest.assets.some(a=>a.id==="field-raw-007"&&a.file.endsWith(".m4a")),"Original HUMKIN Time recording retained");
 assert(manifest.assets.some(a=>a.id==="field-fm-007"&&a.file.endsWith(".mp3")&&a.note.includes("not the actual time")),"Clock bumper is an artistic ID, not a factual time announcement");
 assert(manifest.assets.some(a=>a.id==="field-raw-006"&&a.file.endsWith(".m4a")),"Direct-address original take retained");
@@ -52,4 +58,4 @@ for(const a of manifest.assets)
  assert(!rotation.tracks.some(t=>String(t.src||"").includes(a.file)),
  "Audition clips must not be inserted into on-air static song rotation");
 execFileSync(process.execPath,["--input-type=module","--check"],{input:js});
-console.log("Fifteen source/edited recordings SHA-256 verified; eight owner-only disabled bumper staging candidates, no accidental airplay.");
+console.log("Twenty-three source/edited recordings SHA-256 verified; twelve owner-only disabled bumper staging candidates, no accidental airplay.");
