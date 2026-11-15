@@ -89,6 +89,20 @@ assert(studio.includes('BIBLE.asRundown(scene)'),"Scene additions must stay unre
 assert(studio.includes('BIBLE.copyText(scene)'),"Producer must be able to copy speech to a voice tool");
 assert(studio.includes('renderBible();'),"Producer UI must display dayparts and scripts");
 assert(read("sw.js").includes('"./fm/studio/station-bible.json"'),"Cache station bible for mobile continuity");
+const archive=require("../fm/archive/ledger.js");
+assert.equal(archive.entries.length,12,"A dozen fictional archival cards should be present");
+assert(archive.entries.every(e=>e.code&&e.era&&e.title&&e.text),"Every archive slip must be readable");
+assert(archive.todayIndex(Date.UTC(2026,10,15))>=0&&
+ archive.todayIndex(Date.UTC(2026,10,15))<archive.entries.length,"Date indexing stays in bounds");
+const archivePage=read("fm/archive/index.html");
+const radioPage=read("fm/index.html");
+assert(archivePage.includes("fictional radio world")&&archivePage.includes('id="archive-ledger"'),
+ "Public archive identifies itself as fiction and renders a catalog");
+assert(radioPage.includes('src="./archive/ledger.js"')&&radioPage.includes('id="archive-ticket-code"'),
+ "Radio homepage has a daily archive window");
+assert(read("sw.js").includes('"./fm/archive/ledger.js"'),
+ "The offline station shell caches the archive ledger");
+execFileSync(process.execPath,["--check","fm/archive/ledger.js"]);
 const finisher=read("fm/studio/lumi-static/index.html");
 assert(finisher.includes("OfflineAudioContext")&&finisher.includes("wavFromBuffer"),
  "Lumi finisher must create its own local WAV master");
