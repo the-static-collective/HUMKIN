@@ -111,6 +111,91 @@ function addSceneToRundown(scene){
  status((scene.kind==="real_template"?"Unverified producer template":"Unrecorded scripted fiction")+
    " added to the visible rundown. This is NOT an audio file and cannot be scheduled until recorded, reviewed and uploaded.");
 }
+// Original field-announcer recordings are tracked as audition-only production
+// assets. They are not in the public rotation or Cart Machine until the owner
+// explicitly stages, reviews, and publishes a bumper.
+let fieldCartsLoaded=false;
+const FIELD_PREFIX="./recordings/";
+async function loadFieldCarts(){
+ if(fieldCartsLoaded)return;
+ const list=$("field-carts-list"),msg=$("field-carts-status");
+ if(!list||!msg)return;
+ try{
+  const response=await fetch(FIELD_PREFIX+"field-carts.json",{cache:"no-store"});
+  if(!response.ok)throw Error("Recording manifest unavailable");
+  const manifest=await response.json();
+  if(manifest.schema_version!=="humkin.radio.field-carts/v1"||!Array.isArray(manifest.assets))
+   throw Error("Recording manifest needs review");
+  list.replaceChildren();
+  for(const a of manifest.assets){
+   if(!/^[a-z0-9-]+\.(mp3|m4a)$/.test(a.file||"")||
+      !/^[0-9a-f]{64}$/.test(a.sha256||"")||!(a.duration_seconds>1)||
+      !(a.bytes>0&&a.bytes<52428800))
+      throw Error("Invalid original recording metadata");
+   const box=el("article");box.className="cart";
+   box.append(el("h3",a.title),el("p",a.note||"Original HUMKIN production audition"));
+   const player=el("audio");
+   player.controls=true;player.preload="none";
+   player.src=new URL(FIELD_PREFIX+a.file,import.meta.url).href;
+   player.setAttribute("aria-label",a.title+" local audition");
+   box.append(player);
+   if(a.can_stage===true&&a.file.endsWith(".mp3")&&a.kind==="bumper"){
+    const action=button("STAGE PRIVATE BUMPER ↗",()=>stageFieldCart(a,action,box),"primary");
+    box.append(action);
+   }else box.append(el("p","UNALTERED SOURCE · for audition/reference only"));
+   list.append(box);
+  }
+  fieldCartsLoaded=true;
+  msg.textContent=manifest.assets.length+" source/edited auditions available. NONE are on air. Staging needs owner approval.";
+ }catch(error){msg.textContent="Audition shelf unavailable: "+error.message}
+}
+async function stageFieldCart(a,action,box){
+ if(busy||action.disabled)return;
+ const notice=el("p","Preparing secure upload…");
+ notice.setAttribute("role","status");box.append(notice);action.disabled=true;
+ try{
+  const account=await requireOwner();
+  if(!a.can_stage||a.kind!=="bumper"||!a.file.endsWith(".mp3"))
+   throw Error("Only edited, owner-reviewed MP3 candidate carts can be staged.");
+  const url=new URL(FIELD_PREFIX+a.file,import.meta.url);
+  if(url.origin!==location.origin||!url.pathname.startsWith(new URL(FIELD_PREFIX,import.meta.url).pathname))
+   throw Error("Unapproved source address");
+  const res=await fetch(url,{cache:"no-store"});
+  if(!res.ok)throw Error("Source recording missing (HTTP "+res.status+")");
+  const bytes=await res.arrayBuffer();
+  if(bytes.byteLength!==a.bytes)throw Error("Source recording length changed; do not stage.");
+  const hash=[...new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))]
+   .map(n=>n.toString(16).padStart(2,"0")).join("");
+  if(hash!==a.sha256)throw Error("Source checksum mismatch; do not stage.");
+  const existing=await db.from("humkin_radio_tracks")
+    .select("id,published_at,enabled").eq("sha256",hash).maybeSingle();
+  if(existing.error)throw existing.error;
+  if(existing.data){
+   notice.textContent=existing.data.published_at
+     ?"Already in the cloud catalog; check Station Manager for approval and enablement."
+     :"Already staged in the PRIVATE cloud crate; review before publishing.";
+   return;
+  }
+  const path=account.id+"/"+hash+".mp3";
+  const file=new File([bytes],a.file,{type:"audio/mpeg"});
+  const uploaded=await db.storage.from("humkin-radio-inbox")
+   .upload(path,file,{upsert:false,contentType:"audio/mpeg",cacheControl:"3600"});
+  if(uploaded.error)throw uploaded.error;
+  const recorded=await db.from("humkin_radio_tracks").insert({
+   uploaded_by:account.id,sha256:hash,storage_path:path,
+   original_name:a.file,title:a.title,artist:"HUMKIN",
+   album:"HUMKIN RADIO · PREVIEW CARTS",duration_seconds:a.duration_seconds,
+   bytes:a.bytes,kind:"bumper",enabled:false
+  }).select("id").single();
+  if(recorded.error)throw recorded.error;
+  notice.textContent="STAGED IN PRIVATE CRATE · BUMPER · DISABLED · NOT ON AIR. Review it in the Crate Loader; publication and station enablement remain separate decisions.";
+  action.textContent="STAGED — NOT ON AIR";
+ }catch(error){
+  notice.textContent="Could not stage this cart: "+(error.message||String(error));
+  action.disabled=false;
+ }
+}
+
 async function copyScene(scene){
  const text=BIBLE.copyText(scene);
  try{
@@ -297,6 +382,7 @@ async function boot(){
   tracks=buildLibrary(config,cloud.data,overrides.data);
   renderPickers();
   renderBible();
+  await loadFieldCarts();
   await refreshContent();
   $("workbench").classList.remove("hidden");
   feedback("Production room ready · "+tracks.filter(available).length+" available recordings.");

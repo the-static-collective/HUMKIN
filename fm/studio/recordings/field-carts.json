@@ -1,0 +1,40 @@
+{
+  "schema_version": "humkin.radio.field-carts/v1",
+  "editorial_status": "RECORDED / EDITED — pending rights review and owner approval; NOT on air",
+  "provenance": "User's November 15, 2026 field microphone take and two original HUMKIN bell/AM preview mixes.",
+  "assets": [
+    {
+      "id": "field-raw-001",
+      "title": "Oh Hey There — Original Microphone Take",
+      "file": "humkin-field-announcer-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 9.386667,
+      "sha256": "f1bbd060487dc4060460ad232d3fff0b75a8988505bcfb3af0b3655f80bbbac8",
+      "bytes": 228834,
+      "can_stage": false,
+      "note": "Original supplied take; preserved unchanged, not an MP3 crate item."
+    },
+    {
+      "id": "field-fm-001",
+      "title": "Oh Hey There — Classic FM Bells",
+      "file": "humkin-field-announcer-classic-fm.mp3",
+      "kind": "bumper",
+      "duration_seconds": 9.696,
+      "sha256": "3eb99cc97fa5db1fa657b96b1c37304999041b20c131f3d3966a3a42fe374ab8",
+      "bytes": 222284,
+      "can_stage": true,
+      "note": "Original three-note radio bells; no radio hiss baked in."
+    },
+    {
+      "id": "field-am-001",
+      "title": "Oh Hey There — Vintage AM Cart",
+      "file": "humkin-field-announcer-vintage-am.mp3",
+      "kind": "bumper",
+      "duration_seconds": 9.696,
+      "sha256": "c551b49c56f29fd5a7fbb9d54d09cae7d44e68e851c60d3a443072074ce17f2f",
+      "bytes": 190844,
+      "can_stage": true,
+      "note": "Warm vintage narrowband-style microphone treatment and chimes. No added radio static."
+    }
+  ]
+}

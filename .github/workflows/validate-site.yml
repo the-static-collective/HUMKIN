@@ -25,6 +25,7 @@ jobs:
       - run: node tests/radio-loader.test.mjs
       - run: node tests/radio-manager.test.mjs
       - run: node tests/radio-studio.test.mjs
+      - run: node tests/radio-field-carts.test.mjs
       - run: node tests/radio-bible.test.mjs
       - run: node tests/radio-house.test.mjs
       - run: node tests/radio-line.test.mjs
