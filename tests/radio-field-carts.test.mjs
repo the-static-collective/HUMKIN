@@ -22,6 +22,28 @@ for(const a of manifest.assets){
  assert(a.can_stage===true?a.file.endsWith(".mp3"):true);
 }
 assert.equal(manifest.assets.filter(a=>a.can_stage).length,14);
+// A separate, narrowly reviewed source-owned pack is allowed to be on air.
+// All other auditions remain private-stage-only. This never invents audio.
+const airPack=JSON.parse(read("fm/air-carts.json"));
+assert.equal(airPack.schema_version,"humkin.radio.air-carts/v1");
+assert.equal(airPack.carts.length,3,"Three selected field-cart edits are now live");
+const airIds=new Set();
+for(const cart of airPack.carts){
+ assert(!airIds.has(cart.id),"Air carts may not appear twice");
+ airIds.add(cart.id);
+ const manifestCart=manifest.assets.find(a=>a.id===cart.id);
+ assert(manifestCart&&manifestCart.kind==="bumper"&&manifestCart.can_stage===true,
+  "Only real verified edited station carts can be selected for air");
+ assert(!/HOLD FOR/i.test(manifestCart.note),"Editorial holds must never auto-air");
+ assert(cart.sha256===manifestCart.sha256&&cart.duration_seconds===manifestCart.duration_seconds,
+  "Air pack must preserve approved audio checksum and duration");
+ assert(cart.src==="./studio/recordings/"+manifestCart.file,
+  "The radio can serve only existing original reviewed MP3s");
+}
+assert(!airIds.has("field-fm-005")&&!airIds.has("field-fm-009")&&
+ !airIds.has("field-fm-010")&&!airIds.has("field-fm-011")&&
+ !airIds.has("field-fm-012")&&!airIds.has("field-fm-013"),
+ "Time/daypart, request-line, closing and unfinished takes remain on hold");
 for(let i=8;i<=13;i++){
  const code=String(i).padStart(3,"0");
  assert(manifest.assets.some(a=>a.id==="field-raw-"+code&&a.file.endsWith(".m4a")),"Preserve field recording "+code);
