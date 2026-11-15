@@ -145,6 +145,28 @@
       "bytes": 232428,
       "can_stage": true,
       "note": "Gentle classic-radio voice EQ and compression, tiny opening relay click, full original deadpan delivery and signature original G4–B4–E5 Lantern chimes after the punchline. No hiss/static baked in. Requires human approval; not on air."
+    },
+    {
+      "id": "field-raw-007",
+      "title": "It's HUMKIN Time Then — Original Clock Monologue",
+      "file": "humkin-time-then-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 24.277333,
+      "sha256": "166f4cf70488ac016e1dc992bcd99f2ce6d74b453cda5415df90d4b447705751",
+      "bytes": 591567,
+      "can_stage": false,
+      "note": "Preserved original M4A spoken recording including long pauses, clock-check, 1:25 mention and closing 'Don't you forget...'. Not a factual time announcement."
+    },
+    {
+      "id": "field-fm-007",
+      "title": "It's HUMKIN Time Then — Clock Ticks & Lantern Bells",
+      "file": "humkin-time-then-clock-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 26.808,
+      "sha256": "16488c281d4bdffa9c8f5194c0ea029b86016c300d20f08b7094e9cec1874fe8",
+      "bytes": 429356,
+      "can_stage": true,
+      "note": "Original deadpan timing preserved, with small mechanical ticks during natural pauses, a console relay click, warm speech EQ and original G4–B4–E5 chimes after the final line. No hiss/static baked in. The spoken '1:25' is part of the character's fictional clock, not the actual time. Unscheduled audition; owner approval required."
     }
   ]
 }
