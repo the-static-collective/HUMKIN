@@ -1,7 +1,7 @@
 {
   "schema_version": "humkin.radio.field-carts/v1",
   "editorial_status": "RECORDED / EDITED — pending rights review and owner approval; NOT on air",
-  "provenance": "User's original HUMKIN RADIO microphone performances, with edited radio-cart versions, preserved with checksums.",
+  "provenance": "Original HUMKIN RADIO spoken station-ID recordings supplied November 15, 2026, alongside independent small-market radio edits. Original source takes preserved and checksum-verified.",
   "assets": [
     {
       "id": "field-raw-001",
@@ -79,6 +79,50 @@
       "bytes": 443948,
       "can_stage": true,
       "note": "Warm, compressed radio-host voice with original cart click, three-note Lantern bells, and short springy musical punchline. The complete spoken performance is intact. No static baked in; audition-only until owner approval."
+    },
+    {
+      "id": "field-raw-004",
+      "title": "Sweet Heck, It's Cold — Original Mic",
+      "file": "humkin-cold-outside-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 12.458667,
+      "sha256": "ee54f779fd19c2ddf9dac155f77feab0fef17cde1ea34e9c1373011ed67c5b9f",
+      "bytes": 302578,
+      "can_stage": false,
+      "note": "Unmodified cold-weather HUMKIN station-ID source. Contains a mildly explicit regional idiom; producer discretion for family/daytime programming."
+    },
+    {
+      "id": "field-fm-004",
+      "title": "Sweet Heck, It's Cold — Winter Bells",
+      "file": "humkin-cold-outside-winter-radio.mp3",
+      "kind": "bumper",
+      "duration_seconds": 15.008667,
+      "sha256": "150edab64f854f246d12dd3608f69444ddd49d0d3d6ed1b5c683b5d2c191b05f",
+      "bytes": 301484,
+      "can_stage": true,
+      "note": "Warm cold-weather radio liner, subtle opening sleigh bells and 92 BPM G–B–E Lantern chime at the end. Preserves spoken 'witch's tit' idiom and drawn-out station name. No artificial radio static. CONTENT FLAG: mild adult language; review before daytime scheduling."
+    },
+    {
+      "id": "field-raw-005",
+      "title": "Sunday Morning Church Drive — Original Mic",
+      "file": "humkin-sunday-church-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 10.88,
+      "sha256": "4e140fcda712183887788eb61911f1fc2afa1ff529e2d0eeedd463367287acfb",
+      "bytes": 264706,
+      "can_stage": false,
+      "note": "Original Sunday-morning drive announcer recording. Sung HUMKIN RADIO tag and road-microphone atmosphere preserved."
+    },
+    {
+      "id": "field-fm-005",
+      "title": "Sunday Morning Church Drive — Bell Choir",
+      "file": "humkin-sunday-church-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 14.08,
+      "sha256": "37585babd6b3dc62e4ff5a60e23e01488f7e940880e823a5e3d66dd20154e948",
+      "bytes": 282764,
+      "can_stage": true,
+      "note": "Sunday drive vocal and sung HUMKIN radio tag with original synthetic church-style bell peal and 92 BPM three-note Lantern cadence. No prerecorded hymn, copyrighted broadcast element, or baked-in static. Intended for Sunday-morning listener audition; not actually scheduled."
     }
   ]
 }
