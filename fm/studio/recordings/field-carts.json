@@ -1,7 +1,7 @@
 {
   "schema_version": "humkin.radio.field-carts/v1",
   "editorial_status": "RECORDED / EDITED — pending rights review and owner approval; NOT on air",
-  "provenance": "Original HUMKIN field microphone takes from November 15, 2026, plus station-identification edits. Each raw source preserved unchanged.",
+  "provenance": "User's original HUMKIN RADIO microphone performances, with edited radio-cart versions, preserved with checksums.",
   "assets": [
     {
       "id": "field-raw-001",
@@ -57,6 +57,28 @@
       "bytes": 233682,
       "can_stage": true,
       "note": "Ready-to-review between-song radio liner. Original speech, shaker and pauses retained, with subtle G–B–E Lantern bells after 'more music.' No artificial radio static."
+    },
+    {
+      "id": "field-raw-003",
+      "title": "Well Howdy — Bump It! (Original Take)",
+      "file": "humkin-bump-it-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 24.832,
+      "sha256": "97374eb79cf07403654c3e6adeedf1a9bb1e0d13ba3b8208a75a6c4b906aac08",
+      "bytes": 604967,
+      "can_stage": false,
+      "note": "Unaltered original station-announcer bumper pun. All timing and the final deadpan 'Bump it!' preserved. Original studio reference."
+    },
+    {
+      "id": "field-fm-003",
+      "title": "Well Howdy — Bump It! (Lantern Radio Bells)",
+      "file": "humkin-bump-it-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 27.682,
+      "sha256": "a0e6421b1d9a96b3cadbe6d52f20507624fb358639bd4e1d67cfc54c9543d3da",
+      "bytes": 443948,
+      "can_stage": true,
+      "note": "Warm, compressed radio-host voice with original cart click, three-note Lantern bells, and short springy musical punchline. The complete spoken performance is intact. No static baked in; audition-only until owner approval."
     }
   ]
 }

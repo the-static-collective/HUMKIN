@@ -6,7 +6,7 @@ import {execFileSync} from "node:child_process";
 const read=path=>readFileSync(path,"utf8");
 const manifest=JSON.parse(read("fm/studio/recordings/field-carts.json"));
 assert.equal(manifest.schema_version,"humkin.radio.field-carts/v1");
-assert.equal(manifest.assets.length,5,"Preserve both raw microphone takes and three edited bumper candidates");
+assert.equal(manifest.assets.length,7,"Preserve three original announcer takes and four edited bumper candidates");
 const ids=new Set(),names=new Set();
 for(const a of manifest.assets){
  assert(!ids.has(a.id)&&!names.has(a.file),"Every source recording must be unique");
@@ -17,11 +17,13 @@ for(const a of manifest.assets){
  assert.equal(statSync(path).size,a.bytes);
  assert.equal(createHash("sha256").update(bytes).digest("hex"),a.sha256,
    "Exact recorded original bytes in repository: "+a.id);
- assert(a.duration_seconds>1&&a.duration_seconds<20);
+ assert(a.duration_seconds>1&&a.duration_seconds<40,"Radio liners may include longer comedic pauses");
  assert(a.kind==="reference"||a.kind==="bumper");
  assert(a.can_stage===true?a.file.endsWith(".mp3"):true);
 }
-assert.equal(manifest.assets.filter(a=>a.can_stage).length,3);
+assert.equal(manifest.assets.filter(a=>a.can_stage).length,4);
+assert(manifest.assets.some(a=>a.id==="field-raw-003"&&a.file.endsWith(".m4a")),"Unedited original bumper monologue retained");
+assert(manifest.assets.some(a=>a.id==="field-fm-003"&&a.file.endsWith(".mp3")),"Edited Bump It radio cart available for private staging");
 assert(manifest.assets.some(a=>a.id==="field-raw-002"&&a.file.endsWith(".m4a")),"Original music-found take retained");
 assert(manifest.assets.some(a=>a.id==="field-fm-002"&&a.file.endsWith(".mp3")),"Music-found bell bumper available for private staging");
 const html=read("fm/studio/index.html"),js=read("fm/studio/studio.js");
@@ -42,4 +44,4 @@ for(const a of manifest.assets)
  assert(!rotation.tracks.some(t=>String(t.src||"").includes(a.file)),
  "Audition clips must not be inserted into on-air static song rotation");
 execFileSync(process.execPath,["--input-type=module","--check"],{input:js});
-console.log("Five original/edited recordings SHA-256 verified; three owner-only disabled bumper staging candidates, no accidental airplay.");
+console.log("Seven original/edited recordings SHA-256 verified; four owner-only disabled bumper staging candidates, no accidental airplay.");
