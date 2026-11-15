@@ -6,7 +6,7 @@ import {execFileSync} from "node:child_process";
 const read=path=>readFileSync(path,"utf8");
 const manifest=JSON.parse(read("fm/studio/recordings/field-carts.json"));
 assert.equal(manifest.schema_version,"humkin.radio.field-carts/v1");
-assert.equal(manifest.assets.length,11,"Preserve five original microphone takes and six radio-bumper edits");
+assert.equal(manifest.assets.length,13,"Preserve six microphone takes and seven radio-bumper edits");
 const ids=new Set(),names=new Set();
 for(const a of manifest.assets){
  assert(!ids.has(a.id)&&!names.has(a.file),"Every source recording must be unique");
@@ -21,7 +21,9 @@ for(const a of manifest.assets){
  assert(a.kind==="reference"||a.kind==="bumper");
  assert(a.can_stage===true?a.file.endsWith(".mp3"):true);
 }
-assert.equal(manifest.assets.filter(a=>a.can_stage).length,6);
+assert.equal(manifest.assets.filter(a=>a.can_stage).length,7);
+assert(manifest.assets.some(a=>a.id==="field-raw-006"&&a.file.endsWith(".m4a")),"Direct-address original take retained");
+assert(manifest.assets.some(a=>a.id==="field-fm-006"&&a.file.endsWith(".mp3")),"Lantern-bell More Music Warning cart staged for audition");
 assert(manifest.assets.some(a=>a.id==="field-raw-004"&&a.file.endsWith(".m4a")),"Cold-weather original retained");
 assert(manifest.assets.some(a=>a.id==="field-fm-004"&&a.file.endsWith(".mp3")&&a.note.includes("CONTENT FLAG")),"Winter bumper retains family-listening advisory");
 assert(manifest.assets.some(a=>a.id==="field-raw-005"&&a.file.endsWith(".m4a")),"Sunday church-drive original retained");
@@ -48,4 +50,4 @@ for(const a of manifest.assets)
  assert(!rotation.tracks.some(t=>String(t.src||"").includes(a.file)),
  "Audition clips must not be inserted into on-air static song rotation");
 execFileSync(process.execPath,["--input-type=module","--check"],{input:js});
-console.log("Eleven source/edited recordings SHA-256 verified; six owner-only disabled bumper staging candidates, no accidental airplay.");
+console.log("Thirteen source/edited recordings SHA-256 verified; seven owner-only disabled bumper staging candidates, no accidental airplay.");
