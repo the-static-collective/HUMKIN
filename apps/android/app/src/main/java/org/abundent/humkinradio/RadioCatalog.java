@@ -6,6 +6,7 @@ import androidx.media3.common.MediaMetadata;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -115,7 +116,11 @@ final class RadioCatalog {
         try {
             if (conn.getResponseCode() != 200) throw new IOException("HTTP " + conn.getResponseCode());
             try (InputStream in = conn.getInputStream()) {
-                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int count;
+                while ((count = in.read(buffer)) != -1) output.write(buffer, 0, count);
+                return new String(output.toByteArray(), StandardCharsets.UTF_8);
             }
         } finally { conn.disconnect(); }
     }
