@@ -97,7 +97,7 @@ async function loadDesk(){
     Array.isArray(fieldCarts.carts)?fieldCarts.carts.filter(c=>
       /^field-fm-[0-9]{3}$/.test(c.id||"")&&/^[0-9a-f]{64}$/.test(c.sha256||"")&&
       typeof c.src==="string"&&
-      /^\\.\\/studio\\/recordings\\/[a-z0-9-]+\\.mp3$/.test(c.src)&&
+      c.src.startsWith("./studio/recordings/")&& /^[a-z0-9-]+[.]mp3$/.test(c.src.slice("./studio/recordings/".length))&&
       Number(c.duration_seconds)>1&&Number(c.duration_seconds)<=120)
       .map(c=>({id:"air-"+c.id,title:c.title,artist:"HUMKIN",
         album:"HUMKIN RADIO · FIELD CARTS",kind:"bumper",
