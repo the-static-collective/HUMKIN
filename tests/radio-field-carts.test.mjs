@@ -6,7 +6,7 @@ import {execFileSync} from "node:child_process";
 const read=path=>readFileSync(path,"utf8");
 const manifest=JSON.parse(read("fm/studio/recordings/field-carts.json"));
 assert.equal(manifest.schema_version,"humkin.radio.field-carts/v1");
-assert.equal(manifest.assets.length,23,"Preserve eleven original microphone takes and twelve radio edits");
+assert.equal(manifest.assets.length,27,"Preserve thirteen original microphone takes and fourteen radio edits");
 const ids=new Set(),names=new Set();
 for(const a of manifest.assets){
  assert(!ids.has(a.id)&&!names.has(a.file),"Every source recording must be unique");
@@ -21,12 +21,14 @@ for(const a of manifest.assets){
  assert(a.kind==="reference"||a.kind==="bumper");
  assert(a.can_stage===true?a.file.endsWith(".mp3"):true);
 }
-assert.equal(manifest.assets.filter(a=>a.can_stage).length,12);
-for(let i=8;i<=11;i++){
+assert.equal(manifest.assets.filter(a=>a.can_stage).length,14);
+for(let i=8;i<=13;i++){
  const code=String(i).padStart(3,"0");
  assert(manifest.assets.some(a=>a.id==="field-raw-"+code&&a.file.endsWith(".m4a")),"Preserve field recording "+code);
  assert(manifest.assets.some(a=>a.id==="field-fm-"+code&&a.file.endsWith(".mp3")),"Prepare radio mix "+code);
 }
+assert(manifest.assets.find(a=>a.id==="field-fm-013").note.includes("HOLD FOR EDITORIAL REVIEW"),"Truncated greeting must be held for owner review");
+assert(manifest.assets.find(a=>a.id==="field-fm-012").note.includes("character farewell/endcap"),"Sign-off must not imply that the real station has closed");
 assert(manifest.assets.find(a=>a.id==="field-fm-011").note.includes("HOLD FOR REQUEST-CONTACT REVIEW"),"Do not broadcast unverified request routing");
 assert(manifest.assets.some(a=>a.id==="field-raw-007"&&a.file.endsWith(".m4a")),"Original HUMKIN Time recording retained");
 assert(manifest.assets.some(a=>a.id==="field-fm-007"&&a.file.endsWith(".mp3")&&a.note.includes("not the actual time")),"Clock bumper is an artistic ID, not a factual time announcement");
@@ -58,4 +60,4 @@ for(const a of manifest.assets)
  assert(!rotation.tracks.some(t=>String(t.src||"").includes(a.file)),
  "Audition clips must not be inserted into on-air static song rotation");
 execFileSync(process.execPath,["--input-type=module","--check"],{input:js});
-console.log("Twenty-three source/edited recordings SHA-256 verified; twelve owner-only disabled bumper staging candidates, no accidental airplay.");
+console.log("Twenty-seven source/edited recordings SHA-256 verified; fourteen owner-only disabled bumper staging candidates, no accidental airplay.");
