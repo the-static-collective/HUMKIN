@@ -123,6 +123,28 @@
       "bytes": 282764,
       "can_stage": true,
       "note": "Sunday drive vocal and sung HUMKIN radio tag with original synthetic church-style bell peal and 92 BPM three-note Lantern cadence. No prerecorded hymn, copyrighted broadcast element, or baked-in static. Intended for Sunday-morning listener audition; not actually scheduled."
+    },
+    {
+      "id": "field-raw-006",
+      "title": "You There — More HUMKIN Radio (Original Mic)",
+      "file": "humkin-more-music-warning-original.m4a",
+      "kind": "reference",
+      "duration_seconds": 11.946667,
+      "sha256": "32c320569e3971078515533ce6dae2f7e872fe1fa58774895c604e7469dee9e1",
+      "bytes": 290310,
+      "can_stage": false,
+      "note": "Original unedited matter-of-fact direct-address station bumper. All pauses retained, including the closing 'get ready for that then.' Unprocessed microphone reference."
+    },
+    {
+      "id": "field-fm-006",
+      "title": "You There — More HUMKIN Radio (Lantern Bells)",
+      "file": "humkin-more-music-warning-bells.mp3",
+      "kind": "bumper",
+      "duration_seconds": 14.497959,
+      "sha256": "21cd59043e0c0689be0bc8dba297a7f8bc93de4fb539c1150490ea923d76017e",
+      "bytes": 232428,
+      "can_stage": true,
+      "note": "Gentle classic-radio voice EQ and compression, tiny opening relay click, full original deadpan delivery and signature original G4–B4–E5 Lantern chimes after the punchline. No hiss/static baked in. Requires human approval; not on air."
     }
   ]
 }
