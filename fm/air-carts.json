@@ -1,0 +1,28 @@
+{
+  "schema_version": "humkin.radio.air-carts/v1",
+  "description": "Selected, already-public recorded HUMKIN production carts for the musical AutoDJ. The original microphone sources stay on the Production Room shelf.",
+  "policy": "Only recorded, original, producer-selected MP3s. No live time/weather claims, request-intake claims, or held/truncated auditions. Other source recordings stay off air.",
+  "carts": [
+    {
+      "id": "field-fm-001",
+      "title": "Oh Hey There — Classic FM Bells",
+      "src": "./studio/recordings/humkin-field-announcer-classic-fm.mp3",
+      "duration_seconds": 9.696,
+      "sha256": "3eb99cc97fa5db1fa657b96b1c37304999041b20c131f3d3966a3a42fe374ab8"
+    },
+    {
+      "id": "field-fm-007",
+      "title": "It's HUMKIN Time Then — Fictional Clock Cart",
+      "src": "./studio/recordings/humkin-time-then-clock-bells.mp3",
+      "duration_seconds": 26.808,
+      "sha256": "16488c281d4bdffa9c8f5194c0ea029b86016c300d20f08b7094e9cec1874fe8"
+    },
+    {
+      "id": "field-fm-008",
+      "title": "That Song There — Thank You for Your Sounds",
+      "src": "./studio/recordings/humkin-that-song-there-bells.mp3",
+      "duration_seconds": 55.68,
+      "sha256": "9cc409b6512cce29a7bde0992f23919e9aa4ab929b6d08276e1128e25c275394"
+    }
+  ]
+}

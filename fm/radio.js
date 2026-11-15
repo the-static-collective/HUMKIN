@@ -120,6 +120,41 @@ async function fetchExtras(table,columns,filter=""){
     return [];
   }
 }
+/* Recorded carts approved for repeatable music breaks live in the same public
+ * repository as the source studio edits. This is an explicit allowlist, not
+ * automatic publication of every audition or hold-labeled recording. */
+async function getOnAirFieldCarts(){
+ try{
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),4500);
+  let data;
+  try{
+   const response=await fetch(fileUrl("air-carts.json",here),{cache:"no-store",signal:ctrl.signal});
+   if(!response.ok)return [];
+   data=await response.json();
+  }finally{clearTimeout(timer)}
+  if(data?.schema_version!=="humkin.radio.air-carts/v1"||
+    !Array.isArray(data.carts)||data.carts.length>16)return [];
+  const seen=new Set(),base=new URL("./studio/recordings/",here);
+  return data.carts.map(cart=>{
+   if(!/^field-fm-[0-9]{3}$/.test(cart.id||"")||seen.has(cart.id)||
+     !/^[0-9a-f]{64}$/.test(cart.sha256||""))return null;
+   seen.add(cart.id);
+   const src=validatedSrc(cart.src,here),url=src&&new URL(src);
+   if(!url||url.origin!==here.origin||!url.pathname.startsWith(base.pathname)||
+     !/^[a-z0-9-]+[.]mp3$/.test(url.pathname.slice(base.pathname.length)))return null;
+   const duration=Number(cart.duration_seconds);
+   if(!(duration>1&&duration<=120))return null;
+   const title=String(cart.title||"").trim().slice(0,180);
+   if(!title)return null;
+   return {id:"air-"+cart.id,title,artist:"HUMKIN",
+     album:"HUMKIN RADIO · FIELD CARTS",kind:"bumper",duration,src,
+     artwork:fileUrl("../cover.jpg",here)};
+  }).filter(Boolean);
+ }catch(error){
+  console.warn("Optional recorded on-air carts unavailable; original radio continues.",error);
+  return [];
+ }
+}
 async function getPublishedCrate(){
   try{
     // Published rows only; anonymous reads are constrained by Postgres RLS.
@@ -681,14 +716,15 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    const [cloud,overrides,schedule,settings,artRows,clockSample]=await Promise.all([
+    const [cloud,overrides,schedule,settings,artRows,clockSample,airCarts]=await Promise.all([
       getPublishedCrate(),
       fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind,art_asset_id","&limit=1000"),
       fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority,art_asset_id","&is_active=eq.true&limit=100"),
       fetchExtras("humkin_radio_settings","id,bumper_every,station_label","&id=eq.main&limit=1"),
       fetchExtras("humkin_radio_art_assets","id,storage_path","&limit=1000"),
       window.HUMKIN_CLOCK_SYNC?.calibrate(fetch,CRATE_API,CRATE_KEY,()=>Date.now())
-        ||Promise.resolve({offsetMs:0,synced:false})
+        ||Promise.resolve({offsetMs:0,synced:false}),
+      getOnAirFieldCarts()
     ]);
     clockOffsetMs=clockSample?.synced?clockSample.offsetMs:0;
     clockCalibrated=Boolean(clockSample?.synced);
@@ -698,9 +734,9 @@ async function boot(){
     };
     artAssets=window.HUMKIN_ART?.libraryMap(artRows)||new Map();
     const mapped=new Map(overrides.map(o=>[o.track_id,o]));
-    tracks=tracks.map(t=>{
+    tracks=[...tracks,...airCarts].map(t=>{
       const o=mapped.get(t.id);
-      return {...t,source:"static",kind:o?.kind==="bumper"?"bumper":"song",
+      return {...t,source:"static",kind:o?o.kind==="bumper"?"bumper":"song":t.kind==="bumper"?"bumper":"song",
         title:o?.title||t.title,artist:o?.artist||t.artist,album:o?.album||t.album,
         art_asset_id:o?.art_asset_id||null,enabled:o?.enabled!==false};
     }).filter(t=>t.enabled);

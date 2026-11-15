@@ -73,7 +73,7 @@ async function loadDesk(){
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
  try{
-  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult]=await Promise.all([
+  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks")
     .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,art_asset_id,published_at,created_at")
@@ -83,7 +83,8 @@ async function loadDesk(){
     .order("start_minute",{ascending:true}).limit(500),
    db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label").eq("id","main").limit(1),
    db.from("humkin_radio_art_assets").select("id,owner_id,sha256,storage_path,label,width,height,bytes,created_at")
-    .order("created_at",{ascending:false}).limit(500)
+    .order("created_at",{ascending:false}).limit(500),
+   fetch("../air-carts.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
   ]);
   if(!configResponse.ok)throw Error("Original rotation not reachable");
   for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult],["station settings",settingsResult],["art shelf",artResult]])
@@ -92,12 +93,21 @@ async function loadDesk(){
   if(!Array.isArray(config.tracks))throw Error("Original rotation is incomplete");
   artAssets=[...window.HUMKIN_ART.libraryMap(artResult.data||[]).values()];
   const overrides=new Map((staticResult.data||[]).map(t=>[t.track_id,t]));
-  staticList=config.tracks.map(track=>{
+  const approved=fieldCarts?.schema_version==="humkin.radio.air-carts/v1"&&
+    Array.isArray(fieldCarts.carts)?fieldCarts.carts.filter(c=>
+      /^field-fm-[0-9]{3}$/.test(c.id||"")&&/^[0-9a-f]{64}$/.test(c.sha256||"")&&
+      typeof c.src==="string"&&
+      c.src.startsWith("./studio/recordings/")&& /^[a-z0-9-]+[.]mp3$/.test(c.src.slice("./studio/recordings/".length))&&
+      Number(c.duration_seconds)>1&&Number(c.duration_seconds)<=120)
+      .map(c=>({id:"air-"+c.id,title:c.title,artist:"HUMKIN",
+        album:"HUMKIN RADIO · FIELD CARTS",kind:"bumper",
+        duration:c.duration_seconds,src:c.src})): [];
+  staticList=[...config.tracks,...approved].map(track=>{
    const override=overrides.get(track.id);
    return {id:track.id,source:"static",title:override?.title||track.title,
      artist:override?.artist||track.artist||"HUMKIN",
      album:override?.album||track.album||"HUMKIN RADIO",
-     kind:override?.kind==="bumper"?"bumper":"song",
+     kind:override?override.kind==="bumper"?"bumper":"song":track.kind==="bumper"?"bumper":"song",
      enabled:override?.enabled!==false,published:true,art_asset_id:override?.art_asset_id||null,
      artwork:new URL(track.artwork||"../cover.jpg","https://humkin.abundent.org/fm/").href,
      duration:Number(track.duration),url:new URL(track.src,"https://humkin.abundent.org/fm/").href,

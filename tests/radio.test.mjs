@@ -17,6 +17,7 @@ assert(html.includes("not yet a dedicated broadcast stream"),"Simulated radio mu
 assert(html.includes('href="../"'),"Album homepage link missing");
 assert(css.includes("@media(max-width:480px)"),"Must support phone screens");
 const rotation=JSON.parse(read("fm/rotation.json"));
+const approvedAirCarts=JSON.parse(read("fm/air-carts.json"));
 const songs=JSON.parse(read("tracks.json"));
 const ep=JSON.parse(read("releases/everywhere-near-you/tracks.json"));
 const initialTracks=rotation.tracks;
@@ -67,7 +68,7 @@ class E {
  click(){this.emit("click")}
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
-function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[],serverAheadMs=null,effectClass=null){
+function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[],serverAheadMs=null,effectClass=null,airCarts=null){
  const elems=new Map(),listeners={},copies=[],downloads=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn},
@@ -92,6 +93,7 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
    }
    return {ok:true,json:async()=>
      href.endsWith("rotation.json")?config:
+     href.endsWith("air-carts.json")?airCarts:
      href.includes("/rest/v1/humkin_radio_tracks")?cloudRows:
      href.includes("/rest/v1/humkin_radio_static_overrides")?staticOverrides:
      href.includes("/rest/v1/humkin_radio_programs")?programRows:
@@ -282,6 +284,30 @@ assert.equal(onAir.program,"Morning Garden","Program should override the shared 
 assert([0,20,21].includes(onAir.index),"Scheduled selection must belong to the show line-up");
 const outside=managed.window.HUMKIN_RADIO.tuneAt(Date.parse("2026-11-13T18:00:00Z"));
 assert.equal(outside.program,undefined,"Outside a show the station must resume ordinary rotation");
+
+// The owner's selected public field edits now enter the same genuine bumper
+// rotation. Without the optional file, old listeners still receive the classic
+// catalog plus whatever published cloud bumpers they have.
+const approvedField=fixture(rotation,[],[],[],null,
+ [{id:"main",bumper_every:3,station_label:"HUMKIN RADIO"}],
+ false,[],null,null,approvedAirCarts);
+await flush();
+assert.equal(approvedAirCarts.carts.length,3,"Exactly three reviewed field carts in this release");
+assert.equal(approvedField.window.HUMKIN_RADIO.state.tracks,24,
+ "21 songs plus 3 static field recordings");
+assert.equal(approvedField.window.HUMKIN_RADIO.state.bumperCount,3,
+ "New recorded bumpers are actually discovered by the radio");
+approvedField.$("mode-shuffle").click();approvedField.$("listen").click();await flush();
+const heardFields=[];
+for(let i=0;i<28;i++){
+ const at=approvedField.window.HUMKIN_RADIO.state.index;
+ if(at>=21)heardFields.push(at);
+ approvedField.$("next-song").click();await flush();
+}
+assert.equal(heardFields.length,7,"Field cart appears after each three songs");
+assert.equal(new Set(heardFields).size,3,"All three new carts rotate across a cycle");
+assert(approvedField.$("playlist-note").textContent.includes("STATION IDs EVERY 3 SONGS"),
+ "On-air field cards must be shown as activated station IDs");
 
 // AutoDJ adds *real marked recordings*, never fictional or duplicated songs.
 const automix=fixture(rotation,[{
