@@ -1,6 +1,6 @@
 {
   "schema_version": "humkin.radio.station-bible/v1",
-  "version": "002",
+  "version": "003",
   "title": "HUMKIN RADIO — THE STATION AT THE END OF THE DIAL",
   "short_mission": "Good music. Good company. Useful connections. A signal worth keeping.",
   "fiction_notice": "Fictional newsroom and management characters are scripted entertainment. Real reports require independent verification, consent and human editorial approval.",
@@ -260,6 +260,116 @@
       "in_pilot": false,
       "direction": "Dry, warm, wry, matter-of-fact. Tiny original relay click and optional original Lantern G4-B4-E5 sting at 92 BPM before the voice; no baked radio hiss/static because warm texture is Same-Time-only. Never interrupt a playing song. A HeyGen speech preview exists, but the finished station cart is not yet mastered, uploaded or approved.",
       "script": "This is Lumi at HUMKIN RADIO. We've moved the static back to its proper department. Road Shuffle is innocent. The new single is innocent. Management remains under investigation. Stay tuned."
+    },
+    {
+      "id": "archive-001",
+      "department": "station_id",
+      "label": "ARCHIVE 001 — We Were Already Here",
+      "role": "The Announcer",
+      "expected_seconds": 18,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "An old radio voice, but not a parody of any real broadcaster. Quiet relay click before voice. One Lantern signature after, if actually produced.",
+      "script": "You're listening to HUMKIN RADIO. If this is your first time finding us, welcome back. The sign on the door has changed a few times. The music's still here."
+    },
+    {
+      "id": "archive-002",
+      "department": "news",
+      "label": "ARCHIVE 002 — The Missing First Page",
+      "role": "The Newsman",
+      "expected_seconds": 24,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Read like a dry archive correction, not a real historical news report. A tiny paper shuffle; no false station-frequency information.",
+      "script": "A clarification from the newsroom. The station's oldest ledger begins on page two. We have located page one, but Records says it is currently holding a window open. The investigation will resume when the weather improves."
+    },
+    {
+      "id": "archive-003",
+      "department": "comedy",
+      "label": "ARCHIVE 003 — Management Remembers",
+      "role": "The Station Manager",
+      "expected_seconds": 23,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Affectionate office confidence. One small pause after 'historic'. Fictional corporate history only.",
+      "script": "Good afternoon. As part of our historic anniversary, we are celebrating the previous management team, whose records we have temporarily misplaced. I remember them very well. They were remarkably tall. Or short. Anyway, the cake is excellent."
+    },
+    {
+      "id": "archive-004",
+      "department": "station_id",
+      "label": "ARCHIVE 004 — The Request Slip",
+      "role": "The Announcer",
+      "expected_seconds": 20,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Archival station lore only. Do not imply a real request telephone number or actual listener submission. One original dry piano note could close it.",
+      "script": "Our first request came in on a scrap of paper. We didn't have the song, so somebody in the next room played it on a piano. We still have the paper. Nobody remembers who played."
+    },
+    {
+      "id": "archive-005",
+      "department": "field_report",
+      "label": "ARCHIVE 005 — The Goat's Paperwork",
+      "role": "The Farm Correspondent",
+      "expected_seconds": 20,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Matter-of-fact rural field report; no weather or livestock advice disguised as fact. No emergency cues.",
+      "script": "From the farm desk: an old personnel file lists a goat as temporary staff. The word temporary is crossed out on the fourth page. Nobody can explain the retirement benefits. Back to the records."
+    },
+    {
+      "id": "archive-006",
+      "department": "promo",
+      "label": "ARCHIVE 006 — Night Engineer's Kettle",
+      "role": "Hailey Lou",
+      "expected_seconds": 23,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Close, warm, nearly whispered. No sentimentality; give the final silence time.",
+      "script": "They used to leave the kettle on at night, just in case somebody came through. That's what the old engineer said. I don't know whether that's true. But there's a warm cup here if you need one. Here's another song."
+    },
+    {
+      "id": "archive-007",
+      "department": "news",
+      "label": "ARCHIVE 007 — Station Closing Notice",
+      "role": "The Newsman",
+      "expected_seconds": 21,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Arch archival dry newspaper voice. Never imply actual terrestrial licensing or legal closure.",
+      "script": "Records indicate the station closed twice. No documentation of the original opening has been found. Engineering reports the music is still playing. The closing notices have been returned to the appropriate department."
+    },
+    {
+      "id": "archive-008",
+      "department": "station_id",
+      "label": "ARCHIVE 008 — Same Three Notes",
+      "role": "Lumi — The Assistant Station Manager",
+      "expected_seconds": 19,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Very dry. Lantern G4–B4–E5 only when produced and rights-reviewed. Not an automatically aired file.",
+      "script": "This is Lumi at HUMKIN RADIO. The archive has confirmed we've been using the same three notes for a very long time. Unfortunately, that's also how long the archive has been looking for the fourth. Back to the music."
+    },
+    {
+      "id": "archive-009",
+      "department": "comedy",
+      "label": "ARCHIVE 009 — Department of Precedent",
+      "role": "The Station Manager",
+      "expected_seconds": 22,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "A little proud of the filing system. No resemblance to a real business or government notice.",
+      "script": "We have discovered a file titled Procedures for Opening the Station. It contains one instruction: Check Whether the Station Is Already Open. I am pleased to report that this procedure has been followed every single day."
+    },
+    {
+      "id": "archive-010",
+      "department": "station_id",
+      "label": "ARCHIVE 010 — The Road Knows",
+      "role": "Hailey Lou",
+      "expected_seconds": 17,
+      "kind": "fiction",
+      "in_pilot": false,
+      "direction": "Evening or night. Intimate closing line, no swelling underscore; let the next song carry the feeling.",
+      "script": "Somebody wrote us a note once. It said, 'I found you where the road bends toward home.' We kept that one. HUMKIN RADIO. Good company for the long way home."
     }
   ]
 }
