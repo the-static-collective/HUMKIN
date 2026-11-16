@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#231b39">
+<meta name="description" content="Join the station without sending an email. Original social posts, videos, bumpers, songs and volunteer server missions—HUMKIN's real contribution desk.">
+<title>THE STATION GUILDS · HUMKIN PARTICIPATION</title>
+<link rel="stylesheet" href="./participate.css">
+<script defer src="../orchard/model.js"></script>
+<script type="module" src="./desk.js"></script>
+</head><body>
+<header class="topbar"><a href="../">HUMKIN <span>✳</span> RADIO</a><span>STATION GUILDS / 001</span><a href="../orchard/">← THE ORCHARD</a></header>
+<main>
+<section class="hero">
+ <p class="eyebrow">BROADCAST DIVISION · OPEN TO HUMAN BEINGS</p>
+ <h1>THE<br><em>PARTICIPATION</em><br>ENGINE.</h1>
+ <p class="intro">The station needs things. You can make them. No introductory email, audition or social résumé required.</p>
+ <div class="hero-badges"><span>7 REAL-WORLD MISSION TYPES</span><span>REVIEWED CONTRIBUTIONS</span><span>NO AUTOMATIC AIRTIME</span></div>
+</section>
+<section class="ticker" aria-label="Participation pass and progress">
+ <div><small>ORCHARD LEVEL</small><strong id="local-level">01</strong></div>
+ <div><small>VERIFIED CONTRIBUTION HUM</small><strong id="earned-hum">0 ⓗ</strong></div>
+ <div><small>HUM UNDER REVIEW</small><strong id="pending-hum">0 ⓗ</strong></div>
+ <div><small>MY WORK ORDERS</small><strong id="submission-count">0</strong></div>
+</section>
+
+<section class="main-section" id="jobs">
+ <div class="section-head"><div><p class="eyebrow">ONE STATION / MANY GUILDS</p><h2>CHOOSE A <em>DOOR.</em></h2></div>
+ <p>Higher Orchard levels make these desks part of your progression. Nobody is excluded from submitting through the guest door: you can contribute before reaching a level.</p></div>
+ <div id="mission-grid" class="mission-grid"><p>Opening the station mission board…</p></div>
+</section>
+
+<section class="main-section work-area" id="workbench" hidden>
+ <div class="section-head"><div><p class="eyebrow" id="work-guild">STATION WORK ORDER</p>
+ <h2 id="work-title">THE WORKBENCH.</h2></div>
+ <button id="close-form" class="subtle" type="button">× CLOSE</button></div>
+ <div class="work-grid">
+  <form id="submission-form" class="paper">
+   <input type="hidden" id="mission-kind">
+   <p id="mission-guidance" class="hint"></p>
+   <label for="work-name">NAME THE CONTRIBUTION</label>
+   <input id="work-name" maxlength="100" minlength="3" required placeholder="Something worth remembering">
+   <div id="social-fields" hidden>
+    <label for="social-platform">WHERE DID YOU POST?</label>
+    <select id="social-platform"><option value="none">SELECT THE NETWORK</option><option value="youtube">YOUTUBE</option><option value="instagram">INSTAGRAM</option><option value="tiktok">TIKTOK</option><option value="facebook">FACEBOOK</option><option value="bluesky">BLUESKY</option><option value="other">ANOTHER PUBLIC SITE</option></select>
+    <label for="social-handle">PUBLIC HANDLE <small>(OPTIONAL; NEVER A PASSWORD)</small></label>
+    <input id="social-handle" maxlength="72" placeholder="@your_public_handle">
+    <label class="check"><input type="checkbox" id="remember-handle" checked> Remember this handle on this phone only.</label>
+   </div>
+   <div id="duration-fields" hidden>
+    <label for="work-duration">RUNNING TIME (SECONDS)</label>
+    <input id="work-duration" type="number" min="0" max="3600" inputmode="numeric" placeholder="Video or audio duration" required>
+    <p class="hint" id="duration-hint">If you upload a media file, the player will try to read its duration for you. A reviewer verifies it.</p>
+   </div>
+   <div id="media-fields" hidden>
+    <label for="work-file">RECORD OR CHOOSE A FILE <small>(MAX 25 MB)</small></label>
+    <input type="file" id="work-file" accept="video/mp4,video/webm,audio/mpeg,audio/mp4,audio/wav,.mp3,.m4a,.wav,.mp4,.webm">
+    <p class="hint">Private upload. Only station reviewers can access your recording. Large videos can instead be shared using a public link.</p>
+   </div>
+   <div id="link-fields">
+    <label for="work-link" id="link-label">PUBLIC PROOF OR MEDIA LINK (OPTIONAL)</label>
+    <input id="work-link" type="url" maxlength="550" inputmode="url" placeholder="https://…" autocomplete="off">
+   </div>
+   <label for="work-details" id="details-label">A SHORT NOTE FOR THE STATION</label>
+   <textarea id="work-details" rows="5" maxlength="1400" placeholder="Tell the desk what you made, or what equipment you have permission to use."></textarea>
+   <label class="check" id="disclosure-row" hidden><input type="checkbox" id="work-disclosure"> I clearly disclosed that this post may earn HUMKIN contribution rewards. It is my genuine opinion, not paid praise.</label>
+   <label class="check" id="rights-row"><input type="checkbox" id="work-rights"> I created this material or have the rights and permission needed to submit it for station review.</label>
+   <button id="send-work" class="primary full" type="submit">✳ SUBMIT THIS WORK ORDER</button>
+   <p id="send-status" class="feedback" role="status" aria-live="polite">Your submission stays private until reviewed. A submission is not approval to broadcast.</p>
+  </form>
+  <aside class="desk-notes">
+   <p class="eyebrow">THE HUMAN-SIZED FINE PRINT</p>
+   <h3>WORK IS REAL.<br>POINTS FOLLOW PROOF.</h3>
+   <p>No one has to buy followers, pretend to like music, spam friends, or give us a social-media password.</p>
+   <p><strong>Street Team:</strong> Original, voluntarily published posts with clear reward disclosure. A link is proof for human review, not automatic credit.</p>
+   <p><strong>Videos & audio:</strong> Original or properly licensed work. Media is held privately. A human determines whether to accept it or put it on air.</p>
+   <p><strong>Engineers:</strong> Listing an old computer isn't the same as operating a server. Verified rewards require actual authorized, useful service.</p>
+   <p class="mini">Reviewers may decline work that isn't original, licensed, appropriate, verifiable, or needed. Verified HUM here is a nontransferable, server-backed contribution credit—not cryptocurrency, cash, or your local Orchard shopping balance.</p>
+  </aside>
+ </div>
+</section>
+
+<section class="main-section" id="activity">
+ <div class="section-head"><div><p class="eyebrow">YOUR PRIVATE PERSONNEL FILE</p><h2>MY <em>RECEIPTS.</em></h2></div>
+ <button id="refresh" class="subtle" type="button">↻ REFRESH</button></div>
+ <p class="hint">A random participation pass lives on this device. Save a backup if you want to restore your work history elsewhere. Your social profile isn't a password and is optional.</p>
+ <div id="my-work" class="receipt-board"><p>Checking the desk…</p></div>
+ <div class="account-actions">
+  <button id="backup-pass" class="subtle" type="button">↓ BACK UP MY PARTICIPATION PASS</button>
+  <label class="subtle input-label" for="restore-pass">↑ RESTORE A PASS</label>
+  <input id="restore-pass" type="file" accept=".json,application/json" hidden>
+  <a class="subtle" href="../orchard/">GO BACK TO MY ORCHARD ↗</a>
+ </div>
+</section>
+<section class="closing">
+ <div><p class="eyebrow">THE STATION IS A PLACE YOU CAN HELP BUILD</p><h2>LISTENER → CONTRIBUTOR<br>→ OPERATOR → FOUNDER.</h2><p>Higher guilds will eventually offer co-production, voluntary nodes, verification jobs and community stations. The unfinished equipment stays labeled unfinished.</p></div>
+ <a href="../" class="primary">◉ BACK TO THE RADIO</a>
+</section>
+</main>
+<footer><a href="../orchard/">THE ORCHARD</a><span>HUMKIN · STATION GUILDS 001</span><a href="./review.html">STAFF REVIEW ↗</a></footer>
+</body></html>
