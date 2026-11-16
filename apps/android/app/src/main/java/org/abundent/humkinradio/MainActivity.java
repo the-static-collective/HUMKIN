@@ -233,7 +233,7 @@ public final class MainActivity extends Activity {
             redraw();
         });
         radioScreen.addView(warmStaticToggle,wrap(9));
-        TextView airNote=text("Only on Same-Time Radio · never on Road Shuffle or albums.",11,INK,false);
+        TextView airNote=text("Mandelbrot × φ air-weather · only on Same-Time Radio, never albums or Road Shuffle.",11,INK,false);
         airNote.setGravity(Gravity.START);
         radioScreen.addView(airNote,wrap(5));
 
@@ -648,8 +648,8 @@ public final class MainActivity extends Activity {
                 ? "Same-Time Radio · everybody catches the same approximate signal."
                 : "Road Shuffle · your own traveling collection, without the static.");
         warmStaticToggle.setText(warmStaticEnabled
-                ? "✳  ANALOG RADIO STATIC   /   ON"
-                : "○  ANALOG RADIO STATIC   /   OFF");
+                ? "✳  STATIC + SIGNAL DIPS   /   ON"
+                : "○  STATIC + SIGNAL DIPS   /   OFF");
         catchUp.setVisibility(radioMode ? View.VISIBLE : View.GONE);
         reload.setVisibility(radioMode ? View.GONE : View.VISIBLE);
 
