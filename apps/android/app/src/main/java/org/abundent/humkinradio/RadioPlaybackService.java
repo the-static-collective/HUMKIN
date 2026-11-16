@@ -141,7 +141,7 @@ public final class RadioPlaybackService extends MediaSessionService {
             JSONArray before = new JSONArray(old);
             JSONArray after = new JSONArray();
             after.put(entry);
-            for (int i = 0; i < before.length() && after.length() < 12; i++) {
+            for (int i = 0; i < before.length() && after.length() < 50; i++) {
                 JSONObject row = before.optJSONObject(i);
                 if (row != null && !item.mediaId.equals(row.optString("id")))
                     after.put(row);
