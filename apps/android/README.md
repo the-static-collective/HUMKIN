@@ -23,6 +23,11 @@ and the exact installer error. Do not uninstall the original app prematurely.
 - **Just heard here:** last three completed/transited records, read from a
   private, device-only recent-history list. Lock-screen transitions are
   recorded by the playback service; no listener log is uploaded.
+- **Road Shuffle freshness:** local last-hour play times move recently heard
+  songs to the back of each newly shuffled lineup, while preserving the
+  randomness of never/recently-unheard songs. Release eras stay mixed. When
+  the available catalogue is exhausted, older plays come back first; this
+  cannot promise zero repeats in a small or incomplete catalogue.
 - **Share the dial:** invokes Android's native share sheet, linking to
   the public station (no tracking/deep link).
 - **Request line:** opens the existing verified-status station switchboard
@@ -95,7 +100,10 @@ On device verify:
    phone pause, lock screen, audio focus interruption, buffering, mode changes,
    and **no hiss or dips** in Road Shuffle or album PLAY. Persist preference
    across app restarts.
-8. Verify on-deck is the actual next queue entry, recent records update
+8. Verify reshuffling Road Shuffle prefers records unheard in the last hour
+   while still mingling older and newer material; the browser stream's
+   fair-cycle implementation remains a separate code path.
+9. Verify on-deck is the actual next queue entry, recent records update
    after transitions (including during lock screen), and Share uses a native
    chooser. Open Request Line and confirm it reports switchboard status
    honestly; sending a note does not publish it.
