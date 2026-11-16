@@ -319,7 +319,7 @@ public final class MainActivity extends Activity {
                 }
             });
             titles.add("Reshuffle");
-            actions.add(() -> fetchRadio(true));
+            actions.add(() -> fetchRadio(true, false));
         }
         titles.add("Coming up");
         actions.add(() -> new AlertDialog.Builder(this)
@@ -682,7 +682,11 @@ public final class MainActivity extends Activity {
         return times;
     }
 
-    private void fetchRadio(boolean force){
+    private void fetchRadio(boolean force) {
+        fetchRadio(force, true);
+    }
+
+    private void fetchRadio(boolean force, boolean allowContinuity){
         if(controller==null||!loading.compareAndSet(false,true)){
             if(controller==null && status!=null)showMessage(status, "Connecting receiver…");
             return;
@@ -695,7 +699,7 @@ public final class MainActivity extends Activity {
                 RadioCatalog.Station loaded=RadioCatalog.loadStation();
                 PlaybackContinuity.Saved saved = PlaybackContinuity.read(
                         getSharedPreferences("humkin-radio", MODE_PRIVATE));
-                boolean resume = !requested && saved.canResumeShuffle(
+                boolean resume = !requested && allowContinuity && saved.canResumeShuffle(
                         System.currentTimeMillis());
                 List<MediaItem> shuffle = null;
                 long resumeMs = 0L;
