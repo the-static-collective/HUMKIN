@@ -19,6 +19,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.window.OnBackInvokedCallback;
 import android.window.OnBackInvokedDispatcher;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.session.MediaController;
@@ -45,6 +47,9 @@ public final class MainActivity extends Activity {
     private MediaController controller;
     private ListenableFuture<MediaController> controllerFuture;
     private TextView nowPlaying, status, modeNote, albumPlaying, albumState;
+    private TextView onDeck, recentlyHeard;
+    private String lastRenderedTrackId = "";
+
     private TextView tagline, albumHeading, playingHeading, playingArtist, featureHeading, featureArtist;
     private ImageView radioArt, featureArt;
     private LinearLayout firstAlbums, secondAlbums;
@@ -272,10 +277,53 @@ public final class MainActivity extends Activity {
         status = message(INK);
         radioScreen.addView(status, wrap(5));
 
+        // Station continuity: real upcoming playlist and private local history.
+        LinearLayout onAir = column();
+        onAir.setGravity(Gravity.START);
+        onAir.setPadding(dp(15), dp(13), dp(15), dp(13));
+        android.graphics.drawable.GradientDrawable panel =
+                HumkinVisuals.shape(this, 0xfffffdf6, 8);
+        panel.setStroke(dp(2), INK);
+        onAir.setBackground(panel);
+        TextView upLabel = text("COMING UP ON THE DIAL", 11, PLUM, true);
+        upLabel.setLetterSpacing(.09f);
+        upLabel.setGravity(Gravity.START);
+        onAir.addView(upLabel, wrap(0));
+        onDeck = text("Tune in to see what's next.", 16, INK, true);
+        onDeck.setGravity(Gravity.START);
+        onAir.addView(onDeck, wrap(5));
+        TextView heardLabel = text("JUST HEARD ON THIS DEVICE", 11, PLUM, true);
+        heardLabel.setLetterSpacing(.09f);
+        heardLabel.setGravity(Gravity.START);
+        onAir.addView(heardLabel, wrap(13));
+        recentlyHeard = text("The dial remembers.", 12, INK, false);
+        recentlyHeard.setGravity(Gravity.START);
+        onAir.addView(recentlyHeard, wrap(4));
+        radioScreen.addView(onAir, wrap(12));
+
         Button albums = HumkinVisuals.pill(this, "ALBUMS", Icon.ALBUMS, YELLOW, 29, true);
         albums.setMinHeight(dp(61));
         albums.setOnClickListener(v -> showAlbums(true));
         radioScreen.addView(albums, wrap(12));
+
+        Button share = pill("SHARE THE DIAL", null, MINT, 13);
+        share.setOnClickListener(v -> {
+            Intent sending = new Intent(Intent.ACTION_SEND);
+            sending.setType("text/plain");
+            sending.putExtra(Intent.EXTRA_TEXT,
+                    "You found us. HUMKIN RADIO — music for the long way home. "
+                            + "https://humkin.abundent.org/fm/");
+            startActivity(Intent.createChooser(sending, "Share HUMKIN RADIO"));
+        });
+        Button request = pill("REQUEST LINE ↗", null, PINK, 13);
+        request.setOnClickListener(v ->
+                visit("https://humkin.abundent.org/fm/line/"));
+        addPair(radioScreen, share, request, 11);
+        TextView lineNote = text(
+                "The station line page shows whether messages are open. "
+                + "Nothing goes straight on air.", 11, INK, false);
+        lineNote.setGravity(Gravity.START);
+        radioScreen.addView(lineNote, wrap(4));
 
         if (wideCards) {
             LinearLayout featured = row();
@@ -635,6 +683,29 @@ public final class MainActivity extends Activity {
         if(reload!=null)reload.setEnabled(!busy);
         if(catchUp!=null)catchUp.setEnabled(!busy);
     }
+    private void updateRecentRecords() {
+        try {
+            String stored = getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                    .getString("recent-records", "[]");
+            JSONArray rows = new JSONArray(stored);
+            StringBuilder lines = new StringBuilder();
+            for (int i = 0; i < Math.min(rows.length(), 3); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                if (row == null) continue;
+                if (lines.length() > 0) lines.append("\\n");
+                lines.append("✳ ").append(row.optString("title", "Unknown record"));
+                String artist = row.optString("artist", "");
+                if (!artist.isEmpty() && !"HUMKIN".equals(artist))
+                    lines.append(" — ").append(artist);
+            }
+            recentlyHeard.setText(lines.length() == 0
+                    ? "The dial remembers, once you've heard a few records."
+                    : lines.toString());
+        } catch (Exception ignored) {
+            recentlyHeard.setText("Recent records unavailable.");
+        }
+    }
+
     private void redraw() {
         if (tune == null) return;
         if (!modeStyled || sameTime.isSelected() != radioMode) {
@@ -664,6 +735,26 @@ public final class MainActivity extends Activity {
         }
 
         MediaItem item = ready ? controller.getCurrentMediaItem() : null;
+        String thisId = item == null ? "" : item.mediaId;
+        if (!lastRenderedTrackId.equals(thisId)) {
+            lastRenderedTrackId = thisId;
+            updateRecentRecords();
+        }
+        if (!ready) {
+            onDeck.setText("Tune in to see what's next.");
+        } else if ("album".equals(source)) {
+            onDeck.setText("Album playback · the radio dial is one tap away.");
+        } else {
+            int nextIndex = controller.getCurrentMediaItemIndex() + 1;
+            MediaItem upcoming = nextIndex < controller.getMediaItemCount()
+                    ? controller.getMediaItemAt(nextIndex) : null;
+            String nextTitle = upcoming == null || upcoming.mediaMetadata.title == null
+                    ? "Finding the next record…"
+                    : upcoming.mediaMetadata.title.toString();
+            onDeck.setText(nextTitle + (radioMode
+                    ? "  ·  approximate Same-Time rotation"
+                    : "  ·  your Road Shuffle queue"));
+        }
         boolean albumActive = item != null && "album".equals(source);
         boolean playing = item != null && controller.isPlaying();
         boolean loadingTrack = item != null && controller.getPlaybackState() == Player.STATE_BUFFERING;
