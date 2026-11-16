@@ -185,10 +185,41 @@ function renderRecords(id,rows){
    target.append(div);
  });
 }
+
+function renderBeacons(){
+ const list=$("request-list");if(!list)return;
+ list.replaceChildren();
+ const requests=state?.beacons||[];
+ $("request-date").textContent=state?.station_day||"TODAY";
+ $("request-total").textContent=number(state?.request_count)+" NOMINATIONS";
+ if(!requests.length){list.append(el("li","","Nobody's filed a song request yet. An unusually peaceful office."));return}
+ requests.forEach((song,i)=>{
+   const li=el("li","");
+   const title=el("div","request-name");
+   title.append(el("strong","",(i+1)+". "+song.title));
+   title.append(el("small","",song.featured?"RELEASED":"RADIO ONLY"));
+   li.append(title,el("span","request-qty",number(song.nominations)+" REQUEST"+(song.nominations===1?"":"S")));
+   list.append(li);
+ });
+}
+/** Android Outpost can hand off a scout-selected six-song roster to the
+ * public record builder. Nothing is submitted until the user presses Release. */
+function importedDraft(){
+ const params=new URLSearchParams(location.search);
+ const raw=params.get("draft");
+ if(!raw||raw.length>700)return null;
+ const ids=raw.split(",");
+ if(ids.length!==6||new Set(ids).size!==6||
+    ids.some(id=>!/^[-a-z0-9]{3,90}$/.test(id)))return null;
+ const tracks=ids.map(byId);
+ if(tracks.some(t=>!t))return null;
+ if(tracks.filter(t=>t.featured).length!==2)return null;
+ return ids;
+}
 function render(){
  $("daily-issue").textContent=state?.station_day||"TODAY";
  $("weekly-issue").textContent=state?.week_start||"THIS WEEK";
- renderChart();renderRecords("ep-standings",state?.eps||[]);
+ renderChart();renderBeacons();renderRecords("ep-standings",state?.eps||[]);
  renderRecords("album-standings",state?.albums||[]);
  renderDraft();renderCatalog();
 }
@@ -200,7 +231,19 @@ async function refresh(first=false){
    const data=await api(record&&/^[0-9a-f-]{36}$/i.test(record)?"?record="+encodeURIComponent(record):"");
    if(data.schema!=="humkin.top42/v1"||!Array.isArray(data.catalog))throw Error("Unknown scoreboard format");
    state=data;
-   if(!restored){draft=restoreDraft();restored=true;}
+   if(!restored){
+     draft=restoreDraft();
+     const imported=importedDraft();
+     if(imported){
+       kind="ep";draft=imported;
+       $("choose-ep").setAttribute("aria-pressed","true");
+       $("choose-album").setAttribute("aria-pressed","false");
+       saveDraft();
+       builderStatus("SCOUT-DESK EP LOADED · Review the tracks, choose a title and release when ready.");
+       document.getElementById("make")?.scrollIntoView({block:"start"});
+     }
+     restored=true;
+   }
    render();status("✳ LIVE BOARD · "+data.station_day+" · "+data.catalog.length+" ON THE DIAL");
    if(first&&data.selected){playRecord(data.selected,false);$("playbar").scrollIntoView({block:"end"});}
  }catch(e){
