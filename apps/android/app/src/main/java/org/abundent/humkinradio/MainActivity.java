@@ -62,6 +62,8 @@ public final class MainActivity extends Activity {
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;
     private boolean alive,radioMode=true,onAlbums=false;
+    private boolean tuneWhenReady;
+    private HumkinVisuals.HumkinWaveform radioWaveform, albumWaveform;
     private String source="none"; // radio | shuffle | album | none
     private String currentAlbum="";
 
@@ -250,7 +252,7 @@ public final class MainActivity extends Activity {
         playingHeading = consoleHeading(labels, "NOW PLAYING");
         nowPlaying = consoleTitle(labels, "Ready to tune in", wideCards ? 26 : 21);
         playingArtist = consoleSubtitle(labels);
-        addWaveform(labels);
+        radioWaveform = addWaveform(labels);
         radioScreen.addView(player, wrap(12));
 
         tune = pill("TUNE IN", Icon.PLAY, YELLOW, 26);
@@ -373,7 +375,7 @@ public final class MainActivity extends Activity {
         featureHeading = consoleHeading(labels, "FEATURED ALBUM");
         albumPlaying = consoleTitle(labels, "MUTANT POP", 23);
         featureArtist = consoleSubtitle(labels);
-        addWaveform(labels);
+        albumWaveform = addWaveform(labels);
         feature.setFocusable(true);
         feature.setContentDescription("Play featured album, MUTANT POP");
         feature.setOnClickListener(v -> playAlbum(AlbumCatalog.MUTANT_POP));
@@ -517,10 +519,12 @@ public final class MainActivity extends Activity {
         return label;
     }
 
-    private void addWaveform(LinearLayout labels) {
+    private HumkinVisuals.HumkinWaveform addWaveform(LinearLayout labels) {
         LinearLayout.LayoutParams line = new LinearLayout.LayoutParams(-1, dp(22));
         line.topMargin = dp(7);
-        labels.addView(HumkinVisuals.waveform(this), line);
+        HumkinVisuals.HumkinWaveform waveform = HumkinVisuals.waveform(this);
+        labels.addView(waveform, line);
+        return waveform;
     }
 
     private TextView message(int color) {
@@ -564,8 +568,21 @@ public final class MainActivity extends Activity {
     }
 
     private void changeMode(boolean radio){
-        radioMode=radio;
+        radioMode = radio;
         showAlbums(false);
+        // A station button is also a PLAY button. If the media session
+        // is still connecting, preserve that intent for the onStart callback.
+        if (controller == null) {
+            tuneWhenReady = true;
+            if (status != null) showMessage(status, "Connecting the receiver…");
+            return;
+        }
+        tuneWhenReady = false;
+        String expected = radio ? "radio" : "shuffle";
+        // Repeated taps on an already-playing dial must never restart a song.
+        if (expected.equals(source) && controller.isPlaying()) return;
+        // For a paused Same-Time dial, tune to current air instead of resuming
+        // an outdated position. Road Shuffle gets its own fresh queue.
         fetchRadio(true);
     }
     private void visit(String url) {
@@ -590,12 +607,16 @@ public final class MainActivity extends Activity {
                     if(id.startsWith("album:"))source="album";
                     else source=radioMode?"radio":"shuffle";
                 }
-                redraw();
+                if (!alive) return;
+                if (tuneWhenReady) changeMode(radioMode);
+                else redraw();
             }catch(Exception e){showMessage(status, "Couldn't connect to the receiver.");}
         },this::runOnUiThread);
     }
     @Override public void onStop(){
         alive=false;
+        if (radioWaveform != null) radioWaveform.setActive(false);
+        if (albumWaveform != null) albumWaveform.setActive(false);
         if(controller!=null){controller.removeListener(listener);controller=null;}
         if(controllerFuture!=null){
             MediaController.releaseFuture(controllerFuture);controllerFuture=null;
@@ -605,7 +626,11 @@ public final class MainActivity extends Activity {
     @Override public void onDestroy(){worker.shutdownNow();super.onDestroy();}
 
     private void tuneIn(){
-        if(controller==null){showMessage(status, "Connecting. Try again.");return;}
+        if(controller==null){
+            tuneWhenReady = true;
+            showMessage(status, "Connecting the receiver…");
+            return;
+        }
         String expected=radioMode?"radio":"shuffle";
         if(controller.getMediaItemCount()==0 || !expected.equals(source)){
             fetchRadio(true);
@@ -779,6 +804,9 @@ public final class MainActivity extends Activity {
         }
         boolean albumActive = item != null && "album".equals(source);
         boolean playing = item != null && controller.isPlaying();
+        // Movement follows real player state, never decorative always-on loops.
+        radioWaveform.setActive(!onAlbums && playing && !albumActive);
+        albumWaveform.setActive(onAlbums && albumActive && playing);
         boolean loadingTrack = item != null && controller.getPlaybackState() == Player.STATE_BUFFERING;
         String name = item != null && item.mediaMetadata.title != null
                 ? item.mediaMetadata.title.toString() : "HUMKIN RADIO";
