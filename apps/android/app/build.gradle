@@ -12,6 +12,7 @@ android {
         targetSdk 36
         versionCode 7
         versionName '0.7.0'
+        resValue 'string', 'app_name', 'HUMKIN RADIO'
     }
 
     // An independent field-test install avoids Android's rejection when an older
@@ -23,9 +24,6 @@ android {
             applicationIdSuffix '.fieldtest'
             versionNameSuffix '-fieldtest'
             resValue 'string', 'app_name', 'HUMKIN RADIO FIELD TEST'
-        }
-        debug {
-            resValue 'string', 'app_name', 'HUMKIN RADIO'
         }
     }
 
