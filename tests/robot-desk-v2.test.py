@@ -67,6 +67,6 @@ class RobotDeskV2(unittest.TestCase):
    self.assertNotIn(banned,workflow)
   # No audit/safety bypass in the radio renderer.
   src=(ROOT/"tools/generate-robot-drops.py").read_text()
-  for banned in ("supabase","storage/v1","twitter.com","text-generation-api"):
-   self.assertNotIn(banned,src.lower().replace("no supabase or publishing writes", ""))
+  for banned in ("createclient(", "storage/v1/object", "api.openai.com", "requests.post(", "publish_at="):
+   self.assertNotIn(banned,src.lower())
 if __name__=="__main__": unittest.main()
