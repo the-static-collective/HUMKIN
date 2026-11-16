@@ -38,7 +38,7 @@ function drawQueue(){
    title.addEventListener("input",()=>{item.title=title.value});
    const kind=document.createElement("select");
    kind.setAttribute("aria-label","Recording category for "+item.file.name);
-   for(const [value,label] of [["song","SONG"],["bumper","STATION BUMPER"]]){
+   for(const [value,label] of [["song","RADIO-ONLY SONG"],["single","OFFICIAL SINGLE ✳"],["bumper","STATION BUMPER"]]){
      const option=document.createElement("option");option.value=value;option.textContent=label;
      kind.append(option);
    }
@@ -167,7 +167,7 @@ async function uploadFile(file,path,onProgress){
 }
 async function loadKnown(){
  const {data,error}=await db.from("humkin_radio_tracks")
-   .select("id,sha256,storage_path,title,kind,enabled,bytes,duration_seconds,published_at")
+   .select("id,sha256,storage_path,title,kind,is_single,enabled,bytes,duration_seconds,published_at")
    .order("created_at",{ascending:false}).limit(2000);
  if(error)throw error;
  known=data||[];
@@ -178,11 +178,11 @@ async function loadKnown(){
  }else for(const row of drafts){
    const li=document.createElement("li");
    const label=document.createElement("span");
-   label.textContent=(row.kind==="bumper"?"BUMPER · ":"SONG · ")+row.title+
+   label.textContent=(row.kind==="bumper"?"BUMPER · ":row.is_single?"SINGLE ✳ · ":"RADIO-ONLY SONG · ")+row.title+
      " · "+fmtTime(row.duration_seconds)+" · "+fmtBytes(row.bytes);
    const action=document.createElement("button");
    action.type="button";action.className="accent";
-   action.textContent=row.kind==="bumper"?"REVIEW + AIR THIS BUMPER":"REVIEW + AIR THIS SONG";
+   action.textContent=row.kind==="bumper"?"REVIEW + AIR THIS BUMPER":row.is_single?"REVIEW + AIR THIS SINGLE":"REVIEW + AIR THIS SONG";
    action.addEventListener("click",()=>publishOne(row));
    li.append(label,action);$("draft-list").append(li);
  }
@@ -226,11 +226,11 @@ async function stage(){
        }
        const record={uploaded_by:user.id,sha256:sha,storage_path:path,original_name:item.file.name,
          title:(item.title.trim().slice(0,120)||titleFromName(item.file.name)),
-         artist:"HUMKIN",album:"HUMKIN RADIO · INBOX",
+         artist:"HUMKIN",album:item.kind==="single"?"HUMKIN RADIO · Singles":"HUMKIN RADIO · INBOX",
          kind:item.kind==="bumper"?"bumper":"song",
-         enabled:item.kind!=="bumper",
+         is_single:item.kind==="single",enabled:item.kind!=="bumper",
          duration_seconds:item.duration,bytes:mp3.size};
-       const {data,error}=await db.from("humkin_radio_tracks").insert(record).select("id,sha256,storage_path,title,kind,enabled,bytes,duration_seconds,published_at").single();
+       const {data,error}=await db.from("humkin_radio_tracks").insert(record).select("id,sha256,storage_path,title,kind,is_single,enabled,bytes,duration_seconds,published_at").single();
        if(error){
          if(error.code==="23505"){skipped++;item.status="DUPLICATE";drawQueue();continue}
          throw error;
@@ -251,7 +251,7 @@ async function publish(){
  try{await ensureSession();await loadKnown()}catch(err){feedback(err.message);return}
  const songDrafts=drafts.filter(row=>row.kind!=="bumper");
  if(!songDrafts.length)return;
- if(!confirm("Approve and publish all "+songDrafts.length+" SONG draft(s)? Bumpers require individual review."))return;
+ if(!confirm("Approve and publish all "+songDrafts.length+" SONG/SINGLE draft(s)? Single designations are retained. Bumpers require individual review."))return;
  setBusy(true);let live=0,failed=0;
  try{
    for(const row of songDrafts){
@@ -283,7 +283,7 @@ async function publishOne(selectedRow){
  const isBumper=row.kind==="bumper";
  const claim=isBumper
   ?"Approve this exact bumper for public between-song rotation? Confirm content, voice rights, and any references to time, weather, or requests are appropriate. Longer spots may play in the ordinary bumper lottery."
-  :"Approve this exact song for public rotation? Confirm you own or have permission to air the recording.";
+  :"Approve this exact "+(row.is_single?"OFFICIAL SINGLE (featured at 2× base rotation)":"radio-only song")+" for public rotation? Confirm you own or have permission to air the recording.";
  if(!confirm(claim+"\n\n"+row.title))return;
  setBusy(true);
  try{
