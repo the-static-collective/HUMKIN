@@ -22,7 +22,7 @@ final class SignalMath {
     static int upgradeCost(int module,int currentLevel) {
         int base=module==0?35:module==1?45:60;
         int cost=base;
-        for(int i=1;i<currentLevel;i++)cost=Math.min(999_999,(int)Math.ceil(cost*1.8));
+        for(int i=0;i<currentLevel;i++)cost=Math.min(999_999,(int)Math.ceil(cost*1.8));
         return cost;
     }
     static int cacheCapacity(int tower,int crew) {
