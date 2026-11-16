@@ -11,12 +11,14 @@ import datetime as dt
 import hashlib
 import html
 import json
+import os
 from pathlib import Path
 import random
 import re
 import shutil
 import subprocess
 import tempfile
+from urllib.request import Request, urlopen
 
 # Editorial taxonomy is *not* an age, community, belief or demographic score.
 # "plain" is universal hospitality and daily work; humor gets stranger gradually.
@@ -113,9 +115,42 @@ def public_inventory():
     except (OSError, ValueError, TypeError):
         return []
 
-def select_scripts(seed, count, level, inventory):
+
+# A published joke seed is not a broadcast cart. This endpoint exposes only
+# APPROVED seed text under RLS; never use a service_role key in GitHub Actions.
+APPROVED_URL=("https://kbhqacsdvjsstzyplqij.supabase.co/rest/v1/"
+ "humkin_radio_script_seeds?select=slug,script,level,family,role"
+ "&status=eq.approved&order=updated_at.desc&limit=200")
+def approved_seeds(fetch_url=APPROVED_URL, key=None):
+    key=key or os.environ.get("HUMKIN_SEEDS_PUBLIC_KEY")
+    if not key:
+        raise ValueError("Missing public read-only Supabase publishable key")
+    req=Request(fetch_url,headers={"apikey":key,"Accept":"application/json"})
+    with urlopen(req,timeout=10) as response:
+        rows=json.load(response)
+    if not isinstance(rows,list) or len(rows)>200:
+        raise ValueError("Malformed approved joke seed response")
+    result,seen=[],set()
+    for row in rows:
+        if not isinstance(row,dict):raise ValueError("Unexpected approved joke seed")
+        slug,script,level,family,role=(row.get(n) for n in
+            ("slug","script","level","family","role"))
+        if not (isinstance(slug,str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,68}[a-z0-9]",slug)
+          and isinstance(script,str) and 8<=len(script.strip())<=195
+          and not any(x in script for x in ("\r","\n","\x00"))
+          and level in LEVELS and isinstance(family,str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,48}",family)
+          and role in ("station_id","character") and slug not in seen):
+            raise ValueError("Invalid or duplicate approved seed metadata")
+        seen.add(slug);result.append((slug,script,level,family,role))
+    return result
+
+def select_scripts(seed, count, level, inventory, approved=None):
     r = random.Random(int.from_bytes(hashlib.sha256(seed.encode()).digest()[:8],"big"))
-    pool = BANK + (public_inventory() if inventory else [])
+    merged={row[0]:row for row in BANK + (public_inventory() if inventory else [])}
+    # Owner-approved revisions replace built-ins with the same slug; private
+    # drafts and retired entries are never available to this script.
+    for row in approved or []:merged[row[0]]=row
+    pool=list(merged.values())
     if level != "mix":
         pool = [x for x in pool if x[2] == level]
         if count > len(pool): raise ValueError("Not enough scripts for this humor level")
@@ -173,20 +208,27 @@ def main():
     p.add_argument("--finish",choices=("mix",)+FINISHES,default="mix")
     p.add_argument("--compare",action="store_true",help="Add 3x3 generator/finish A/B of one timeless joke")
     p.add_argument("--no-inventory",action="store_true",help="Only evergreen scripts")
+    p.add_argument("--cloud-approved",action="store_true",
+        help="Load only explicitly approved owner seed text from the public read-only RLS endpoint")
     a=p.parse_args()
-    if not (1<=a.count<=len(BANK)+2):p.error("Count must be between 1 and script bank size")
+    if not (1<=a.count<=200):p.error("Count must be between 1 and 200")
     if not all(shutil.which(x) for x in ("ffmpeg","ffprobe")):p.error("ffmpeg and ffprobe required")
     try: engines=available_engines(a.engines)
     except ValueError as e:p.error(str(e))
     seed=a.seed or dt.datetime.now(dt.timezone.utc).strftime("%G-W%V")
-    try: chosen=select_scripts(seed,a.count,a.absurdity,not a.no_inventory)
-    except ValueError as e:p.error(str(e))
+    try:
+        approved=approved_seeds() if a.cloud_approved else []
+        chosen=select_scripts(seed,a.count,a.absurdity,not a.no_inventory,approved)
+    except (ValueError,OSError) as e:
+        p.error("Could not read the approved seed catalog: "+str(e))
     out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
     manifest={"schema":"humkin.radio.robot-drops/v2","seed":seed,
       "status":"DRAFT / HUMAN REVIEW / NOT ON AIR","engines":engines,
       "finishes":list(FINISHES),"humor_levels":list(LEVELS),
       "editorial_notes":"Comedy about universal human foibles, not at the expense of a faith, ethnicity, age or community.",
-      "signal_notes":"No radio static baked in. No radio, Supabase or publishing writes.","items":[]}
+      "signal_notes":"No static baked in. Approved seed TEXT read only. No cloud writes or broadcasting.",
+      "approved_script_count":len(approved),"approved_script_ids":[row[0] for row in approved],
+      "items":[]}
     def render(script_tuple,engine,finish,number,group):
         slug,script,level,family,role=script_tuple
         safe_seed=re.sub(r"[^a-zA-Z0-9_-]+","-",seed)[:48] or "batch"
