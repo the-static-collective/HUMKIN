@@ -26,7 +26,7 @@ final class SignalRpg {
         final int uniqueToday,dailyClaims;
         final boolean chartVisited,missionActive,onAir;
         final int missionId,missionProgress,missionTarget;
-        final String day,rank,chapter;
+        final String day,rank,chapter,journal;
         Snapshot(SharedPreferences p) {
             xp=p.getInt("xp",0);
             level=SignalMath.levelFor(xp);
@@ -55,6 +55,7 @@ final class SignalRpg {
             day=p.getString("day", "");
             rank=SignalMath.rank(level);
             chapter=SignalMath.chapter(level);
+            journal=p.getString("station_journal","No reports filed yet. Suspicious.");
         }
         boolean missionReady() {
             return missionActive && missionTarget>0 && missionProgress>=missionTarget;
@@ -101,6 +102,17 @@ final class SignalRpg {
         return new Snapshot(p);
     }
 
+    /** Local-only procedural station lore, not a claim about real-world events.
+     * Only the eight newest entries remain; nothing enters the radio charts. */
+    private static void log(SharedPreferences.Editor edit,SharedPreferences p,String event) {
+        String clean=event.replace('\n',' ').replace('\r',' ');
+        if(clean.length()>130)clean=clean.substring(0,130)+"…";
+        String before=p.getString("station_journal","");
+        String next="✳ "+clean+(before.isEmpty()?"":"\n\n"+before);
+        if(next.length()>1100)next=next.substring(0,1100);
+        edit.putString("station_journal",next);
+    }
+
     /** The service batches real playback deltas; max one 15s batch. */
     static synchronized void audible(Context c,long deltaMs) {
         if(deltaMs<=0)return;
@@ -125,11 +137,15 @@ final class SignalRpg {
             .putInt("capacitor",cache);
         if(p.getBoolean("mission_active",false))
             edit.putLong("mission_ms",p.getLong("mission_ms",0L)+bounded);
+        int wasLevel=SignalMath.levelFor(p.getInt("xp",0));
+        int nowLevel=SignalMath.levelFor(experience);
+        if(nowLevel>wasLevel)log(edit,p,"THE COMMITTEE promoted you to "+SignalMath.rank(nowLevel)+
+                ". The committee does not exist.");
         edit.apply();
     }
 
     /** A track is discovered only after >=30 seconds of its audible playback. */
-    static synchronized void qualifiedTrack(Context c,String id) {
+    static synchronized void qualifiedTrack(Context c,String id,String title) {
         if(id==null || !id.matches("[A-Za-z0-9:_-]{3,110}"))return;
         SharedPreferences p=store(c);
         rollDay(p);
@@ -152,6 +168,14 @@ final class SignalRpg {
                     p.getInt("capacitor",0)+10));
             // Avoid unbounded local metadata (up to first 900 unique recordings).
             if(lifetime.size()<=900)edit.putStringSet("archive_tracks",lifetime);
+            String name=title==null||title.trim().isEmpty()?"an unknown recording":title.trim();
+            if(name.length()>54)name=name.substring(0,54)+"…";
+            String[] dispatch={
+                "ARCHIVE REPORT: '"+name+"' recovered. Nobody remembers losing it.",
+                "UNIDENTIFIED RECORD: '"+name+"'. Apparently we're keeping it.",
+                "The night clerk discovered '"+name+"' behind the good records."
+            };
+            log(edit,p,dispatch[Math.floorMod(id.hashCode(),dispatch.length)]);
         }
         if(p.getBoolean("mission_active",false)&&p.getInt("mission_id",-1)==1
                 &&mission.add(id))edit.putStringSet("mission_tracks",mission);
@@ -162,9 +186,14 @@ final class SignalRpg {
     static synchronized int collect(Context c) {
         SharedPreferences p=store(c);
         int saved=p.getInt("capacitor",0);
-        if(saved>0)p.edit()
-            .putInt("wallet",Math.min(1_000_000_000,p.getInt("wallet",0)+saved))
-            .putInt("capacitor",0).apply();
+        if(saved>0){
+            SharedPreferences.Editor e=p.edit()
+                .putInt("wallet",Math.min(1_000_000_000,p.getInt("wallet",0)+saved))
+                .putInt("capacitor",0);
+            if(saved>=40)log(e,p,"The capacitor yielded "+saved+
+                " signal. Accounting has been informed, against its wishes.");
+            e.apply();
+        }
         return saved;
     }
 
@@ -178,7 +207,12 @@ final class SignalRpg {
         int cost=SignalMath.upgradeCost(module,level);
         int wallet=p.getInt("wallet",0);
         if(wallet<cost)return false;
-        p.edit().putInt("wallet",wallet-cost).putInt(key,level+1).apply();
+        SharedPreferences.Editor edit=p.edit().putInt("wallet",wallet-cost)
+                .putInt(key,level+1);
+        String[] modules={"ANTENNA","TAPE ARCHIVE","NIGHT CREW"};
+        log(edit,p,modules[module]+" raised to level "+(level+1)+
+                ". The old equipment has been promoted to furniture.");
+        edit.apply();
         return true;
     }
 
@@ -200,15 +234,17 @@ final class SignalRpg {
         SharedPreferences p=store(c);
         Snapshot s=new Snapshot(p);
         if(!s.missionReady())return false;
-        p.edit()
+        SharedPreferences.Editor missionEdit=p.edit()
             .putInt("wallet",p.getInt("wallet",0)+SignalMath.missionReward(s.missionId))
             .putInt("xp",p.getInt("xp",0)+SignalMath.missionXp(s.missionId))
             .putInt("missions_completed",p.getInt("missions_completed",0)+1)
             .putBoolean("mission_active",false)
             .putInt("mission_id",-1)
             .putLong("mission_ms",0L)
-            .putStringSet("mission_tracks",new HashSet<>())
-            .apply();
+            .putStringSet("mission_tracks",new HashSet<>());
+        log(missionEdit,p,"The expedition returned with "+SignalMath.missionReward(s.missionId)+
+                " signal. Crew refuses to say where they got it.");
+        missionEdit.apply();
         return true;
     }
 
