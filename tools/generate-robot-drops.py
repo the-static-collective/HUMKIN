@@ -11,12 +11,14 @@ import datetime as dt
 import hashlib
 import html
 import json
+import os
 from pathlib import Path
 import random
 import re
 import shutil
 import subprocess
 import tempfile
+from urllib.request import Request, urlopen
 
 # Editorial taxonomy is *not* an age, community, belief or demographic score.
 # "plain" is universal hospitality and daily work; humor gets stranger gradually.
@@ -27,44 +29,16 @@ ENGINES = ("espeak", "flite", "festival")
 # slug / spoken original line / absurdity / family / station role.
 # Deliberately intelligible across generations: bread, neighbors, chairs,
 # cows, weather, belonging, work and gentle human contradictions.
-BANK = [
- ("neighbor-soup","A neighbor brought soup. We have been promoted to friends.","plain","neighbors","character"),
- ("bread-box","The key was in the bread box. Again. Everything is all right.","plain","kitchen","station_id"),
- ("three-brooms","We own three brooms. Not one of them has swept the floor.","plain","chores","character"),
- ("last-pancake","Nobody wanted the last pancake. So it stayed for breakfast.","plain","kitchen","character"),
- ("rooster-sleep","The rooster started early. The hens voted to sleep in.","plain","farm","character"),
- ("extra-chair","HUMKIN RADIO. There's an extra chair at the table. Pull it up.","plain","neighbors","station_id"),
- ("good-wood","The wood was wet. The fire took its time. So did we.","plain","hearth","station_id"),
- ("one-more-song","The kettle has boiled. The work can wait one more song.","plain","kitchen","station_id"),
- ("quiet-gift","Someone left the porch light on. Nobody asked who.","plain","neighbors","character"),
- ("proper-hat","The hat was upside down. We wore it anyway.","wry","clothing","character"),
- ("committee-broom","The committee on sweeping has agreed to meet after the sweeping.","wry","chores","character"),
- ("hay-meeting","A meeting was held in the hayloft. The hay was absent.","wry","farm","character"),
- ("goose-refused","We asked the goose for directions. It has declined to comment.","wry","farm","character"),
- ("two-mugs","HUMKIN RADIO. Two mugs, one kettle, and a very long argument over who asked first.","wry","kitchen","station_id"),
- ("chair-vote","The chairs voted on whether to move. The motion did not carry.","wry","furniture","character"),
- ("ladder-report","The ladder has been inspected. The inspector is still up there.","wry","chores","character"),
- ("cake-judges","We held a contest for the best cake. The judges ate the results.","wry","kitchen","character"),
- ("counting-eggs","The eggs have been counted twice. The hens disagree.","wry","farm","character"),
- ("cow-apology","The cow issued a formal apology. Nobody remembers what for.","strange","farm","character"),
- ("wooden-spoon","The wooden spoon has resigned from the soup. It would like to stir elsewhere.","strange","kitchen","character"),
- ("barn-visitor","The barn has asked to be treated as a guest. It has always lived here.","strange","farm","character"),
- ("chair-needs-chair","The chair has requested a chair to sit on. We are considering it.","strange","furniture","character"),
- ("lost-tuesday","We found the missing day behind a sack of flour. It was still fresh.","strange","kitchen","character"),
- ("boots-union","HUMKIN RADIO. The boots have formed a union. They refuse to walk alone.","strange","clothing","station_id"),
- ("quiet-committee","The committee on silence has made an announcement. It was well received.","strange","records","character"),
- ("supper-clock","The supper bell rang at breakfast. Everybody came anyway.","strange","kitchen","character"),
- ("fence-argument","The fence has taken both sides of an argument. This is normal for a fence.","strange","farm","character"),
- ("moon-invoice","The moon sent the barn a bill for light. The barn requested a candle.","cosmic","farm","character"),
- ("wind-hat","The wind has resigned. The hats have never been happier.","cosmic","clothing","character"),
- ("future-bread","Tomorrow came by looking for bread. We told it to come back yesterday.","cosmic","kitchen","character"),
- ("north-south","The north wind and the south wind shook hands. The house fell quiet.","cosmic","hearth","character"),
- ("patient-mountain","HUMKIN RADIO. The mountain has been waiting for us. It says there is no hurry.","cosmic","earth","station_id"),
- ("oldest-chair","This chair has witnessed a thousand dinners. It remembers the pie.","cosmic","furniture","character"),
- ("universe-chores","The universe asked what we were making. We said supper. It stayed.","cosmic","kitchen","character"),
- ("stars-garden","The stars planted a garden in the dark. The weeds look magnificent.","cosmic","earth","character"),
- ("kingdom-soup","The king asked for riches. The cook brought soup. Nobody complained.","cosmic","kitchen","character"),
-]
+# Built-ins are readable by the Station Manager Seed Garden. Owner-approved cloud
+# revisions override matching slugs at generation time; drafts never do.
+BUILTIN_SEEDS_PATH = Path(__file__).resolve().parents[1] / "fm/studio/robot-seeds.json"
+def load_builtin_seeds():
+    data = json.loads(BUILTIN_SEEDS_PATH.read_text(encoding="utf-8"))
+    if data.get("schema") != "humkin.radio.robot-seeds/v1":
+        raise ValueError("Unrecognized built-in robot seed bank")
+    return [(x["slug"],x["script"],x["level"],x["family"],x["role"]) for x in data["seeds"]]
+BANK = load_builtin_seeds()
+
 assert len({x[0] for x in BANK}) == len(BANK), "Script slugs must be unique"
 
 def run(command, *, input_text=None):
@@ -141,9 +115,45 @@ def public_inventory():
     except (OSError, ValueError, TypeError):
         return []
 
-def select_scripts(seed, count, level, inventory):
+
+# A published joke seed is not a broadcast cart. This endpoint exposes only
+# APPROVED seed text under RLS; never use a service_role key in GitHub Actions.
+APPROVED_URL=("https://kbhqacsdvjsstzyplqij.supabase.co/rest/v1/"
+ "humkin_radio_script_seeds?select=slug,script,level,family,role,status"
+ "&status=in.(approved,retired)&order=updated_at.desc&limit=200")
+def approved_seeds(fetch_url=APPROVED_URL, key=None):
+    key=key or os.environ.get("HUMKIN_SEEDS_PUBLIC_KEY")
+    if not key:
+        raise ValueError("Missing public read-only Supabase publishable key")
+    req=Request(fetch_url,headers={"apikey":key,"Accept":"application/json"})
+    with urlopen(req,timeout=10) as response:
+        rows=json.load(response)
+    if not isinstance(rows,list) or len(rows)>200:
+        raise ValueError("Malformed approved joke seed response")
+    result,seen,retired=[],set(),set()
+    for row in rows:
+        if not isinstance(row,dict):raise ValueError("Unexpected approved joke seed")
+        slug,script,level,family,role,status=(row.get(n) for n in
+            ("slug","script","level","family","role","status"))
+        if not (isinstance(slug,str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,68}[a-z0-9]",slug)
+          and isinstance(script,str) and 8<=len(script.strip())<=195
+          and not any(x in script for x in ("\r","\n","\x00"))
+          and level in LEVELS and isinstance(family,str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,48}",family)
+          and role in ("station_id","character") and status in ("approved","retired") and slug not in seen):
+            raise ValueError("Invalid or duplicate approved seed metadata")
+        seen.add(slug)
+        if status=="retired":retired.add(slug)
+        else:result.append((slug,script,level,family,role))
+    return result,retired
+
+def select_scripts(seed, count, level, inventory, approved=None, retired=None):
     r = random.Random(int.from_bytes(hashlib.sha256(seed.encode()).digest()[:8],"big"))
-    pool = BANK + (public_inventory() if inventory else [])
+    merged={row[0]:row for row in BANK + (public_inventory() if inventory else [])}
+    # Owner-approved revisions replace built-ins with the same slug; private
+    # drafts and retired entries are never available to this script.
+    for row in approved or []:merged[row[0]]=row
+    for slug in retired or set():merged.pop(slug,None)
+    pool=list(merged.values())
     if level != "mix":
         pool = [x for x in pool if x[2] == level]
         if count > len(pool): raise ValueError("Not enough scripts for this humor level")
@@ -201,20 +211,28 @@ def main():
     p.add_argument("--finish",choices=("mix",)+FINISHES,default="mix")
     p.add_argument("--compare",action="store_true",help="Add 3x3 generator/finish A/B of one timeless joke")
     p.add_argument("--no-inventory",action="store_true",help="Only evergreen scripts")
+    p.add_argument("--cloud-approved",action="store_true",
+        help="Load only explicitly approved owner seed text from the public read-only RLS endpoint")
     a=p.parse_args()
-    if not (1<=a.count<=len(BANK)+2):p.error("Count must be between 1 and script bank size")
+    if not (1<=a.count<=200):p.error("Count must be between 1 and 200")
     if not all(shutil.which(x) for x in ("ffmpeg","ffprobe")):p.error("ffmpeg and ffprobe required")
     try: engines=available_engines(a.engines)
     except ValueError as e:p.error(str(e))
     seed=a.seed or dt.datetime.now(dt.timezone.utc).strftime("%G-W%V")
-    try: chosen=select_scripts(seed,a.count,a.absurdity,not a.no_inventory)
-    except ValueError as e:p.error(str(e))
+    try:
+        approved,retired=approved_seeds() if a.cloud_approved else ([],set())
+        chosen=select_scripts(seed,a.count,a.absurdity,not a.no_inventory,approved,retired)
+    except (ValueError,OSError) as e:
+        p.error("Could not read the approved seed catalog: "+str(e))
     out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
     manifest={"schema":"humkin.radio.robot-drops/v2","seed":seed,
       "status":"DRAFT / HUMAN REVIEW / NOT ON AIR","engines":engines,
       "finishes":list(FINISHES),"humor_levels":list(LEVELS),
       "editorial_notes":"Comedy about universal human foibles, not at the expense of a faith, ethnicity, age or community.",
-      "signal_notes":"No radio static baked in. No radio, Supabase or publishing writes.","items":[]}
+      "signal_notes":"No static baked in. Approved seed TEXT read only. No cloud writes or broadcasting.",
+      "approved_script_count":len(approved),"approved_script_ids":[row[0] for row in approved],
+      "retired_script_ids":sorted(retired),
+      "items":[]}
     def render(script_tuple,engine,finish,number,group):
         slug,script,level,family,role=script_tuple
         safe_seed=re.sub(r"[^a-zA-Z0-9_-]+","-",seed)[:48] or "batch"
@@ -236,7 +254,7 @@ def main():
     if a.compare:
         # The same *evergreen* script through all available voices and finishes.
         # This is an honest apples-to-apples sonic A/B, not more random jokes.
-        common=next(x for x in BANK if x[0]=="extra-chair")
+        common=next((x for x in approved+chosen if x[0]=="extra-chair"),chosen[0])
         for engine in engines:
             for finish in FINISHES:
                 render(common,engine,finish,len(manifest["items"])+1,"comparison")

@@ -52,6 +52,7 @@ jobs:
           sudo apt-get install -y espeak flite festival ffmpeg
       - name: Render weekly variety or an owner-directed experimental batch
         env:
+          HUMKIN_SEEDS_PUBLIC_KEY: sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o
           ROBOT_COUNT: ${{ github.event_name == 'workflow_dispatch' && inputs.count || '12' }}
           ROBOT_ABSURDITY: ${{ github.event_name == 'workflow_dispatch' && inputs.absurdity || 'mix' }}
           ROBOT_FINISH: ${{ github.event_name == 'workflow_dispatch' && inputs.finish || 'mix' }}
@@ -64,7 +65,7 @@ jobs:
           if [[ "$ROBOT_COMPARE" == "true" ]]; then flags+=(--compare); fi
           python3 tools/generate-robot-drops.py --seed "$(date -u +%G-W%V)-${{ github.run_id }}" \
             --count "$ROBOT_COUNT" --engines "$engines" \
-            --absurdity "$ROBOT_ABSURDITY" --finish "$ROBOT_FINISH" \
+            --absurdity "$ROBOT_ABSURDITY" --finish "$ROBOT_FINISH" --cloud-approved \
             "${flags[@]}" --out robot-auditions
           python3 - <<'PY'
           import json, os
