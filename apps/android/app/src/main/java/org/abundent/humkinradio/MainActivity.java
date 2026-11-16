@@ -154,10 +154,14 @@ public final class MainActivity extends Activity {
         tagline.setPadding(dp(inset),dp(8),dp(inset),0);
         tagline.setGravity(Gravity.START);
         outer.addView(tagline, wrap(0));
-        ImageView underline = HumkinVisuals.illustration(this, R.drawable.paper_underline);
-        LinearLayout.LayoutParams mark = new LinearLayout.LayoutParams(dp(205), dp(11));
-        mark.topMargin = dp(5);
-        outer.addView(underline, mark);
+        // The paper collage was a reference mockup, not canonical album art.
+        // Use a native color rule instead of packaging that concept art.
+        View rule = new View(this);
+        rule.setBackground(HumkinVisuals.shape(this, PINK, 2));
+        LinearLayout.LayoutParams mark = new LinearLayout.LayoutParams(dp(205), dp(3));
+        mark.topMargin = dp(12);
+        mark.leftMargin = dp(inset);
+        outer.addView(rule, mark);
 
         radioScreen = column();
         albumsScreen = column();
@@ -167,8 +171,7 @@ public final class MainActivity extends Activity {
         outer.addView(albumsScreen, wrap(12));
         buildRadio();
         buildAlbums();
-        outer.addView(HumkinVisuals.illustration(this, R.drawable.paper_skyline),
-                new LinearLayout.LayoutParams(-1, dp(Math.min(520, width) * 156 / 864)));
+        // No concept-art skyline: only published music/album artwork is canon.
         showAlbums(onAlbums);
         setContentView(scroll);
     }
@@ -247,7 +250,7 @@ public final class MainActivity extends Activity {
         radioScreen.addView(airNote,wrap(5));
 
         LinearLayout player = console();
-        radioArt = HumkinVisuals.art(this, R.drawable.paper_mutant);
+        radioArt = HumkinVisuals.art(this, R.drawable.ic_radio);
         LinearLayout labels = consoleLabels(player, radioArt, wideCards ? 109 : 80);
         playingHeading = consoleHeading(labels, "NOW PLAYING");
         nowPlaying = consoleTitle(labels, "Ready to tune in", wideCards ? 26 : 21);
@@ -361,16 +364,16 @@ public final class MainActivity extends Activity {
         albumsScreen.addView(back, wrap(9));
 
         firstAlbums = addAlbums(
-                albumCard(AlbumCatalog.MUTANT_POP, R.drawable.paper_mutant, "Bright, strange and familiar."),
-                albumCard(AlbumCatalog.EVERYWHERE, R.drawable.paper_everywhere, "Road songs for close and far away."));
+                albumCard(AlbumCatalog.MUTANT_POP, R.drawable.album_mutant_pop, "Bright, strange and familiar."),
+                albumCard(AlbumCatalog.EVERYWHERE, R.drawable.album_everywhere_near_you, "Road songs for close and far away."));
         secondAlbums = addAlbums(
-                shelfCard("Warmth", "Gentle tracks for softer days.", R.drawable.paper_warmth,
+                shelfCard("Warmth", "Gentle tracks for softer days.", R.drawable.ic_radio,
                         "ON AIR", Icon.RADIO, () -> changeMode(true)),
-                shelfCard("Singles", "New finds and one-offs.", R.drawable.paper_singles,
+                shelfCard("Singles", "New finds and one-offs.", R.drawable.ic_radio,
                         "SHUFFLE", Icon.SHUFFLE, () -> changeMode(false)));
 
         LinearLayout feature = console();
-        featureArt = HumkinVisuals.art(this, R.drawable.paper_mutant);
+        featureArt = HumkinVisuals.art(this, R.drawable.album_mutant_pop);
         LinearLayout labels = consoleLabels(feature, featureArt, wideCards ? 106 : 80);
         featureHeading = consoleHeading(labels, "FEATURED ALBUM");
         albumPlaying = consoleTitle(labels, "MUTANT POP", 23);
@@ -812,8 +815,9 @@ public final class MainActivity extends Activity {
                 ? item.mediaMetadata.title.toString() : "HUMKIN RADIO";
         String artist = item != null && item.mediaMetadata.artist != null
                 ? item.mediaMetadata.artist.toString() : "HUMKIN";
-        int artwork = item != null && item.mediaId.startsWith("album:" + AlbumCatalog.EVERYWHERE.id + ":")
-                ? R.drawable.paper_everywhere : R.drawable.paper_mutant;
+        // Website-published covers are bundled; unrecognized station-only
+        // records get the honest HUMKIN receiver icon, never mock album art.
+        int artwork = AlbumArtwork.forItem(item);
         playingHeading.setText(item == null ? "THE HUMKIN DIAL"
                 : playing ? "NOW PLAYING" : loadingTrack ? "TUNING IN" : "ON THE DIAL");
         nowPlaying.setText(item == null ? "Ready to tune in" : name);
@@ -826,7 +830,7 @@ public final class MainActivity extends Activity {
                 ? (playing ? "ALBUM PLAYING" : loadingTrack ? "OPENING ALBUM" : "ALBUM SELECTED")
                 : "FEATURED ALBUM");
         albumPlaying.setText(albumActive ? name : "MUTANT POP");
-        featureArt.setImageResource(albumActive ? artwork : R.drawable.paper_mutant);
+        featureArt.setImageResource(albumActive ? artwork : R.drawable.album_mutant_pop);
         featureArtist.setVisibility(albumActive ? View.VISIBLE : View.GONE);
         if (albumActive) {
             CharSequence albumTitle = item.mediaMetadata.albumTitle;
