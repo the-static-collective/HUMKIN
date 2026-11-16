@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import android.os.Looper;
 import android.os.SystemClock;
 import org.json.JSONArray;
@@ -50,6 +52,38 @@ public final class RadioPlaybackService extends MediaSessionService {
         checkpointScheduled = false;
         savePlaybackCheckpoint();
         updateCheckpointTimer();
+    };
+
+    private final ExecutorService leagueNetwork=Executors.newSingleThreadExecutor();
+    private final Handler leagueHandler=new Handler(Looper.getMainLooper());
+    private String leagueTrackId="";
+    private long leagueHeardMs=0L,leagueLastTick=0L;
+    private boolean leagueSent=false;
+    private final Runnable leagueTick=new Runnable(){
+        @Override public void run() {
+            long now=SystemClock.elapsedRealtime();
+            MediaItem current=player==null?null:player.getCurrentMediaItem();
+            String id=current==null?"":current.mediaId;
+            if (!id.equals(leagueTrackId)) {
+                leagueTrackId=id;leagueHeardMs=0L;leagueSent=false;
+            }
+            boolean playing=player!=null && player.isPlaying() &&
+                    player.getPlaybackState()==Player.STATE_READY &&
+                    (sameTimeStation!=null || roadShuffleStation!=null) &&
+                    !id.isEmpty()&&!id.startsWith("album:");
+            long delta=leagueLastTick>0L?Math.min(2500L,Math.max(0L,now-leagueLastTick)):0L;
+            leagueLastTick=now;
+            if(playing&&!leagueSent){
+                leagueHeardMs+=delta;
+                if(leagueHeardMs>=30000L){
+                    leagueSent=true;
+                    final String finished=id;
+                    leagueNetwork.execute(()->LeaguePlayReporter.report(
+                            getApplicationContext(),finished,leagueHeardMs/1000L));
+                }
+            }
+            leagueHandler.postDelayed(this,1000L);
+        }
     };
 
     static void armSameTime(RadioCatalog.Station station,long firstUnqueuedCycle) {
@@ -271,6 +305,7 @@ public final class RadioPlaybackService extends MediaSessionService {
                 if(state==Player.STATE_READY)consecutiveFailures=0;
             }
             @Override public void onMediaItemTransition(MediaItem item,int reason) {
+                leagueTrackId="";leagueHeardMs=0L;leagueSent=false;
                 if (previousRecord != null && item != null
                         && !previousRecord.mediaId.equals(item.mediaId))
                     rememberRecord(previousRecord);
@@ -287,6 +322,8 @@ public final class RadioPlaybackService extends MediaSessionService {
             }
         });
         session=new MediaSession.Builder(this,player).build();
+        leagueLastTick=SystemClock.elapsedRealtime();
+        leagueHandler.postDelayed(leagueTick,1000L);
     }
 
     @Override public MediaSession onGetSession(MediaSession.ControllerInfo info) {
@@ -294,6 +331,8 @@ public final class RadioPlaybackService extends MediaSessionService {
     }
 
     @Override public void onDestroy() {
+        leagueHandler.removeCallbacks(leagueTick);
+        leagueNetwork.shutdown();
         // Capture where the last record stopped before clearing mode state.
         savePlaybackCheckpoint();
         checkpointHandler.removeCallbacks(checkpointTick);
