@@ -31,9 +31,14 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Build debug receiver
-        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:testDebugUnitTest
+        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:testDebugUnitTest :app:testFieldTestUnitTest
       - uses: actions/upload-artifact@v4
         with:
           name: humkin-radio-android-debug
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-field-test
+          path: apps/android/app/build/outputs/apk/fieldTest/app-fieldTest.apk
           if-no-files-found: error
