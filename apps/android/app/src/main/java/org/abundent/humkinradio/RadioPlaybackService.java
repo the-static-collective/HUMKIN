@@ -97,7 +97,9 @@ public final class RadioPlaybackService extends MediaSessionService {
                 outpostTrackHeardMs+=delta;
                 if(!outpostTrackQualified && outpostTrackHeardMs>=30_000L){
                     outpostTrackQualified=true;
-                    SignalRpg.qualifiedTrack(getApplicationContext(),id);
+                    String title=current==null||current.mediaMetadata.title==null?
+                            id:current.mediaMetadata.title.toString();
+                    SignalRpg.qualifiedTrack(getApplicationContext(),id,title);
                 }
             }
             if(outpostUnbankedMs>=8_000L || (!audible && outpostUnbankedMs>0L))
