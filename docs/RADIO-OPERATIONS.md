@@ -178,3 +178,20 @@ When a listener explicitly TUNES IN or presses CATCH UP, the initial seek is upd
 The existing fixed 42% analogue atmosphere now has an independent, extremely gentle **sine-wave amplitude swell on the static bed**: 92 BPM divided into phrases of four beats (one rise/fall approximately every 2.61 seconds; depth ±11.5% of static, not of the music). Random pops/dips remain sparse and their interval selection is quantized to the nearest 92-BPM beat. The underlying music is still played directly by the media element, never captured or rewritten by a WebAudio MediaElement source; no original audio file is changed. The LFO runs inside the browser audio engine rather than from a JavaScript interval, though phone suspension can still stop the separate atmosphere.
 
 This update changes no station schedules, catalog records or uploaded MP3 files; deployment and CI confirm the scripts but **physical cross-device A/B timing still requires a listening test**.
+
+## November 16: Era jumble on the dial
+
+Same-Time Radio and Road Shuffle now interleave the early, middle, and recent
+thirds of the **station catalog**. Instead of rigid alternation, a seeded
+fair-queue introduces small variation and avoids extended runs from just one
+third. Every eligible song still plays once per complete shared-clock cycle,
+with the existing four-song cycle-seam protection. Road Shuffle retains the
+one-hour per-device repeat memory and does not add station texture.
+
+**Caveat:** This is an *arrival-order* proxy, not a claim about the actual
+recording or composition date. Static album entries precede cloud entries;
+cloud entries arrive sorted by published_at ascending. Many catalog songs
+were bulk-published together. The correct long-term upgrade is
+owner-confirmed original-recording dates or explicit 'early/middle/recent'
+editorial tags, especially for back-catalog songs uploaded on the same day.
+Do not infer real decades from publication timestamps.

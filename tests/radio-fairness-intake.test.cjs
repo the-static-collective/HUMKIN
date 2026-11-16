@@ -29,10 +29,27 @@ for(const n of [1,2,3,7,8,9,10,21,65,86,120]){
   prev=order;
  }
 }
+// A "classic hits and today" jumble: chronology is the station catalog
+// ordering (early website entries, then cloud records by publication date).
+// No song gets extra spins, and every short run bridges older/newer thirds.
+for(const n of [21,65,86,125]){
+ for(let round=0;round<90;round++){
+  const mixed=fair.mix(n,round,seededShuffle);
+  assert.equal(mixed.length,n);
+  assert.equal(new Set(mixed).size,n,"Era weaving must not duplicate records");
+  assert.deepEqual(mixed,fair.mix(n,round,seededShuffle),"Era order must be reproducible");
+  for(let i=0;i+9<=n;i+=9){
+   const block=mixed.slice(i,i+9);
+   assert(block.some(x=>x<Math.floor(n/3)),"Nine-song block lacks an older cut");
+   assert(block.some(x=>x>=Math.floor(2*n/3)),"Nine-song block lacks a newer cut");
+  }
+ }
+}
 const radio=fs.readFileSync("fm/radio.js","utf8");
 const listener=fs.readFileSync("fm/index.html","utf8");
 const sw=fs.readFileSync("sw.js","utf8");
 assert(radio.includes("HUMKIN_FAIR_ROTATION?.cycle"),"Fairness must be active in shared clock");
+assert(radio.includes("HUMKIN_FAIR_ROTATION?.mix"),"Road shuffle must interleave station eras");
 assert(listener.includes('src="./fair-rotation.js"'),"Fairness helper must load before radio.js");
 assert(sw.includes("./fm/fair-rotation.js"),"Offline shell must include fairness helper");
 assert(radio.includes("LIMITED DIAL"),"Cloud outages must disclose restricted catalog");
