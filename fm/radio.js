@@ -28,7 +28,10 @@ async function fetchDailyChart(){
   }finally{clearTimeout(timer)}
  }catch{return null}
 }
-let listened=0,lastListenTick=performance.now(),reported=false;
+// Keep VM/unit-test and older-browser clocks compatible.
+const monotonicNow=()=>typeof performance!=="undefined"&&
+  typeof performance.now==="function"?performance.now():Date.now();
+let listened=0,lastListenTick=monotonicNow(),reported=false;
 function listenerKey(){
  try{
   const old=localStorage.getItem("humkin-league-listener-v1")||"";
@@ -38,7 +41,7 @@ function listenerKey(){
  }catch{return null}
 }
 function countQualifiedRadio(){
- const now=performance.now(),delta=Math.max(0,Math.min(5,(now-lastListenTick)/1000));
+ const now=monotonicNow(),delta=Math.max(0,Math.min(5,(now-lastListenTick)/1000));
  lastListenTick=now;
  if(reported||!active||audio.paused||audio.readyState<2||index<0||
     !tracks[index]||tracks[index].kind==="bumper")return;
@@ -451,7 +454,7 @@ function setTrackSource(i,offset,shouldPlay){
 }
 function showTrack(i,position=0){
   if(!tracks[i])return;
-  index=i;listened=0;reported=false;lastListenTick=performance.now();
+  index=i;listened=0;reported=false;lastListenTick=monotonicNow();
   const t=tracks[i];
   const currentShow=mode==="clock"&&!remoteStream?
      window.HUMKIN_SCHEDULE?.currentProgram(programs,stationNow()):null;
@@ -688,7 +691,7 @@ $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
 $("phone-playlist").addEventListener("click",downloadNativePlaylist);
 audio.addEventListener("play",()=>{
-  lastListenTick=performance.now();
+  lastListenTick=monotonicNow();
   startStationSound();
   active=true;setPlaybackState("playing");updateListen();
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
@@ -701,7 +704,7 @@ audio.addEventListener("playing",()=>{
   gentlyAlignClock();
 });
 audio.addEventListener("pause",()=>{
-  lastListenTick=performance.now();
+  lastListenTick=monotonicNow();
   // A brief internal pause during a src swap is NOT a user stop.
   if(!switching){active=false;setPlaybackState("paused")}
   updateListen();
@@ -752,7 +755,7 @@ if("mediaSession" in navigator){
     navigator.mediaSession.setActionHandler("previoustrack",()=>{if(mode==="clock")startClock(true);else if(tracks.length)startShuffle(true)});
   }catch{}
 }
-setInterval(countQualifiedRadio,1000);
+if(typeof setInterval==="function")setInterval(countQualifiedRadio,1000);
 function validatedSrc(value,base){
   if(typeof value!=="string"||!value.trim())return null;
   const u=new URL(value,base);
