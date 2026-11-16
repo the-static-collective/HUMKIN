@@ -50,7 +50,8 @@ public final class MainActivity extends Activity {
     private LinearLayout firstAlbums, secondAlbums;
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
-    private Button tune,next,reload,sameTime,road,catchUp,albumNext;
+    private Button tune,next,reload,sameTime,road,catchUp,albumNext,warmStaticToggle;
+    private boolean warmStaticEnabled;
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;
     private boolean alive,radioMode=true,onAlbums=false;
@@ -71,6 +72,9 @@ public final class MainActivity extends Activity {
             currentAlbum=savedInstanceState.getString("currentAlbum","");
         }
         if (Build.VERSION.SDK_INT >= 33) albumsBack = () -> showAlbums(false);
+        warmStaticEnabled=getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                .getBoolean("analog-static",true);
+        RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
         buildScreen();
         if (Build.VERSION.SDK_INT >= 35) {
             WindowInsetsController bars = getWindow().getInsetsController();
@@ -126,20 +130,20 @@ public final class MainActivity extends Activity {
         FrameLayout page = new FrameLayout(this);
         scroll.addView(page);
         LinearLayout outer = column();
-        outer.setPadding(0, dp(10), 0, 0);
+        outer.setPadding(0, 0, 0, 0);
         page.addView(outer, new FrameLayout.LayoutParams(dp(Math.min(520, width)), -2,
                 Gravity.TOP | Gravity.CENTER_HORIZONTAL));
-        ImageView masthead = HumkinVisuals.illustration(this, R.drawable.paper_masthead);
-        masthead.setContentDescription("HUMKIN RADIO");
-        if (Build.VERSION.SDK_INT >= 28) masthead.setAccessibilityHeading(true);
-        outer.addView(masthead, new LinearLayout.LayoutParams(-1, dp(Math.min(450, width) * .15f)));
+        addWebHero(outer,width);
 
-        albumHeading = text("Albums", 26, INK, true);
-        HumkinVisuals.italic(albumHeading);
+        albumHeading = text("ALBUMS / THE RECORD SHELF", 24, INK, true);
+        albumHeading.setPadding(dp(inset),dp(12),dp(inset),0);
+        albumHeading.setGravity(Gravity.START);
         if (Build.VERSION.SDK_INT >= 28) albumHeading.setAccessibilityHeading(true);
         outer.addView(albumHeading, wrap(0));
         tagline = text("", 16, INK, false);
         HumkinVisuals.italic(tagline);
+        tagline.setPadding(dp(inset),dp(8),dp(inset),0);
+        tagline.setGravity(Gravity.START);
         outer.addView(tagline, wrap(0));
         ImageView underline = HumkinVisuals.illustration(this, R.drawable.paper_underline);
         LinearLayout.LayoutParams mark = new LinearLayout.LayoutParams(dp(205), dp(11));
@@ -160,7 +164,50 @@ public final class MainActivity extends Activity {
         setContentView(scroll);
     }
 
+    private void addWebHero(LinearLayout outer, int width) {
+        LinearLayout hero=column();
+        hero.setGravity(Gravity.START);
+        hero.setPadding(dp(19),dp(26),dp(19),dp(24));
+        hero.setBackground(HumkinVisuals.panel(this,0xff211b3a,0xff35365b,0));
+        TextView eyebrow=text("✳  THE LITTLE STATION AT THE END OF THE DIAL",10,YELLOW,true);
+        eyebrow.setGravity(Gravity.START);
+        eyebrow.setLetterSpacing(.09f);
+        hero.addView(eyebrow,wrap(0));
+
+        TextView masthead=text("HUMKIN",width<350?55:70,WHITE,true);
+        masthead.setGravity(Gravity.START);
+        masthead.setSingleLine(true);
+        masthead.setLetterSpacing(-.075f);
+        if (Build.VERSION.SDK_INT >= 28) masthead.setAccessibilityHeading(true);
+        hero.addView(masthead,wrap(13));
+
+        TextView radio=text("R A D I O",width<350?22:27,YELLOW,true);
+        radio.setGravity(Gravity.START);
+        radio.setLetterSpacing(.035f);
+        hero.addView(radio,wrap(0));
+        TextView line=text("MUSIC FOR THE LONG WAY HOME.",12,WHITE,true);
+        line.setGravity(Gravity.START);
+        line.setLetterSpacing(.075f);
+        hero.addView(line,wrap(16));
+        outer.addView(hero,wrap(0));
+
+        TextView strip=text("✳   SONGS • STORIES • A LITTLE STATIC   ✳",10,INK,true);
+        strip.setBackgroundColor(YELLOW);
+        strip.setMinHeight(dp(34));
+        strip.setLetterSpacing(.045f);
+        outer.addView(strip,wrap(0));
+    }
+
     private void buildRadio() {
+        TextView dial=text("THE HUMKIN DIAL",23,INK,true);
+        dial.setGravity(Gravity.START);
+        dial.setLetterSpacing(-.035f);
+        if (Build.VERSION.SDK_INT >= 28) dial.setAccessibilityHeading(true);
+        radioScreen.addView(dial,wrap(0));
+        TextView kicker=text("AN IMPERFECT SIGNAL. A REAL GOOD SONG.",10,PLUM,true);
+        kicker.setGravity(Gravity.START);
+        kicker.setLetterSpacing(.06f);
+        radioScreen.addView(kicker,wrap(4));
         sameTime = pill("SAME-TIME\nRADIO", Icon.RADIO, YELLOW, 18);
         road = pill("ROAD\nSHUFFLE", Icon.SHUFFLE, MINT, 18);
         sameTime.setMinHeight(dp(66));
@@ -175,6 +222,20 @@ public final class MainActivity extends Activity {
         modeNote.setBackground(HumkinVisuals.panel(this, 0xfffbe7dd, BLUSH, 18));
         modeNote.setPadding(dp(16), dp(10), dp(16), dp(10));
         radioScreen.addView(modeNote, wrap(12));
+
+        warmStaticToggle=pill("",null,PINK,13);
+        warmStaticToggle.setMinHeight(dp(45));
+        warmStaticToggle.setOnClickListener(v -> {
+            warmStaticEnabled=!warmStaticEnabled;
+            getSharedPreferences("humkin-radio",MODE_PRIVATE).edit()
+                    .putBoolean("analog-static",warmStaticEnabled).apply();
+            RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
+            redraw();
+        });
+        radioScreen.addView(warmStaticToggle,wrap(9));
+        TextView airNote=text("Only on Same-Time Radio · never on Road Shuffle or albums.",11,INK,false);
+        airNote.setGravity(Gravity.START);
+        radioScreen.addView(airNote,wrap(5));
 
         LinearLayout player = console();
         radioArt = HumkinVisuals.art(this, R.drawable.paper_mutant);
@@ -362,8 +423,10 @@ public final class MainActivity extends Activity {
     private LinearLayout console() {
         LinearLayout panel = row();
         panel.setPadding(dp(13), dp(13), dp(13), dp(13));
-        panel.setBackground(HumkinVisuals.panel(this, 0xff642343, PLUM, 20));
-        panel.setElevation(dp(4));
+        android.graphics.drawable.GradientDrawable paper=HumkinVisuals.shape(this,0xfffffdf6,8);
+        paper.setStroke(dp(3),INK);
+        panel.setBackground(paper);
+        panel.setElevation(dp(5));
         return panel;
     }
 
@@ -376,12 +439,12 @@ public final class MainActivity extends Activity {
     }
 
     private TextView consoleHeading(LinearLayout labels, String value) {
-        TextView heading = text(value, 11, WHITE, true);
+        TextView heading = text(value, 11, INK, true);
         heading.setGravity(Gravity.START);
         heading.setLetterSpacing(.17f);
         labels.addView(heading, wrap(0));
         View accent = new View(this);
-        accent.setBackground(HumkinVisuals.shape(this, MINT, 2));
+        accent.setBackground(HumkinVisuals.shape(this, PINK, 2));
         LinearLayout.LayoutParams line = new LinearLayout.LayoutParams(dp(58), dp(2));
         line.topMargin = dp(4);
         labels.addView(accent, line);
@@ -389,14 +452,14 @@ public final class MainActivity extends Activity {
     }
 
     private TextView consoleTitle(LinearLayout labels, String value, int size) {
-        TextView title = text(value, size, WHITE, true);
+        TextView title = text(value, size, INK, true);
         title.setGravity(Gravity.START);
         labels.addView(title, wrap(7));
         return title;
     }
 
     private TextView consoleSubtitle(LinearLayout labels) {
-        TextView label = text("", 12, WHITE, false);
+        TextView label = text("", 12, INK, false);
         label.setGravity(Gravity.START);
         label.setLetterSpacing(.09f);
         labels.addView(label, wrap(4));
@@ -439,7 +502,7 @@ public final class MainActivity extends Activity {
         radioScreen.setVisibility(yes ? View.GONE : View.VISIBLE);
         albumsScreen.setVisibility(yes ? View.VISIBLE : View.GONE);
         albumHeading.setVisibility(yes ? View.VISIBLE : View.GONE);
-        tagline.setText(yes ? "Take a song home." : "Music for the long way home.");
+        tagline.setText(yes ? "Take a song home." : "You found us. Stay awhile.");
         scroll.scrollTo(0, 0);
         redraw();
     }
@@ -582,8 +645,11 @@ public final class MainActivity extends Activity {
             modeStyled = true;
         }
         modeNote.setText(radioMode
-                ? "Tune in together on the shared HUMKIN station clock."
-                : "You're on Road Shuffle. Every trip gets its own playlist.");
+                ? "Same-Time Radio · everybody catches the same approximate signal."
+                : "Road Shuffle · your own traveling collection, without the static.");
+        warmStaticToggle.setText(warmStaticEnabled
+                ? "✳  ANALOG RADIO STATIC   /   ON"
+                : "○  ANALOG RADIO STATIC   /   OFF");
         catchUp.setVisibility(radioMode ? View.VISIBLE : View.GONE);
         reload.setVisibility(radioMode ? View.GONE : View.VISIBLE);
 
