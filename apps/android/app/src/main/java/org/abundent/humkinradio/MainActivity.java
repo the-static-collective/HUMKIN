@@ -244,6 +244,13 @@ public final class MainActivity extends Activity {
         outpostButton.setOnClickListener(v ->
                 startActivity(new Intent(this,OutpostActivity.class)));
         radioScreen.addView(outpostButton,wrap(12));
+        // A second native RPG door. Media3 continues playing while the orchard is open.
+        Button orchardDoor=pill("🌱  YOUR LISTENING ORCHARD  /  MAKE IT GROW",null,MINT,15);
+        orchardDoor.setMinHeight(dp(52));
+        orchardDoor.setContentDescription("Open your collectible listening room and orchard");
+        orchardDoor.setOnClickListener(v ->
+                startActivity(new Intent(this,OrchardActivity.class)));
+        radioScreen.addView(orchardDoor,wrap(8));
         sameTime = pill("SAME-TIME\nRADIO", Icon.RADIO, YELLOW, 18);
         road = pill("ROAD\nSHUFFLE", Icon.SHUFFLE, MINT, 18);
         sameTime.setMinHeight(dp(66));
