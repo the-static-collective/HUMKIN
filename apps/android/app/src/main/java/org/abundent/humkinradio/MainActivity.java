@@ -61,7 +61,7 @@ public final class MainActivity extends Activity {
     private LinearLayout firstAlbums, secondAlbums;
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
-    private Button tune,sameTime,road,albumNext;
+    private Button tune,sameTime,road,albumNext,outpostButton;
     private boolean warmStaticEnabled;
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;
@@ -235,6 +235,15 @@ public final class MainActivity extends Activity {
         kicker.setGravity(Gravity.START);
         kicker.setLetterSpacing(.06f);
         radioScreen.addView(kicker,wrap(4));
+
+        // The RPG is a new first-class station door, not a buried web link.
+        // Listening continues through Media3 if the screen is opened.
+        outpostButton=pill("✳  SIGNAL OUTPOST  /  LEVEL 1",null,PINK,17);
+        outpostButton.setMinHeight(dp(57));
+        outpostButton.setContentDescription("Open the Signal Outpost listening RPG");
+        outpostButton.setOnClickListener(v ->
+                startActivity(new Intent(this,OutpostActivity.class)));
+        radioScreen.addView(outpostButton,wrap(12));
         sameTime = pill("SAME-TIME\nRADIO", Icon.RADIO, YELLOW, 18);
         road = pill("ROAD\nSHUFFLE", Icon.SHUFFLE, MINT, 18);
         sameTime.setMinHeight(dp(66));
@@ -308,7 +317,10 @@ public final class MainActivity extends Activity {
         // Separate league screen, without replacing native player or station controls.
         Button chart = pill("THE TOP 42 · RECORD LEAGUE", null, MINT, 17);
         chart.setMinHeight(dp(53));
-        chart.setOnClickListener(v -> startActivity(new Intent(this, LeagueActivity.class)));
+        chart.setOnClickListener(v -> {
+            SignalRpg.visitLeague(this);
+            startActivity(new Intent(this, LeagueActivity.class));
+        });
         radioScreen.addView(chart, wrap(9));
 
         Button share = pill("SHARE THE DIAL", null, MINT, 13);
@@ -837,6 +849,11 @@ public final class MainActivity extends Activity {
 
     private void redraw() {
         if (tune == null) return;
+        if (outpostButton != null) {
+            int level=SignalRpg.snapshot(this).level;
+            String name="✳  SIGNAL OUTPOST  /  LEVEL "+level;
+            if(!name.contentEquals(outpostButton.getText()))outpostButton.setText(name);
+        }
         if (!modeStyled || sameTime.isSelected() != radioMode) {
             HumkinVisuals.setPillFill(sameTime, radioMode ? YELLOW : MINT, false);
             HumkinVisuals.setPillFill(road, radioMode ? MINT : YELLOW, false);
