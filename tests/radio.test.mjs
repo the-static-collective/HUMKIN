@@ -129,6 +129,30 @@ const imported=fixture(rotation,[{id:uuid,title:"New Road Song",artist:"HUMKIN",
  album:"CRATE ONE",duration_seconds:184.4,storage_path:uuid+"/"+digest+".mp3"}]);
 await flush();
 assert.equal(imported.window.HUMKIN_RADIO.state.tracks,22,"Creator's approved cloud track must join the original 21");
+
+const freshCloudSingle=fixture(rotation,[{
+ id:"88888888-8888-4888-8888-888888888888",title:"Fresh Standalone Single",artist:"HUMKIN",
+ album:"HUMKIN RADIO · Singles",kind:"song",is_single:true,
+ duration_seconds:183.4,storage_path:"88888888-8888-4888-8888-888888888888/"+digest+".mp3"
+}]);
+await flush();
+const countPerId=new Map(),uniqueCloudIndex=rotation.tracks.length;
+const featuredExisting=rotation.tracks.filter(t=>
+ rotation.featured_rotation.albums.includes(t.album)||
+ rotation.featured_rotation.singles.includes(t.id)).length;
+let walk=Date.parse(rotation.synced_clock_epoch_utc);
+for(let k=0;k<rotation.tracks.length+1+featuredExisting+1;k++){
+ const selected=freshCloudSingle.window.HUMKIN_RADIO.tuneAt(walk+1);
+ assert(selected,"Clock must resolve a song across a full featured single cycle");
+ countPerId.set(selected.index,(countPerId.get(selected.index)||0)+1);
+ const duration=selected.index===uniqueCloudIndex?183.4:rotation.tracks[selected.index].duration;
+ walk+=Math.round(duration*1000);
+}
+assert.equal(countPerId.get(uniqueCloudIndex),2,
+ "Designated cloud single must receive exactly two music slots in one radio cycle");
+assert.equal(countPerId.get(rotation.tracks.findIndex(t=>t.id==="leave-the-kettle-on")),1,
+ "Existing single-looking display album must NOT imply featured release status");
+
 assert(imported.window.HUMKIN_RADIO.tracks===undefined,"Public player surface should stay compact");
 assert.equal(newTune.window.HUMKIN_RADIO.state.tracks,21,"Original radio must survive an empty cloud catalog");
 assert.equal(newTune.$("spotlight").disabled,false);
