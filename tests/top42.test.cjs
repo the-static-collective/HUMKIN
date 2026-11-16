@@ -1,0 +1,36 @@
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const {bonusIds,weave}=require("../fm/chart-rotation.js");
+const tracks=Array.from({length:120},(_,i)=>({
+ id:"radio-"+i,kind:"song",duration:135+(i%7)*12
+}));
+const base=Array.from({length:tracks.length},(_,i)=>i);
+const today="2026-11-17";
+const yesterdayChart=tracks.slice(0,42).map(t=>t.id);
+const bonus=bonusIds(base,tracks,yesterdayChart,today);
+assert(bonus.length>0,"Populated chart must reserve some slots");
+assert.deepEqual(bonus,bonusIds(base,tracks,yesterdayChart,today),"Daily chart must be stable across listeners");
+const baseLength=base.reduce((n,i)=>n+tracks[i].duration,0);
+const chartLength=bonus.reduce((n,i)=>n+tracks[i].duration,0);
+const share=chartLength/(baseLength+chartLength);
+assert(share>.045 && share<.095,"Chart share must be near seven percent, got "+share);
+const out=weave(base,bonus);
+assert.equal(out.length,base.length+bonus.length,"No broadcast slots should be lost");
+const all=new Map(),regular=new Map();
+for(const i of out)all.set(i,(all.get(i)||0)+1);
+for(const i of base)regular.set(i,(regular.get(i)||0)+1);
+for(const [id,count] of regular)assert((all.get(id)||0)>=count,"Normal rotation preserved");
+assert.deepEqual(bonusIds(base,tracks,[],today),[],"Without chart plays, no chart insertions");
+assert.deepEqual(weave(base,[]),base,"No board means original station playlist");
+const doc=fs.readFileSync("fm/top42/index.html","utf8");
+const client=fs.readFileSync("fm/top42/league.js","utf8");
+const radio=fs.readFileSync("fm/radio.js","utf8");
+const site=fs.readFileSync("fm/index.html","utf8");
+assert(doc.includes('DAILY EP / 6 SONGS') && doc.includes('WEEKLY ALBUM / 12 SONGS'));
+assert(doc.includes('id="league-audio"') && doc.includes('id="chart-list"'));
+assert(client.includes('action:"release"') && client.includes('action:"play"'));
+assert(client.includes('heard>=30'));
+assert(radio.includes('countQualifiedRadio()'));
+assert(site.includes('href="./top42/"'));
+assert(site.includes('src="./chart-rotation.js"'));
+console.log("Top42 chart share, reserved airtime, record builder and radio wiring passed.");

@@ -14,6 +14,44 @@ let active=false,seekToken=0,failureCount=0,switching=false;
 let remoteStream=null,hostedNowPlayingUrl=null,hostedPollTimer=null;
 let programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 let cloudCatalogHealthy=false;
+let chartAirIds=[],chartStationDay="";
+const LEAGUE_API="https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-league";
+async function fetchDailyChart(){
+ try{
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),4800);
+  try{
+   const response=await fetch(LEAGUE_API,{cache:"no-store",signal:ctrl.signal});
+   if(!response.ok)return null;
+   const data=await response.json();
+   if(data.schema!=="humkin.top42/v1"||!Array.isArray(data.airchart))return null;
+   return {day:data.station_day,ids:data.airchart.filter(t=>t.plays>0).map(t=>t.id)};
+  }finally{clearTimeout(timer)}
+ }catch{return null}
+}
+// Keep VM/unit-test and older-browser clocks compatible.
+const monotonicNow=()=>typeof performance!=="undefined"&&
+  typeof performance.now==="function"?performance.now():Date.now();
+let listened=0,lastListenTick=monotonicNow(),reported=false;
+function listenerKey(){
+ try{
+  const old=localStorage.getItem("humkin-league-listener-v1")||"";
+  if(/^[0-9a-f-]{36}$/i.test(old))return old;
+  const key=crypto.randomUUID();localStorage.setItem("humkin-league-listener-v1",key);
+  return key;
+ }catch{return null}
+}
+function countQualifiedRadio(){
+ const now=monotonicNow(),delta=Math.max(0,Math.min(5,(now-lastListenTick)/1000));
+ lastListenTick=now;
+ if(reported||!active||audio.paused||audio.readyState<2||index<0||
+    !tracks[index]||tracks[index].kind==="bumper")return;
+ listened+=delta;
+ if(listened<30)return;
+ reported=true;
+ const listener=listenerKey();if(!listener)return;
+ fetch(LEAGUE_API,{method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({action:"play",source:"radio",listener,track_id:tracks[index].id,seconds:Math.floor(listened)}),keepalive:true}).catch(()=>{});
+}
 async function refreshHostedMetadata(){
  if(!remoteStream||!hostedNowPlayingUrl)return;
  try{
@@ -215,12 +253,17 @@ function featuredPositions(eligible){
       (song.source==="cloud"&&song.kind!=="bumper"&&song.is_single===true)?position:-1;
   }).filter(i=>i>=0);
 }
+function chartBonus(music){
+ return window.HUMKIN_TOP42_ROTATION?.bonusIds(music,tracks,chartAirIds,chartStationDay)||[];
+}
 function weightedMusic(eligible,rotation){
   const slots=window.HUMKIN_FAIR_ROTATION?.weightedCycle(
     eligible.length,rotation,seededShuffle,featuredPositions(eligible))
     ||window.HUMKIN_FAIR_ROTATION?.cycle(eligible.length,rotation,seededShuffle)
     ||seededShuffle(eligible.length,rotation);
-  return slots.map(i=>eligible[i]);
+  const standard=slots.map(i=>eligible[i]);
+  const bonus=chartBonus([...eligible,...featuredPositions(eligible).map(i=>eligible[i])]);
+  return window.HUMKIN_TOP42_ROTATION?.weave(standard,bonus)||standard;
 }
 function withStationIds(music){
   const raw=window.HUMKIN_BUMPER_BRAIN?.plan(music,bumperIndices(),
@@ -263,7 +306,8 @@ function tuneAt(ms){
   // The clock's total length must include the extra featured plays, while
   // remaining constant across cycles for every same-time listener.
   const bonus=featuredPositions(eligible).map(i=>eligible[i]);
-  const totalOrder=withStationIds([...eligible,...bonus]);
+  const chart=chartBonus([...eligible,...bonus]);
+  const totalOrder=withStationIds([...eligible,...bonus,...chart]);
   const total=totalOrder.reduce((s,i)=>s+Math.round(tracks[i].duration*1000),0);
   if(!eligible.length||total<1)return null;
   const base=Number.isFinite(Date.parse(config?.synced_clock_epoch_utc))?Date.parse(config.synced_clock_epoch_utc):Date.parse(EPOCH_FALLBACK);
@@ -410,7 +454,7 @@ function setTrackSource(i,offset,shouldPlay){
 }
 function showTrack(i,position=0){
   if(!tracks[i])return;
-  index=i;
+  index=i;listened=0;reported=false;lastListenTick=monotonicNow();
   const t=tracks[i];
   const currentShow=mode==="clock"&&!remoteStream?
      window.HUMKIN_SCHEDULE?.currentProgram(programs,stationNow()):null;
@@ -647,6 +691,7 @@ $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
 $("phone-playlist").addEventListener("click",downloadNativePlaylist);
 audio.addEventListener("play",()=>{
+  lastListenTick=monotonicNow();
   startStationSound();
   active=true;setPlaybackState("playing");updateListen();
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
@@ -659,6 +704,7 @@ audio.addEventListener("playing",()=>{
   gentlyAlignClock();
 });
 audio.addEventListener("pause",()=>{
+  lastListenTick=monotonicNow();
   // A brief internal pause during a src swap is NOT a user stop.
   if(!switching){active=false;setPlaybackState("paused")}
   updateListen();
@@ -684,6 +730,7 @@ document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="visible"&&active&&!audio.paused)preloadNext();
 });
 audio.addEventListener("timeupdate",()=>{
+  countQualifiedRadio();
   if(!active||audio.paused||switching)return;
   gentlyAlignClock();
   // Switch during the last fraction of a second if a background timeupdate
@@ -708,6 +755,7 @@ if("mediaSession" in navigator){
     navigator.mediaSession.setActionHandler("previoustrack",()=>{if(mode==="clock")startClock(true);else if(tracks.length)startShuffle(true)});
   }catch{}
 }
+if(typeof setInterval==="function")setInterval(countQualifiedRadio,1000);
 function validatedSrc(value,base){
   if(typeof value!=="string"||!value.trim())return null;
   const u=new URL(value,base);
@@ -749,7 +797,7 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    const [cloud,overrides,schedule,settings,artRows,clockSample,airCarts]=await Promise.all([
+    const [cloud,overrides,schedule,settings,artRows,clockSample,airCarts,leagueSnapshot]=await Promise.all([
       getPublishedCrate(),
       fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind,art_asset_id","&limit=1000"),
       fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority,art_asset_id","&is_active=eq.true&limit=100"),
@@ -757,10 +805,13 @@ async function boot(){
       fetchExtras("humkin_radio_art_assets","id,storage_path","&limit=1000"),
       window.HUMKIN_CLOCK_SYNC?.calibrate(fetch,CRATE_API,CRATE_KEY,()=>Date.now())
         ||Promise.resolve({offsetMs:0,synced:false}),
-      getOnAirFieldCarts()
+      getOnAirFieldCarts(),
+      fetchDailyChart()
     ]);
     clockOffsetMs=clockSample?.synced?clockSample.offsetMs:0;
     clockCalibrated=Boolean(clockSample?.synced);
+    chartStationDay=String(leagueSnapshot?.day||"");
+    chartAirIds=Array.isArray(leagueSnapshot?.ids)?leagueSnapshot.ids:[];
     stationSettings={
       bumper_every:window.HUMKIN_AUTODJ?.cadenceValue(settings[0]?.bumper_every)||0,
       station_label:String(settings[0]?.station_label||"HUMKIN RADIO")

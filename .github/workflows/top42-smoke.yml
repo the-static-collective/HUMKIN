@@ -1,0 +1,27 @@
+name: Top 42 public scoreboard smoke
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'fm/top42/**'
+      - 'fm/chart-rotation.js'
+      - '.github/workflows/top42-smoke.yml'
+jobs:
+  scoreboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe deployed Top 42 without submitting scores
+        run: |
+          curl --fail --show-error --silent --retry 2 --max-time 30 \
+            -H 'Origin: https://humkin.abundent.org' \
+            'https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-league' \
+            -o /tmp/humkin-top42.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const data = JSON.parse(fs.readFileSync('/tmp/humkin-top42.json','utf8'));
+          if(data.schema !== 'humkin.top42/v1') throw Error('League API schema mismatch: '+JSON.stringify(data));
+          if(!Array.isArray(data.catalog)||data.catalog.length<19) throw Error('League catalog empty or not published');
+          if(!Array.isArray(data.chart)||!Array.isArray(data.eps)||!Array.isArray(data.albums)) throw Error('League boards missing');
+          if(data.chart.length>42) throw Error('Too many songs on the Top 42');
+          console.log('TOP 42 public API:',data.station_day,data.catalog.length,'songs,',data.chart.filter(x=>x.plays>0).length,'charted tracks.');
+          NODE

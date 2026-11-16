@@ -25,6 +25,8 @@ jobs:
       - run: node tests/radio-loader.test.mjs
       - run: node tests/radio-singles.test.cjs
       - run: node tests/radio-fairness-intake.test.cjs
+      - run: node tests/top42.test.cjs
+      - run: node --check fm/top42/league.js
       - run: node tests/radio-manager.test.mjs
       - run: node tests/bumper-brain.test.cjs
       - run: python3 -m py_compile tools/generate-robot-drops.py

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#221b39">
+<meta name="description" content="The HUMKIN Top 42: a daily music chart, listener-made EPs and weekly albums, and a record league scored by real listening.">
+<meta property="og:title" content="THE HUMKIN TOP 42 · The Record League">
+<meta property="og:description" content="Make a record. Get it played. Climb the charts.">
+<title>THE TOP 42 · HUMKIN RADIO</title>
+<link rel="stylesheet" href="./league.css">
+<script defer src="./league.js"></script>
+</head>
+<body>
+<header class="topline">
+  <a class="brand" href="../">HUMKIN <span>✳</span></a>
+  <span class="station-label">THE RECORD LEAGUE / TOP 42</span>
+  <a class="back-link" href="../">← THE RADIO</a>
+</header>
+<main>
+<section class="hero">
+  <p class="eyebrow">DEPARTMENT OF POPULARITY, UNCERTAIN METHODS</p>
+  <h1>THE<br><em>TOP 42.</em></h1>
+  <p class="hero-copy">Make a record. Get it played. Climb the charts.<br>Today's listeners decide tomorrow's little piece of the dial.</p>
+  <div class="hero-foot"><span>93% THE REGULAR RADIO</span><span class="dot">✳</span><span>7% THE CHART</span><span class="dot">✳</span><span>42 POSSIBLE ANSWERS</span></div>
+  <p class="system-status" id="system-status" role="status" aria-live="polite">Opening the record office…</p>
+</section>
+
+<section class="intro" aria-label="How the game works">
+ <article><b>01 / LISTEN</b><p>A qualified song listen earns a point. The chart counts <strong>radio</strong> and <strong>playlist</strong> listens separately.</p></article>
+ <article><b>02 / COMPILE</b><p>Draft a six-track daily EP or a twelve-track weekly album. Your roster is a real playlist.</p></article>
+ <article><b>03 / CHART</b><p>Today's chart decides a small, protected share of tomorrow's radio. The other 93% stays free-ranging.</p></article>
+</section>
+
+<section class="charts section" id="charts" aria-labelledby="chart-heading">
+ <div class="section-header">
+   <div><p class="eyebrow">THE DAILY COUNT / AMERICA–CHICAGO</p>
+   <h2 id="chart-heading">THE <em>TOP 42</em></h2>
+   <p class="small" id="chart-caption">Today. Not all 42 spots have to be filled.</p></div>
+   <div class="chart-actions"><button type="button" class="outline" id="play-chart" disabled>▶ PLAY TODAY'S CHART</button><button type="button" class="outline" id="refresh">↻ REFRESH</button></div>
+ </div>
+ <div class="table-labels" aria-hidden="true"><span>RANK / RECORDING</span><span>RADIO</span><span>PLAYLIST</span><span>PLAYS</span></div>
+ <ol id="chart-list" class="chart-list"><li class="waiting">The scorekeepers are coming.</li></ol>
+ <p class="footnote">Only counted, qualifying listeners earn points—not automatic station spins. Counts are provisional and subject to duplicate limits. Zero-play songs remain discoverable in the builder, not invented chart hits.</p>
+</section>
+
+<section class="build section" id="make" aria-labelledby="build-heading">
+  <div class="section-header"><div><p class="eyebrow">THE LISTENER'S RECORDING COMPANY</p><h2 id="build-heading">MAKE A <em>RECORD.</em></h2>
+  <p>Arrange the songs. Name your record. Release it into the day's or week's race.</p></div></div>
+  <div class="builder-grid">
+   <div class="builder-panel">
+    <div class="tabs" role="group" aria-label="Record format">
+      <button type="button" id="choose-ep" aria-pressed="true">DAILY EP / 6 SONGS</button>
+      <button type="button" id="choose-album" aria-pressed="false">WEEKLY ALBUM / 12 SONGS</button>
+    </div>
+    <div class="rule-card"><strong id="roster-rule">4 RADIO-ONLY + 2 RELEASED</strong><span id="roster-progress">0 / 6 selected</span>
+    <small>Album tracks and designated singles have half as many roster slots as radio-only recordings. One record of each type per listener per round.</small></div>
+    <div class="record-title"><label for="word-one">RECORD TITLE</label><div class="word-pair">
+      <select id="word-one" aria-label="First word of record title"></select>
+      <select id="word-two" aria-label="Second word of record title"></select>
+    </div></div>
+    <h3>THE TRACKLIST <span id="tracklist-count"></span></h3>
+    <ol id="draft-list" class="draft-list" aria-live="polite"></ol>
+    <button type="button" class="primary" id="release-record" disabled>✳ RELEASE THIS RECORD</button>
+    <p class="small" id="builder-message" role="status" aria-live="polite">Pick songs below to build your record.</p>
+   </div>
+   <div class="crate-panel">
+     <div class="crate-top"><h3>THE WHOLE CRATE</h3><span id="catalog-count">LOADING</span></div>
+     <label for="catalog-search">SEARCH THE STATION</label>
+     <input type="search" id="catalog-search" placeholder="A title, an album, a memory…" autocomplete="off">
+     <div class="filter-row" role="group" aria-label="Catalog filter">
+       <button type="button" data-filter="all" aria-pressed="true">ALL</button>
+       <button type="button" data-filter="radio" aria-pressed="false">RADIO ONLY</button>
+       <button type="button" data-filter="released" aria-pressed="false">RELEASED</button>
+     </div>
+     <div id="catalog-list" class="catalog-list" aria-live="polite"><p>Finding the music…</p></div>
+   </div>
+  </div>
+</section>
+
+<section class="races section" id="races" aria-labelledby="races-heading">
+  <div class="section-header"><div><p class="eyebrow">THE RECORD LEAGUE</p><h2 id="races-heading">THE <em>STANDINGS.</em></h2><p>Every track's plays contribute to the records that drafted it. Direct listens to a record also help its songs.</p></div></div>
+  <div class="race-grid">
+   <article class="race-card"><div class="race-title"><b>THE DAILY EP</b><span id="daily-issue">TODAY</span></div><div id="ep-standings" class="standings"></div></article>
+   <article class="race-card"><div class="race-title"><b>THE WEEKLY ALBUM</b><span id="weekly-issue">THIS WEEK</span></div><div id="album-standings" class="standings"></div></article>
+  </div>
+  <p class="footnote">This is an account-free pilot. The device remembers a random local listener key. Scores are client-reported and rate-limited, not audited proof of human listening. No prizes or wagers.</p>
+</section>
+
+<section class="signals">
+ <div><p class="eyebrow">THE STATION IS STILL A STATION</p><h2>YOUR RECORD<br><em>CAN FIND AN AUDIENCE.</em></h2>
+ <p>Today's plays put songs in contention. Tomorrow's Top 42 receives roughly 7% of the music airtime; our ordinary era-mixed rotation still drives the rest. Bumpers, music history, and the long road remain intact.</p></div>
+ <div class="signal-links"><a href="../" class="primary-link">◉ TUNE TO HUMKIN RADIO</a><a href="../line/" class="outline-link">☎ THE REQUEST LINE</a></div>
+</section>
+</main>
+
+<aside class="playbar" id="playbar" hidden aria-label="Record player">
+  <div class="playbar-caption"><strong id="player-track">READY TO PLAY</strong><small id="player-record">HUMKIN TOP 42</small></div>
+  <div class="playbar-controls"><button type="button" id="player-previous" aria-label="Previous song">◀</button><button type="button" id="player-next" aria-label="Next song">▶▶</button><button type="button" id="player-close" aria-label="Close record player">×</button></div>
+  <audio id="league-audio" controls preload="none" playsinline aria-label="Listener record player"></audio>
+  <span id="player-state" class="sr-only" role="status" aria-live="polite"></span>
+</aside>
+<footer><a href="../">← HUMKIN RADIO</a><span>LISTEN. MAKE SOMETHING. PASS IT ON.</span><a href="../archive/">STATION ARCHIVE ↗</a></footer>
+</body>
+</html>
