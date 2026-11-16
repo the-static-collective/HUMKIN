@@ -77,8 +77,11 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Remember the listener's dial choice, not the first default station.
+        radioMode = getSharedPreferences("humkin-radio", MODE_PRIVATE)
+                .getBoolean("last-radio-mode", true);
         if(savedInstanceState!=null){
-            radioMode=savedInstanceState.getBoolean("radioMode",true);
+            radioMode=savedInstanceState.getBoolean("radioMode",radioMode);
             onAlbums=savedInstanceState.getBoolean("onAlbums",false);
             source=savedInstanceState.getString("source","none");
             currentAlbum=savedInstanceState.getString("currentAlbum","");
@@ -563,6 +566,8 @@ public final class MainActivity extends Activity {
 
     private void changeMode(boolean radio){
         radioMode = radio;
+        getSharedPreferences("humkin-radio", MODE_PRIVATE).edit()
+                .putBoolean("last-radio-mode", radio).apply();
         showAlbums(false);
         // A station button is also a PLAY button. If the media session
         // is still connecting, preserve that intent for the onStart callback.
@@ -573,12 +578,26 @@ public final class MainActivity extends Activity {
         }
         tuneWhenReady = false;
         String expected = radio ? "radio" : "shuffle";
-        // Repeated taps on an already-playing dial must never restart a song.
-        if (expected.equals(source) && controller.isPlaying()) return;
-        // For a paused Same-Time dial, tune to current air instead of resuming
-        // an outdated position. Road Shuffle gets its own fresh queue.
+        // A mode tap never rebuilds an existing live/paused queue unnecessarily.
+        if (expected.equals(source) && controller.getMediaItemCount() > 0) {
+            if (controller.isPlaying()) return;
+            if (!radio || !pausedTooLong()) {
+                controller.play();
+                redraw();
+                return;
+            }
+        }
+        // Explicit mode switch (or a genuinely stale Same-Time pause).
         fetchRadio(true);
     }
+    private boolean pausedTooLong() {
+        long pausedAt = getSharedPreferences("humkin-radio", MODE_PRIVATE)
+                .getLong("paused-at-ms", 0L);
+        long now = System.currentTimeMillis();
+        return pausedAt > 0L && now >= pausedAt &&
+                now - pausedAt > PlaybackContinuity.MAX_SOFT_PAUSE_MS;
+    }
+
     private void visit(String url) {
         startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));
     }
@@ -599,7 +618,14 @@ public final class MainActivity extends Activity {
                     MediaItem item=controller.getCurrentMediaItem();
                     String id=item==null?"":item.mediaId;
                     if(id.startsWith("album:"))source="album";
-                    else source=radioMode?"radio":"shuffle";
+                    else {
+                        PlaybackContinuity.Saved saved = PlaybackContinuity.read(
+                                getSharedPreferences("humkin-radio", MODE_PRIVATE));
+                        if ("shuffle".equals(saved.mode) || "radio".equals(saved.mode)) {
+                            source = saved.mode;
+                            radioMode = "radio".equals(saved.mode);
+                        } else source = radioMode ? "radio" : "shuffle";
+                    }
                 }
                 if (!alive) return;
                 if (tuneWhenReady) changeMode(radioMode);
@@ -629,7 +655,7 @@ public final class MainActivity extends Activity {
         if(controller.getMediaItemCount()==0 || !expected.equals(source)){
             fetchRadio(true);
         }else if(controller.isPlaying())controller.pause();
-        else if(radioMode)fetchRadio(true);
+        else if(radioMode && pausedTooLong())fetchRadio(true);
         else controller.play();
     }
     private Map<String,Long> recentPlayTimes() {
@@ -647,6 +673,12 @@ public final class MainActivity extends Activity {
         } catch (Exception ignored) {
             // A missing/corrupt local history should never prevent tuning.
         }
+        // The currently playing song may never have transitioned before the
+        // app was closed. It still counts against near-term replay avoidance.
+        PlaybackContinuity.Saved saved = PlaybackContinuity.read(
+                getSharedPreferences("humkin-radio", MODE_PRIVATE));
+        String active = saved.lastTrackIfRecent(System.currentTimeMillis());
+        if (!active.isEmpty()) times.put(active, saved.savedAtMs);
         return times;
     }
 
@@ -661,8 +693,26 @@ public final class MainActivity extends Activity {
         worker.execute(()->{
             try{
                 RadioCatalog.Station loaded=RadioCatalog.loadStation();
-                List<MediaItem> shuffle=requested?null:
-                        loaded.shuffleQueue(recentPlayTimes(),System.currentTimeMillis());
+                PlaybackContinuity.Saved saved = PlaybackContinuity.read(
+                        getSharedPreferences("humkin-radio", MODE_PRIVATE));
+                boolean resume = !requested && saved.canResumeShuffle(
+                        System.currentTimeMillis());
+                List<MediaItem> shuffle = null;
+                long resumeMs = 0L;
+                if (!requested) {
+                    if (resume) {
+                        shuffle = loaded.queueFromIds(saved.remainingIds);
+                        resume = !shuffle.isEmpty() &&
+                                saved.currentId.equals(shuffle.get(0).mediaId);
+                        if (resume) resumeMs = loaded.resumePositionMs(
+                                saved.currentId, saved.positionMs);
+                    }
+                    if (!resume) shuffle = loaded.shuffleQueue(
+                            recentPlayTimes(), System.currentTimeMillis());
+                }
+                final List<MediaItem> queue = shuffle;
+                final boolean restoringShuffle = resume;
+                final long seekMs = resumeMs;
                 runOnUiThread(()->{
                     loading.set(false);setBusy(false);
                     if(!alive||controller==null)return;
@@ -678,7 +728,13 @@ public final class MainActivity extends Activity {
                         showMessage(status, "");
                     }else{
                         RadioPlaybackService.clearSameTime();
-                        controller.setMediaItems(shuffle);
+                        if (restoringShuffle) {
+                            // Continue the same selected record and the
+                            // remaining approved playlist, not song one again.
+                            controller.setMediaItems(queue, 0, seekMs);
+                        } else {
+                            controller.setMediaItems(queue);
+                        }
                         source="shuffle";
                         showMessage(status, "");
                     }
