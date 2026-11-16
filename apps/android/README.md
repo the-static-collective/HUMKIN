@@ -1,9 +1,9 @@
-# HUMKIN RADIO Android · v0.10
+# HUMKIN RADIO Android · v0.11
 
 ## Listener-first receiver / install recovery
 
-**Install this build as `HUMKIN RADIO · DIAL`**, a separate Android
-package `org.abundent.humkinradio.dial`. This is a **new test identity**
+**Install this build as `HUMKIN RADIO · CONTINUITY`**, a separate Android
+package `org.abundent.humkinradio.continuity`. This is a **new test identity**
 so Android can install it beside v0.7 Field Test, v0.8 Receiver, and v0.9 Real Art, whose
 ephemeral CI signing keys cannot be reused. GitHub runners may generate
 different debug signing keys on each run; Android refuses to replace an
@@ -23,6 +23,46 @@ a new ephemeral key. A permanent protected keystore and production signing
 process are needed before a public/store release. If installation still fails,
 check the Android unknown-apps permission, device storage, complete download,
 and the exact installer error. Do not uninstall the original app prematurely.
+
+### v0.11 · No resetty radio
+
+Listener reports hearing the same few songs around restarts. Investigation
+found three separate effects:
+1. The published Same-Time dial is a **client-side shared-clock playlist**,
+   not a continuously broadcasting server. A new cold tune selects the song
+   airing at the *same station time*. Listening again a few minutes later
+   may correctly yield the same song, and retuning can repeat a short stretch.
+2. Until v0.11 the native Pause → Tune In and same-mode taps could fetch a
+   new station queue, even though the Media3 service still held a perfectly
+   good paused or playing queue. Resume now keeps that queue and position
+   when paused less than 5 minutes. Longer pauses in Same-Time retune to
+   the official current air clock. Catch Up to Air remains in the ⋯ menu.
+3. The old shuffle rebuilt a new randomized queue when Android killed the
+   player process. Its recent-history list only remembered tracks that had
+   transitioned, so the *interrupted current track* could also reappear.
+
+New private, device-local `PlaybackContinuity` snapshots active track ID,
+playhead, mode and up to 120 remaining approved queue IDs every 12 seconds
+while playing and on media transitions / pause / service shutdown.
+After process death, a new Road Shuffle tune within 45 minutes resumes that
+record from the saved position and plays the saved remaining sequence. It
+then appends a fresh full rotation so an interrupted last track cannot loop.
+All saved IDs are re-resolved through the published catalog; no arbitrary
+saved URLs are played. Older/invalid bookmarks instead start a fresh queue
+using recent play history, now including the *currently active* track.
+The user-selected last mode is remembered; no new sign-in, sensitive
+permission, analytics or server.
+
+**Same-Time is intentionally different**: on a new process it still joins
+the shared clock rather than secretly selecting a personal anti-repeat song.
+If the user wants nonrepeating private listening, Road Shuffle is the right
+mode. The browser implementation remains separate; this is an Android change.
+
+**Important:** This fresh `.continuity` sideload has a separate Android app
+identity because prior CI runs used temporary keys. Device-private playback
+history **cannot migrate** across those test app identities; the new continuity
+starts building memory from its first play. In-place updates still need stable
+production signing.
 
 ### v0.10 · The simple dial
 
