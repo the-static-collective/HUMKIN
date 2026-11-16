@@ -377,6 +377,18 @@ public final class OutpostActivity extends Activity {
         add(desk,"Reports are generated from your actual discoveries, upgrades and crew returns. "+
             "Nobody's broadcasts or points are fictionalized.",11,HumkinVisuals.PLUM,false,12);
 
+        // Joining the station is a real capability: the Guild Desk accepts
+        // authenticated-by-evidence work, not purchased public chart plays.
+        LinearLayout stationGuild=card(body,HumkinVisuals.MINT,25);
+        eyebrow(stationGuild,"10 / THE STATION IS ACTUALLY HERE",0,HumkinVisuals.PLUM);
+        add(stationGuild,"THE STATION GUILDS",29,HumkinVisuals.INK,true,8);
+        add(stationGuild,"Put the radio to work. Submit an original bumper, music video, song, script, honest street-team post, or unused server for actual review. "+
+                "Accepted contributions can earn VERIFIED HUM on a separate station ledger.",
+                13,HumkinVisuals.INK,false,9);
+        Button guildEntry=pill("OPEN REAL-WORLD MISSIONS ↗",HumkinVisuals.YELLOW,15);
+        guildEntry.setOnClickListener(v->startActivity(new Intent(this,GuildActivity.class)));
+        stationGuild.addView(guildEntry,full(14));
+
         LinearLayout leagueCard=card(body,HumkinVisuals.YELLOW,25);
         eyebrow(leagueCard,"09 / YOUR OTHER GAME IS RUNNING",0,HumkinVisuals.PLUM);
         add(leagueCard,"THE TOP 42",32,HumkinVisuals.INK,true,8);
