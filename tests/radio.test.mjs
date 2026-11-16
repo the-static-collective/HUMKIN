@@ -4,7 +4,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
-const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js"),memoryJs=read("fm/rotation-memory.js"),warmJs=read("fm/warm-signal.js"),clockJs=read("fm/clock-sync.js");
+const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js"),memoryJs=read("fm/rotation-memory.js"),fairJs=read("fm/fair-rotation.js"),warmJs=read("fm/warm-signal.js"),clockJs=read("fm/clock-sync.js");
 for(const p of ["fm/index.html","fm/radio.css","fm/radio.js","fm/rotation.json","fm/manifest.webmanifest","docs/RADIO-OPERATIONS.md"])assert(existsSync(p),"Missing radio file "+p);
 execFileSync(process.execPath,["--check","fm/radio.js"]);
 const ids=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
@@ -115,6 +115,7 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
  runInNewContext(autodjJs,context);
  runInNewContext(artJs,context);
  runInNewContext(memoryJs,context);
+ runInNewContext(fairJs,context);
  runInNewContext(warmJs,context);
  if(effectClass)window.HUMKIN_WARM_SIGNAL={WarmSignal:effectClass};
  runInNewContext(clockJs,context);
@@ -140,8 +141,8 @@ assert(newTune.$("air").src.endsWith("/fm/audio/haileylu-bloom.mp3"));
 assert.equal(newTune.$("air").playCount,1,"One click must actually start HaileyLu Bloom");
 assert(html.includes("HEAR THE NEW ONE · HAILEYLU BLOOM"),"Button label must match its song");
 const spotlightPlayed=new Set([newTune.window.HUMKIN_RADIO.state.index]);
-for(let i=0;i<20;i++){newTune.$("next-song").click();await flush();spotlightPlayed.add(newTune.window.HUMKIN_RADIO.state.index)}
-assert.equal(spotlightPlayed.size,21,"Spotlight-first radio must still play all twenty-one tracks without repeats");
+for(let i=0;i<40;i++){newTune.$("next-song").click();await flush();spotlightPlayed.add(newTune.window.HUMKIN_RADIO.state.index)}
+assert.equal(spotlightPlayed.size,21,"Spotlight first still reaches every unique song despite extra plays");
 const f=fixture();await flush();
 assert.equal(f.$("listen").disabled,false,"Tune in should be enabled");
 assert.equal(f.$("air").playCount,0,"No radio autoplay");
@@ -150,7 +151,9 @@ const sample=f.window.HUMKIN_RADIO.tuneAt(f.time.now);
 assert(sample&&sample.index>=0&&sample.index<rotation.tracks.length);
 assert(sample.position>=0&&sample.position<initialTracks[sample.index].duration);
 assert.equal(JSON.stringify(f.window.HUMKIN_RADIO.tuneAt(f.time.now)),JSON.stringify(sample),"Shared clock must be deterministic");
-const different=f.window.HUMKIN_RADIO.tuneAt(f.time.now+initialTracks.reduce((a,t)=>a+Math.round(t.duration*1000),0));
+const featured=initialTracks.filter(t=>rotation.featured_rotation.albums.includes(t.album)||rotation.featured_rotation.singles.includes(t.id));
+const cycleMs=[...initialTracks,...featured].reduce((a,t)=>a+Math.round(t.duration*1000),0);
+const different=f.window.HUMKIN_RADIO.tuneAt(f.time.now+cycleMs);
 assert.equal(different.cycle,sample.cycle+1,"Station rotation must continue into a new cycle");
 f.$("listen").click();await flush();
 assert.equal(f.$("air").playCount,1,"Tune-in must start playback");
@@ -161,8 +164,8 @@ f.$("mode-shuffle").click();await flush();
 assert.equal(f.window.HUMKIN_RADIO.state.mode,"shuffle");
 assert.equal(f.$("next-song").hidden,false);
 const played=new Set([f.window.HUMKIN_RADIO.state.index]);
-for(let i=0;i<20;i++){f.$("next-song").click();await flush();played.add(f.window.HUMKIN_RADIO.state.index)}
-assert.equal(played.size,21,"Road shuffle must hear all 21 unique tracks before repeat");
+for(let i=0;i<40;i++){f.$("next-song").click();await flush();played.add(f.window.HUMKIN_RADIO.state.index)}
+assert.equal(played.size,21,"Road shuffle must reach every unique song with weighted replays");
 assert(played.has(19),"Road shuffle must play HaileyLu Bloom before the cycle repeats");
 assert(played.has(20),"Road shuffle must play Leave The Kettle On before the cycle repeats");
 assert([...played].some(i=>i>=12),"Road shuffle never reached the newly added EP");
@@ -251,7 +254,7 @@ assert.equal(portable.downloads.length,1,"Native playlist export must download o
 assert.equal(portable.downloads[0].name,"HUMKIN-RADIO.m3u");
 const m3u=await portable.URLMock.blobs.get(portable.downloads[0].href).text();
 assert(m3u.startsWith("#EXTM3U\n"),"Must export Extended M3U format");
-assert.equal(m3u.split("\n").filter(s=>s.startsWith("#EXTINF:")).length,21);
+assert.equal(m3u.split("\n").filter(s=>s.startsWith("#EXTINF:")).length,41,"Portable playlist should have 21 originals plus 20 featured bonus spins");
 assert(m3u.includes("https://humkin.abundent.org/fm/audio/haileylu-bloom.mp3"));
 assert(!m3u.includes("blob:humkin"),"Do not leak temporary playlist audio Blob URLs");
 
@@ -320,13 +323,13 @@ assert.equal(automix.window.HUMKIN_RADIO.state.bumperEvery,3,"Owner-selected cad
 assert.equal(automix.window.HUMKIN_RADIO.state.bumperCount,1,"Actual station ID is loaded");
 automix.$("mode-shuffle").click();automix.$("listen").click();await flush();
 const autoSpins=[];
-for(let i=0;i<28;i++){
+for(let i=0;i<54;i++){
  autoSpins.push(automix.window.HUMKIN_RADIO.state.index);
  automix.$("next-song").click();await flush();
 }
 const bumperIndex=21; // 21 static recordings plus one cloud bumper.
-assert.equal(autoSpins.filter(i=>i===bumperIndex).length,7,"Station ID occurs after each group of three songs");
-assert.equal(new Set(autoSpins.filter(i=>i!==bumperIndex)).size,21,"Each song airs once before the shuffle repeats");
+assert.equal(autoSpins.filter(i=>i===bumperIndex).length,13,"Station ID occurs after each group of three songs");
+assert.equal(new Set(autoSpins.filter(i=>i!==bumperIndex)).size,21,"Every unique song remains in the weighted shuffle");
 assert(automix.$("on-deck").textContent.includes("ON DECK"),"On-deck display missing");
 const at=automix.window.HUMKIN_RADIO.tuneAt(Date.parse(rotation.synced_clock_epoch_utc)+1000);
 assert(at&&at.index>=0&&at.index<22,"Same-Time AutoDJ cannot select an invalid index");

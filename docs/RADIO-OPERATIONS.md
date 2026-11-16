@@ -195,3 +195,27 @@ were bulk-published together. The correct long-term upgrade is
 owner-confirmed original-recording dates or explicit 'early/middle/recent'
 editorial tags, especially for back-catalog songs uploaded on the same day.
 Do not infer real decades from publication timestamps.
+
+## November 16: Released songs get 2x spins
+
+The station's public `fm/rotation.json` contains an explicit
+`featured_rotation` policy: multiplier 2, album titles `MUTANT POP` and
+`everywhere;near you`, and the designated single `haileylu-bloom`.
+These nineteen album songs plus one designated single receive two slots
+per ordinary rotation; all other songs receive one. The standalone
+`Leave The Kettle On` recording is currently cataloged under the radio's
+Singles display label but is **not** explicitly designated a featured
+single, pending owner confirmation. Cloud inbox tracks are unfeatured
+until assigned to a curated release album or separately designated.
+
+The shared-clock order is seeded and exact: the same base era-mixed
+sequence gets widely spaced bonus slots, and both its total music-plus-
+bumper duration and the first/final four-song seam guards remain stable
+for synchronized listeners. Road Shuffle inherits 2x slots, but its
+one-hour device memory may postpone a bonus if recently heard. The
+native M3U snapshot includes weighted slots too.
+
+To feature future album cuts, add the actual released album name to
+`featured_rotation.albums`; to feature a single, add its unique track ID
+to `featured_rotation.singles`. Never auto-feature every cloud upload,
+invent official release status, or double the separate station IDs.
