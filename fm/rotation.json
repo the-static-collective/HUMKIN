@@ -202,5 +202,16 @@
   "metadata_url": null,
   "request_stems_url": "../dj.html",
   "creator_email": "us@abundent.org",
-  "note": "Exact creator-supplied MP3 for Leave The Kettle On, verified SHA256 c855100c353b8f229c0811bf67c079f5e038dca4316b5a08a90cf10225e08d3d, 3,925,398 bytes. The radio is browser playback, not a 24/7 stream server."
+  "note": "Exact creator-supplied MP3 for Leave The Kettle On, verified SHA256 c855100c353b8f229c0811bf67c079f5e038dca4316b5a08a90cf10225e08d3d, 3,925,398 bytes. The radio is browser playback, not a 24/7 stream server.",
+  "featured_rotation": {
+    "multiplier": 2,
+    "albums": [
+      "MUTANT POP",
+      "everywhere;near you"
+    ],
+    "singles": [
+      "haileylu-bloom"
+    ],
+    "note": "Curated release status only. Station INBOX songs and Leave The Kettle On are not featured until explicitly designated; do not infer single status from radio display grouping."
+  }
 }
