@@ -1,3 +1,39 @@
+# HUMKIN RADIO Android · v0.15 Field Test — Outpost Ability Tree
+
+**Install name:** HUMKIN RADIO · OUTPOST+  
+**Test package:** `org.abundent.humkinradio.abilities`  
+**Build artifact:** `humkin-radio-android-field-test` / `app-fieldTest.apk`
+
+Every upgrade now opens **new participation mechanics**, not just increasing
+Signal or XP generation. The three existing workshop departments unlock:
+
+| Department | Tier I — LIVE | Tier II — LIVE | Tier IV — FUTURE |
+|---|---|---|---|
+| Antenna | Chart Radar: live standings and sleepers | Request Beacon: file one real daily public nomination | Community Frequencies |
+| Tape Archive | Scout's Crate: local shortlist of 42 songs | Little Press: draft 4 radio-only + 2 released songs into a real editable EP | Record Trading Post |
+| Night Crew | Field Challenges: share real three-song listening quests | Night Editor: share a fictional station bulletin grounded in actual chart/request counts | Cooperative Relay Stations |
+
+"Future" doors are **preview-only**: no buttons that pretend an unfinished
+server exists. All six live abilities are native Android screens. The Request
+Beacon creates a real bounded nomination via the existing public Supabase
+league API and displays on the live website's Request Desk. Requests are
+separate from qualified chart listens, radio spins, votes or promises of
+airtime; they cannot be purchased using local Signal. The Little Press only
+prepopulates a valid EP in the public builder; release requires a separate
+explicit tap.
+
+The receiver's listening, albums, lock-screen controls, Top42 and existing
+personal outpost economy are unchanged. Upgrade levels and watched tracks
+are stored privately on the installed device with no account or analytics.
+The test identity keeps earlier APKs installed side-by-side, but **cannot
+import local RPG progress** from the v0.14 test package. A fixed signing
+identity is needed for continuity and eventual public distribution.
+
+This is field-test software: automated compilation / JVM tests are
+prerequisites, physical phone validation is pending.
+
+---
+
 # HUMKIN RADIO Android · v0.14 Field Test — Signal Outpost
 
 **Install name:** HUMKIN RADIO · OUTPOST  

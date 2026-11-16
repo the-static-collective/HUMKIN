@@ -67,7 +67,13 @@ public final class LeagueActivity extends Activity {
         });
         layout.addView(web,new LinearLayout.LayoutParams(-1,0,1f));
         setContentView(layout);
-        web.loadUrl(LEAGUE);
+        // An upgraded Tape Archive may hand over a six-song EP proposal.
+        // The web builder validates titles/slots and still requires a human
+        // press of Release: nobody gets synthetic record or chart plays.
+        String seed=getIntent().getStringExtra("seed_tracks");
+        if(seed!=null&&seed.matches("[-a-z0-9]{3,90}(,[-a-z0-9]{3,90}){5}"))
+            web.loadUrl(LEAGUE+"?draft="+Uri.encode(seed,","));
+        else web.loadUrl(LEAGUE);
     }
 
     @Override public void onBackPressed() {
