@@ -64,6 +64,13 @@
    <textarea id="work-details" rows="5" maxlength="1400" placeholder="Tell the desk what you made, or what equipment you have permission to use."></textarea>
    <label class="check" id="disclosure-row" hidden><input type="checkbox" id="work-disclosure"> I clearly disclosed that this post may earn HUMKIN contribution rewards. It is my genuine opinion, not paid praise.</label>
    <label class="check" id="rights-row"><input type="checkbox" id="work-rights"> I created this material or have the rights and permission needed to submit it for station review.</label>
+   <div id="guild-toolbox" class="toolbox" hidden>
+    <p class="eyebrow">UNLOCKED FIELD EQUIPMENT · YOUR WORKBENCH</p>
+    <button id="generate-tool" class="subtle" type="button">✳ MAKE A HELPFUL DRAFT</button>
+    <div id="guild-generated" class="tool-output" role="status" aria-live="polite"></div>
+    <button id="copy-tool" class="subtle" type="button">COPY DRAFT TO CLIPBOARD</button>
+    <p class="hint">You decide what to publish. The tool makes only a draft; it never posts to any service or submits material on your behalf.</p>
+   </div>
    <button id="send-work" class="primary full" type="submit">✳ SUBMIT THIS WORK ORDER</button>
    <p id="send-status" class="feedback" role="status" aria-live="polite">Your submission stays private until reviewed. A submission is not approval to broadcast.</p>
   </form>
