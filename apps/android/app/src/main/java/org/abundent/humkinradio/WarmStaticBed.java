@@ -19,6 +19,10 @@ final class WarmStaticBed {
     private final Object gate = new Object();
     private volatile boolean audible;
     private volatile boolean closed;
+    private volatile float narrowing;
+    void setNarrowing(float amount) {
+        narrowing = Math.max(0f, Math.min(1f, amount));
+    }
     private Thread renderer;
 
     void setAudible(boolean on) {
@@ -37,6 +41,7 @@ final class WarmStaticBed {
     void close() {
         closed = true;
         audible = false;
+        narrowing = 0f;
         synchronized (gate) { gate.notifyAll(); }
     }
 
@@ -64,6 +69,7 @@ final class WarmStaticBed {
             float[] colored = {0f, 0f};
             float[] smooth = {0f, 0f};
             float[] low = {0f, 0f};
+            float[] stereo = new float[2];
             long frame = 0;
             while (!closed) {
                 if (!audible) {
@@ -91,9 +97,15 @@ final class WarmStaticBed {
                         // Soften sharp top-end noise and roll off subsonic rumble.
                         smooth[channel] = smooth[channel] * .62f + mixed * .38f;
                         low[channel] = low[channel] * .997f + smooth[channel] * .003f;
-                        float sample = (smooth[channel] - low[channel]) * GAIN * (float) swell;
-                        buffer[i * 2 + channel] = (short) (Math.max(-1f, Math.min(1f, sample)) * 32767);
+                        stereo[channel] = (smooth[channel] - low[channel]) * GAIN * (float) swell;
                     }
+                    // Recenter only independent static, never collapse music stereo.
+                    float center = (stereo[0] + stereo[1]) * .5f;
+                    float narrowingNow = narrowing;
+                    float left = stereo[0] + (center - stereo[0]) * narrowingNow;
+                    float right = stereo[1] + (center - stereo[1]) * narrowingNow;
+                    buffer[i * 2] = (short) (Math.max(-1f, Math.min(1f, left)) * 32767);
+                    buffer[i * 2 + 1] = (short) (Math.max(-1f, Math.min(1f, right)) * 32767);
                 }
                 int wrote = track.write(buffer, 0, buffer.length, AudioTrack.WRITE_BLOCKING);
                 if (wrote < 0) break;
