@@ -11,6 +11,7 @@ const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 let user=null,library=[],shows=[],staticList=[],editing=null,editingShow=null,slots=[],busy=false;
 let artAssets=[];
 let stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
+let bumperPolicy={};
 const selected=new Set();
 function el(tag,value,className){
  const node=document.createElement(tag);
@@ -91,6 +92,7 @@ async function loadDesk(){
     if(result.error)throw Error(name+": "+result.error.message);
   const config=await configResponse.json();
   if(!Array.isArray(config.tracks))throw Error("Original rotation is incomplete");
+  bumperPolicy=config.bumper_brain||{};
   artAssets=[...window.HUMKIN_ART.libraryMap(artResult.data||[]).values()];
   const overrides=new Map((staticResult.data||[]).map(t=>[t.track_id,t]));
   const approved=fieldCarts?.schema_version==="humkin.radio.air-carts/v1"&&
@@ -299,6 +301,33 @@ function renderLibrary(){
  $("selected-count").textContent=selected.size+" selected";
 }
 
+
+function renderBumperPreview(){
+ const list=$("bumper-preview");list.replaceChildren();
+ const engine=window.HUMKIN_BUMPER_BRAIN;
+ if(!engine){
+  list.append(el("li","Bumper Brain is not available; refresh this page."));
+  return;
+ }
+ const songs=library.map((t,i)=>trackAvailable(t)&&t.kind==="song"?i:-1).filter(i=>i>=0);
+ const bumpers=library.map((t,i)=>trackAvailable(t)&&t.kind==="bumper"?i:-1).filter(i=>i>=0);
+ const policy=bumperPolicy;
+ const draft=engine.plan(songs,bumpers,stationSettings.bumper_every,library,policy);
+ const held=draft.held.map(t=>t.title);
+ $("bumper-held").textContent=draft.eligible+" routine-ready · "+
+   draft.held.length+" held for deliberate shows/programs. "+
+   (held.length?"Held: "+held.slice(0,8).join(" · ")+(held.length>8?" …":""):"");
+ if(!draft.breaks.length){
+  list.append(el("li","No routine breaks at this cadence or with this inventory."));
+  return;
+ }
+ for(const step of draft.breaks.slice(0,10)){
+   list.append(el("li","After song "+step.afterSong+" · "+
+     step.title+" · "+step.role.replaceAll("_"," ").toUpperCase()+" · "+
+     Math.round(step.seconds)+" seconds"+(step.rare?" · LONG CUT":"")));
+ }
+}
+
 function renderAutoDj(){
  const value=String(stationSettings.bumper_every);
  const option=[...$("bumper-frequency").options].some(opt=>opt.value===value);
@@ -306,10 +335,11 @@ function renderAutoDj(){
  $("station-label").value=stationSettings.station_label;
  const active=library.filter(t=>t.kind==="bumper"&&trackAvailable(t));
  const cadence=stationSettings.bumper_every;
- $("auto-status").textContent=active.length+" recorded station ID(s) enabled. "+
-   (cadence&&active.length?"A station ID will play every "+cadence+" music tracks.":
+ $("auto-status").textContent=active.length+" published recorded bumper(s) enabled. "+
+   (cadence&&active.length?"The Bumper Brain proposes a varied break every roughly "+cadence+" songs.":
    cadence?"Cadence set, but nothing will play until you enable a bumper in the library.":
    "Automatic station IDs are currently OFF. The station plays music as before.");
+ renderBumperPreview();
 }
 async function saveAutoDj(){
  if(busy)return;
