@@ -259,7 +259,7 @@ function updateModeUI(){
   $("catch-up").hidden=mode!=="clock"||Boolean(remoteStream);
   $("next-song").hidden=mode!=="shuffle";
   modeHelp.textContent=mode==="shuffle"
-   ?"Your own radio shuffle remembers songs for one hour. If all have been heard recently, it chooses the least-recently played."
+   ?"Your own radio shuffle blends older and newer station records, remembers each song for one hour, and falls back to least-recently heard."
    :remoteStream
    ?"Tuning an independent continuous broadcast stream. Everyone connected to that stream receives the same live program."
    :"Same-time radio approximates a shared broadcast clock using official MP3s. It isn't a real server broadcast; playback may drift with buffering.";
@@ -493,8 +493,13 @@ function nextClock(shouldPlay){
     "Next record. Full song, from the beginning.");
 }
 function buildShuffle(previous=-1){
-  const songs=musicIndices();
-  for(let i=songs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[songs[i],songs[j]]=[songs[j],songs[i]]}
+  // Catalog order is early-to-late station arrival; interleave its thirds
+  // so each drive sounds like classic hits and today's cuts on one dial.
+  const originals=musicIndices();
+  const seed=(Math.random()*4294967296)>>>0;
+  const positions=window.HUMKIN_FAIR_ROTATION?.mix(originals.length,seed,seededShuffle)
+    ||seededShuffle(originals.length,seed);
+  const songs=positions.map(i=>originals[i]);
   // Keep the shuffle random while putting anything played in the last hour at
   // the back of the new cycle. The listener's history survives page refreshes.
   const sorted=shufflePolicy?.freshFirst(songs,tracks,lastPlayed,Date.now())||songs;
