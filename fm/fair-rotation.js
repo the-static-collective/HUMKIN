@@ -57,7 +57,60 @@ function cycle(n,number,shuffle){
  }
  return current;
 }
-const api=Object.freeze({mix,cycle});
+// An extra slot per curated release or single. Weave it through the usual
+// era-mixed shuffle, keeping the base order and the clock seam guards intact.
+function weightedCycle(n,number,shuffle,featuredPositions){
+ const base=cycle(n,number,shuffle);
+ if(!Array.isArray(featuredPositions)||!featuredPositions.length)return base;
+ const featured=[...new Set(featuredPositions.filter(i=>Number.isInteger(i)&&i>=0&&i<n))];
+ if(!featured.length)return base;
+ const bonus=shuffle(featured.length,(number^0x548e4ad5)>>>0).map(i=>featured[i]);
+ const guard=Math.min(4,Math.floor(n/4)),interior=n-2*guard;
+ if(interior<1)return base.concat(bonus);
+ const out=base.slice(0,guard),bonusLocations=[];
+ let added=0;
+ for(let i=guard;i<n-guard;i++){
+   const due=Math.floor((i-guard+1)*featured.length/interior);
+   while(added<due){
+     let slot=bonus.findIndex(id=>!out.slice(-4).includes(id)&&
+       !base.slice(i,Math.min(n,i+4)).includes(id));
+     if(slot<0)slot=bonus.findIndex(id=>!out.slice(-4).includes(id));
+     if(slot<0)slot=0;
+     bonusLocations.push(out.length);
+     out.push(bonus.splice(slot,1)[0]);added++;
+   }
+   out.push(base[i]);
+ }
+ out.push(...base.slice(n-guard));
+ // Repair rare near-repeat collisions by exchanging *only* bonus slots.
+ // The base order and protected beginning/end of every cycle never move.
+ const penalty=()=>{
+   let total=0;
+   for(let i=1;i<out.length;i++)
+     for(let d=1;d<=4&&d<=i;d++)
+       if(out[i]===out[i-d])total+=5-d;
+   return total;
+ };
+ let current=penalty();
+ for(let attempts=0;attempts<8&&current>0;attempts++){
+   let improved=false;
+   for(const i of bonusLocations){
+     if(!out.slice(Math.max(0,i-4),i).includes(out[i]) &&
+        !out.slice(i+1,i+5).includes(out[i]))continue;
+     for(const j of bonusLocations){
+       if(i===j||out[i]===out[j])continue;
+       [out[i],out[j]]=[out[j],out[i]];
+       const candidate=penalty();
+       if(candidate<current){current=candidate;improved=true;break;}
+       [out[i],out[j]]=[out[j],out[i]];
+     }
+     if(improved)break;
+   }
+   if(!improved)break;
+ }
+ return out;
+}
+const api=Object.freeze({mix,cycle,weightedCycle});
 if(typeof module!=="undefined"&&module.exports)module.exports=api;
 root.HUMKIN_FAIR_ROTATION=api;
 })(typeof window!=="undefined"?window:globalThis);
