@@ -1,6 +1,8 @@
 package org.abundent.humkinradio;
 
 import android.content.Context;
+import android.animation.ValueAnimator;
+import android.os.SystemClock;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -200,24 +202,77 @@ final class HumkinVisuals {
         return image;
     }
 
-    static View waveform(Context context) {
-        return new View(context) {
-            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            private final int[] heights = {4, 7, 5, 11, 16, 13, 8, 5, 7, 12, 9, 7, 4,
-                    6, 10, 15, 18, 13, 9, 5, 7, 11, 14, 9, 7, 4};
+    /**
+     * A small procedural on-air meter, driven by the actual Media3 playing
+     * state. It is NOT the decoded song's frequency spectrum: that would
+     * require extra permissions / a separate audio capture path. The meter
+     * is deliberately cheap, stops when hidden or paused, and honors Android's
+     * reduced-motion setting.
+     */
+    static HumkinWaveform waveform(Context context) {
+        return new HumkinWaveform(context);
+    }
 
-            @Override protected void onDraw(Canvas canvas) {
-                float step = getWidth() / (float) heights.length;
-                paint.setColor(0xffc292a6);
-                paint.setStrokeCap(Paint.Cap.ROUND);
-                paint.setStrokeWidth(step * .40f);
-                for (int i = 0; i < heights.length; i++) {
-                    float x = step * (i + .5f);
-                    float base = getHeight() - step * .24f;
-                    canvas.drawLine(x, base, x, base - getHeight() * heights[i] / 23f, paint);
-                }
-            }
+    static final class HumkinWaveform extends View {
+        private static final int[] HEIGHTS = {
+            4, 7, 5, 11, 16, 13, 8, 5, 7, 12, 9, 7, 4,
+            6, 10, 15, 18, 13, 9, 5, 7, 11, 14, 9, 7, 4
         };
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private boolean active;
+        private boolean visible;
+        private long startedMs;
+
+        HumkinWaveform(Context context) {
+            super(context);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
+
+        void setActive(boolean playing) {
+            if (active == playing) return;
+            active = playing;
+            if (playing) startedMs = SystemClock.uptimeMillis();
+            invalidate();
+        }
+
+        @Override public void onVisibilityAggregated(boolean isVisible) {
+            super.onVisibilityAggregated(isVisible);
+            visible = isVisible;
+            if (visible) invalidate();
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            float step = getWidth() / (float) HEIGHTS.length;
+            float center = getHeight() * .5f;
+            float available = Math.max(0f, center - dp(getContext(), 1.5f));
+            boolean moving = active && visible && ValueAnimator.areAnimatorsEnabled();
+            float time = (SystemClock.uptimeMillis() - startedMs) / 1000f;
+            paint.setColor(0xffc292a6);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setStrokeWidth(step * .40f);
+            for (int i = 0; i < HEIGHTS.length; i++) {
+                float shape = HEIGHTS[i] / 23f;
+                float level = .08f + shape * .84f;
+                if (moving) {
+                    // Several incommensurate waves produce recognizable but
+                    // non-mechanical motion, without reading microphone audio.
+                    double drift = .56 * Math.sin(time * 4.1 + i * .63)
+                                 + .28 * Math.sin(time * 2.35 - i * .32)
+                                 + .16 * Math.sin(time * 6.15 + i * 1.42);
+                    float energy = (float) Math.min(1.0, Math.abs(drift) * 1.43);
+                    level = .13f + (.20f + .64f * energy)
+                                  * (.48f + .52f * shape);
+                }
+                float x = step * (i + .5f);
+                float extension = level * available;
+                canvas.drawLine(x, center - extension,
+                        x, center + extension, paint);
+            }
+            // Never spin a draw loop while the receiver is paused, off-screen
+            // or the user has disabled system animations.
+            if (moving) postInvalidateDelayed(45L);
+        }
     }
 
     private static final class StationIcon extends Drawable {
