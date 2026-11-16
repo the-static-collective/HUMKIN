@@ -119,8 +119,8 @@ def public_inventory():
 # A published joke seed is not a broadcast cart. This endpoint exposes only
 # APPROVED seed text under RLS; never use a service_role key in GitHub Actions.
 APPROVED_URL=("https://kbhqacsdvjsstzyplqij.supabase.co/rest/v1/"
- "humkin_radio_script_seeds?select=slug,script,level,family,role"
- "&status=eq.approved&order=updated_at.desc&limit=200")
+ "humkin_radio_script_seeds?select=slug,script,level,family,role,status"
+ "&status=in.(approved,retired)&order=updated_at.desc&limit=200")
 def approved_seeds(fetch_url=APPROVED_URL, key=None):
     key=key or os.environ.get("HUMKIN_SEEDS_PUBLIC_KEY")
     if not key:
@@ -130,26 +130,29 @@ def approved_seeds(fetch_url=APPROVED_URL, key=None):
         rows=json.load(response)
     if not isinstance(rows,list) or len(rows)>200:
         raise ValueError("Malformed approved joke seed response")
-    result,seen=[],set()
+    result,seen,retired=[],set(),set()
     for row in rows:
         if not isinstance(row,dict):raise ValueError("Unexpected approved joke seed")
-        slug,script,level,family,role=(row.get(n) for n in
-            ("slug","script","level","family","role"))
+        slug,script,level,family,role,status=(row.get(n) for n in
+            ("slug","script","level","family","role","status"))
         if not (isinstance(slug,str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,68}[a-z0-9]",slug)
           and isinstance(script,str) and 8<=len(script.strip())<=195
           and not any(x in script for x in ("\r","\n","\x00"))
           and level in LEVELS and isinstance(family,str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,48}",family)
-          and role in ("station_id","character") and slug not in seen):
+          and role in ("station_id","character") and status in ("approved","retired") and slug not in seen):
             raise ValueError("Invalid or duplicate approved seed metadata")
-        seen.add(slug);result.append((slug,script,level,family,role))
-    return result
+        seen.add(slug)
+        if status=="retired":retired.add(slug)
+        else:result.append((slug,script,level,family,role))
+    return result,retired
 
-def select_scripts(seed, count, level, inventory, approved=None):
+def select_scripts(seed, count, level, inventory, approved=None, retired=None):
     r = random.Random(int.from_bytes(hashlib.sha256(seed.encode()).digest()[:8],"big"))
     merged={row[0]:row for row in BANK + (public_inventory() if inventory else [])}
     # Owner-approved revisions replace built-ins with the same slug; private
     # drafts and retired entries are never available to this script.
     for row in approved or []:merged[row[0]]=row
+    for slug in retired or set():merged.pop(slug,None)
     pool=list(merged.values())
     if level != "mix":
         pool = [x for x in pool if x[2] == level]
@@ -217,8 +220,8 @@ def main():
     except ValueError as e:p.error(str(e))
     seed=a.seed or dt.datetime.now(dt.timezone.utc).strftime("%G-W%V")
     try:
-        approved=approved_seeds() if a.cloud_approved else []
-        chosen=select_scripts(seed,a.count,a.absurdity,not a.no_inventory,approved)
+        approved,retired=approved_seeds() if a.cloud_approved else ([],set())
+        chosen=select_scripts(seed,a.count,a.absurdity,not a.no_inventory,approved,retired)
     except (ValueError,OSError) as e:
         p.error("Could not read the approved seed catalog: "+str(e))
     out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
@@ -228,6 +231,7 @@ def main():
       "editorial_notes":"Comedy about universal human foibles, not at the expense of a faith, ethnicity, age or community.",
       "signal_notes":"No static baked in. Approved seed TEXT read only. No cloud writes or broadcasting.",
       "approved_script_count":len(approved),"approved_script_ids":[row[0] for row in approved],
+      "retired_script_ids":sorted(retired),
       "items":[]}
     def render(script_tuple,engine,finish,number,group):
         slug,script,level,family,role=script_tuple
@@ -250,7 +254,7 @@ def main():
     if a.compare:
         # The same *evergreen* script through all available voices and finishes.
         # This is an honest apples-to-apples sonic A/B, not more random jokes.
-        common=next(x for x in BANK if x[0]=="extra-chair")
+        common=next((x for x in approved+chosen if x[0]=="extra-chair"),chosen[0])
         for engine in engines:
             for finish in FINISHES:
                 render(common,engine,finish,len(manifest["items"])+1,"comparison")
