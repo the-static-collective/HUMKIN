@@ -708,8 +708,15 @@ public final class MainActivity extends Activity {
                         shuffle = loaded.queueFromIds(saved.remainingIds);
                         resume = !shuffle.isEmpty() &&
                                 saved.currentId.equals(shuffle.get(0).mediaId);
-                        if (resume) resumeMs = loaded.resumePositionMs(
-                                saved.currentId, saved.positionMs);
+                        if (resume) {
+                            resumeMs = loaded.resumePositionMs(
+                                    saved.currentId, saved.positionMs);
+                            // A checkpoint near the end of a rotation must
+                            // not loop its final record forever. Extend with
+                            // a new full, fresh-weighted random rotation.
+                            shuffle.addAll(loaded.shuffleQueue(
+                                    recentPlayTimes(), System.currentTimeMillis()));
+                        }
                     }
                     if (!resume) shuffle = loaded.shuffleQueue(
                             recentPlayTimes(), System.currentTimeMillis());
