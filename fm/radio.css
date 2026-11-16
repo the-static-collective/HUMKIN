@@ -29,3 +29,15 @@
 .league-passage p:not(.eyebrow){max-width:590px;margin-bottom:0}
 .league-passage .button{background:var(--yellow);flex:none}
 @media(max-width:800px){.league-passage{flex-direction:column;align-items:start;padding:45px 6%}}
+
+/* ORCHARD 001 · a small growing annex to the existing radio, not a player replacement */
+.orchard-passage{display:grid;grid-template-columns:minmax(180px,.42fr) minmax(0,1fr);max-width:1200px;gap:clamp(25px,5vw,65px);align-items:center;padding:50px 5% 75px;margin:auto}
+.orchard-emblem{height:clamp(195px,27vw,300px);position:relative;border:3px solid #221b39;border-radius:18px;background:radial-gradient(circle at 40% 80%,#4c7f6d 0 24%,transparent 25%),linear-gradient(#a8c2c9,#f2d9a3);box-shadow:9px 9px 0 #c4a3ae;display:grid;place-items:center;font-size:clamp(75px,12vw,124px)}
+.orchard-emblem i{position:absolute;top:13px;right:25px;font-size:28px;color:#fff1a7;font-style:normal}
+.orchard-emblem b{position:absolute;bottom:2px;right:10px;font-size:clamp(56px,9vw,95px)}
+.orchard-message h2{font-size:clamp(40px,6vw,77px);line-height:.97;letter-spacing:-.065em;font-weight:1000;margin:8px 0 22px}
+.orchard-message h2 em{font-style:normal;color:#ad5b87}
+.orchard-message p{max-width:630px}.orchard-stats{display:inline-block;background:#ffe0a0;border:2px solid #221b39;border-radius:22px;padding:7px 12px;font-size:11px;font-weight:950;letter-spacing:.06em}
+.orchard-message .button{display:inline-block;margin:12px 0 13px;background:#bcdcc3}
+.orchard-message small{display:block;font-size:9px;letter-spacing:.08em;font-weight:850}
+@media(max-width:700px){.orchard-passage{grid-template-columns:1fr;padding:38px 5% 65px}.orchard-emblem{max-width:380px;width:100%;height:200px}}

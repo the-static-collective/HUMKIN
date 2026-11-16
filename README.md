@@ -112,3 +112,11 @@ The user-supplied `HaileyLu Bloom.mp3` (Suno id `b6d91f50-f082-4e47-9dc8-56ac9ed
 ## Added to the radio: Leave The Kettle On (November 13)
 
 Creator-supplied 2:53.952 original MP3 now lives at `fm/audio/leave-the-kettle-on.mp3`, SHA-256 `c855100c353b8f229c0811bf67c079f5e038dca4316b5a08a90cf10225e08d3d`, 3,925,398 bytes. The song is included in the 21-track shared station clock and Road Shuffle. The newest-single spotlight now plays this song first and continues through the full no-repeat rotation; HaileyLu Bloom remains included. Original album landing is unchanged. No audio re-encoding was performed.
+
+
+## HUMKIN ORCHARD 001 — listener-grown world (November 16, 2026)
+
+New playable annex: /fm/orchard/ . Listeners can play the **real station song catalog** in a repeat-free orchard mix, earn **local-only** HUM and XP from actual audio progress, decorate an illustrated room and garden with **30 shop objects**, discover **eight strange listening finds** and unlock a voluntary SHA-256 radio-catalog workbench at level 4. Existing /fm/ listening now also earns local Orchard points through a separate bridge without touching server-side Top 42 league scoring. Mobile-friendly, shareable read-only visit snapshots, import/export backups and PWA install manifest. /fm/ and /fm/top42/ link to the annex.
+
+**Boundaries:** All rewards, serials, inventories and receipts remain on one device; neither peer trading nor real GHoT distributed work has shipped. The workbench performs a bounded local metadata audit with a local-only receipt; it doesn't run remote user tasks or certify a global contribution. No financial token, no background mining, no phone-on rewards. Android native APK isn't changed by this browser/PWA work. See docs/ORCHARD-001.md and tests/orchard.test.cjs.
+

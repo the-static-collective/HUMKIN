@@ -1,0 +1,18 @@
+{
+  "name": "HUMKIN ORCHARD — The Little Listening World",
+  "short_name": "HUMKIN ORCHARD",
+  "description": "A local-first listening room that grows with real HUMKIN RADIO plays.",
+  "start_url": "./",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#f9eddb",
+  "theme_color": "#241b32",
+  "icons": [
+    {
+      "src": "../../cover.jpg",
+      "sizes": "1080x1080",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
