@@ -69,6 +69,7 @@ dialog input:not([type=checkbox]),dialog select{width:100%}
 <script defer src="../scheduler.js"></script>
 <script defer src="../art-library.js"></script>
 <script type="module" src="./manager.js"></script>
+<script defer src="../bumper-brain.js"></script>
 </head><body>
 <header class="topline"><a href="../" class="brand">HUMKIN <span>✳</span></a><span class="station-id">STATION MANAGER / PRIVATE</span><a href="../" class="dj-link">← RADIO</a></header>
 <main>
@@ -146,6 +147,10 @@ dialog input:not([type=checkbox]),dialog select{width:100%}
 <div><label for="station-label">Station name</label><input id="station-label" maxlength="90" value="HUMKIN RADIO"></div>
 </div>
 <p id="auto-status" role="status" class="sub">Reading station automation settings…</p>
+<h3>✳ Bumper Brain · next breaks</h3>
+<p class="sub">A deterministic sample rundown from today’s eligible recordings. Long show openers and feature clips stay available for deliberate programming, not routine interrupts. Public listeners receive the same clock-compatible break plan.</p>
+<ol id="bumper-preview" aria-live="polite"><li>Sign in to inspect the break plan.</li></ol>
+<p id="bumper-held" class="sub"></p>
 <div class="row"><button id="auto-save" class="primary">SAVE AUTO DJ SETTINGS ↗</button><a href="../load/" class="button secondary">UPLOAD A BUMPER ↗</a></div>
 <p class="sub">Automatic IDs play in both Same-Time RADIO and Road Shuffle. Explicitly scheduled shows retain their own ordered playlists. Changes take effect when listeners refresh. Default is OFF; no unexpected interruptions.</p>
 </section>
