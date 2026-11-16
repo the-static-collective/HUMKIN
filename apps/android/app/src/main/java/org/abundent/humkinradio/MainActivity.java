@@ -440,7 +440,7 @@ public final class MainActivity extends Activity {
         ImageView cover = HumkinVisuals.art(this, artwork);
         LinearLayout.LayoutParams coverSize = wideCards
                 ? new LinearLayout.LayoutParams(0, dp(106), .88f)
-                : new LinearLayout.LayoutParams(dp(104), dp(112));
+                : new LinearLayout.LayoutParams(dp(104), dp(104));
         card.addView(cover, coverSize);
 
         LinearLayout labels = column();
