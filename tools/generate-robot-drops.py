@@ -27,44 +27,16 @@ ENGINES = ("espeak", "flite", "festival")
 # slug / spoken original line / absurdity / family / station role.
 # Deliberately intelligible across generations: bread, neighbors, chairs,
 # cows, weather, belonging, work and gentle human contradictions.
-BANK = [
- ("neighbor-soup","A neighbor brought soup. We have been promoted to friends.","plain","neighbors","character"),
- ("bread-box","The key was in the bread box. Again. Everything is all right.","plain","kitchen","station_id"),
- ("three-brooms","We own three brooms. Not one of them has swept the floor.","plain","chores","character"),
- ("last-pancake","Nobody wanted the last pancake. So it stayed for breakfast.","plain","kitchen","character"),
- ("rooster-sleep","The rooster started early. The hens voted to sleep in.","plain","farm","character"),
- ("extra-chair","HUMKIN RADIO. There's an extra chair at the table. Pull it up.","plain","neighbors","station_id"),
- ("good-wood","The wood was wet. The fire took its time. So did we.","plain","hearth","station_id"),
- ("one-more-song","The kettle has boiled. The work can wait one more song.","plain","kitchen","station_id"),
- ("quiet-gift","Someone left the porch light on. Nobody asked who.","plain","neighbors","character"),
- ("proper-hat","The hat was upside down. We wore it anyway.","wry","clothing","character"),
- ("committee-broom","The committee on sweeping has agreed to meet after the sweeping.","wry","chores","character"),
- ("hay-meeting","A meeting was held in the hayloft. The hay was absent.","wry","farm","character"),
- ("goose-refused","We asked the goose for directions. It has declined to comment.","wry","farm","character"),
- ("two-mugs","HUMKIN RADIO. Two mugs, one kettle, and a very long argument over who asked first.","wry","kitchen","station_id"),
- ("chair-vote","The chairs voted on whether to move. The motion did not carry.","wry","furniture","character"),
- ("ladder-report","The ladder has been inspected. The inspector is still up there.","wry","chores","character"),
- ("cake-judges","We held a contest for the best cake. The judges ate the results.","wry","kitchen","character"),
- ("counting-eggs","The eggs have been counted twice. The hens disagree.","wry","farm","character"),
- ("cow-apology","The cow issued a formal apology. Nobody remembers what for.","strange","farm","character"),
- ("wooden-spoon","The wooden spoon has resigned from the soup. It would like to stir elsewhere.","strange","kitchen","character"),
- ("barn-visitor","The barn has asked to be treated as a guest. It has always lived here.","strange","farm","character"),
- ("chair-needs-chair","The chair has requested a chair to sit on. We are considering it.","strange","furniture","character"),
- ("lost-tuesday","We found the missing day behind a sack of flour. It was still fresh.","strange","kitchen","character"),
- ("boots-union","HUMKIN RADIO. The boots have formed a union. They refuse to walk alone.","strange","clothing","station_id"),
- ("quiet-committee","The committee on silence has made an announcement. It was well received.","strange","records","character"),
- ("supper-clock","The supper bell rang at breakfast. Everybody came anyway.","strange","kitchen","character"),
- ("fence-argument","The fence has taken both sides of an argument. This is normal for a fence.","strange","farm","character"),
- ("moon-invoice","The moon sent the barn a bill for light. The barn requested a candle.","cosmic","farm","character"),
- ("wind-hat","The wind has resigned. The hats have never been happier.","cosmic","clothing","character"),
- ("future-bread","Tomorrow came by looking for bread. We told it to come back yesterday.","cosmic","kitchen","character"),
- ("north-south","The north wind and the south wind shook hands. The house fell quiet.","cosmic","hearth","character"),
- ("patient-mountain","HUMKIN RADIO. The mountain has been waiting for us. It says there is no hurry.","cosmic","earth","station_id"),
- ("oldest-chair","This chair has witnessed a thousand dinners. It remembers the pie.","cosmic","furniture","character"),
- ("universe-chores","The universe asked what we were making. We said supper. It stayed.","cosmic","kitchen","character"),
- ("stars-garden","The stars planted a garden in the dark. The weeds look magnificent.","cosmic","earth","character"),
- ("kingdom-soup","The king asked for riches. The cook brought soup. Nobody complained.","cosmic","kitchen","character"),
-]
+# Built-ins are readable by the Station Manager Seed Garden. Owner-approved cloud
+# revisions override matching slugs at generation time; drafts never do.
+BUILTIN_SEEDS_PATH = Path(__file__).resolve().parents[1] / "fm/studio/robot-seeds.json"
+def load_builtin_seeds():
+    data = json.loads(BUILTIN_SEEDS_PATH.read_text(encoding="utf-8"))
+    if data.get("schema") != "humkin.radio.robot-seeds/v1":
+        raise ValueError("Unrecognized built-in robot seed bank")
+    return [(x["slug"],x["script"],x["level"],x["family"],x["role"]) for x in data["seeds"]]
+BANK = load_builtin_seeds()
+
 assert len({x[0] for x in BANK}) == len(BANK), "Script slugs must be unique"
 
 def run(command, *, input_text=None):
