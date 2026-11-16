@@ -1,56 +1,38 @@
-# HUMKIN RADIO · Android native receiver
+# HUMKIN RADIO Android · v0.3 visual pass
 
-**Version 0.2 source prototype, CI build required, not Google Play published.**
+Approved visual direction implemented as real Java native UI, not a WebView or screenshot:
+warm cream canvas, plum now-playing console, yellow/mint/pink controls,
+rounded station buttons, landscape artwork fallback, actual remote album
+covers, mode cards, large ALBUMS button, separate native album shelf.
 
-The native receiver uses AndroidX Media3/ExoPlayer MediaSessionService, enabling
-audio to continue when its Activity disappears on screen lock.
+## Tested/working in source
+- Native SAME-TIME and ROAD SHUFFLE retain v0.2 behavior.
+- ALBUMS has two verified published manifest sources:
+  * MUTANT POP — 12-song album (root `tracks.json`);
+  * everywhere;near you — 7-song album (`releases/everywhere-near-you/tracks.json`).
+- Each album's PLAY fetches its public track manifest and hands native
+  Media3 a complete album playlist; background audio and lock-screen controls
+  use the **existing** player service.
+- Warmth and Singles cards route to radio modes instead of pretending they
+  have a published standalone album manifest. Dedicated Warmth and singles
+  library pages can be wired when their real source manifests are available.
+- Album page and radio mode navigation preserve active playback. Returning
+  to radio does not interrupt an album until a listener actively tunes.
+- The privacy and fictional archive open the existing public site.
+- All artwork downloads are strictly HTTPS from humkin.abundent.org;
+  unverified media falls back to the locally drawn sunset, never an empty box.
+- No sign-in, advertisements, tracking, offline bulk downloads, media file
+  packaging or additional runtime permissions.
 
-## Two native listening modes
+## Device acceptance
+Run `gradle -p apps/android :app:assembleDebug :app:testDebugUnitTest`.
+On device verify:
+1. The cream/plum UI scales at 320–420dp and scrolls with readable labels.
+2. Tune both radio modes, then visit ALBUMS and return without losing playback.
+3. PLAY either album; test sequential playing on the locked screen and
+   the next-track control; test switching back to radio.
+4. Verify fallbacks on slow/no network, theme colors and cover loading.
+5. Confirm the three-song station ID cadence still comes from backend config.
 
-1. **Same-Time Radio (new):** Java port of the browser's `seededShuffle`,
-   cycle-duration calculation and every-N station ID insertion. It reads
-   static `fm/rotation.json`, the nine owner-approved `fm/air-carts.json`
-   items, public static metadata overrides, cloud published/approved tracks,
-   public bumper settings and the station clock RPC. When you tune in it seeks
-   once to the shared nominal song and position. Subsequent songs play in full,
-   and MediaSessionService extends deterministic cycles even screen-off.
-2. **Road Shuffle:** native personal shuffle + approved bumpers; next button.
-
-Both avoid WebView playback, ads and analytics.
-
-## Important radio boundaries
-
-- **Same-Time** is a client-side approximate sync, not an Icecast transmitter.
-  Media buffering, Android clock drift and reconnections may move receivers
-  out of phase. Explicit **CATCH UP TO AIR** retunes to the nominal time.
-- **The native V0.2 clock implements the ordinary seeded rotation only.**
-  Currently no active scheduled program is stored in the station DB. If
-  special scheduled shows are later enabled, the web dial may differ.
-- Browser-only analogue static texture (37.8% setting) is **not yet** present
-  natively. No baked hiss on Road Shuffle or source MP3s.
-- The public cloud catalog must be reachable to achieve clock parity. If any
-  source fails, the receiver labels itself *approximate*, not perfectly synced.
-- The service's rolling station plan lives inside the app process; if Android
-  kills the service process, use Tune In again.
-- New approved songs join when the user retunes. Currently playing songs
-  complete; the app does not interrupt one for real-time catalog updates.
-- Supabase publishable key uses existing public RLS-only endpoints; not service
-  role credentials. No tracking, login, location, microphone or offline cache.
-
-## Build & verification
-
-Requires JDK 17 / Android SDK 36 / Gradle 8.13.
-
-```sh
-cd apps/android
-gradle :app:assembleDebug :app:testDebugUnitTest
-```
-
-Debug APK is attached to CI. Device test required, preferably Android 11 and
-Android 16: tune-in Same-Time vs website during same minute; listen through
-three song boundaries with screen locked; make an incoming call and verify
-audio focus; press Catch Up; test Road Shuffle and Bluetooth headset controls.
-This code is not a Play Store release; owner enrollment and signed AAB are
-still required.
-
-Package ID `org.abundent.humkinradio`; confirm before store registration.
+This is an unsigned-for-store debug build; Google Play developer enrollment,
+physical receiver tests, and production signing are still pending.
