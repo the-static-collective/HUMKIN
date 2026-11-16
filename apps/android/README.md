@@ -1,14 +1,21 @@
-# HUMKIN RADIO Android · v0.7
+# HUMKIN RADIO Android · v0.8
 
 ## Listener-first receiver / install recovery
 
-**Install this build as `HUMKIN RADIO FIELD TEST`**, a separate Android
-package `org.abundent.humkinradio.fieldtest`. GitHub runners may generate
+**Install this build as `HUMKIN RADIO RECEIVER`**, a separate Android
+package `org.abundent.humkinradio.receiver`. This is a **new test identity**
+so Android can install it beside the v0.7 Field Test, whose ephemeral CI signing
+key cannot be reused. GitHub runners may generate
 different debug signing keys on each run; Android refuses to replace an
 installed same-package build signed with a different key ("App not installed").
 The field-test package has its own identity, so it can be installed alongside
 a previous HUMKIN RADIO debug APK without removing the older receiver.
 Install the file `app-fieldTest.apk` from the CI field-test artifact.
+**The v0.7 Field Test cannot be upgraded in place** because its signing key
+was ephemeral. We are avoiding an uninstall for this test, but the new test app
+will start with its own local preferences/history. Once v0.8 works, the older
+Field Test can be removed. Further repeatable upgrades require a securely
+stored permanent signing key; do not distribute a development keystore publicly.
 
 This is a **one-time compatibility workaround**, not stable production signing.
 Subsequent field-test upgrades can still hit the signature conflict if CI uses
@@ -16,6 +23,18 @@ a new ephemeral key. A permanent protected keystore and production signing
 process are needed before a public/store release. If installation still fails,
 check the Android unknown-apps permission, device storage, complete download,
 and the exact installer error. Do not uninstall the original app prematurely.
+
+### v0.8 radio interactions
+- Tapping **SAME-TIME RADIO** (including when already selected) now tunes
+  and plays. If the native Media3 controller is not ready yet, the tap's
+  intent is saved until the controller connects; repeated taps on an already
+  playing dial do not restart the current record. The ROAD SHUFFLE mode button
+  follows the same behavior. Paused Same-Time mode retunes to the clock.
+- The small **waveform beneath Now Playing animates** while music is actually
+  playing; it stops on pause, buffering, screen switch, leaving the Activity,
+  or Android's reduced-motion setting. Album waveform animates only when the
+  album is the active source. These bars are *procedural animation*, not an
+  audio-reactive FFT: no microphone, media capture, or new permissions.
 
 ### New listener affordances
 - **Coming up on the dial:** the actual next queued Media3 record; Same-Time
@@ -86,8 +105,11 @@ narrow screens or with larger system text.
 ## Device acceptance
 Run `gradle -p apps/android :app:assembleDebug :app:assembleFieldTest :app:testDebugUnitTest :app:testFieldTestUnitTest`.
 On device verify:
-1. Install the **Field Test** APK alongside the original if its debug signature differs.
+1. Install the **Receiver** APK alongside the original or v0.7 Field Test if debug signatures differ.
    Confirm separate app icon/label and verify it does not erase the old app.
+   Check first-tap SAME-TIME RADIO auto-plays even if the media controller
+   was still connecting; tapping again while already playing must not jump.
+   Test play/pause wave movement in both Radio and Albums; no hidden animation.
 2. The cream/ink/yellow UI scales at 320–420dp and scrolls with readable labels.
 3. Tune both radio modes, then visit ALBUMS and return without losing playback.
    Next Record is available in Road Shuffle. Catch Up to Air follows Same-Time Radio.
