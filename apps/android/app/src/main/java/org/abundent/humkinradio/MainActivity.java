@@ -3,6 +3,7 @@ package org.abundent.humkinradio;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.net.Uri;
@@ -115,7 +116,7 @@ public final class MainActivity extends Activity {
     private void buildScreen() {
         int width = getResources().getConfiguration().screenWidthDp;
         float fontScale = getResources().getConfiguration().fontScale;
-        wideCards = width >= 350 && fontScale <= 1.20f;
+        wideCards = width >= 370 && fontScale <= 1.15f;
         int inset = width < 350 ? 11 : 15;
 
         scroll = new ScrollView(this);
@@ -330,7 +331,12 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams labelsSize = flex(7);
         labelsSize.weight = 1.12f;
         card.addView(labels, labelsSize);
-        TextView name = text(title, 16, INK, true);
+        boolean publishedAlbum = icon == Icon.PLAY;
+        boolean longTitle = wideCards && AlbumCatalog.EVERYWHERE.title.equals(title);
+        TextView name = text(longTitle ? "everywhere;\nnear you" : title,
+                longTitle ? 15 : 16, INK, true);
+        if (longTitle) name.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+        if (wideCards && publishedAlbum) name.setMinLines(2);
         name.setGravity(Gravity.START);
         labels.addView(name, wrap(2));
 
@@ -341,11 +347,12 @@ public final class MainActivity extends Activity {
         labels.addView(accent, line);
 
         TextView description = text(detail, 12, INK, false);
+        if (wideCards && publishedAlbum) description.setMinLines(3);
         description.setGravity(Gravity.START);
         HumkinVisuals.italic(description);
         labels.addView(description, wrap(5));
 
-        Button play = pill(action, wideCards ? null : icon, YELLOW, 12);
+        Button play = pill(action, wideCards && !publishedAlbum ? null : icon, YELLOW, 12);
         play.setContentDescription(action.equals("PLAY") ? "Play " + title : title + ", " + action);
         play.setOnClickListener(v -> open.run());
         labels.addView(play, wrap(5));
