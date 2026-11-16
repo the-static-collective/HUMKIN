@@ -16,16 +16,34 @@ import androidx.media3.session.MediaSessionService;
  */
 public final class RadioPlaybackService extends MediaSessionService {
     private static RadioCatalog.Station sameTimeStation;
+    private static volatile boolean staticEnabled = true;
+    private static RadioPlaybackService activeService;
     private static long upcomingCycle;
     private ExoPlayer player;
     private MediaSession session;
     private int consecutiveFailures;
+    private WarmStaticBed warmStatic;
 
     static void armSameTime(RadioCatalog.Station station,long firstUnqueuedCycle) {
         sameTimeStation=station;
         upcomingCycle=firstUnqueuedCycle;
+        if (activeService != null) activeService.syncWarmStatic();
     }
-    static void clearSameTime() {sameTimeStation=null;}
+    static void clearSameTime() {
+        sameTimeStation=null;
+        if (activeService != null) activeService.syncWarmStatic();
+    }
+    static void setWarmStaticEnabled(boolean enabled) {
+        staticEnabled=enabled;
+        if (activeService != null) activeService.syncWarmStatic();
+    }
+
+    private void syncWarmStatic() {
+        if (warmStatic == null || player == null) return;
+        // Never add this layer to Road Shuffle or album playback.
+        warmStatic.setAudible(staticEnabled && sameTimeStation != null
+                && player.isPlaying() && player.getPlaybackState() == Player.STATE_READY);
+    }
 
     private void extendClockIfNeeded() {
         if (sameTimeStation==null||player==null||player.getMediaItemCount()==0)return;
@@ -40,6 +58,10 @@ public final class RadioPlaybackService extends MediaSessionService {
 
     @Override public void onCreate() {
         super.onCreate();
+        activeService=this;
+        staticEnabled=getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                .getBoolean("analog-static",true);
+        warmStatic=new WarmStaticBed();
         player=new ExoPlayer.Builder(this).build();
         player.setAudioAttributes(new AudioAttributes.Builder()
                 .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
@@ -47,6 +69,9 @@ public final class RadioPlaybackService extends MediaSessionService {
         player.setHandleAudioBecomingNoisy(true);
         player.setRepeatMode(Player.REPEAT_MODE_ALL);
         player.addListener(new Player.Listener(){
+            @Override public void onEvents(Player player,Player.Events events) {
+                syncWarmStatic();
+            }
             @Override public void onPlaybackStateChanged(int state) {
                 if(state==Player.STATE_READY)consecutiveFailures=0;
             }
@@ -70,6 +95,11 @@ public final class RadioPlaybackService extends MediaSessionService {
 
     @Override public void onDestroy() {
         sameTimeStation=null;
+        if (warmStatic != null) {
+            warmStatic.close();
+            warmStatic=null;
+        }
+        if (activeService == this) activeService=null;
         if(session!=null){session.release();session=null;}
         if(player!=null){player.release();player=null;}
         super.onDestroy();
