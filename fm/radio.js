@@ -752,7 +752,7 @@ async function boot(){
       ?"CURRENT DIAL · "+songCount+" songs · "+stationIds+" station carts."
       :"LIMITED DIAL · "+songCount+" local songs available. Cloud songs did not load; refresh when your connection improves.";
     $("playlist-note").textContent=catalogLabel+" "+
-      (stationIds&&stationSettings.bumper_every?"Station IDs every "+stationSettings.bumper_every+" songs.":"");
+      (stationIds&&stationSettings.bumper_every?"STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     beginHostedMetadata();
