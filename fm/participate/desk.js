@@ -97,6 +97,15 @@ function openMission(kind){
  $("work-file").accept=kind==="video"?"video/mp4,video/webm,.mp4,.webm":
   "audio/mpeg,audio/mp4,audio/wav,.mp3,.m4a,.wav";
  status("Nothing will be posted or broadcast automatically. Submission enters a private human review queue.");
+ const abilities={
+  street:"DRAFT A CLEARLY DISCLOSED POST",video:"GENERATE A VIDEO SHOT LIST",
+  bumper:"DRAFT A STATION ID",script:"FIND A SCRIPT SEED",
+  segment:"OUTLINE A SHORT REPORT",song:"CREATE A RELEASE CHECKLIST",
+  server:"MAKE A VOLUNTEER NODE CHECKLIST"
+ };
+ $("guild-toolbox").hidden=localLevel()<m.level;
+ $("generate-tool").textContent="✳ "+abilities[kind];
+ $("guild-generated").textContent="";
  $("workbench").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("close-form").addEventListener("click",()=>{$("workbench").hidden=true;active=""});
@@ -174,6 +183,58 @@ async function send(event){
  }catch(error){status(error.message||"Transmission failed",false)}
  finally{sending=false;$("send-work").disabled=false}
 }
+function createGuildDraft(kind){
+ const name=$("work-name").value.trim()||"HUMKIN RADIO";
+ const length=Number($("work-duration").value||30);
+ switch(kind){
+  case "street":return "I\u2019m sharing HUMKIN Radio as part of a voluntary community street-team mission that may earn me HUMKIN in-game contribution credits. My opinions are my own. Check out the music here: https://humkin.abundent.org/fm/ #HUMKIN";
+  case "video":return "HUMKIN VIDEO SHOT LIST — "+name+"\n"+
+    "00:00–00:05 · Establish a place, a person, or an object worth noticing.\n"+
+    "00:05–00:"+String(Math.max(10,Math.floor(length*.35))).padStart(2,"0")+" · Movement that follows the first musical idea.\n"+
+    "MIDDLE · Return to the same visual idea, but something has changed.\n"+
+    "FINAL SHOT · Let the scene finish on its own terms.\n"+
+    "Production note: use your own images or footage, and music you have permission to synchronize.";
+  case "bumper":return "STATION IDENTIFICATION IDEA\n"+
+    "[A little room tone or honest silence]\n"+
+    "This is HUMKIN Radio. We have been advised that "+name.toLowerCase()+
+    " might constitute an improvement. The committee has entered a note.\n"+
+    "HUMKIN Radio. Always something on.";
+  case "script":return "THE STATION HAS RECEIVED A SINGLE REPORT\n"+
+    "A single person once observed "+name.toLowerCase()+
+    ". Officials immediately classified it as the beginning of a nationwide trend.\n"+
+    "Reporting live from the evidence department, this is HUMKIN Radio.";
+  case "segment":return "REPORT OUTLINE · "+name+"\n"+
+    "1. What actually happened? Include a verifiable source.\n"+
+    "2. Who was directly involved, and what is not yet known?\n"+
+    "3. How does it affect an ordinary listener?\n"+
+    "4. End with a factual takeaway and a clear sign-off.";
+  case "song":return "ORIGINAL SONG DELIVERY CHECKLIST\n"+
+    "✓ The recording is yours or properly authorized.\n"+
+    "✓ Any synthetic/AI tools and samples comply with their terms.\n"+
+    "✓ You have rights to grant HUMKIN permission to review and potentially broadcast the recording.\n"+
+    "✓ The title, artist name, duration and source file are correct.\n"+
+    "✓ You understand a submitted song is not automatically placed in rotation.";
+  case "server":return "VOLUNTEER NODE INVENTORY — "+name+"\n"+
+    "✓ I own this computer or have explicit permission to use it.\n"+
+    "✓ Model, CPU, RAM, storage, OS and internet connection checked.\n"+
+    "✓ Power use, bandwidth and noise/heat are acceptable.\n"+
+    "✓ The machine is patched; no open inbound ports or remote commands by default.\n"+
+    "✓ I can explicitly opt into an approved, bounded job and revoke access.\n"+
+    "No work, reward or trusted server enrollment occurs until station verification.";
+  default:return "";
+ }
+}
+$("generate-tool").addEventListener("click",()=>{
+ if(!active)return;
+ $("guild-generated").textContent=createGuildDraft(active);
+});
+$("copy-tool").addEventListener("click",async()=>{
+ const value=$("guild-generated").textContent;
+ if(!value)return;
+ try{await navigator.clipboard.writeText(value);
+  status("Draft copied. Edit it to reflect your actual experience; nothing was posted.");}
+ catch{status("Clipboard unavailable. You can select and copy the draft above.",false)}
+});
 $("submission-form").addEventListener("submit",send);
 async function loadReceipts(){
  try{
