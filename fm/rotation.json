@@ -213,5 +213,83 @@
       "haileylu-bloom"
     ],
     "note": "Curated release status only. Station INBOX songs and Leave The Kettle On are not featured until explicitly designated; do not infer single status from radio display grouping."
+  },
+  "bumper_brain": {
+    "schema": "humkin.radio.bumper-brain/v1",
+    "variable_cadence": true,
+    "maximum_break_seconds": 49,
+    "cooldown_breaks": 4,
+    "rare_long_break_every": 5,
+    "profiles": {
+      "crate-d48fabca-c8fe-42cc-921e-ad4337d09f76": {
+        "role": "musical",
+        "family": "hard-dark-train"
+      },
+      "crate-ee24d2c5-209a-402e-9cd9-dda2372f7d2a": {
+        "role": "musical",
+        "family": "hard-dark-train"
+      },
+      "crate-8ac4481d-c4b6-4c9d-821b-b189b7f2f714": {
+        "role": "musical",
+        "family": "taken-minute"
+      },
+      "crate-1cbdc9af-761e-401f-a9d7-e722d8c2a650": {
+        "role": "show_opener",
+        "family": "taken-minute",
+        "hold": true
+      },
+      "crate-868f006a-4388-4278-b655-4c1cb3f3de54": {
+        "role": "feature",
+        "family": "taken-minute",
+        "hold": true
+      },
+      "crate-946c9dc2-558e-46af-9645-527bff6e44a3": {
+        "role": "comedy",
+        "family": "art-is-difficult"
+      },
+      "crate-e82a2805-6813-488d-ae37-cbb069789f3f": {
+        "role": "comedy",
+        "family": "schfwifty"
+      },
+      "crate-3dd62060-8a81-49b5-83f2-7531ffb37cdf": {
+        "role": "character",
+        "family": "focus"
+      },
+      "air-field-fm-007": {
+        "role": "character",
+        "family": "fictional-clock",
+        "hold": true
+      },
+      "air-field-fm-009": {
+        "role": "character",
+        "family": "fictional-clock",
+        "hold": true
+      },
+      "air-field-fm-010": {
+        "role": "character",
+        "family": "fictional-clock",
+        "hold": true
+      },
+      "air-field-fm-011": {
+        "role": "feature",
+        "family": "requests",
+        "hold": true
+      },
+      "air-field-fm-012": {
+        "role": "character",
+        "family": "farewell",
+        "hold": true
+      },
+      "air-field-fm-008": {
+        "role": "feature",
+        "family": "thank-you",
+        "hold": true
+      },
+      "air-field-fm-013": {
+        "role": "station_id",
+        "family": "thank-you"
+      }
+    },
+    "description": "Deterministic station personality. Real audio only. Long features/openers and time-sensitive claims are excluded from incidental bumpers but remain available for intentional show programming."
   }
 }
