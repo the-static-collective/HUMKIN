@@ -254,7 +254,7 @@ assert.equal(portable.downloads.length,1,"Native playlist export must download o
 assert.equal(portable.downloads[0].name,"HUMKIN-RADIO.m3u");
 const m3u=await portable.URLMock.blobs.get(portable.downloads[0].href).text();
 assert(m3u.startsWith("#EXTM3U\n"),"Must export Extended M3U format");
-assert.equal(m3u.split("\n").filter(s=>s.startsWith("#EXTINF:")).length,21);
+assert.equal(m3u.split("\n").filter(s=>s.startsWith("#EXTINF:")).length,41,"Portable playlist should have 21 originals plus 20 featured bonus spins");
 assert(m3u.includes("https://humkin.abundent.org/fm/audio/haileylu-bloom.mp3"));
 assert(!m3u.includes("blob:humkin"),"Do not leak temporary playlist audio Blob URLs");
 
