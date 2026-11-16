@@ -223,7 +223,10 @@ function weightedMusic(eligible,rotation){
   return slots.map(i=>eligible[i]);
 }
 function withStationIds(music){
-  return window.HUMKIN_AUTODJ?.insertBumpers(music,bumperIndices(),stationSettings.bumper_every)||music;
+  const raw=window.HUMKIN_BUMPER_BRAIN?.plan(music,bumperIndices(),
+    stationSettings.bumper_every,tracks,config?.bumper_brain);
+  return raw?.sequence||window.HUMKIN_AUTODJ?.insertBumpers(
+    music,bumperIndices(),stationSettings.bumper_every)||music;
 }
 function rememberShuffleTrack(){
   if(mode!=="shuffle"||index<0||tracks[index]?.kind==="bumper")return;
@@ -780,7 +783,10 @@ async function boot(){
       ?"CURRENT DIAL · "+songCount+" songs · "+stationIds+" station carts."
       :"LIMITED DIAL · "+songCount+" local songs available. Cloud songs did not load; refresh when your connection improves.";
     $("playlist-note").textContent=catalogLabel+" "+
-      (stationIds&&stationSettings.bumper_every?"STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
+      (stationIds&&stationSettings.bumper_every?
+        (config?.bumper_brain?.variable_cadence&&stationSettings.bumper_every>=4?
+          "BUMPERS ABOUT EVERY "+stationSettings.bumper_every+" SONGS.":
+          "STATION IDs EVERY "+stationSettings.bumper_every+" SONGS."):"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     beginHostedMetadata();

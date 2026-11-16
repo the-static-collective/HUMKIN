@@ -1,0 +1,29 @@
+name: HUMKIN Robot Desk — weekly audition batch
+on:
+  workflow_dispatch:
+  schedule:
+    # Monday at 13:00 UTC. All generated assets stay in review artifacts.
+    - cron: "0 13 * * 1"
+permissions:
+  contents: read
+jobs:
+  render-private-drafts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install offline synthesizer and encoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y espeak ffmpeg
+      - name: Generate deterministic weekly cartoon computer voice drafts
+        run: |
+          python3 tools/generate-robot-drops.py --seed "$(date -u +%G-W%V)" --count 8 --out robot-auditions
+          python3 -c 'import json; p=json.load(open("robot-auditions/audition-manifest.json")); assert len(p["items"])==8 and all(x["approval"].startswith("REVIEW") for x in p["items"])'
+      - name: Store drafts for manual listening only
+        uses: actions/upload-artifact@v4
+        with:
+          name: humkin-robot-audition-${{ github.run_number }}
+          path: robot-auditions/
+          retention-days: 30
+          if-no-files-found: error
