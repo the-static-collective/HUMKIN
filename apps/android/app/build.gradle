@@ -10,8 +10,23 @@ android {
         applicationId 'org.abundent.humkinradio'
         minSdk 26
         targetSdk 36
-        versionCode 6
-        versionName '0.6.0'
+        versionCode 7
+        versionName '0.7.0'
+    }
+
+    // An independent field-test install avoids Android's rejection when an older
+    // CI-generated debug APK has the same package name but a different signing key.
+    // This is not a production signing solution; a permanent key is still needed.
+    buildTypes {
+        fieldTest {
+            initWith debug
+            applicationIdSuffix '.fieldtest'
+            versionNameSuffix '-fieldtest'
+            resValue 'string', 'app_name', 'HUMKIN RADIO FIELD TEST'
+        }
+        debug {
+            resValue 'string', 'app_name', 'HUMKIN RADIO'
+        }
     }
 
     compileOptions {
