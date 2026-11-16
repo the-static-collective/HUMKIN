@@ -21,13 +21,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 final class HumkinVisuals {
-    static final int INK = 0xff43102c;
-    static final int PLUM = 0xff501735;
-    static final int CREAM = 0xfffff4e7;
-    static final int YELLOW = 0xffffd45b;
+    // Match the public station's ink, paper, pink and yellow identity.
+    static final int INK = 0xff221b39;
+    static final int PLUM = 0xff43375a;
+    static final int CREAM = 0xfffff8e9;
+    static final int YELLOW = 0xffffdc70;
     static final int MINT = 0xffc6debd;
-    static final int PINK = 0xfff8aeba;
-    static final int BLUSH = 0xfff9ded4;
+    static final int PINK = 0xffea9bb3;
+    static final int BLUSH = 0xffeedce8;
     static final int WHITE = 0xfffff8ef;
 
     enum Icon { RADIO, SHUFFLE, PLAY, PAUSE, NEXT, CATCH_UP, ALBUMS, BACK, ARCHIVE, PRIVACY }
@@ -101,6 +102,7 @@ final class HumkinVisuals {
         if (outline) {
             face.setStroke(dp(context, 1.5f), INK);
         } else if (fill != CREAM) {
+            face.setStroke(dp(context, 1.2f), INK);
             LayerDrawable layers = new LayerDrawable(new Drawable[]{shape(context, ridge, 25), face});
             layers.setLayerInset(1, 0, 0, 0, dp(context, 3));
             surface = layers;
