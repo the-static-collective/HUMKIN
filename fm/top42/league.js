@@ -62,7 +62,7 @@ function renderDraft(){
  const needed=quota(),have=counts();
  $("roster-rule").textContent=needed.radio+" RADIO-ONLY + "+needed.released+" RELEASED";
  $("roster-progress").textContent=draft.length+" / "+needed.total+" SELECTED";
- $("tracklist-count").textContent="("+(have.radio+"/"+needed.radio+" RADIO · "+have.released+"/"+needed.released+" RELEASED)";
+ $("tracklist-count").textContent="("+have.radio+"/"+needed.radio+" RADIO · "+have.released+"/"+needed.released+" RELEASED)";
  $("release-record").disabled=!state||requesting||draft.length!==needed.total||
    have.radio!==needed.radio||have.released!==needed.released;
  const list=$("draft-list");list.replaceChildren();
