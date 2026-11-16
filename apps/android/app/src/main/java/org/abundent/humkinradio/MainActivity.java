@@ -738,7 +738,7 @@ public final class MainActivity extends Activity {
                         // introduce a persistent technical status paragraph.
                         showMessage(status, "");
                     }else{
-                        RadioPlaybackService.clearSameTime();
+                        RadioPlaybackService.armRoadShuffle(loaded);
                         if (restoringShuffle) {
                             // Continue the same selected record and the
                             // remaining approved playlist, not song one again.
