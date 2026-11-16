@@ -281,7 +281,7 @@ public final class OutpostActivity extends Activity {
             eyebrow(card,departments[door.module]+"  /  TIER "+door.tier+
                 (door.implemented?"  /  READY TO UNLOCK":"  /  FUTURE PROJECT"),
                 0,HumkinVisuals.PLUM);
-            LinearLayout detail=row();
+            LinearLayout detail=horizontal();
             LinearLayout info=vertical();
             add(info,door.title,17,HumkinVisuals.INK,true,5);
             add(info,door.description,12,HumkinVisuals.PLUM,false,6);
