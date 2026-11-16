@@ -223,7 +223,10 @@ function weightedMusic(eligible,rotation){
   return slots.map(i=>eligible[i]);
 }
 function withStationIds(music){
-  return window.HUMKIN_AUTODJ?.insertBumpers(music,bumperIndices(),stationSettings.bumper_every)||music;
+  const raw=window.HUMKIN_BUMPER_BRAIN?.plan(music,bumperIndices(),
+    stationSettings.bumper_every,tracks,config?.bumper_brain);
+  return raw?.sequence||window.HUMKIN_AUTODJ?.insertBumpers(
+    music,bumperIndices(),stationSettings.bumper_every)||music;
 }
 function rememberShuffleTrack(){
   if(mode!=="shuffle"||index<0||tracks[index]?.kind==="bumper")return;
