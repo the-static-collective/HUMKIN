@@ -71,9 +71,11 @@ final class RadioCatalog {
         final boolean catalogComplete;
         final boolean scheduledShowsExist;
         private final int cadence;
+        private final List<Integer> chartExtras;
 
         Station(List<Track> tracks,int cadence,long epoch,long offset,
-                boolean calibrated,boolean complete,boolean scheduled) {
+                boolean calibrated,boolean complete,boolean scheduled,
+                List<String> chartIds,String chartDay) {
             this.tracks=Collections.unmodifiableList(new ArrayList<>(tracks));
             this.clockOffsetMs=offset;this.clockCalibrated=calibrated;
             this.catalogComplete=complete;this.scheduledShowsExist=scheduled;
@@ -85,7 +87,19 @@ final class RadioCatalog {
                 lengths.add(t.durationMs);
                 (t.bumper?bumpers:songs).add(i);
             }
-            clock=new SharedClock(lengths,songs,bumpers,cadence,epoch);
+            List<Integer> ranked=new ArrayList<>();
+            for(String id:chartIds){
+                for(int i=0;i<tracks.size();i++){
+                    if(!tracks.get(i).bumper&&tracks.get(i).id.equals(id)){
+                        if(!ranked.contains(i))ranked.add(i);
+                        break;
+                    }
+                }
+            }
+            this.chartExtras=ChartSelection.bonus(songs,lengths,ranked,chartDay);
+            List<Integer> playlist=new ArrayList<>(songs);
+            playlist.addAll(chartExtras);
+            clock=new SharedClock(lengths,playlist,bumpers,cadence,epoch);
         }
         long stationNow() {return System.currentTimeMillis()+clockOffsetMs;}
         SharedClock.Cue tuneAt(long now) {return clock.at(now);}
@@ -134,6 +148,7 @@ final class RadioCatalog {
             for(int i=0;i<tracks.size();i++)
                 (tracks.get(i).bumper?bumpers:music).add(i);
             Collections.shuffle(music);
+            music.addAll(chartExtras);
             // Shift only last-hour repeats to the rear; keep every era mixed.
             List<String> ids=new ArrayList<>();
             for(Track t:tracks)ids.add(t.id);
@@ -253,9 +268,29 @@ final class RadioCatalog {
             }
         }catch(Exception ignored){/* Device clock is an explicit approximate fallback. */ }
 
+        // The prior completed Central-time chart supplies the day's limited
+        // chart slots. The radio survives if its optional scoreboard is offline.
+        List<String> chartIds=new ArrayList<>();
+        String chartDay="";
+        try {
+            JSONObject league=new JSONObject(fetch(API+"/functions/v1/humkin-league",false));
+            if("humkin.top42/v1".equals(league.optString("schema"))) {
+                chartDay=league.optString("station_day","");
+                JSONArray chart=league.optJSONArray("airchart");
+                if(chart!=null)for(int i=0;i<chart.length()&&chartIds.size()<42;i++){
+                    JSONObject entry=chart.optJSONObject(i);
+                    if(entry!=null&&entry.optInt("plays",0)>0){
+                        String id=entry.optString("id","");
+                        if(!id.isEmpty())chartIds.add(id);
+                    }
+                }
+            }
+        } catch(Exception ignored) {
+            // No chart yet means 100% ordinary music, never dead air.
+        }
         long epoch=Instant.parse(rotation.optString("synced_clock_epoch_utc",
                 "2026-11-13T00:00:00Z")).toEpochMilli();
-        Station station=new Station(tracks,every,epoch,offset,clockCalibrated,complete,scheduled);
+        Station station=new Station(tracks,every,epoch,offset,clockCalibrated,complete,scheduled,chartIds,chartDay);
         if(station.songsCount()==0||station.clock.cycleMs()<=0)
             throw new IOException("No playable station records");
         return station;
