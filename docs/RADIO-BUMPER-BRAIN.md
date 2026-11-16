@@ -28,3 +28,48 @@ The `robot-desk-auditions.yml` workflow also runs once a week (Monday 13:00 UTC)
 - `node tests/radio.test.mjs` preserves the legacy clock, scheduler, and existing AutoDJ fallback.
 - `python3 -m py_compile tools/generate-robot-drops.py` verifies render-script syntax.
 - Every proposed change is reversible by reverting PR source; no cloud records are modified by this upgrade.
+
+
+## Robot Desk v2 — voice engines × audio finishes × timeless humor
+
+Three independent offline synthesis engines (eSpeak, Flite, Festival) are
+crossed with three dry audio finishes: WIRE (narrowband), WARM (mellow old radio),
+CLEAR (higher-fidelity compressed speech). These change sound rather than jokes.
+No simulated radio static is baked into recordings; Same-Time RADIO owns that layer.
+
+A separate four-step humor ladder sets the editorial premise:
+PLAIN = a neighbor, a meal, a small helpful gesture, a practical human failing.
+WRY = an absurd committee, a human contradiction, a chore that outwits us.
+STRANGE = an ordinary object making a small unreasonable demand.
+COSMIC = an impossible situation with a human, unhurried landing.
+
+Timelessness criterion: the punchline should make sense without computers,
+fashion, pop culture or the day's news. Comedy can be shared across generations
+and rural/urban communities, including Amish listeners, without stereotyping
+or mocking a belief system or tradition. The listener is never the punchline.
+
+The weekly generator now selects 12 original curated lines with roughly equal
+coverage across the four levels and rotates the three voice engines and three
+finishes. An optional 3×3 A/B matrix renders the same welcoming line through all
+three engines and finishes. The output includes LISTEN-HERE.html, a mobile-friendly
+offline audition sheet, and audition-manifest.json containing precise scripts,
+generator and finish choices, absurdity levels, durations and SHA-256 checksums.
+
+A reproducible ISO-week seed keeps outputs auditable. Two optional funny lines
+react only to public source repository inventory counts; no private messages,
+caller audio, internet data or invented real-world facts are inserted.
+This is a curated comedy engine, NOT autonomous unsupervised improvisation.
+
+The workflow produces private human-review artifacts only, weekly Monday
+13:00 UTC and after its initial main-branch update. Nothing is automatically
+uploaded to public storage, approved, transmitted or inserted in live radio.
+
+To generate a full comparison locally (requires all three synthesizers):
+    python3 tools/generate-robot-drops.py --seed 2026-W47 --count 12 --engines espeak,flite,festival --compare --out robot-auditions
+
+To generate a universally readable wholesome pack with locally available voices:
+    python3 tools/generate-robot-drops.py --seed PORCH --count 5 --engines auto --absurdity plain --finish clear --out wholesome-auditions
+
+Quality names describe sonic processing, not the claim of a human-like
+synthesis or a licensed/proprietary computer voice. A future neural voice lane
+needs its own rights/cost review. All proposed carts remain unpublished drafts.
