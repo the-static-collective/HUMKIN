@@ -1,9 +1,9 @@
-# HUMKIN RADIO Android · v0.11
+# HUMKIN RADIO Android · v0.12
 
 ## Listener-first receiver / install recovery
 
-**Install this build as `HUMKIN RADIO · CONTINUITY`**, a separate Android
-package `org.abundent.humkinradio.continuity`. This is a **new test identity**
+**Install this build as `HUMKIN RADIO · SONG LOG`**, a separate Android
+package `org.abundent.humkinradio.songlog`. This is a **new test identity**
 so Android can install it beside v0.7 Field Test, v0.8 Receiver, and v0.9 Real Art, whose
 ephemeral CI signing keys cannot be reused. GitHub runners may generate
 different debug signing keys on each run; Android refuses to replace an
@@ -23,6 +23,26 @@ a new ephemeral key. A permanent protected keystore and production signing
 process are needed before a public/store release. If installation still fails,
 check the Android unknown-apps permission, device storage, complete download,
 and the exact installer error. Do not uninstall the original app prematurely.
+
+### v0.12 · Compact Coming Up / Just Played
+
+Listener requested the useful playback log from the original v0.9 screen
+returned, without the long explanatory blocks marked out in the annotated
+screenshot. Just below the main Pause/Tune In button, a compact outlined
+two-part card now shows **COMING UP** (actual next Media3 queue item,
+one truncated title) and **JUST PLAYED** (two latest previously played
+titles, at most two lines). It updates on player transitions, using the
+existing private on-device song history. This is not a new server or
+synthetic program schedule. Explanatory suffixes such as "approximate
+Same-Time rotation" and "your Road Shuffle queue", the large history card,
+static explanations and duplicate album shortcuts stay removed. More ⋯
+retains the specialist reception controls; the on-screen history is no
+longer redundantly listed in that menu.
+
+As with previous test packages, this .songlog build has separate app data
+and cannot import local listening history from the older temporary apps.
+The queue will naturally populate after playback begins; no data is shared
+or uploaded.
 
 ### v0.11 · No resetty radio
 
