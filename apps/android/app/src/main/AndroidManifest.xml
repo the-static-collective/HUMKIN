@@ -21,6 +21,9 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".GuildActivity"
+            android:exported="false" />
+        <activity
             android:name=".FieldDeskActivity"
             android:exported="false" />
         <activity
