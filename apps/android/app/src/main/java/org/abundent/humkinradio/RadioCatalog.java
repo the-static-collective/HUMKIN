@@ -102,6 +102,30 @@ final class RadioCatalog {
             out.addAll(itemsForCycle(cue.cycle+1));
             return out;
         }
+        /**
+         * Restore a listener's unplayed Road Shuffle records from *current*
+         * approved metadata. Saved IDs never become unvalidated media URLs.
+         */
+        List<MediaItem> queueFromIds(List<String> ids) {
+            Map<String,Track> known = new HashMap<>();
+            for (Track track : tracks) known.put(track.id, track);
+            List<MediaItem> result = new ArrayList<>();
+            for (String id : ids) {
+                Track approved = known.get(id);
+                if (approved != null) result.add(approved.mediaItem());
+            }
+            return result;
+        }
+
+        long resumePositionMs(String trackId, long requestedMs) {
+            for (Track track : tracks) {
+                if (track.id.equals(trackId))
+                    return Math.min(Math.max(0L, requestedMs),
+                            Math.max(0L, track.durationMs - 2000L));
+            }
+            return 0L;
+        }
+
         List<MediaItem> shuffleQueue() {
             return shuffleQueue(Collections.emptyMap(),System.currentTimeMillis());
         }
