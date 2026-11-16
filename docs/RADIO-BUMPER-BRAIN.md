@@ -77,3 +77,63 @@ needs its own rights/cost review. All proposed carts remain unpublished drafts.
 ### Owner controls (mobile friendly)
 
 In Station Manager, follow **OPEN ROBOT DESK · SET THE HUMOR DIAL**. Choose **Run workflow** on the GitHub Actions page. Manual controls: 4 or 8 fresh jokes; mixed or single PLAIN/WRY/STRANGE/COSMIC humor; any one of three synthesis engines or all; WIRE/WARM/CLEAR finish or mixed; optional same-script comparison clips. The weekly schedule retains its automatically balanced 12-line + 9-comparison format. Every batch is a temporary private-review GitHub artifact, not a playlist update or permission to air anything. Use the private Crate Loader only after listening and explicitly approving recordings.
+
+
+## Script Seed Garden — editable from the phone
+
+At `/fm/studio/robot-seeds.html`, the owner can edit the **actual joke
+seed inventory** without touching Python source or GitHub.
+
+- Open the page from the Production Room or Station Manager. Sign in with
+  the existing Crate Loader owner session if needed.
+- **One line:** compose a short announcement, choose PLAIN / WRY / STRANGE /
+  COSMIC, station ID vs character, and a callback family. Save a private
+  draft, listen to a deliberately rough *device voice*, or explicitly
+  approve the words for future robot auditions.
+- **Existing line:** search or filter the canonical 36 built-in jokes, edit
+  an original (saving an owner override under the same slug), or REMIX it
+  into a separate original draft. Retiring an approved slug excludes it
+  from future generation, including any built-in with the same slug.
+- **Many at once:** paste up to 20 one-line jokes into the bulk field.
+  These are staged as private drafts, not approved or generated.
+- **Backups:** export the visible bank and owner data as JSON.
+- **Audition:** follow the existing Robot Desk workflow. The weekly
+  generator can now fetch owner-reviewed text seed records. New text
+  does **not** automatically generate an MP3 at save time; no audio is
+  broadcast without separate individual cart review and publication.
+
+### Canon, drafts, reviewed text
+
+The checked-in `fm/studio/robot-seeds.json` is the canonical original
+bank, shared by the editor and `tools/generate-robot-drops.py`.
+
+The connected Supabase project adds an RLS-protected
+`humkin_radio_script_seeds` table with three statuses:
+
+- **draft:** only the authenticated HUMKIN owner may read or modify it.
+- **approved:** publicly readable *script text* by the read-only worker
+  (never a public MP3).
+- **retired:** publicly readable tombstone used to suppress an original
+  or previously approved script in future batches.
+
+Row edits require the original owner UID AND authenticated, verified
+account email. The browser uses the ordinary publishable key, never a
+service-role credential. Column privileges limit anonymous reads to
+reviewed script content and metadata, not owner identities.
+
+The weekly worker makes a read-only GET of approved and retired rows
+before sampling. Matching approved slugs override the checked-in
+originals; retired slugs are removed. Private drafts never enter the
+generator. If the remote catalog cannot load or validates incorrectly,
+the workflow fails rather than silently pretending it included the
+newly approved seeds.
+
+**Revision note:** Saving an approved owner seed back to draft pauses
+that *owner revision* until reapproved. If it replaced a built-in joke,
+the original built-in becomes eligible again while the revision is a
+draft. Use **RETIRE** to suppress a built-in explicitly.
+
+**Safety:** This page never writes to radio tracks, changes published
+bumper eligibility, generates real-time unreviewed speech, or turns
+on a transmitter. The rough preview is whichever system voice your
+device supplies, not one of the three final synthesis engines.
