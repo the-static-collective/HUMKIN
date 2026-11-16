@@ -1,20 +1,20 @@
-# HUMKIN RADIO Android · v0.8
+# HUMKIN RADIO Android · v0.9
 
 ## Listener-first receiver / install recovery
 
-**Install this build as `HUMKIN RADIO RECEIVER`**, a separate Android
-package `org.abundent.humkinradio.receiver`. This is a **new test identity**
-so Android can install it beside the v0.7 Field Test, whose ephemeral CI signing
-key cannot be reused. GitHub runners may generate
+**Install this build as `HUMKIN RADIO · REAL ART`**, a separate Android
+package `org.abundent.humkinradio.realart`. This is a **new test identity**
+so Android can install it beside v0.7 Field Test and v0.8 Receiver, whose
+ephemeral CI signing keys cannot be reused. GitHub runners may generate
 different debug signing keys on each run; Android refuses to replace an
 installed same-package build signed with a different key ("App not installed").
 The field-test package has its own identity, so it can be installed alongside
 a previous HUMKIN RADIO debug APK without removing the older receiver.
 Install the file `app-fieldTest.apk` from the CI field-test artifact.
-**The v0.7 Field Test cannot be upgraded in place** because its signing key
-was ephemeral. We are avoiding an uninstall for this test, but the new test app
-will start with its own local preferences/history. Once v0.8 works, the older
-Field Test can be removed. Further repeatable upgrades require a securely
+**Previous Field Test or Receiver builds cannot be upgraded in place** if
+their debug signing keys differ. The new v0.9 app starts with separate local
+preferences/history. Keep the older app until v0.9 is confirmed working.
+Once verified, the user can uninstall old test variants manually. Further repeatable upgrades require a securely
 stored permanent signing key; do not distribute a development keystore publicly.
 
 This is a **one-time compatibility workaround**, not stable production signing.
@@ -23,6 +23,26 @@ a new ephemeral key. A permanent protected keystore and production signing
 process are needed before a public/store release. If installation still fails,
 check the Android unknown-apps permission, device storage, complete download,
 and the exact installer error. Do not uninstall the original app prematurely.
+
+### v0.9 authentic published cover art
+
+The reference paper illustrations were concept mockups, not approved album art.
+The Android receiver now bundles **the exact 2 published website album covers**
+as offline `drawable-nodpi` JPEG resources (copied by Git blob identity from
+`/cover.jpg` and `/releases/everywhere-near-you/cover.jpg`). They appear
+in the album shelf, featured record and now-playing display, including while
+the radio stream plays either release. Unknown/field-cart/release-incomplete
+tracks use the neutral HUMKIN receiver icon, **not** a fabricated cover.
+Warmth/Singles, which do not yet have verified public album manifests, likewise
+show the station icon instead of unapproved mock art. The mockup skyline and
+underline illustrations are no longer used.
+
+No network download is needed for these images; Media3 metadata still points
+to the same correct website cover URL for supported releases, preserving
+lock-screen cover compatibility. As more albums are formally published, add
+their authentic JPEG and register it in `AlbumArtwork`. Cloud-specific unique
+artwork not bundled in this build uses the neutral icon until its approved asset
+is added. No invented release art or icon-as-cover claims.
 
 ### v0.8 radio interactions
 - Tapping **SAME-TIME RADIO** (including when already selected) now tunes
@@ -57,8 +77,9 @@ The radio and its music service still take priority over social features.
 
 
 The native Radio screen now borrows the published HUMKIN site's dark-ink
-masthead, yellow station ticker, warm paper dial, high-contrast buttons and
-pink accents. The illustrated albums and skyline remain native and offline.
+masthead, yellow station ticker, warm cream dial, high-contrast buttons and
+pink accents. Published albums display their **real site covers**, bundled
+offline. No concept mockup illustrations are used.
 
 **Radio-only analog signal:** an opt-out, softly filtered local PCM hiss is
 synthesized by the Media3 playback service after the user taps Tune In. Its
@@ -78,8 +99,8 @@ never replaces or processes a music stream, and adds no network calls,
 accounts or permissions. The browser's occasional crackle/pop effect remains website-only.
 
 
-The Radio and Albums screens use the paper-style reference artwork, including the
-station masthead, illustrated covers, and skyline. The text and controls are
+The Radio and Albums screens use the published website's authentic album art,
+not the old visual mockup images. The text and controls remain
 native Android views. The album shelf switches from two columns to one on
 narrow screens or with larger system text.
 
@@ -105,11 +126,15 @@ narrow screens or with larger system text.
 ## Device acceptance
 Run `gradle -p apps/android :app:assembleDebug :app:assembleFieldTest :app:testDebugUnitTest :app:testFieldTestUnitTest`.
 On device verify:
-1. Install the **Receiver** APK alongside the original or v0.7 Field Test if debug signatures differ.
+1. Install the **Real Art** APK alongside the original, v0.7 Field Test or
+   v0.8 Receiver if debug signatures differ.
    Confirm separate app icon/label and verify it does not erase the old app.
    Check first-tap SAME-TIME RADIO auto-plays even if the media controller
    was still connecting; tapping again while already playing must not jump.
    Test play/pause wave movement in both Radio and Albums; no hidden animation.
+   Verify MUTANT POP and everywhere;near you show **the exact site covers**
+   in the shelf, now-playing panel, and featured album; other station-only
+   material shows the neutral receiver emblem, never paper mockups.
 2. The cream/ink/yellow UI scales at 320–420dp and scrolls with readable labels.
 3. Tune both radio modes, then visit ALBUMS and return without losing playback.
    Next Record is available in Road Shuffle. Catch Up to Air follows Same-Time Radio.
