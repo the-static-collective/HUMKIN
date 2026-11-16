@@ -73,3 +73,7 @@ To generate a universally readable wholesome pack with locally available voices:
 Quality names describe sonic processing, not the claim of a human-like
 synthesis or a licensed/proprietary computer voice. A future neural voice lane
 needs its own rights/cost review. All proposed carts remain unpublished drafts.
+
+### Owner controls (mobile friendly)
+
+In Station Manager, follow **OPEN ROBOT DESK · SET THE HUMOR DIAL**. Choose **Run workflow** on the GitHub Actions page. Manual controls: 4 or 8 fresh jokes; mixed or single PLAIN/WRY/STRANGE/COSMIC humor; any one of three synthesis engines or all; WIRE/WARM/CLEAR finish or mixed; optional same-script comparison clips. The weekly schedule retains its automatically balanced 12-line + 9-comparison format. Every batch is a temporary private-review GitHub artifact, not a playlist update or permission to air anything. Use the private Crate Loader only after listening and explicitly approving recordings.

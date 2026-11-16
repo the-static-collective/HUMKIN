@@ -6,6 +6,35 @@ on:
       - tools/generate-robot-drops.py
       - .github/workflows/robot-desk-auditions.yml
   workflow_dispatch:
+    inputs:
+      count:
+        description: Distinct jokes in a manual batch
+        type: choice
+        required: true
+        default: "8"
+        options: ["4", "8"]
+      absurdity:
+        description: Human humor / absurdity level
+        type: choice
+        required: true
+        default: mix
+        options: [mix, plain, wry, strange, cosmic]
+      finish:
+        description: Audio finish quality
+        type: choice
+        required: true
+        default: mix
+        options: [mix, wire, warm, clear]
+      engines:
+        description: TTS voice generator
+        type: choice
+        required: true
+        default: all
+        options: [all, espeak, flite, festival]
+      compare:
+        description: Add same-joke voice and quality A/B previews
+        type: boolean
+        default: true
   schedule:
     # Monday at 13:00 UTC. All generated assets stay in review artifacts.
     - cron: "0 13 * * 1"
@@ -21,10 +50,38 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y espeak flite festival ffmpeg
-      - name: Generate 12 timeless jokes + 9 multivoice A/B review cuts
+      - name: Render weekly variety or an owner-directed experimental batch
+        env:
+          ROBOT_COUNT: ${{ github.event_name == 'workflow_dispatch' && inputs.count || '12' }}
+          ROBOT_ABSURDITY: ${{ github.event_name == 'workflow_dispatch' && inputs.absurdity || 'mix' }}
+          ROBOT_FINISH: ${{ github.event_name == 'workflow_dispatch' && inputs.finish || 'mix' }}
+          ROBOT_ENGINE: ${{ github.event_name == 'workflow_dispatch' && inputs.engines || 'all' }}
+          ROBOT_COMPARE: ${{ github.event_name == 'workflow_dispatch' && inputs.compare || github.event_name != 'workflow_dispatch' }}
         run: |
-          python3 tools/generate-robot-drops.py --seed "$(date -u +%G-W%V)" --count 12 --engines espeak,flite,festival --compare --out robot-auditions
-          python3 -c 'import json; p=json.load(open("robot-auditions/audition-manifest.json")); assert len(p["items"])==21 and {x["engine"] for x in p["items"]}=={"espeak","flite","festival"} and {x["absurdity"] for x in p["items"]}=={"plain","wry","strange","cosmic"} and all(x["approval"].startswith("REVIEW") for x in p["items"])'
+          engines="$ROBOT_ENGINE"
+          if [[ "$engines" == "all" ]]; then engines="espeak,flite,festival"; fi
+          flags=()
+          if [[ "$ROBOT_COMPARE" == "true" ]]; then flags+=(--compare); fi
+          python3 tools/generate-robot-drops.py --seed "$(date -u +%G-W%V)-${{ github.run_id }}" \
+            --count "$ROBOT_COUNT" --engines "$engines" \
+            --absurdity "$ROBOT_ABSURDITY" --finish "$ROBOT_FINISH" \
+            "${flags[@]}" --out robot-auditions
+          python3 - <<'PY'
+          import json, os
+          data=json.load(open("robot-auditions/audition-manifest.json"))
+          count=int(os.environ["ROBOT_COUNT"])
+          engine=os.environ["ROBOT_ENGINE"]
+          engines=3 if engine=="all" else 1
+          compare=os.environ["ROBOT_COMPARE"]=="true"
+          assert len(data["items"])==count+(engines*3 if compare else 0)
+          assert all(x["approval"].startswith("REVIEW") for x in data["items"])
+          originals=[x for x in data["items"] if x["group"]=="weekly-original"]
+          assert len(originals)==count
+          if os.environ["ROBOT_ABSURDITY"]!="mix":
+              assert {x["absurdity"] for x in originals}=={os.environ["ROBOT_ABSURDITY"]}
+          elif count>=4:
+              assert {x["absurdity"] for x in originals}=={"plain","wry","strange","cosmic"}
+          PY
       - name: Store drafts for manual listening only
         uses: actions/upload-artifact@v4
         with:
