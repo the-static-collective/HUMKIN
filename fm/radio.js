@@ -201,6 +201,25 @@ function musicIndices(){
 function bumperIndices(){
   return tracks.map((t,i)=>t.kind==="bumper"?i:-1).filter(i=>i!==-1);
 }
+// The official release list is explicit, not inferred from upload time.
+// Cloud inbox songs remain in normal rotation until declared as a release.
+function featuredPositions(eligible){
+  const policy=config?.featured_rotation;
+  if(policy?.multiplier!==2)return [];
+  const albums=new Set(Array.isArray(policy.albums)?policy.albums:[]);
+  const singles=new Set(Array.isArray(policy.singles)?policy.singles:[]);
+  return eligible.map((trackIndex,position)=>{
+    const song=tracks[trackIndex];
+    return albums.has(song.album)||singles.has(song.id)?position:-1;
+  }).filter(i=>i>=0);
+}
+function weightedMusic(eligible,rotation){
+  const slots=window.HUMKIN_FAIR_ROTATION?.weightedCycle(
+    eligible.length,rotation,seededShuffle,featuredPositions(eligible))
+    ||window.HUMKIN_FAIR_ROTATION?.cycle(eligible.length,rotation,seededShuffle)
+    ||seededShuffle(eligible.length,rotation);
+  return slots.map(i=>eligible[i]);
+}
 function withStationIds(music){
   return window.HUMKIN_AUTODJ?.insertBumpers(music,bumperIndices(),stationSettings.bumper_every)||music;
 }
@@ -236,14 +255,17 @@ function tuneAt(ms){
   if(selected)return selected;
   const eligible=musicIndices();
   // One fixed bumper order per cycle keeps every cycle exactly the same length.
-  const totalOrder=withStationIds(eligible);
+  // The clock's total length must include the extra featured plays, while
+  // remaining constant across cycles for every same-time listener.
+  const bonus=featuredPositions(eligible).map(i=>eligible[i]);
+  const totalOrder=withStationIds([...eligible,...bonus]);
   const total=totalOrder.reduce((s,i)=>s+Math.round(tracks[i].duration*1000),0);
   if(!eligible.length||total<1)return null;
   const base=Number.isFinite(Date.parse(config?.synced_clock_epoch_utc))?Date.parse(config.synced_clock_epoch_utc):Date.parse(EPOCH_FALLBACK);
   const elapsed=Math.max(0,ms-base);
   const rotation=Math.floor(elapsed/total);
   const within=elapsed%total;
-  const sequence=withStationIds((window.HUMKIN_FAIR_ROTATION?.cycle(eligible.length,rotation,seededShuffle)||seededShuffle(eligible.length,rotation)).map(i=>eligible[i]));
+  const sequence=withStationIds(weightedMusic(eligible,rotation));
   let soFar=0;
   for(let i=0;i<sequence.length;i++){
     const track=tracks[sequence[i]];
@@ -259,7 +281,7 @@ function updateModeUI(){
   $("catch-up").hidden=mode!=="clock"||Boolean(remoteStream);
   $("next-song").hidden=mode!=="shuffle";
   modeHelp.textContent=mode==="shuffle"
-   ?"Your own radio shuffle blends older and newer station records, remembers each song for one hour, and falls back to least-recently heard."
+   ?"Your own shuffle blends old and new. Released album cuts and designated singles get roughly twice the airtime; each song keeps a one-hour repeat memory."
    :remoteStream
    ?"Tuning an independent continuous broadcast stream. Everyone connected to that stream receives the same live program."
    :"Same-time radio approximates a shared broadcast clock using official MP3s. It isn't a real server broadcast; playback may drift with buffering.";
@@ -497,9 +519,7 @@ function buildShuffle(previous=-1){
   // so each drive sounds like classic hits and today's cuts on one dial.
   const originals=musicIndices();
   const seed=(Math.random()*4294967296)>>>0;
-  const positions=window.HUMKIN_FAIR_ROTATION?.mix(originals.length,seed,seededShuffle)
-    ||seededShuffle(originals.length,seed);
-  const songs=positions.map(i=>originals[i]);
+  const songs=weightedMusic(originals,seed);
   // Keep the shuffle random while putting anything played in the last hour at
   // the back of the new cycle. The listener's history survives page refreshes.
   const sorted=shufflePolicy?.freshFirst(songs,tracks,lastPlayed,Date.now())||songs;
@@ -518,7 +538,7 @@ function startShuffle(shouldPlay){
   if(!order.length)buildShuffle(index);
   if(!order.length)return;
   showTrack(order[cursor]);setTrackSource(order[cursor],0,shouldPlay);
-  setMessage("Road Shuffle remembers every recording for 60 minutes, even after refresh. A small library falls back to least-recently heard.");
+  setMessage("Road Shuffle mixes releases twice as often, with 60-minute memory for every recording.");
 }
 function nextShuffle(shouldPlay){
   if(!order.length)return;
@@ -582,7 +602,8 @@ function downloadNativePlaylist(){
   // Native media apps own their background service and can continue to the next
   // URL when Android suspends the browser tab. This is a snapshot playlist, not
   // synchronized live radio or an offline download of all MP3s.
-  const rows=mode==="shuffle"&&order.length?order:withStationIds(musicIndices());
+  const rows=mode==="shuffle"&&order.length?order:
+    withStationIds(weightedMusic(musicIndices(),Math.floor((stationNow()-Date.parse(config?.synced_clock_epoch_utc||EPOCH_FALLBACK))/86400000)));
   const clean=value=>String(value||"").replace(/[\r\n,]+/g," ").trim();
   const lines=["#EXTM3U","#PLAYLIST:HUMKIN RADIO"];
   for(const i of rows){
