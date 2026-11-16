@@ -50,9 +50,26 @@ label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
 
 @media(max-width:760px){.columns,.fieldset{grid-template-columns:1fr}#rundown li{grid-template-columns:57px minmax(0,1fr)}
 #rundown li .controls{grid-column:2}.cart{padding:9px}}
+
+/* LIVING CART MACHINE: strictly an owner-only offline-first preparation desk. */
+#intake-drop{display:block;padding:25px 16px;background:#fff4ce;border:3px dashed #554064;border-radius:14px;text-align:center;cursor:pointer;font-size:1.08rem;font-weight:950}
+#intake-drop.over{background:#cbf6de}
+#intake-pick{margin:11px 0;max-width:100%}
+#intake-result{border-top:2px dashed #6f5a78;padding-top:18px;margin-top:18px}
+.intake-audio{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.intake-audio audio{width:100%;max-width:100%}
+.intake-audio strong{display:block;margin:5px 0;font-size:.83rem}
+#intake-lab-notes{white-space:pre-wrap;overflow-wrap:anywhere;padding:13px;background:#281f39;color:#fff4d9;border-radius:9px;font-size:.8rem;line-height:1.6}
+.intake-confirm{font-size:.86rem;display:flex;align-items:flex-start;gap:9px;margin:16px 0}
+.intake-confirm input{width:19px;height:19px;margin:0;flex:0 0 auto}
+.intake-confirm span{flex:1}
+@media(max-width:640px){.intake-audio{grid-template-columns:1fr}}
 </style>
 <script defer src="./clock.js"></script>
 <script defer src="./bible.js"></script>
+<script defer src="./intake-core.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+<script type="module" src="./intake.js"></script>
 <script type="module" src="./studio.js"></script></head>
 <body>
 <header class="topline"><a class="brand" href="../">HUMKIN <span>✳</span></a>
@@ -69,6 +86,41 @@ label{font-weight:900;font-size:12px;display:block;margin:10px 0 5px}
 <p class="muted">Your saved carts and pilot draft are private to the station owner. Public listeners never see this board.</p>
 </section>
 <div id="workbench" class="hidden">
+
+<section class="mint field-assets" id="living-intake">
+<h2>00 · THE LIVING CART MACHINE</h2>
+<p>Drop an original voice recording. This device makes a dry radio edit, proposes a department, and lets you compare both versions before anything leaves your phone. <strong>Nothing automatically airs.</strong></p>
+<label id="intake-drop" for="intake-pick">DROP A FIELD RECORDING HERE<br><small>or tap to choose MP3, M4A, WAV, WebM or OGG · 120 seconds maximum</small></label>
+<input id="intake-pick" type="file" accept=".mp3,.m4a,.wav,.webm,.ogg,audio/*" aria-label="Choose a voice recording">
+<p class="muted">Originals remain on your device. The prepared edit is a short dry mono MP3 with conservative leveling, gentle end fades, and no baked-in radio static. Existing songs and lengthy programs still belong in <a href="../load/">Crate Loader</a>.</p>
+<p id="intake-status" role="status" aria-live="polite">DROP → PREPARE → LISTEN → REVIEW → PRIVATE STAGE. Sign in above before staging.</p>
+<div id="intake-result" class="hidden">
+  <div class="intake-audio">
+   <div><strong>01 · YOUR ORIGINAL (LOCAL ONLY)</strong><audio id="intake-original" controls preload="none" aria-label="Original field recording"></audio></div>
+   <div><strong>02 · DRY RADIO EDIT (LOCAL PREVIEW)</strong><audio id="intake-preview" controls preload="none" aria-label="Prepared radio edit"></audio></div>
+  </div>
+  <label for="intake-title">Recording title (editable)</label><input id="intake-title" maxlength="120" autocomplete="off" placeholder="HUMKIN — Station ident">
+  <label for="intake-department">Suggested department (editable)</label>
+  <select id="intake-department">
+   <option value="station_id">Station ID</option>
+   <option value="news">Fictional newsroom</option>
+   <option value="field_report">Farm and field desk</option>
+   <option value="comedy">Management comedy</option>
+   <option value="sponsor">Fictional ad department</option>
+   <option value="community">Community — factual HOLD</option>
+   <option value="feature">Long spoken feature — intentional slot only</option>
+  </select>
+  <pre id="intake-lab-notes" aria-label="Local technical edit receipt"></pre>
+  <label class="intake-confirm" for="intake-rights"><input type="checkbox" id="intake-rights"><span>I own or have permission to prepare this recording for a private station draft. I understand this stage does not authorize public playback.</span></label>
+  <div class="row">
+   <button id="intake-stage" type="button" class="primary" disabled>STAGE PRIVATE EDIT → REVIEW QUEUE</button>
+   <button id="intake-download" type="button" disabled>DOWNLOAD DRY MP3</button>
+   <button id="intake-start-over" type="button">NEW RECORDING</button>
+  </div>
+  <p class="note"><strong>Strict review gate:</strong> Staging creates an unpublished, disabled draft in the existing cloud crate; the original is not sent. The Studio never enables, schedules, or broadcasts this file. The owner must separately review content, permissions, and the intended show slot in Station Manager. A JSON receipt is downloaded after staging.</p>
+</div>
+<p class="muted"><a href="../load/">OPEN PRIVATE REVIEW CRATE ↗</a> · <a href="../manage/">STATION MANAGER ↗</a></p>
+</section>
 <section class="rose field-assets" id="field-carts">
 <h2>✳ FIELD RECORDINGS · MUSIC ON THE DIAL</h2>
 <p>Your original microphone takes and finished edited radio-cart performances live together in the Production Room. <strong>All 14 edited station-cart recordings have been approved for rotation.</strong> Five are served from the existing cloud crate and nine from the website; the 13 unedited microphone takes remain archival references. No need to upload again. You can still audition them here.</p>
