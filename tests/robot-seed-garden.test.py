@@ -35,7 +35,6 @@ class Seeds(unittest.TestCase):
   self.assertEqual(len(approved),2)
   self.assertEqual(retired,{"cow-apology"})
   self.assertIn("apikey",call.call_args.args[0].headers.__repr__().lower())
-  candidates=robot.select_scripts("SAMPLE",100,"mix",False,approved,retired) if False else None
   # Request each tier's full available slice to prove no retired/fallback
   for level in robot.LEVELS:
    rows=robot.select_scripts("SAMPLE",1,level,False,approved,retired)
@@ -61,9 +60,7 @@ class Seeds(unittest.TestCase):
   for needle in ["db.auth.getUser()","owner.id","status:state","status:\"draft\"",
    "state===\"approved\"","No audio","schema:\"humkin.radio.seed-backup/v1\""]:
    self.assertIn(needle,js)
-  self.assertIn('status in (',(
-    ROOT/"docs/RADIO-BUMPER-BRAIN.md").read_text() if
-    "status in (" in (ROOT/"docs/RADIO-BUMPER-BRAIN.md").read_text() else "status in (")
+  self.assertIn("humkin_radio_script_seeds?select=", (ROOT/"tools/generate-robot-drops.py").read_text())
   self.assertNotIn("service_role",js.lower())
   self.assertNotIn("from(TABLE).delete",js)
   self.assertIn("robot-seeds.html",(ROOT/"fm/manage/index.html").read_text())
