@@ -47,8 +47,8 @@ final class FractalSignalPattern {
         double escape = mandelbrot(-1.9 + 2.6 * x, -1.2 + 2.4 * y);
         double drift = fract(.58 * x + .25 * y + .17 * escape
                 + .09 * Math.sin(step * GOLDEN_STEP * Math.PI));
-        long delay = Math.round((10000.0 + 24000.0 * drift) / BEAT_MS)
-                * Math.round(BEAT_MS);
+        long delay = Math.round(Math.round(
+                (10000.0 + 24000.0 * drift) / BEAT_MS) * BEAT_MS);
         // Soft 8–22% level sags, not dropouts; 280–640 ms each.
         float depth = (float) (.08 + .14 * (.55 * escape + .45 * y));
         long duration = Math.round(280 + 360 * (.50 * escape + .50 * x));
