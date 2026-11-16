@@ -26,6 +26,8 @@ jobs:
       - run: node tests/radio-singles.test.cjs
       - run: node tests/radio-fairness-intake.test.cjs
       - run: node tests/radio-manager.test.mjs
+      - run: node tests/bumper-brain.test.cjs
+      - run: python3 -m py_compile tools/generate-robot-drops.py
       - run: node tests/radio-studio.test.mjs
       - run: node tests/living-cart-intake.test.cjs
       - run: node tests/radio-field-carts.test.mjs
