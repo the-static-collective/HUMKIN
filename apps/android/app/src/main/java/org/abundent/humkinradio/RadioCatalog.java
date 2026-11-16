@@ -30,7 +30,8 @@ final class RadioCatalog {
     private static final String API="https://kbhqacsdvjsstzyplqij.supabase.co";
     // Public publishable key from the station site, NOT a service-role secret.
     private static final String KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
-    private static final Uri COVER=Uri.parse(ORIGIN+"cover.jpg");
+    // Published covers are still referenced on lock screens; the in-app
+    // receiver bundles those exact JPEG files so no image network is needed.
 
     private static final class Track {
         final String id,title,artist,album,url;
@@ -47,11 +48,18 @@ final class RadioCatalog {
                     "bumper".equals(row.optString("kind",bumper?"bumper":"song")));
         }
         MediaItem mediaItem() {
-            MediaMetadata meta=new MediaMetadata.Builder()
-                    .setTitle(title).setArtist(artist).setAlbumTitle(album)
-                    .setArtworkUri(COVER).build();
+            MediaMetadata.Builder builder=new MediaMetadata.Builder()
+                    .setTitle(title).setArtist(artist).setAlbumTitle(album);
+            if (AlbumCatalog.MUTANT_POP.title.equalsIgnoreCase(album)
+                    || id.startsWith("mutant-pop-")) {
+                builder.setArtworkUri(Uri.parse(AlbumCatalog.MUTANT_POP.coverUrl));
+            } else if (AlbumCatalog.EVERYWHERE.title.equalsIgnoreCase(album)
+                    || id.startsWith("everywhere-near-you-")) {
+                builder.setArtworkUri(Uri.parse(AlbumCatalog.EVERYWHERE.coverUrl));
+            }
+            // No fabricated album cover for station-only cuts/bumpers.
             return new MediaItem.Builder().setMediaId(id).setUri(url)
-                    .setMediaMetadata(meta).build();
+                    .setMediaMetadata(builder.build()).build();
         }
     }
 
