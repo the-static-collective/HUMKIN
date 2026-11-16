@@ -41,7 +41,7 @@ public final class OutpostActivity extends Activity {
     private final Button[] moduleButtons=new Button[3];
     private final TextView[] dailyProgress=new TextView[3];
     private final Button[] dailyButtons=new Button[3];
-    private TextView missionTitle,missionDescription,missionProgress,achievementText;
+    private TextView missionTitle,missionDescription,missionProgress,achievementText,chronicleText;
     private LinearLayout missionChoices,missionActive;
     private Button missionClaim,claimCache;
     private OutpostMapView map;
@@ -322,8 +322,16 @@ public final class OutpostActivity extends Activity {
         achievementText=add(trophy,"The shelf is still empty.",12,HumkinVisuals.INK,true,0);
         add(trophy,"Nothing here changes the public song charts. They're your own little radio stories.",11,HumkinVisuals.PLUM,false,10);
 
+        eyebrow(body,"07 / THE OFFICE OF QUESTIONABLE NOTICES",28,HumkinVisuals.PLUM);
+        add(body,"THE NIGHT DESK",29,HumkinVisuals.INK,true,5);
+        LinearLayout desk=card(body,0xffeee0ec,11);
+        eyebrow(desk,"LOCAL EVENT LOG  /  THE COMMITTEE IS AWAY",0,HumkinVisuals.PLUM);
+        chronicleText=add(desk,"No reports filed yet. Suspicious.",13,HumkinVisuals.INK,false,12);
+        add(desk,"Reports are generated from your actual discoveries, upgrades and crew returns. "+
+            "Nobody's broadcasts or points are fictionalized.",11,HumkinVisuals.PLUM,false,12);
+
         LinearLayout leagueCard=card(body,HumkinVisuals.YELLOW,25);
-        eyebrow(leagueCard,"07 / YOUR OTHER GAME IS RUNNING",0,HumkinVisuals.PLUM);
+        eyebrow(leagueCard,"08 / YOUR OTHER GAME IS RUNNING",0,HumkinVisuals.PLUM);
         add(leagueCard,"THE TOP 42",32,HumkinVisuals.INK,true,8);
         add(leagueCard,"Your listening helps the real station chart. Make EPs, draft weekly albums, and champion the songs you love.",13,HumkinVisuals.INK,false,6);
         Button open=pill("OPEN THE RECORD LEAGUE ↗",HumkinVisuals.MINT,15);
@@ -409,6 +417,7 @@ public final class OutpostActivity extends Activity {
         badge(earned,s.missions>=3,"CREW CHIEF","Three expeditions completed");
         badge(earned,s.level>=10,"TOWER KEEPER","Reached level ten");
         badge(earned,s.chartVisited,"SCOUT'S HONOR","Visited the Top 42");
+        chronicleText.setText(s.journal);
         achievementText.setText(earned.length()==0?
             "◌ SIX ODDITIES TO FIND. Your first one is only a minute away.":
             earned.toString());
