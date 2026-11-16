@@ -2,6 +2,7 @@ package org.abundent.humkinradio;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.SystemClock;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
@@ -23,7 +24,7 @@ final class SignalRpg {
         final int xp,level,wallet,capacitor,capacity,tower,archive,crew,discovered,missions;
         final long totalMs,todayMs;
         final int uniqueToday,dailyClaims;
-        final boolean chartVisited,missionActive;
+        final boolean chartVisited,missionActive,onAir;
         final int missionId,missionProgress,missionTarget;
         final String day,rank,chapter;
         Snapshot(SharedPreferences p) {
@@ -48,6 +49,9 @@ final class SignalRpg {
             missionProgress=!missionActive?0:missionId==1?
                     p.getStringSet("mission_tracks",java.util.Collections.emptySet()).size():
                     (int)(p.getLong("mission_ms",0L)/60000L);
+            long last=p.getLong("last_audible_elapsed",0L);
+            onAir=last>0L && SystemClock.elapsedRealtime()>=last
+                    && SystemClock.elapsedRealtime()-last<20_000L;
             day=p.getString("day", "");
             rank=SignalMath.rank(level);
             chapter=SignalMath.chapter(level);
@@ -116,6 +120,7 @@ final class SignalRpg {
         SharedPreferences.Editor edit=p.edit()
             .putLong("total_ms",after)
             .putLong("today_ms",p.getLong("today_ms",0L)+bounded)
+            .putLong("last_audible_elapsed",SystemClock.elapsedRealtime())
             .putInt("xp",experience)
             .putInt("capacitor",cache);
         if(p.getBoolean("mission_active",false))
