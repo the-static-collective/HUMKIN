@@ -95,10 +95,17 @@ final class RadioCatalog {
             return out;
         }
         List<MediaItem> shuffleQueue() {
+            return shuffleQueue(Collections.emptyMap(),System.currentTimeMillis());
+        }
+        List<MediaItem> shuffleQueue(Map<String,Long> playedAt,long nowMs) {
             List<Integer> music=new ArrayList<>(),bumpers=new ArrayList<>();
             for(int i=0;i<tracks.size();i++)
                 (tracks.get(i).bumper?bumpers:music).add(i);
             Collections.shuffle(music);
+            // Shift only last-hour repeats to the rear; keep every era mixed.
+            List<String> ids=new ArrayList<>();
+            for(Track t:tracks)ids.add(t.id);
+            FreshRotation.preferFresh(music,ids,playedAt,nowMs);
             Collections.shuffle(bumpers);
             List<MediaItem> out=new ArrayList<>();
             for(int i:SharedClock.insertBumpers(music,bumpers,cadence))
