@@ -163,7 +163,7 @@ async function getPublishedCrate(){
     const timer=setTimeout(()=>abort.abort(),7000);
     let rows;
     try{
-      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,art_asset_id,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
+      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,art_asset_id,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
         {headers:{apikey:CRATE_KEY},cache:"no-cache",signal:abort.signal});
       if(!response.ok)throw Error("HTTP "+response.status);
       rows=await response.json();
@@ -180,6 +180,7 @@ async function getPublishedCrate(){
       return {id:"crate-"+row.id,title:String(row.title||"").slice(0,240),
         artist:String(row.artist||"HUMKIN"),album:String(row.album||"HUMKIN RADIO"),
         duration,src,kind:row.kind==="bumper"?"bumper":"song",
+        is_single:row.kind!=="bumper"&&row.is_single===true,
         source:"cloud",art_asset_id:row.art_asset_id||null,artwork:fileUrl("cover.jpg",root)};
     }).filter(t=>t?.title);
   }catch(error){console.warn("HUMKIN additional crate unavailable; using original radio rotation.",error);return []}
@@ -210,7 +211,8 @@ function featuredPositions(eligible){
   const singles=new Set(Array.isArray(policy.singles)?policy.singles:[]);
   return eligible.map((trackIndex,position)=>{
     const song=tracks[trackIndex];
-    return albums.has(song.album)||singles.has(song.id)?position:-1;
+    return albums.has(song.album)||singles.has(song.id)||
+      (song.source==="cloud"&&song.kind!=="bumper"&&song.is_single===true)?position:-1;
   }).filter(i=>i>=0);
 }
 function weightedMusic(eligible,rotation){
