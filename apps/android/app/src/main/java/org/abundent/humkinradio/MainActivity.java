@@ -1,6 +1,7 @@
 package org.abundent.humkinradio;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -17,6 +18,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.window.OnBackInvokedCallback;
 import android.window.OnBackInvokedDispatcher;
 import org.json.JSONArray;
@@ -27,6 +29,7 @@ import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
@@ -48,7 +51,7 @@ public final class MainActivity extends Activity {
     private final AtomicBoolean loading=new AtomicBoolean(false);
     private MediaController controller;
     private ListenableFuture<MediaController> controllerFuture;
-    private TextView nowPlaying, status, modeNote, albumPlaying, albumState;
+    private TextView nowPlaying, status, albumPlaying, albumState;
     private TextView onDeck, recentlyHeard;
     private String lastRenderedTrackId = "";
 
@@ -57,7 +60,7 @@ public final class MainActivity extends Activity {
     private LinearLayout firstAlbums, secondAlbums;
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
-    private Button tune,next,reload,sameTime,road,catchUp,albumNext,warmStaticToggle;
+    private Button tune,sameTime,road,albumNext;
     private boolean warmStaticEnabled;
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;
@@ -211,11 +214,19 @@ public final class MainActivity extends Activity {
     }
 
     private void buildRadio() {
+        LinearLayout heading = row();
         TextView dial=text("THE HUMKIN DIAL",23,INK,true);
         dial.setGravity(Gravity.START);
         dial.setLetterSpacing(-.035f);
         if (Build.VERSION.SDK_INT >= 28) dial.setAccessibilityHeading(true);
-        radioScreen.addView(dial,wrap(0));
+        heading.addView(dial, new LinearLayout.LayoutParams(0, -2, 1f));
+        // One discreet overflow keeps specialist controls without clutter.
+        Button more = pill("⋯", null, CREAM, 22);
+        more.setContentDescription("More radio controls, signal settings and history");
+        more.setMinHeight(dp(43));
+        more.setOnClickListener(v -> showMoreRadio());
+        heading.addView(more, new LinearLayout.LayoutParams(dp(53),dp(44)));
+        radioScreen.addView(heading,wrap(0));
         TextView kicker=text("AN IMPERFECT SIGNAL. A REAL GOOD SONG.",10,PLUM,true);
         kicker.setGravity(Gravity.START);
         kicker.setLetterSpacing(.06f);
@@ -228,26 +239,7 @@ public final class MainActivity extends Activity {
         sameTime.setOnClickListener(v -> changeMode(true));
         road.setOnClickListener(v -> changeMode(false));
 
-        modeNote = text("", 14, INK, false);
-        HumkinVisuals.italic(modeNote);
-        modeNote.setGravity(Gravity.START);
-        modeNote.setBackground(HumkinVisuals.panel(this, 0xfffbe7dd, BLUSH, 18));
-        modeNote.setPadding(dp(16), dp(10), dp(16), dp(10));
-        radioScreen.addView(modeNote, wrap(12));
-
-        warmStaticToggle=pill("",null,PINK,13);
-        warmStaticToggle.setMinHeight(dp(45));
-        warmStaticToggle.setOnClickListener(v -> {
-            warmStaticEnabled=!warmStaticEnabled;
-            getSharedPreferences("humkin-radio",MODE_PRIVATE).edit()
-                    .putBoolean("analog-static",warmStaticEnabled).apply();
-            RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
-            redraw();
-        });
-        radioScreen.addView(warmStaticToggle,wrap(9));
-        TextView airNote=text("Mandelbrot × φ air-weather · only on Same-Time Radio, never albums or Road Shuffle.",11,INK,false);
-        airNote.setGravity(Gravity.START);
-        radioScreen.addView(airNote,wrap(5));
+        // Secondary reception settings are in the ⋯ overflow, not the dial.
 
         LinearLayout player = console();
         radioArt = HumkinVisuals.art(this, R.drawable.ic_radio);
@@ -263,51 +255,13 @@ public final class MainActivity extends Activity {
         tune.setOnClickListener(v -> tuneIn());
         radioScreen.addView(tune, wrap(13));
 
-        next = pill("NEXT RECORD", Icon.NEXT, MINT, 13);
-        catchUp = pill("CATCH UP TO AIR", Icon.CATCH_UP, PINK, 13);
-        reload = pill("RESHUFFLE", Icon.SHUFFLE, PINK, 13);
-        LinearLayout actions = row();
-        actions.addView(next, flex(0));
-        actions.addView(catchUp, flex(8));
-        actions.addView(reload, flex(8));
-        radioScreen.addView(actions, wrap(9));
-        next.setOnClickListener(v -> {
-            if (controller != null && !radioMode && "shuffle".equals(source)
-                    && controller.getMediaItemCount() > 0) {
-                controller.seekToNext();
-                controller.play();
-            }
-        });
-        catchUp.setOnClickListener(v -> fetchRadio(true));
-        reload.setOnClickListener(v -> fetchRadio(true));
-
         status = message(INK);
         radioScreen.addView(status, wrap(5));
 
-        // Station continuity: real upcoming playlist and private local history.
-        LinearLayout onAir = column();
-        onAir.setGravity(Gravity.START);
-        onAir.setPadding(dp(15), dp(13), dp(15), dp(13));
-        android.graphics.drawable.GradientDrawable panel =
-                HumkinVisuals.shape(this, 0xfffffdf6, 8);
-        panel.setStroke(dp(2), INK);
-        onAir.setBackground(panel);
-        TextView upLabel = text("COMING UP ON THE DIAL", 11, PLUM, true);
-        upLabel.setLetterSpacing(.09f);
-        upLabel.setGravity(Gravity.START);
-        onAir.addView(upLabel, wrap(0));
-        onDeck = text("Tune in to see what's next.", 16, INK, true);
-        onDeck.setGravity(Gravity.START);
-        onAir.addView(onDeck, wrap(5));
-        TextView heardLabel = text("JUST HEARD ON THIS DEVICE", 11, PLUM, true);
-        heardLabel.setLetterSpacing(.09f);
-        heardLabel.setGravity(Gravity.START);
-        onAir.addView(heardLabel, wrap(13));
+        // These values remain live for the overflow, without a tall card.
+        onDeck = text("Tune in to see what's next.", 14, INK, true);
         recentlyHeard = text("The dial remembers.", 12, INK, false);
-        recentlyHeard.setGravity(Gravity.START);
-        onAir.addView(recentlyHeard, wrap(4));
         updateRecentRecords();
-        radioScreen.addView(onAir, wrap(12));
 
         Button albums = HumkinVisuals.pill(this, "ALBUMS", Icon.ALBUMS, YELLOW, 29, true);
         albums.setMinHeight(dp(61));
@@ -327,28 +281,65 @@ public final class MainActivity extends Activity {
         request.setOnClickListener(v ->
                 visit("https://humkin.abundent.org/fm/line/"));
         addPair(radioScreen, share, request, 11);
-        TextView lineNote = text(
-                "The station line page shows whether messages are open. "
-                + "Nothing goes straight on air.", 11, INK, false);
-        lineNote.setGravity(Gravity.START);
-        radioScreen.addView(lineNote, wrap(4));
+        // The shelf is one tap away via ALBUMS; no duplicated shortcut row.
+        // Archive, privacy, listening history, and tuning options live in ⋯.
+    }
 
-        if (wideCards) {
-            LinearLayout featured = row();
-            Button mutant = pill("MUTANT POP", null, MINT, 12);
-            Button everywhere = pill("everywhere;near you", null, MINT, 12);
-            Button warmth = pill("Warmth", null, MINT, 12);
-            mutant.setOnClickListener(v -> openShelfGroup(firstAlbums));
-            everywhere.setOnClickListener(v -> openShelfGroup(firstAlbums));
-            warmth.setOnClickListener(v -> openShelfGroup(secondAlbums));
-            featured.addView(mutant, flex(0));
-            LinearLayout.LayoutParams middle = flex(6);
-            middle.weight = 1.45f;
-            featured.addView(everywhere, middle);
-            featured.addView(warmth, flex(6));
-            radioScreen.addView(featured, wrap(8));
+
+    private void showMoreRadio() {
+        // Keep the radio's primary face for listening. All secondary actions
+        // remain available without a network request or another page.
+        List<String> titles = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        titles.add(warmStaticEnabled
+                ? "Static + signal dips  ·  ON (tap to turn off)"
+                : "Static + signal dips  ·  OFF (tap to turn on)");
+        actions.add(() -> {
+            warmStaticEnabled = !warmStaticEnabled;
+            getSharedPreferences("humkin-radio", MODE_PRIVATE).edit()
+                    .putBoolean("analog-static", warmStaticEnabled).apply();
+            RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
+            Toast.makeText(this, warmStaticEnabled
+                    ? "Analog radio texture on" : "Analog radio texture off",
+                    Toast.LENGTH_SHORT).show();
+        });
+        if (radioMode) {
+            titles.add("Catch up to air");
+            actions.add(() -> fetchRadio(true));
+        } else {
+            titles.add("Next record");
+            actions.add(() -> {
+                if (controller != null && "shuffle".equals(source)
+                        && controller.getMediaItemCount() > 0) {
+                    controller.seekToNext();
+                    controller.play();
+                }
+            });
+            titles.add("Reshuffle");
+            actions.add(() -> fetchRadio(true));
         }
-        addFooter(radioScreen);
+        titles.add("Coming up");
+        actions.add(() -> new AlertDialog.Builder(this)
+                .setTitle("COMING UP ON THE DIAL")
+                .setMessage(onDeck.getText().toString())
+                .setPositiveButton("Close", null).show());
+        titles.add("Just heard here");
+        actions.add(() -> {
+            updateRecentRecords();
+            new AlertDialog.Builder(this).setTitle("JUST HEARD HERE")
+                    .setMessage(recentlyHeard.getText().toString())
+                    .setPositiveButton("Close", null).show();
+        });
+        titles.add("Station archive");
+        actions.add(() -> visit("https://humkin.abundent.org/fm/archive/"));
+        titles.add("Privacy");
+        actions.add(() -> visit("https://humkin.abundent.org/privacy.html"));
+        new AlertDialog.Builder(this)
+                .setTitle("HUMKIN RADIO  ·  MORE")
+                .setItems(titles.toArray(new String[0]),
+                        (dialog, selection) -> actions.get(selection).run())
+                .setNegativeButton("Close", null)
+                .show();
     }
 
     private void buildAlbums() {
@@ -682,14 +673,14 @@ public final class MainActivity extends Activity {
                         RadioPlaybackService.armSameTime(loaded,cue.cycle+2);
                         controller.setMediaItems(loaded.initialClockQueue(cue),0,cue.positionMs);
                         source="radio";
-                        showMessage(status, loaded.clockCalibrated&&loaded.catalogComplete&&!loaded.scheduledShowsExist
-                                ?"Approx. tuned to the shared HUMKIN dial."
-                                :"Approximate dial · some shows may differ.");
+                        // Successful tuning should sound like radio, not
+                        // introduce a persistent technical status paragraph.
+                        showMessage(status, "");
                     }else{
                         RadioPlaybackService.clearSameTime();
                         controller.setMediaItems(shuffle);
                         source="shuffle";
-                        showMessage(status, loaded.songsCount()+" songs on your own road.");
+                        showMessage(status, "");
                     }
                     controller.prepare();controller.play();redraw();
                 });
@@ -730,8 +721,6 @@ public final class MainActivity extends Activity {
     }
     private void setBusy(boolean busy){
         if(tune!=null)tune.setEnabled(!busy);
-        if(reload!=null)reload.setEnabled(!busy);
-        if(catchUp!=null)catchUp.setEnabled(!busy);
     }
     private void updateRecentRecords() {
         try {
@@ -765,20 +754,9 @@ public final class MainActivity extends Activity {
             road.setSelected(!radioMode);
             modeStyled = true;
         }
-        modeNote.setText(radioMode
-                ? "Same-Time Radio · everybody catches the same approximate signal."
-                : "Road Shuffle · your own traveling collection, without the static.");
-        warmStaticToggle.setText(warmStaticEnabled
-                ? "✳  STATIC + SIGNAL DIPS   /   ON"
-                : "○  STATIC + SIGNAL DIPS   /   OFF");
-        catchUp.setVisibility(radioMode ? View.VISIBLE : View.GONE);
-        reload.setVisibility(radioMode ? View.GONE : View.VISIBLE);
-
         boolean ready = controller != null && controller.getMediaItemCount() > 0;
         boolean stationPlaying = ready && controller.isPlaying()
                 && (radioMode ? "radio" : "shuffle").equals(source);
-        next.setEnabled(ready && !radioMode && "shuffle".equals(source));
-        next.setAlpha(next.isEnabled() ? 1f : .65f);
         if (stationPlaying != "PAUSE".contentEquals(tune.getText())) {
             tune.setText(stationPlaying ? "PAUSE" : "TUNE IN");
             HumkinVisuals.setIcon(tune, stationPlaying ? Icon.PAUSE : Icon.PLAY, 31);
