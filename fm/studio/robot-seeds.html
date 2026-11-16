@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#241935">
+<title>THE SEED GARDEN · HUMKIN ROBOT DESK</title>
+<link rel="stylesheet" href="../radio.css">
+<style>
+:root{color-scheme:light;--ink:#281c40;--paper:#fff9ed;--mint:#c8efd7;--rose:#ffd9df;--sun:#ffe27a;--shadow:#a98ca8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,Arial,sans-serif}
+main{max-width:1160px;margin:auto;padding:20px 16px 90px}
+a{color:#3f255c}a:hover{text-decoration-thickness:2px}
+header{padding:20px;background:#281c40;color:#fff8e8;border-radius:16px;box-shadow:6px 7px 0 var(--shadow)}
+header a{color:#ffeb99}header .eyebrow{font-size:.74rem;letter-spacing:.16em;font-weight:900}
+h1{font-size:clamp(3.3rem,11vw,7.2rem);line-height:.84;letter-spacing:-.07em;margin:22px 0 15px}
+h2{margin:0 0 13px;font-size:clamp(1.6rem,4vw,2.3rem);letter-spacing:-.045em}
+p{line-height:1.45}.subtitle{max-width:730px;font-size:1.12rem}
+section{border:3px solid var(--ink);border-radius:15px;background:white;margin:23px 0;padding:19px;box-shadow:5px 6px 0 var(--shadow)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{min-width:0}
+button,.btn{appearance:none;font:900 .92rem/1.2 system-ui;color:var(--ink);background:var(--sun);border:2px solid var(--ink);border-radius:10px;padding:11px 13px;cursor:pointer;text-decoration:none;display:inline-flex;justify-content:center;align-items:center;min-height:44px;gap:6px}
+button:hover,.btn:hover{background:#f2c66a}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--mint)}button.secondary{background:white}
+button.danger{background:var(--rose)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:4px solid #b35fa4;outline-offset:2px}
+label{display:block;font-weight:850;margin:12px 0 5px;font-size:.86rem}
+input,select,textarea{font:inherit;color:var(--ink);width:100%;padding:12px;border:2px solid #756687;border-radius:9px;background:#fff}
+textarea{resize:vertical;min-height:118px;line-height:1.5}
+textarea:focus,input:focus{background:#fffcf5}
+.muted{font-size:.87rem;color:#62526c}
+#status{min-height:24px;font-weight:750;padding:6px 0}
+#editor{background:#fff2c9}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.field-2{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
+#script-count{float:right;font-size:.87rem;margin-top:9px;color:#61536a}
+.filters{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+#seed-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:13px;margin-top:18px}
+.seed{padding:15px;background:#fffdf6;border:2px solid var(--ink);border-radius:12px;box-shadow:3px 4px 0 #ddd1d9}
+.seed p{font-size:1.08rem;font-weight:650;min-height:65px}
+.seed .badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:.69rem;font-weight:850;letter-spacing:.035em;padding:3px 8px;border-radius:20px;border:1px solid #776483;background:#eee4fa}
+.badge.plain{background:#d9efca}.badge.wry{background:#f7e5aa}.badge.strange{background:#ffd7ce}.badge.cosmic{background:#e8d8ff}
+.seed .row button{flex:1 1 70px;font-size:.8rem;padding:9px 8px}
+#bulk-zone{background:#def4e4}
+#bulk-script{min-height:100px}
+#editor-status{font-weight:850;min-height:22px}
+#auth{padding:10px 0}
+#auth strong{color:#ffe78e}
+.nav{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:13px}
+.nav a{font-weight:750}
+#countline{font-weight:850;font-size:.88rem}
+#script-count.warn{color:#9b1334}
+@media(max-width:780px){.fields,.field-2,.filters{grid-template-columns:1fr 1fr}}
+@media(max-width:540px){.fields,.field-2,.filters{grid-template-columns:1fr}section{padding:14px}header{padding:17px}.row button{flex:1}.row a.btn{flex:1}}
+</style>
+<script type="module" src="./robot-seed-editor.js"></script>
+</head><body><main>
+<div class="nav"><a href="./">← PRODUCTION ROOM</a><a href="../manage/">STATION MANAGER ↗</a></div>
+<header>
+<div class="eyebrow">HUMKIN RADIO · ROBOT DEPARTMENT · EDITORIAL ENGINE</div>
+<h1>THE SEED<br>GARDEN.</h1>
+<p class="subtitle">An endless little field of short, sweet, strange announcements. Type a sentence. Give it a temperament. Save it. The robot will eventually read the approved ones as though they were important.</p>
+<div id="auth"><strong id="auth-label">Checking your Station Desk key…</strong><div class="row"><a class="btn" href="../load/">SIGN IN AT CRATE LOADER ↗</a><button class="secondary" id="auth-retry" type="button">CHECK SIGN-IN</button></div></div>
+<p class="muted" style="color:#e7d7eb">Only the station owner can save or approve seeds. A seed is text, not audio; approval allows it into a future private audition batch, never directly on air.</p>
+</header>
+
+<section id="editor">
+<h2 id="editor-heading">✳ Plant a new thought</h2>
+<label for="script">THE ACTUAL LINE <span id="script-count">0 / 195</span></label>
+<textarea id="script" maxlength="195" placeholder="The kettle has requested a day off. The stove will be covering its shift." spellcheck="true"></textarea>
+<p class="muted">One short idea. One clear absurdity. Readable even without computers, news, or electricity. Press the rough audition button to hear your device's voice—not the finished robot.</p>
+<div class="fields">
+<div><label for="level">DEGREE OF ABSURDITY</label><select id="level"><option value="plain">1 · PLAIN — honest, gently funny</option><option value="wry">2 · WRY — human contradictions</option><option value="strange" selected>3 · STRANGE — objects with opinions</option><option value="cosmic">4 · COSMIC — universal nonsense</option></select></div>
+<div><label for="role">DEPARTMENT</label><select id="role"><option value="character">CHARACTER / ANNOUNCEMENT</option><option value="station_id">SHORT STATION ID</option></select></div>
+<div><label for="family">JOKE FAMILY / CALLBACK</label><input id="family" maxlength="50" list="families" value="kitchen" placeholder="kitchen"><datalist id="families"></datalist></div>
+</div>
+<div class="field-2">
+<div><label for="slug">FILING SLUG <span class="muted">(automatic for new seeds)</span></label><input id="slug" maxlength="70" placeholder="kettle-day-off"></div>
+<div><label for="editing-status">CURRENT STATE</label><input id="editing-status" value="NEW UNSAVED IDEA" disabled></div>
+</div>
+<p id="editor-status" role="status" aria-live="polite"></p>
+<div class="row">
+<button class="primary" id="save-draft" type="button" disabled>✳ SAVE PRIVATE DRAFT</button>
+<button id="approve-seed" type="button" disabled>APPROVE FOR AUDITION SEEDS ↗</button>
+<button class="secondary" id="rough-play" type="button">▶ ROUGH DEVICE VOICE</button>
+<button class="secondary" id="fresh" type="button">+ BLANK IDEA</button>
+<button class="danger" id="retire-seed" type="button" disabled>RETIRE</button>
+</div>
+</section>
+
+<section id="bulk-zone">
+<h2>✳ Scatter a handful</h2>
+<p>Have ten ideas? Paste <strong>one sentence per line</strong>. They inherit the temperament and family selected above. Every line saves privately; nothing is approved or aired automatically.</p>
+<label for="bulk-script">BULK JOKES · ONE PER LINE · MAXIMUM 20</label><textarea id="bulk-script" placeholder="The hens have declared a holiday. Nobody informed the eggs.&#10;There is a meeting about the misplaced meeting.&#10;The neighbor returned the borrowed sunbeam."></textarea>
+<div class="row"><button class="primary" id="save-bulk" type="button" disabled>PLANT ALL AS PRIVATE DRAFTS ↗</button></div>
+</section>
+
+<section id="library">
+<h2>THE JOKE LIBRARY</h2>
+<p id="countline">Opening the notebooks…</p>
+<div class="filters">
+<div><label for="search">FIND A JOKE</label><input type="search" id="search" placeholder="kettle, chair, farm, soup…" autocomplete="off"></div>
+<div><label for="filter-level">ABSURDITY</label><select id="filter-level"><option value="all">ALL LEVELS</option><option value="plain">PLAIN</option><option value="wry">WRY</option><option value="strange">STRANGE</option><option value="cosmic">COSMIC</option></select></div>
+<div><label for="filter-status">STATE</label><select id="filter-status"><option value="all">EVERYTHING</option><option value="builtin">ORIGINAL SEEDS</option><option value="draft">PRIVATE DRAFTS</option><option value="approved">APPROVED TEXT</option><option value="retired">RETIRED</option></select></div>
+</div>
+<div class="row"><button class="secondary" id="refresh" type="button">↻ REFRESH</button><button class="secondary" id="export" type="button">↓ EXPORT SEED BACKUP</button><a class="btn" href="https://github.com/the-static-collective/HUMKIN/actions/workflows/robot-desk-auditions.yml" target="_blank" rel="noopener">GENERATE AN AUDITION PACK ↗</a></div>
+<div id="status" role="status"></div>
+<div id="seed-list"></div>
+</section>
+<footer class="muted">HUMKIN RADIO · The robot doesn't know it's funny. · Seed approval only; a separately recorded cart requires its own broadcast approval.</footer>
+</main></body></html>
