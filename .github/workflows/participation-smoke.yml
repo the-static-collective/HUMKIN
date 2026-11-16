@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/participation-smoke.yml'
+      - 'fm/participate/edge-function.ts'
 jobs:
   test:
     runs-on: ubuntu-latest
