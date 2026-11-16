@@ -1,18 +1,25 @@
-# HUMKIN RADIO Android · v0.5
+# HUMKIN RADIO Android · v0.6
 
 The native Radio screen now borrows the published HUMKIN site's dark-ink
 masthead, yellow station ticker, warm paper dial, high-contrast buttons and
 pink accents. The illustrated albums and skyline remain native and offline.
 
-**Radio-only analog static:** an opt-out, softly filtered local PCM hiss is
+**Radio-only analog signal:** an opt-out, softly filtered local PCM hiss is
 synthesized by the Media3 playback service after the user taps Tune In. Its
 37.8% website-style texture is reduced by 4.2%; it runs only while Same-Time
 Radio is actually playing and ready, including with the screen locked. It
 pauses for buffering, audio interruptions and pauses, and is disabled outright
-for Road Shuffle and albums. The ON/OFF setting persists per device. Static
+for Road Shuffle and albums. **Fractal signal weather** now varies the time,
+depth and length of rare, gentle reception dips: a seed-dependent golden-ratio
+walk through Mandelbrot escape times. Dips are 8–22% of player-session gain,
+last 280–640ms, recur with ~10–34 seconds between events, and have a smooth
+attack/release; the separate hiss gently narrows to mono during a dip.
+The same static toggle controls both. Pauses, loss of audio focus, buffering,
+clearing Same-Time Radio or turning the toggle OFF cancel pending dips and
+restore the clean session gain. No device master-volume changes or music-file
+processing. Fractals are a scheduling texture, **not real signal strength**. The ON/OFF setting persists per device. Static
 never replaces or processes a music stream, and adds no network calls,
-accounts or permissions. Analog crackle and website-only signal-drop effects
-are not ported in this pass.
+accounts or permissions. The browser's occasional crackle/pop effect remains website-only.
 
 
 The Radio and Albums screens use the paper-style reference artwork, including the
@@ -49,9 +56,11 @@ On device verify:
    the next-track control; test switching back to radio.
 4. Verify fallbacks on slow/no network, theme colors and cover loading.
 5. Confirm the three-song station ID cadence still comes from backend config.
-6. Toggle ANALOG RADIO STATIC on Same-Time; check audible low-level hiss, pause,
-   lock screen, phone interruption, buffering, and that **no hiss** follows into
-   Road Shuffle or album PLAY. Persist preference across app restarts.
+6. Toggle STATIC + SIGNAL DIPS on Same-Time; check quiet hiss and subtle,
+   irregular level fades with static briefly narrowing toward mono. Verify
+   phone pause, lock screen, audio focus interruption, buffering, mode changes,
+   and **no hiss or dips** in Road Shuffle or album PLAY. Persist preference
+   across app restarts.
 
 This is an unsigned-for-store debug build; Google Play developer enrollment,
 physical receiver tests, and production signing are still pending.
