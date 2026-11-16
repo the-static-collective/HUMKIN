@@ -9,17 +9,17 @@ permissions:
 jobs:
   render-private-drafts:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Install offline synthesizer and encoder
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y espeak ffmpeg
-      - name: Generate deterministic weekly cartoon computer voice drafts
+          sudo apt-get install -y espeak flite festival ffmpeg
+      - name: Generate 12 timeless jokes + 9 multivoice A/B review cuts
         run: |
-          python3 tools/generate-robot-drops.py --seed "$(date -u +%G-W%V)" --count 8 --out robot-auditions
-          python3 -c 'import json; p=json.load(open("robot-auditions/audition-manifest.json")); assert len(p["items"])==8 and all(x["approval"].startswith("REVIEW") for x in p["items"])'
+          python3 tools/generate-robot-drops.py --seed "$(date -u +%G-W%V)" --count 12 --engines espeak,flite,festival --compare --out robot-auditions
+          python3 -c 'import json; p=json.load(open("robot-auditions/audition-manifest.json")); assert len(p["items"])==21 and {x["engine"] for x in p["items"]}=={"espeak","flite","festival"} and {x["absurdity"] for x in p["items"]}=={"plain","wry","strange","cosmic"} and all(x["approval"].startswith("REVIEW") for x in p["items"])'
       - name: Store drafts for manual listening only
         uses: actions/upload-artifact@v4
         with:
