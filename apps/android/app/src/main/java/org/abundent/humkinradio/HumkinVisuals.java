@@ -189,7 +189,9 @@ final class HumkinVisuals {
     static ImageView art(Context context, int artwork) {
         ImageView image = new ImageView(context);
         image.setImageResource(artwork);
-        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        // Preserve every edge of the approved square album cover (including
+        // typography), unlike the cropped concept-art thumbnails.
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
         image.setBackground(shape(context, PLUM, 12));
         image.setClipToOutline(true);
         return image;
