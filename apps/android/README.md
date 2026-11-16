@@ -1,3 +1,46 @@
+# HUMKIN RADIO Android · v0.14 Field Test — Signal Outpost
+
+**Install name:** HUMKIN RADIO · OUTPOST  
+**Test package:** `org.abundent.humkinradio.outpost`  
+**Build artifact:** `humkin-radio-android-field-test` / `app-fieldTest.apk`
+
+This version wraps the **native** Media3 receiver and the existing Top 42
+record-league WebView in a small listening-based idle RPG. The new **SIGNAL
+OUTPOST** button appears near the top of the radio screen. No existing
+radio/shuffle/album interface has been replaced.
+
+The core loop is: tune to actual radio → real audible Media3 playback fills
+a **local capacitor** and earns experience → return to Outpost → collect
+signal → upgrade antenna, tape archive or night crew → dispatch a field crew
+on a listening mission → claim its reward → unlock new relay sectors.
+
+- Signal and experience accrue **only during actual playback**, batched by
+  the Media3 service. Locking the phone does not stop earning so long as the
+  Android player really continues; closing the app or pausing the station
+  produces no pretend offline rewards. Capacitor has a visible capacity.
+- New recordings are *discovered* only after 30 seconds of playback and
+  credited once per recording, regardless of repeated loops. The service
+  remains the source of truth for audible time.
+- Missions: eight-minute AM relay repair, four unique-song B-side retrieval,
+  level-4 unlocked twenty-five-minute Long Night.
+- Daily orders: listen four minutes, hear three different tracks, open Top 42;
+  reset on the America/Chicago day boundary without punitive streaks.
+- Procedural native tower-map sectors, rank/level bar, local trophy shelf,
+  and responsive fictional **Night Desk** dispatch logs.
+- Local Signal/XP are **not** public Top 42 points. Top 42 scoring still uses
+  its own qualifying-play API. Gameplay does not create fake plays, airtime,
+  votes, or influence the chart except through actual listening.
+- Account-free and local-only: no sign-up, microphone, ad network, permission
+  change, or cloud save for the RPG.
+
+This remains a **field-test APK** until real-device navigation, typography,
+background-play accrual, capacity, and audio interruptions are checked.
+The `.outpost` sideload has **separate local history** from prior ephemeral
+test-package variants. Do not uninstall another HUMKIN app just to install
+this trial. Stable upgrades will need a protected production signing key.
+
+---
+
 # HUMKIN RADIO Android · v0.12
 
 ## Listener-first receiver / install recovery
