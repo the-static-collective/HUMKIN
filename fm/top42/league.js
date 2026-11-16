@@ -8,6 +8,7 @@ const WORDS=["Almost","Blue","Bloom","Broken","Distant","First","Golden","Home",
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
 let state=null,kind="ep",filter="all",draft=[],queue=[],playingRecord=null,playIndex=-1;
+let restored=false;
 let heard=0,lastTick=0,sent=false,requesting=false,refreshing=false;
 const audio=$("league-audio");
 function getListener(){
@@ -49,9 +50,45 @@ function populateWords(){
  }
  $("word-one").value="Midnight";$("word-two").value="Bloom";
 }
+// A draft is not an account. Keep only the selected public recording IDs
+// and title words locally, scoped to the current Central-time league round.
+function localDraftKey(selected=kind){return "humkin-top42-local-draft-v1-"+selected}
+function currentIssue(selected=kind){
+ return selected==="ep"?state?.station_day:state?.week_start;
+}
+function saveDraft(){
+ if(!currentIssue())return;
+ try{localStorage.setItem(localDraftKey(),JSON.stringify({
+   issue:currentIssue(),tracks:draft.slice(0,12),
+   words:[$("word-one").value,$("word-two").value]
+ }))}catch{}
+}
+function restoreDraft(selected=kind){
+ if(!currentIssue(selected))return [];
+ try{
+   const entry=JSON.parse(localStorage.getItem(localDraftKey(selected))||"null");
+   if(entry?.issue!==currentIssue(selected)||!Array.isArray(entry.tracks))return [];
+   const q=selected==="ep"?{total:6,radio:4,released:2}:{total:12,radio:8,released:4};
+   const used=new Set(),counts={radio:0,released:0},valid=[];
+   for(const id of entry.tracks){
+     if(typeof id!=="string"||used.has(id))continue;
+     const song=byId(id);
+     if(!song)continue;
+     const category=song.featured?"released":"radio";
+     if(counts[category]>=q[category]||valid.length>=q.total)continue;
+     counts[category]++;used.add(id);valid.push(id);
+   }
+   if(selected===kind&&Array.isArray(entry.words)&&entry.words.length===2){
+     if(WORDS.includes(entry.words[0]))$("word-one").value=entry.words[0];
+     if(WORDS.includes(entry.words[1]))$("word-two").value=entry.words[1];
+   }
+   return valid;
+ }catch{return []}
+}
 function setKind(next){
  if(kind===next)return;
- kind=next;draft=[];
+ saveDraft();
+ kind=next;draft=restoreDraft(next);
  $("choose-ep").setAttribute("aria-pressed",String(kind==="ep"));
  $("choose-album").setAttribute("aria-pressed",String(kind==="album"));
  renderDraft();renderCatalog();
@@ -74,18 +111,18 @@ function renderDraft(){
    const actions=el("div","draft-actions");
    actions.append(makeButton("↑",()=>move(i,-1),i===0));
    actions.append(makeButton("↓",()=>move(i,1),i===draft.length-1));
-   actions.append(makeButton("×",()=>{draft.splice(i,1);renderDraft();renderCatalog()}));
+   actions.append(makeButton("×",()=>{draft.splice(i,1);saveDraft();renderDraft();renderCatalog()}));
    li.append(text,actions);list.append(li);
  });
  if(!draft.length)list.append(el("li","placeholder","THE SONGS GO HERE. MAKE THEM MAKE SENSE."));
 }
-function move(index,step){const next=index+step;if(next<0||next>=draft.length)return;[draft[index],draft[next]]=[draft[next],draft[index]];renderDraft()}
+function move(index,step){const next=index+step;if(next<0||next>=draft.length)return;[draft[index],draft[next]]=[draft[next],draft[index]];saveDraft();renderDraft()}
 function addSong(id){
  const song=byId(id),limits=quota(),have=counts();
  if(!song||draft.includes(id)||draft.length>=limits.total)return;
  const type=song.featured?"released":"radio";
  if(have[type]>=limits[type])return;
- draft.push(id);renderDraft();renderCatalog();
+ draft.push(id);saveDraft();renderDraft();renderCatalog();
 }
 function renderCatalog(){
  const list=$("catalog-list");list.replaceChildren();
@@ -162,7 +199,9 @@ async function refresh(first=false){
    const record=new URLSearchParams(location.search).get("record");
    const data=await api(record&&/^[0-9a-f-]{36}$/i.test(record)?"?record="+encodeURIComponent(record):"");
    if(data.schema!=="humkin.top42/v1"||!Array.isArray(data.catalog))throw Error("Unknown scoreboard format");
-   state=data;render();status("✳ LIVE BOARD · "+data.station_day+" · "+data.catalog.length+" ON THE DIAL");
+   state=data;
+   if(!restored){draft=restoreDraft();restored=true;}
+   render();status("✳ LIVE BOARD · "+data.station_day+" · "+data.catalog.length+" ON THE DIAL");
    if(first&&data.selected){playRecord(data.selected,false);$("playbar").scrollIntoView({block:"end"});}
  }catch(e){
    status("SCOREBOARD OFFLINE · THE REGULAR RADIO IS STILL AVAILABLE");
@@ -179,7 +218,7 @@ async function release(){
    const result=await post({action:"release",kind,word_one:$("word-one").value,
      word_two:$("word-two").value,tracks:[...draft]});
    builderStatus("RELEASED: "+result.record.title+" · "+result.record.curator+". You can play it or share it from the standings.");
-   draft=[];await refresh();
+   draft=[];saveDraft();await refresh();
    const list=kind==="ep"?state?.eps:state?.albums;
    const created=list?.find(r=>r.id===result.record.id);
    if(created)shareRecord(created,false);
@@ -239,6 +278,8 @@ function tick(){
  }
 }
 populateWords();
+$("word-one").addEventListener("change",saveDraft);
+$("word-two").addEventListener("change",saveDraft);
 $("choose-ep").addEventListener("click",()=>setKind("ep"));
 $("choose-album").addEventListener("click",()=>setKind("album"));
 $("catalog-search").addEventListener("input",renderCatalog);

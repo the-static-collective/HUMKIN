@@ -3,3 +3,12 @@
 @media(max-width:900px){.builder-grid,.race-grid{grid-template-columns:1fr}.crate-panel{box-shadow:6px 6px 0 #b6a4cc}.intro{grid-template-columns:1fr 1fr}.signals{grid-template-columns:1fr}.signal-links{flex-direction:row}}
 @media(max-width:620px){.station-label{display:none}.hero{padding:48px 5% 40px}h1{font-size:clamp(76px,17vw,110px)}.hero-foot{gap:8px;font-size:9px}.hero-foot .dot{display:none}.intro{grid-template-columns:1fr;padding:20px 5%}.intro article{padding-top:0}.section{padding:50px 5%}.section-header{display:block}.chart-actions{margin-top:20px}.table-labels,.chart-list>li{grid-template-columns:minmax(0,1fr) 48px 59px 47px;gap:3px;padding:9px 7px}.table-labels{font-size:8px}.chart-list>li{font-size:12px}.rank-number{font-size:17px;min-width:28px}.song-identity{gap:4px}.song-name{font-size:12px}.song-name small{font-size:10px}.metric.total{padding:3px}.builder-panel,.crate-panel{padding:15px;box-shadow:4px 5px 0 var(--pink)}.crate-panel{box-shadow:4px 5px 0 #b6a4cc}.word-pair select{font-size:13px}.rule-card{grid-template-columns:1fr}.tabs button{font-size:10px}.signals{padding:50px 5%}.signal-links{flex-direction:column}.playbar{padding:8px 3%}.playbar-caption strong{font-size:12px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+/* Touch devices, desktop-mode mobile browsers and browser-zoom views sometimes
+ * retain a desktop-width layout viewport. Honor coarse-pointer devices even
+ * when a viewport-only breakpoint would hide half of the music crate. */
+.builder-panel,.crate-panel,.builder-grid,.race-grid{min-width:0;max-width:100%}
+@media (pointer:coarse), (max-width:1300px) {
+ .builder-grid,.race-grid{grid-template-columns:minmax(0,1fr)}
+ .builder-panel,.crate-panel{width:100%;min-width:0;overflow-wrap:anywhere}
+ .catalog-list{max-height:none;overflow:visible}
+}
