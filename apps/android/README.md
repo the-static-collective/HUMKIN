@@ -1,10 +1,10 @@
-# HUMKIN RADIO Android · v0.9
+# HUMKIN RADIO Android · v0.10
 
 ## Listener-first receiver / install recovery
 
-**Install this build as `HUMKIN RADIO · REAL ART`**, a separate Android
-package `org.abundent.humkinradio.realart`. This is a **new test identity**
-so Android can install it beside v0.7 Field Test and v0.8 Receiver, whose
+**Install this build as `HUMKIN RADIO · DIAL`**, a separate Android
+package `org.abundent.humkinradio.dial`. This is a **new test identity**
+so Android can install it beside v0.7 Field Test, v0.8 Receiver, and v0.9 Real Art, whose
 ephemeral CI signing keys cannot be reused. GitHub runners may generate
 different debug signing keys on each run; Android refuses to replace an
 installed same-package build signed with a different key ("App not installed").
@@ -23,6 +23,29 @@ a new ephemeral key. A permanent protected keystore and production signing
 process are needed before a public/store release. If installation still fails,
 check the Android unknown-apps permission, device storage, complete download,
 and the exact installer error. Do not uninstall the original app prematurely.
+
+### v0.10 · The simple dial
+
+The listener marked the **ancillary** regions of the v0.9 radio screen for
+removal in a phone screenshot. Primary radio now shows just:
+- HUMKIN header / station identity, Same-Time and Road Shuffle (both tune/play)
+- canonical album artwork, track title and moving waveform
+- prominent Play/Pause
+- ALBUMS and the two unmarked listener actions, Share / Request Line
+
+Removed from this screen: explanatory mode panel, permanent static-settings
+button and air-weather footnote, Next/Catch-up/Reshuffle toolbar, large
+Coming-Up/Just-Heard history card, technical success text, repeated album
+shortcut row, request-line disclaimer, and station archive/privacy footer.
+The small **⋯** control beside THE HUMKIN DIAL preserves access to static/
+signal dips toggle, Catch Up / Next / Reshuffle (depending on radio mode),
+Coming Up and last three recently heard, station archive and privacy.
+The album shelf retains its own navigation and controls; audio service,
+radio scheduling, volume, playlist history and website remain unchanged.
+
+No new permissions, backend, tracking, or network work. This v0.10 sideload
+uses a fresh test package because prior CI build signatures are ephemeral;
+we still need stable protected production signing for in-place upgrades.
 
 ### v0.9 authentic published cover art
 
