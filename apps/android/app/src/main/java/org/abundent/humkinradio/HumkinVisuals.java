@@ -3,154 +3,318 @@ package org.abundent.humkinradio;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.LinearGradient;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Shader;
+import android.graphics.PixelFormat;
 import android.graphics.Typeface;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.text.Layout;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
 
 final class HumkinVisuals {
-    static final int INK=Color.rgb(78,25,58);
-    static final int PLUM=Color.rgb(86,32,63);
-    static final int CREAM=Color.rgb(255,248,236);
-    static final int YELLOW=Color.rgb(255,216,88);
-    static final int MINT=Color.rgb(193,226,193);
-    static final int PINK=Color.rgb(250,185,195);
-    static final int BLUSH=Color.rgb(255,232,224);
-    static final int WHITE=Color.rgb(255,248,239);
+    static final int INK = 0xff43102c;
+    static final int PLUM = 0xff501735;
+    static final int CREAM = 0xfffff4e7;
+    static final int YELLOW = 0xffffd45b;
+    static final int MINT = 0xffc6debd;
+    static final int PINK = 0xfff8aeba;
+    static final int BLUSH = 0xfff9ded4;
+    static final int WHITE = 0xfffff8ef;
 
-    static int dp(Context ctx, float n) {
-        return Math.round(n*ctx.getResources().getDisplayMetrics().density);
+    enum Icon { RADIO, SHUFFLE, PLAY, PAUSE, NEXT, CATCH_UP, ALBUMS, BACK, ARCHIVE, PRIVACY }
+
+    static int dp(Context context, float size) {
+        return Math.round(size * context.getResources().getDisplayMetrics().density);
     }
-    static GradientDrawable shape(Context ctx,int color,int radius) {
-        GradientDrawable bg=new GradientDrawable();
-        bg.setColor(color);bg.setCornerRadius(dp(ctx,radius));return bg;
+
+    static GradientDrawable shape(Context context, int color, int radius) {
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(color);
+        background.setCornerRadius(dp(context, radius));
+        return background;
     }
-    static GradientDrawable outlined(Context ctx,int color,int radius,int stroke) {
-        GradientDrawable bg=shape(ctx,color,radius);
-        bg.setStroke(dp(ctx,2),stroke);
-        return bg;
+
+    static GradientDrawable panel(Context context, int fill, int edge, int radius) {
+        GradientDrawable background = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR, new int[]{fill, edge});
+        background.setCornerRadius(dp(context, radius));
+        return background;
     }
-    static TextView text(Context ctx,String value,int size,int color,boolean bold) {
-        TextView t=new TextView(ctx);t.setText(value);t.setTextSize(size);
-        t.setTextColor(color);t.setGravity(Gravity.CENTER);
-        t.setTypeface(Typeface.create(bold?"sans-serif-black":"sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));
-        t.setIncludeFontPadding(true);
-        return t;
+
+    static TextView text(Context context, String value, int size, int color, boolean bold) {
+        TextView label = new TextView(context);
+        label.setText(value);
+        label.setTextSize(size);
+        label.setTextColor(color);
+        label.setGravity(Gravity.CENTER);
+        label.setTypeface(Typeface.create(bold ? "sans-serif-black" : "sans-serif", Typeface.NORMAL));
+        label.setIncludeFontPadding(false);
+        return label;
     }
-    static Button pill(Context ctx,String title,int fill,int foreground) {
-        Button b=new Button(ctx);
-        b.setText(title);b.setTextColor(foreground);b.setTextSize(15);
-        b.setAllCaps(false);
-        b.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD));
-        b.setBackgroundTintList(null);
-        b.setBackground(shape(ctx,fill,26));
-        b.setElevation(dp(ctx,3));
-        b.setMinHeight(dp(ctx,54)); b.setPadding(dp(ctx,10),dp(ctx,8),dp(ctx,10),dp(ctx,8));
-        return b;
+
+    static void italic(TextView label) {
+        label.setTypeface(Typeface.create("sans-serif", Typeface.ITALIC));
     }
-    static LinearLayout vertical(Context ctx) {
-        LinearLayout a=new LinearLayout(ctx);
-        a.setOrientation(LinearLayout.VERTICAL);
-        a.setGravity(Gravity.CENTER_HORIZONTAL);return a;
+
+    static Button pill(Context context, String title, Icon icon, int fill, int size, boolean outline) {
+        Button button = new PillButton(context);
+        button.setText(title);
+        button.setAllCaps(false);
+        button.setTextColor(INK);
+        button.setTextSize(size);
+        button.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+        button.setLetterSpacing(0.015f);
+        button.setIncludeFontPadding(false);
+        button.setMinHeight(dp(context, 48));
+        button.setMinimumHeight(dp(context, 48));
+        button.setMinWidth(0);
+        button.setMinimumWidth(0);
+        button.setStateListAnimator(null);
+        button.setBackgroundTintList(null);
+        button.setGravity(Gravity.CENTER);
+        setPillFill(button, fill, outline);
+        setIcon(button, icon, size >= 20 ? size + 5 : size + 4);
+        return button;
     }
-    static LinearLayout horizontal(Context ctx) {
-        LinearLayout a=new LinearLayout(ctx);
-        a.setOrientation(LinearLayout.HORIZONTAL);a.setGravity(Gravity.CENTER_VERTICAL);return a;
-    }
-    static LinearLayout.LayoutParams full(Context ctx,int h,int top) {
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(ctx,h));
-        p.topMargin=dp(ctx,top);return p;
-    }
-    static LinearLayout.LayoutParams wrap(Context ctx,int top) {
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);
-        p.topMargin=dp(ctx,top);return p;
-    }
-    static LinearLayout.LayoutParams flex(Context ctx,int weight,int left) {
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,weight);
-        p.leftMargin=dp(ctx,left);return p;
-    }
-    static FrameLayout artTile(Context ctx,int h,String coverUrl,ExecutorService worker) {
-        FrameLayout box=new FrameLayout(ctx);
-        box.setClipToOutline(true);
-        box.setBackground(shape(ctx,PLUM,20));
-        box.setElevation(dp(ctx,1));
-        box.addView(new SunsetPoster(ctx),new FrameLayout.LayoutParams(-1,-1));
-        if(coverUrl!=null) {
-            ImageView artwork=new ImageView(ctx);
-            artwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            box.addView(artwork,new FrameLayout.LayoutParams(-1,-1));
-            worker.execute(()->{
-                try{
-                    URL source=new URL(coverUrl);
-                    if(!"https".equals(source.getProtocol()) ||
-                       !"humkin.abundent.org".equals(source.getHost()))return;
-                    HttpURLConnection c=(HttpURLConnection)source.openConnection();
-                    c.setConnectTimeout(6000);c.setReadTimeout(8000);
-                    try{
-                        if(c.getResponseCode()!=200)return;
-                        if(c.getContentLengthLong()>3000000)return;
-                        try(InputStream in=c.getInputStream()){
-                            Bitmap b=BitmapFactory.decodeStream(in);
-                            if(b!=null)artwork.post(()->artwork.setImageBitmap(b));
-                        }
-                    }finally{c.disconnect();}
-                }catch(Exception ignored){/* The painted sunset is intentional fallback. */}
-            });
+
+    static void setPillFill(Button button, int fill, boolean outline) {
+        Context context = button.getContext();
+        int highlight;
+        int ridge;
+        switch (fill) {
+            case YELLOW: highlight = 0xffffe281; ridge = 0xffd39d42; break;
+            case MINT: highlight = 0xffd6e9ca; ridge = 0xff9fbc9d; break;
+            case PINK: highlight = 0xffffc6ce; ridge = 0xffd78595; break;
+            default: highlight = CREAM; ridge = CREAM;
         }
-        return box;
-    }
-    /** Folk-radio landscape, drawn locally; no packaged image/font assets. */
-    private static final class SunsetPoster extends View {
-        private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-        SunsetPoster(Context c){super(c);}
-        @Override protected void onDraw(Canvas c) {
-            super.onDraw(c);
-            float w=getWidth(),h=getHeight();if(w<1||h<1)return;
-            p.setShader(new LinearGradient(0,0,w,h,
-                 new int[]{0xffe983aa,0xfff7a08e,0xffd66a91},null,Shader.TileMode.CLAMP));
-            c.drawRect(0,0,w,h,p);p.setShader(null);
-            p.setColor(0xffffd995);
-            c.drawCircle(w*.27f,h*.3f,w*.14f,p);
-            p.setColor(0xffffbda9);
-            c.drawOval(w*.04f,h*.2f,w*.68f,h*.39f,p);
-            c.drawOval(w*.5f,h*.12f,w*.95f,h*.25f,p);
-            p.setColor(0xff4d2c53);
-            Path hill=new Path();hill.moveTo(0,h*.78f);hill.cubicTo(w*.25f,h*.68f,w*.56f,h*.92f,w,h*.71f);
-            hill.lineTo(w,h);hill.lineTo(0,h);hill.close();c.drawPath(hill,p);
-            p.setColor(0xff57364c);
-            for(int i=0;i<7;i++){
-                float left=i*w/7f,roof=h*(.62f+.04f*(i%3));
-                c.drawRect(left,roof,left+w*.12f,h,p);
-            }
-            p.setColor(0xffffd67b);
-            for(int i=0;i<9;i++){
-                float x=w*(.09f+(i%5)*.18f),y=h*(.72f+(i/5)*.1f);
-                c.drawRect(x,y,x+w*.035f,y+h*.046f,p);
-            }
-            p.setColor(0xff45304b);p.setStrokeWidth(Math.max(2,w*.012f));
-            float mast=w*.78f;
-            c.drawLine(mast,h*.26f,mast,h*.81f,p);
-            c.drawLine(mast-w*.09f,h*.38f,mast+w*.09f,h*.38f,p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1,w*.007f));
-            Path wire=new Path();wire.moveTo(0,h*.37f);
-            wire.quadTo(w*.36f,h*.44f,mast,h*.38f);
-            c.drawPath(wire,p);p.setStyle(Paint.Style.FILL);
+        GradientDrawable face = panel(context, highlight, fill, 25);
+        Drawable surface = face;
+        if (outline) {
+            face.setStroke(dp(context, 1.5f), INK);
+        } else if (fill != CREAM) {
+            LayerDrawable layers = new LayerDrawable(new Drawable[]{shape(context, ridge, 25), face});
+            layers.setLayerInset(1, 0, 0, 0, dp(context, 3));
+            surface = layers;
         }
+        button.setBackground(new RippleDrawable(ColorStateList.valueOf(0x2343102c),
+                surface, shape(context, WHITE, 25)));
+        ((PillButton) button).padLabel();
+        button.setElevation(dp(context, fill == CREAM ? 0 : 2));
+    }
+
+    static void setIcon(Button button, Icon icon, int size) {
+        if (icon == null) return;
+        PillButton pill = (PillButton) button;
+        pill.icon = new StationIcon(icon);
+        pill.iconSize = dp(button.getContext(), size);
+        pill.padLabel();
+        pill.invalidate();
+    }
+
+    private static final class PillButton extends Button {
+        StationIcon icon;
+        int iconSize;
+
+        PillButton(Context context) {
+            super(context);
+        }
+
+        private void padLabel() {
+            int reserve = icon == null ? 0 : (iconSize + dp(getContext(), 6) + 1) / 2;
+            int side = dp(getContext(), 7) + reserve;
+            setPadding(side, dp(getContext(), 7), side, dp(getContext(), 10));
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            Layout label = getLayout();
+            if (icon == null || label == null) {
+                super.onDraw(canvas);
+                return;
+            }
+            float lineWidth = 0;
+            for (int line = 0; line < label.getLineCount(); line++) {
+                lineWidth = Math.max(lineWidth, label.getLineWidth(line));
+            }
+            float offset = (iconSize + dp(getContext(), 6)) / 2f;
+            canvas.save();
+            canvas.translate(offset, 0);
+            super.onDraw(canvas);
+            canvas.restore();
+            int x = Math.round((getWidth() - lineWidth) / 2f - offset);
+            int y = (getHeight() - iconSize + getPaddingTop() - getPaddingBottom()) / 2;
+            icon.setBounds(x, y, x + iconSize, y + iconSize);
+            icon.draw(canvas);
+        }
+    }
+
+    static LinearLayout vertical(Context context) {
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER_HORIZONTAL);
+        return layout;
+    }
+
+    static LinearLayout horizontal(Context context) {
+        LinearLayout layout = new LinearLayout(context);
+        layout.setGravity(Gravity.CENTER_VERTICAL);
+        layout.setBaselineAligned(false);
+        return layout;
+    }
+
+    static LinearLayout.LayoutParams wrap(Context context, int top) {
+        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
+        layout.topMargin = dp(context, top);
+        return layout;
+    }
+
+    static LinearLayout.LayoutParams flex(Context context, int left) {
+        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(0, -2, 1);
+        layout.leftMargin = dp(context, left);
+        return layout;
+    }
+
+    static ImageView art(Context context, int artwork) {
+        ImageView image = new ImageView(context);
+        image.setImageResource(artwork);
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        image.setBackground(shape(context, PLUM, 12));
+        image.setClipToOutline(true);
+        return image;
+    }
+
+    static ImageView illustration(Context context, int resource) {
+        ImageView image = new ImageView(context);
+        image.setImageResource(resource);
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        return image;
+    }
+
+    static View waveform(Context context) {
+        return new View(context) {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final int[] heights = {4, 7, 5, 11, 16, 13, 8, 5, 7, 12, 9, 7, 4,
+                    6, 10, 15, 18, 13, 9, 5, 7, 11, 14, 9, 7, 4};
+
+            @Override protected void onDraw(Canvas canvas) {
+                float step = getWidth() / (float) heights.length;
+                paint.setColor(0xffc292a6);
+                paint.setStrokeCap(Paint.Cap.ROUND);
+                paint.setStrokeWidth(step * .40f);
+                for (int i = 0; i < heights.length; i++) {
+                    float x = step * (i + .5f);
+                    float base = getHeight() - step * .24f;
+                    canvas.drawLine(x, base, x, base - getHeight() * heights[i] / 23f, paint);
+                }
+            }
+        };
+    }
+
+    private static final class StationIcon extends Drawable {
+        private final Icon icon;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path path = new Path();
+
+        StationIcon(Icon icon) {
+            this.icon = icon;
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setStrokeJoin(Paint.Join.ROUND);
+            paint.setStrokeWidth(2);
+        }
+
+        @Override public void draw(Canvas canvas) {
+            canvas.save();
+            canvas.translate(getBounds().left, getBounds().top);
+            canvas.scale(getBounds().width() / 24f, getBounds().height() / 24f);
+            paint.setColor(INK);
+            paint.setStyle(Paint.Style.STROKE);
+            path.reset();
+            switch (icon) {
+                case RADIO:
+                    canvas.drawArc(2, 2, 22, 22, 134, 92, false, paint);
+                    canvas.drawArc(2, 2, 22, 22, -46, 92, false, paint);
+                    canvas.drawArc(6, 6, 18, 18, 132, 96, false, paint);
+                    canvas.drawArc(6, 6, 18, 18, -48, 96, false, paint);
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(12, 12, 2.2f, paint);
+                    break;
+                case SHUFFLE:
+                    path.moveTo(3, 6); path.cubicTo(11, 6, 11, 18, 18, 18);
+                    path.lineTo(21, 18);
+                    path.moveTo(3, 18); path.cubicTo(11, 18, 11, 6, 18, 6);
+                    path.lineTo(21, 6);
+                    path.moveTo(18, 3); path.lineTo(21, 6); path.lineTo(18, 9);
+                    path.moveTo(18, 15); path.lineTo(21, 18); path.lineTo(18, 21);
+                    break;
+                case PLAY:
+                case NEXT:
+                    paint.setStyle(Paint.Style.FILL);
+                    triangle(icon == Icon.PLAY ? 6 : 3, icon == Icon.PLAY ? 18 : 12);
+                    if (icon == Icon.NEXT) triangle(12, 21);
+                    break;
+                case PAUSE:
+                    paint.setStyle(Paint.Style.FILL);
+                    canvas.drawRoundRect(6, 5, 10, 19, 1, 1, paint);
+                    canvas.drawRoundRect(14, 5, 18, 19, 1, 1, paint);
+                    break;
+                case CATCH_UP:
+                    canvas.drawArc(4, 4, 21, 21, 197, 295, false, paint);
+                    path.moveTo(2, 9); path.lineTo(4.5f, 13); path.lineTo(8, 10);
+                    path.moveTo(12.5f, 8); path.lineTo(12.5f, 13); path.lineTo(16, 15);
+                    break;
+                case ALBUMS:
+                    canvas.drawCircle(15, 12, 7.5f, paint);
+                    canvas.drawCircle(15, 12, 2f, paint);
+                    canvas.save();
+                    canvas.rotate(8, 9, 12);
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setColor(YELLOW);
+                    canvas.drawRoundRect(2, 4, 16, 20, 1.5f, 1.5f, paint);
+                    paint.setColor(INK);
+                    paint.setStyle(Paint.Style.STROKE);
+                    canvas.drawRoundRect(2, 4, 16, 20, 1.5f, 1.5f, paint);
+                    canvas.drawLine(3, 16, 7, 12, paint);
+                    canvas.drawLine(7, 12, 10, 15, paint);
+                    canvas.drawLine(10, 15, 15, 11, paint);
+                    canvas.restore();
+                    break;
+                case BACK:
+                    path.moveTo(21, 12); path.lineTo(3, 12);
+                    path.lineTo(10, 5); path.moveTo(3, 12); path.lineTo(10, 19);
+                    break;
+                case ARCHIVE:
+                    canvas.drawRoundRect(4, 9, 20, 20, 1.5f, 1.5f, paint);
+                    canvas.drawRoundRect(6, 4, 18, 9, 1.5f, 1.5f, paint);
+                    canvas.drawLine(10, 13, 14, 13, paint);
+                    break;
+                case PRIVACY:
+                    path.moveTo(12, 3); path.quadTo(16, 7, 20, 7);
+                    path.quadTo(20, 16, 12, 21);
+                    path.quadTo(4, 16, 4, 7); path.quadTo(8, 7, 12, 3);
+                    path.moveTo(9, 12); path.lineTo(11, 14); path.lineTo(15, 10);
+                    break;
+            }
+            canvas.drawPath(path, paint);
+            canvas.restore();
+        }
+
+        private void triangle(float left, float right) {
+            path.moveTo(left, 5);
+            path.lineTo(right, 12);
+            path.lineTo(left, 19);
+            path.close();
+        }
+
+        @Override public void setAlpha(int alpha) {}
+        @Override public void setColorFilter(ColorFilter filter) {}
+        @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
     }
 }

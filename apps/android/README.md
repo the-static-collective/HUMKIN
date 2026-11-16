@@ -1,9 +1,9 @@
-# HUMKIN RADIO Android · v0.3 visual pass
+# HUMKIN RADIO Android · v0.4
 
-Approved visual direction implemented as real Java native UI, not a WebView or screenshot:
-warm cream canvas, plum now-playing console, yellow/mint/pink controls,
-rounded station buttons, landscape artwork fallback, actual remote album
-covers, mode cards, large ALBUMS button, separate native album shelf.
+The Radio and Albums screens use the paper-style reference artwork, including the
+station masthead, illustrated covers, and skyline. The text and controls are
+native Android views. The album shelf switches from two columns to one on
+narrow screens or with larger system text.
 
 ## Tested/working in source
 - Native SAME-TIME and ROAD SHUFFLE retain v0.2 behavior.
@@ -19,8 +19,8 @@ covers, mode cards, large ALBUMS button, separate native album shelf.
 - Album page and radio mode navigation preserve active playback. Returning
   to radio does not interrupt an album until a listener actively tunes.
 - The privacy and fictional archive open the existing public site.
-- All artwork downloads are strictly HTTPS from humkin.abundent.org;
-  unverified media falls back to the locally drawn sunset, never an empty box.
+- Screen artwork ships in the APK. The lock-screen media session still uses the
+  artwork links in the published station and album metadata.
 - No sign-in, advertisements, tracking, offline bulk downloads, media file
   packaging or additional runtime permissions.
 
@@ -29,6 +29,7 @@ Run `gradle -p apps/android :app:assembleDebug :app:testDebugUnitTest`.
 On device verify:
 1. The cream/plum UI scales at 320–420dp and scrolls with readable labels.
 2. Tune both radio modes, then visit ALBUMS and return without losing playback.
+   Next Record is available in Road Shuffle. Catch Up to Air follows Same-Time Radio.
 3. PLAY either album; test sequential playing on the locked screen and
    the next-track control; test switching back to radio.
 4. Verify fallbacks on slow/no network, theme colors and cover loading.
