@@ -47,6 +47,10 @@ while playing and on media transitions / pause / service shutdown.
 After process death, a new Road Shuffle tune within 45 minutes resumes that
 record from the saved position and plays the saved remaining sequence. It
 then appends a fresh full rotation so an interrupted last track cannot loop.
+While Road Shuffle is playing (including overnight with the screen locked),
+the native Media3 service also appends a newly mixed, last-hour-aware
+rotation **before** its queue gets short. It no longer wraps forever to the
+same first-to-last arrangement after one complete playlist.
 All saved IDs are re-resolved through the published catalog; no arbitrary
 saved URLs are played. Older/invalid bookmarks instead start a fresh queue
 using recent play history, now including the *currently active* track.
