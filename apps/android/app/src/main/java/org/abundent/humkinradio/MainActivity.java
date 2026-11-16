@@ -299,6 +299,7 @@ public final class MainActivity extends Activity {
         recentlyHeard = text("The dial remembers.", 12, INK, false);
         recentlyHeard.setGravity(Gravity.START);
         onAir.addView(recentlyHeard, wrap(4));
+        updateRecentRecords();
         radioScreen.addView(onAir, wrap(12));
 
         Button albums = HumkinVisuals.pill(this, "ALBUMS", Icon.ALBUMS, YELLOW, 29, true);
@@ -692,7 +693,7 @@ public final class MainActivity extends Activity {
             for (int i = 0; i < Math.min(rows.length(), 3); i++) {
                 JSONObject row = rows.optJSONObject(i);
                 if (row == null) continue;
-                if (lines.length() > 0) lines.append("\\n");
+                if (lines.length() > 0) lines.append("\n");
                 lines.append("✳ ").append(row.optString("title", "Unknown record"));
                 String artist = row.optString("artist", "");
                 if (!artist.isEmpty() && !"HUMKIN".equals(artist))
