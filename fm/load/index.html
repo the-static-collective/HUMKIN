@@ -58,7 +58,7 @@ footer{padding:20px;text-align:center}
 <main>
 <p class="eyebrow">PRIVATE BACKSTAGE · ONE CRATE AT A TIME</p>
 <h1>LOAD THE<br><em>WHOLE ROAD.</em></h1>
-<p class="lead">Bring your songs and station bumpers to one intake. Drop MP3s, WAVs or M4As, check each title and recording type, stage privately, then approve only the items you want on the radio.</p>
+<p class="lead">Drop songs, official singles, and station bumpers here. Choose each recording's role before staging. Singles are featured in the radio's release-weighted rotation; nothing goes public without your approval.</p>
 <div class="deck">
 <section class="panel tint" aria-labelledby="login-title">
 <h2 id="login-title">01 · Unlock your crate</h2>
@@ -83,10 +83,10 @@ footer{padding:20px;text-align:center}
 </section>
 </div>
 <section class="panel card" aria-labelledby="drop-title">
-<h2 id="drop-title">03 · Drop songs and bumpers</h2>
-<label id="drop" for="pick">DROP SONGS / BUMPERS HERE<br><span class="small">or tap to choose as many files as you like</span></label>
+<h2 id="drop-title">03 · Drop songs, singles and bumpers</h2>
+<label id="drop" for="pick">DROP MUSIC / SINGLES / BUMPERS HERE<br><span class="small">or tap to choose as many files as you like</span></label>
 <input type="file" id="pick" multiple accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4">
-<p class="small">MP3 stays original; WAV/M4A → 128 kbps MP3 on this device (if the browser can decode it). WAV/M4A sources are never uploaded. Select SONG or STATION BUMPER and edit the title in each file row. Long audio conversion uses memory, so keep this tab open.</p>
+<p class="small">MP3 stays original; WAV/M4A → 128 kbps MP3 on this device (if the browser can decode it). WAV/M4A sources are never uploaded. Choose RADIO-ONLY SONG, OFFICIAL SINGLE, or STATION BUMPER for each file and edit its title. An official single gets <strong>two plays per rotation cycle</strong> where the station's release weighting applies; radio-only songs get one. Long audio conversion uses memory, so keep this tab open.</p>
 <p id="selection">No files selected.</p>
 <p id="selected-time">0 hours 0 minutes queued</p>
 <ul id="queue"></ul>
@@ -96,10 +96,10 @@ footer{padding:20px;text-align:center}
 </section>
 <section class="panel card" aria-labelledby="ready-title">
 <h2 id="ready-title">04 · Put it on the air</h2>
-<p>Everything enters as a private draft. Approve a <strong>specific song or bumper</strong> using its own button below; this publishes that one item and enables it for the radio. The bulk button handles SONGS ONLY. Never approve private callers or unverified real-world announcements.</p>
+<p>Everything enters as a private draft. Approve a <strong>specific song or bumper</strong> using its own button below; this publishes that one item and enables it for the radio. The bulk button handles SONGS and SINGLES only. Never approve private callers or unverified real-world announcements.</p>
 <ul id="draft-list"><li>Sign in to view private drafts.</li></ul>
 <p><a href="../manage/" class="button-like">✳ OPEN STATION MANAGER — EDIT SONGS & SHOWS ↗</a></p>
-<div class="row"><button id="publish" disabled>PUBLISH ALL SONGS (NOT BUMPERS) ↗</button><button id="refresh-drafts">REFRESH CRATE</button><a href="../" class="button-like">LISTEN TO RADIO ↗</a></div>
+<div class="row"><button id="publish" disabled>PUBLISH SONGS + SINGLES (NOT BUMPERS) ↗</button><button id="refresh-drafts">REFRESH CRATE</button><a href="../" class="button-like">LISTEN TO RADIO ↗</a></div>
 </section>
 <section class="panel card">
 <h2>Field notes</h2>

@@ -76,7 +76,7 @@ async function loadDesk(){
   const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks")
-    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,art_asset_id,published_at,created_at")
+    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,is_single,art_asset_id,published_at,created_at")
     .order("created_at",{ascending:false}).limit(2000),
    db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind,art_asset_id").limit(1000),
    db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at,art_asset_id")
@@ -115,7 +115,7 @@ async function loadDesk(){
   });
   const cloud=(cloudResult.data||[]).map(track=>({
    id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,
-   artist:track.artist,album:track.album,kind:track.kind,
+   artist:track.artist,album:track.album,kind:track.kind,is_single:track.is_single===true,
    enabled:track.enabled,published:!!track.published_at,art_asset_id:track.art_asset_id||null,
    artwork:new URL("../../cover.jpg",location.href).href,
    duration:Number(track.duration_seconds),bytes:track.bytes,
@@ -282,7 +282,7 @@ function renderLibrary(){
    thumbnail.loading="lazy";content.append(thumbnail);
    content.append(el("div",track.title,"track-title"));
    const status=el("div",null,"row");
-   for(const label of [track.artist,track.kind==="bumper"?"BUMPER":"SONG",
+   for(const label of [track.artist,track.kind==="bumper"?"BUMPER":track.is_single?"SINGLE ✳":"SONG",
        !track.enabled?"OFF AIR":!track.published?"PRIVATE DRAFT":"ON AIR",
        track.source==="cloud"?"CLOUD":"ORIGINAL"]){
       status.append(el("span",label,"pill"));
@@ -345,6 +345,9 @@ function openEdit(track){
  $("edit-artist").value=track.artist;
  $("edit-album").value=track.album;
  $("edit-kind").value=track.kind==="bumper"?"bumper":"song";
+ $("edit-single").checked=track.source==="cloud"&&track.is_single===true;
+ $("edit-single").disabled=track.source!=="cloud"||track.kind==="bumper";
+ $("edit-single-row").hidden=track.source!=="cloud";
  $("edit-enabled").checked=track.enabled;
  renderArtSelect("edit-art",track.art_asset_id||null);
  updateArtPreview("edit");
@@ -376,6 +379,7 @@ async function saveEdit(){
  const fields={title:$("edit-title").value.trim(),artist:$("edit-artist").value.trim(),
    album:$("edit-album").value.trim(),kind:$("edit-kind").value,
    enabled:$("edit-enabled").checked,art_asset_id:$("edit-art").value||null};
+ if(track.source==="cloud")fields.is_single=fields.kind==="song"&&$("edit-single").checked;
  if(!fields.title||!fields.artist||!fields.album){note("Title, artist, and album cannot be empty.");return}
  setBusy(true);
  try{await persistTrack(track,fields);$("edit-dialog").close();note("Saved "+fields.title);setBusy(false);await loadDesk()}
@@ -549,6 +553,10 @@ $("art-upload").addEventListener("change",async event=>{
 $("edit-art").addEventListener("change",()=>updateArtPreview("edit"));
 $("show-art").addEventListener("change",()=>updateArtPreview("show"));
 $("auto-save").addEventListener("click",saveAutoDj);
+$("edit-kind").addEventListener("change",()=>{
+ $("edit-single").disabled=$("edit-kind").value!=="song";
+ if($("edit-kind").value!=="song")$("edit-single").checked=false;
+});
 $("track-search").addEventListener("input",renderLibrary);
 $("filter").addEventListener("change",renderLibrary);
 $("bulk-on").addEventListener("click",()=>bulk(true));
