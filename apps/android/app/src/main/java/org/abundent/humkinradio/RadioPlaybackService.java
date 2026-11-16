@@ -59,6 +59,16 @@ public final class RadioPlaybackService extends MediaSessionService {
     private String leagueTrackId="";
     private long leagueHeardMs=0L,leagueLastTick=0L;
     private boolean leagueSent=false;
+    private String outpostTrackId="";
+    private long outpostTrackHeardMs=0L,outpostUnbankedMs=0L;
+    private boolean outpostTrackQualified=false;
+
+    private void flushOutpost() {
+        if(outpostUnbankedMs>0L){
+            SignalRpg.audible(getApplicationContext(),outpostUnbankedMs);
+            outpostUnbankedMs=0L;
+        }
+    }
     private final Runnable leagueTick=new Runnable(){
         @Override public void run() {
             long now=SystemClock.elapsedRealtime();
@@ -73,6 +83,25 @@ public final class RadioPlaybackService extends MediaSessionService {
                     !id.isEmpty()&&!id.startsWith("album:");
             long delta=leagueLastTick>0L?Math.min(2500L,Math.max(0L,now-leagueLastTick)):0L;
             leagueLastTick=now;
+            // The optional Outpost grows exclusively from actual audible
+            // Media3 playback. All modes count (radio/shuffle/albums), but
+            // the public Top 42's separate radio restrictions stay unchanged.
+            if(!id.equals(outpostTrackId)){
+                flushOutpost();
+                outpostTrackId=id;outpostTrackHeardMs=0L;outpostTrackQualified=false;
+            }
+            boolean audible=player!=null && player.isPlaying() &&
+                    player.getPlaybackState()==Player.STATE_READY && !id.isEmpty();
+            if(audible){
+                outpostUnbankedMs+=delta;
+                outpostTrackHeardMs+=delta;
+                if(!outpostTrackQualified && outpostTrackHeardMs>=30_000L){
+                    outpostTrackQualified=true;
+                    SignalRpg.qualifiedTrack(getApplicationContext(),id);
+                }
+            }
+            if(outpostUnbankedMs>=8_000L || (!audible && outpostUnbankedMs>0L))
+                flushOutpost();
             if(playing&&!leagueSent){
                 leagueHeardMs+=delta;
                 if(leagueHeardMs>=30000L){
@@ -305,6 +334,8 @@ public final class RadioPlaybackService extends MediaSessionService {
                 if(state==Player.STATE_READY)consecutiveFailures=0;
             }
             @Override public void onMediaItemTransition(MediaItem item,int reason) {
+                flushOutpost();
+                outpostTrackId="";outpostTrackHeardMs=0L;outpostTrackQualified=false;
                 leagueTrackId="";leagueHeardMs=0L;leagueSent=false;
                 if (previousRecord != null && item != null
                         && !previousRecord.mediaId.equals(item.mediaId))
@@ -332,6 +363,7 @@ public final class RadioPlaybackService extends MediaSessionService {
 
     @Override public void onDestroy() {
         leagueHandler.removeCallbacks(leagueTick);
+        flushOutpost();
         leagueNetwork.shutdown();
         // Capture where the last record stopped before clearing mode state.
         savePlaybackCheckpoint();
