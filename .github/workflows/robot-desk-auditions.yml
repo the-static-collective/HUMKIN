@@ -1,5 +1,10 @@
 name: HUMKIN Robot Desk — weekly audition batch
 on:
+  push:
+    branches: [main]
+    paths:
+      - tools/generate-robot-drops.py
+      - .github/workflows/robot-desk-auditions.yml
   workflow_dispatch:
   schedule:
     # Monday at 13:00 UTC. All generated assets stay in review artifacts.
