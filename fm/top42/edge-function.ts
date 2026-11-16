@@ -134,6 +134,51 @@ function applyScores(records:any[],played:any[]) {
       radio,playlist:points-radio};
   }).sort((a,b)=>b.plays-a.plays||a.created_at.localeCompare(b.created_at)).slice(0,60);
 }
+
+/** Request Relay: one named song nomination per anonymous listener per Central
+ * station day. Nominations do NOT count as listens, alter the Top 42, or
+ * automatically reserve radio time. The request board is public.
+ */
+async function readBeacons(day:string,catalog:any[]) {
+  const {data,error}=await db.from("humkin_league_beacons")
+    .select("track_id").eq("station_day",day)
+    .order("id",{ascending:false}).limit(1000);
+  if(error)throw error;
+  const tally=new Map<string,number>();
+  for(const r of data??[])tally.set(r.track_id,(tally.get(r.track_id)||0)+1);
+  const byId=new Map(catalog.map(c=>[c.id,c]));
+  const ranked=Array.from(tally.entries()).filter(([id])=>byId.has(id))
+    .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,20);
+  return {requests:ranked.map(([id,n])=>({
+    id,title:byId.get(id).title,artist:byId.get(id).artist,
+    nominations:n,featured:byId.get(id).featured
+  })),request_count:(data??[]).length};
+}
+async function postBeacon(data:any,req:Request) {
+  const listener=String(data?.listener||"");
+  const id=String(data?.track_id||"");
+  if(!/^[0-9a-f-]{36}$/i.test(listener)||!/^[-a-z0-9]{3,90}$/.test(id))
+    return {error:"Invalid song request",status:400};
+  if(!await checkId(id))return {error:"This track isn't on the HUMKIN dial",status:400};
+  const {day}=issueKeys();
+  const actor=await digest("actor:v1:"+listener);
+  const source=req.headers.get("cf-connecting-ip")||
+    req.headers.get("x-real-ip")||"unreported:"+listener;
+  const network=await digest("net:v1:"+source.slice(0,128));
+  const {count,error:quotaError}=await db.from("humkin_league_beacons")
+    .select("id",{head:true,count:"exact"}).eq("station_day",day).eq("network_hash",network);
+  if(quotaError)throw quotaError;
+  if((count||0)>=30)return {error:"Today's request line is full for this connection",status:429};
+  const {data:row,error}=await db.from("humkin_league_beacons")
+    .insert({station_day:day,track_id:id,actor_hash:actor,network_hash:network})
+    .select("id").single();
+  if(error){
+    if(error.code==="23505")return {error:"You already requested a song today. The desk reopens tomorrow.",status:409};
+    throw error;
+  }
+  return {accepted:true,day,track_id:id,beacon_id:row.id,
+    note:"Request filed. Not a chart play, a vote or a guaranteed radio spin."};
+}
 async function state(u:URL) {
   const {day,week,yesterday}=issueKeys();
   const [catalog,todayPlay,yesterdayPlay,weekPlay,daily,weekly]=await Promise.all([
@@ -154,7 +199,10 @@ async function state(u:URL) {
     if(error)throw error;
     if(data)selected=applyScores([data],data.kind==="album"?weekPlay:todayPlay)[0];
   }
+  const beaconBoard=await readBeacons(day,catalog);
   return {schema:"humkin.top42/v1",station_day:day,week_start:week,previous_day:yesterday,
+    beacons:beaconBoard.requests,request_count:beaconBoard.request_count,
+    request_rule:"One nomination per listener per Central-time day. Requests do not automatically earn chart points or airtime.",
     definition:"One client-reported qualified listen after at least 30 seconds of playback; provisional, capped and deduplicated.",
     chart:rank(catalog,todayPlay),airchart:rank(catalog,yesterdayPlay).filter(x=>x.plays>0),
     catalog,eps:applyScores(daily.data??[],todayPlay),
@@ -245,7 +293,9 @@ Deno.serve(async(req:Request)=>{
     let body:any;
     try{body=JSON.parse(raw);}catch{return fail("Invalid JSON",400,origin);}
     const result=body?.action==="play"?await postPlay(body,req):
-      body?.action==="release"?await postRecord(body):{error:"Unknown action",status:400};
+      body?.action==="release"?await postRecord(body):
+      body?.action==="beacon"?await postBeacon(body,req):
+      {error:"Unknown action",status:400};
     if(result?.error)return fail(result.error,result.status||400,origin);
     return respond(result,200,origin);
   }catch(error){

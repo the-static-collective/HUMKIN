@@ -23,5 +23,9 @@ jobs:
           if(!Array.isArray(data.catalog)||data.catalog.length<19) throw Error('League catalog empty or not published');
           if(!Array.isArray(data.chart)||!Array.isArray(data.eps)||!Array.isArray(data.albums)) throw Error('League boards missing');
           if(data.chart.length>42) throw Error('Too many songs on the Top 42');
+          if(!Array.isArray(data.beacons)||typeof data.request_count!=='number')
+            throw Error('Request Desk missing from public API');
+          if(data.beacons.some(x=>!x.id||typeof x.nominations!=='number'))
+            throw Error('Request Desk contains malformed nominations');
           console.log('TOP 42 public API:',data.station_day,data.catalog.length,'songs,',data.chart.filter(x=>x.plays>0).length,'charted tracks.');
           NODE

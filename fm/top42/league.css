@@ -12,3 +12,16 @@
  .builder-panel,.crate-panel{width:100%;min-width:0;overflow-wrap:anywhere}
  .catalog-list{max-height:none;overflow:visible}
 }
+
+/* Real incoming listener nominations. Separate ledger from chart plays. */
+.request-paper{border:3px solid var(--ink);background:var(--paper);box-shadow:7px 8px 0 var(--mint)}
+.request-list{list-style:none;margin:0;padding:6px 15px}
+.request-list li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #dfd0d8;padding:14px 6px;align-items:center}
+.request-list li:last-child{border-bottom:none}
+.request-name strong{display:block;font-size:15px}
+.request-name small{display:block;font-size:10px;color:#645575;letter-spacing:.1em;margin-top:4px}
+.request-qty{font-size:12px;font-weight:950;white-space:nowrap;background:var(--yellow);border-radius:16px;padding:7px 10px}
+.request-foot{display:flex;align-items:center;justify-content:space-between;gap:18px;background:#e4d9e9;padding:14px 20px}
+.request-foot p{margin:0;font-size:12px;max-width:660px}
+.request-foot span{font-size:11px;letter-spacing:.07em;font-weight:950;white-space:nowrap}
+@media(max-width:620px){.request-paper{box-shadow:4px 5px 0 var(--mint)}.request-foot{flex-direction:column;align-items:start}}
