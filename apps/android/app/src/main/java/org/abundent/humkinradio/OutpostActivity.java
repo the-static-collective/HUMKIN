@@ -39,6 +39,7 @@ public final class OutpostActivity extends Activity {
     private final TextView[] moduleHeads=new TextView[3];
     private final TextView[] moduleNotes=new TextView[3];
     private final Button[] moduleButtons=new Button[3];
+    private final Button[] featureButtons=new Button[SignalFeatures.DOORS.length];
     private final TextView[] dailyProgress=new TextView[3];
     private final Button[] dailyButtons=new Button[3];
     private TextView missionTitle,missionDescription,missionProgress,achievementText,chronicleText;
@@ -229,7 +230,8 @@ public final class OutpostActivity extends Activity {
 
         eyebrow(body,"03 / KEEP THE LITTLE STATION ALIVE",27,HumkinVisuals.PLUM);
         add(body,"THE WORKSHOP",28,HumkinVisuals.INK,true,6);
-        add(body,"Upgrade the equipment. It changes what the real radio earns—not who wins the Top 42.",12,HumkinVisuals.PLUM,false,5);
+        add(body,"Every upgrade makes your station more productive. Certain tiers also open "+
+            "entirely new ways to participate, with no purchased chart points.",12,HumkinVisuals.PLUM,false,5);
         String[] moduleNames={"THE ANTENNA","THE TAPE ARCHIVE","THE NIGHT CREW"};
         String[] moduleDesc={
             "Stronger signal from each half-minute of actual music.",
@@ -249,8 +251,15 @@ public final class OutpostActivity extends Activity {
             moduleButtons[i]=pill("UPGRADE",i==0?HumkinVisuals.YELLOW:
                 i==1?HumkinVisuals.PINK:HumkinVisuals.MINT,12);
             moduleButtons[i].setOnClickListener(v->{
-                if(SignalRpg.upgrade(this,module))announce("Workshop upgraded. The dial is learning.");
-                else announce("Not enough SIGNAL. Collect more from the capacitor.");
+                SignalRpg.Snapshot before=SignalRpg.snapshot(this);
+                int old=module==0?before.tower:module==1?before.archive:before.crew;
+                if(SignalRpg.upgrade(this,module)){
+                    java.util.List<SignalFeatures.Door> newDoors=
+                        SignalFeatures.justUnlocked(module,old,old+1);
+                    if(!newDoors.isEmpty())
+                        announce("UNLOCKED: "+newDoors.get(0).title+"! A new desk is operational.");
+                    else announce("Workshop upgraded. The dial is learning.");
+                }else announce("Not enough SIGNAL. Collect more from the capacitor.");
             });
             LinearLayout.LayoutParams action=new LinearLayout.LayoutParams(dp(116),dp(69));
             action.leftMargin=dp(10);
@@ -258,7 +267,45 @@ public final class OutpostActivity extends Activity {
             panel.addView(info,full(3));
         }
 
-        eyebrow(body,"04 / THE ROAD BEYOND",28,HumkinVisuals.PLUM);
+        // A visible capability tree with actual interaction screens, not
+        // cosmetic level-up text. Unimplemented doors remain honest previews.
+        eyebrow(body,"04 / REPAIR THE STATION, CHANGE WHAT YOU CAN DO",30,HumkinVisuals.PLUM);
+        add(body,"THE UNLOCK BOARD",30,HumkinVisuals.INK,true,6);
+        add(body,"Every department opens new gameplay, not merely bigger numbers. "+
+            "The future doors are drawn here early, so there's something to build toward.",
+            12,HumkinVisuals.PLUM,false,7);
+        String[] departments={"ANTENNA","TAPE ARCHIVE","NIGHT CREW"};
+        for(int i=0;i<SignalFeatures.DOORS.length;i++){
+            SignalFeatures.Door door=SignalFeatures.DOORS[i];
+            LinearLayout card=card(body,door.implemented?0xfffffdf6:0xffeee7ec,11);
+            eyebrow(card,departments[door.module]+"  /  TIER "+door.tier+
+                (door.implemented?"  /  READY TO UNLOCK":"  /  FUTURE PROJECT"),
+                0,HumkinVisuals.PLUM);
+            LinearLayout detail=row();
+            LinearLayout info=column();
+            add(info,door.title,17,HumkinVisuals.INK,true,5);
+            add(info,door.description,12,HumkinVisuals.PLUM,false,6);
+            detail.addView(info,new LinearLayout.LayoutParams(0,-2,1f));
+            final String mode=door.id;
+            Button open=pill("LOCKED",door.implemented?HumkinVisuals.MINT:HumkinVisuals.BLUSH,12);
+            if(door.implemented)open.setOnClickListener(v->{
+                SignalRpg.Snapshot snapshot=SignalRpg.snapshot(this);
+                if(!SignalFeatures.unlocked(door,snapshot.tower,snapshot.archive,snapshot.crew)){
+                    announce("Upgrade "+departments[door.module]+" to tier "+door.tier+" first.");
+                    return;
+                }
+                startActivity(new Intent(this,FieldDeskActivity.class)
+                    .putExtra("ability",mode));
+            });
+            featureButtons[i]=open;
+            LinearLayout.LayoutParams action=
+                new LinearLayout.LayoutParams(dp(98),dp(55));
+            action.leftMargin=dp(9);
+            detail.addView(open,action);
+            card.addView(detail,full(7));
+        }
+
+        eyebrow(body,"05 / THE ROAD BEYOND",28,HumkinVisuals.PLUM);
         add(body,"FIELD MISSIONS",29,HumkinVisuals.INK,true,7);
         add(body,"Dispatch an imaginary crew. Missions advance only while you hear real music.",12,HumkinVisuals.PLUM,false,6);
         LinearLayout expeditions=card(body,0xffeee0ec,12);
@@ -290,7 +337,7 @@ public final class OutpostActivity extends Activity {
         missionActive.addView(missionClaim,full(13));
         expeditions.addView(missionActive,full(0));
 
-        eyebrow(body,"05 / OPEN EVERY DAY, NO PENALTY FOR MISSING ONE",28,HumkinVisuals.PLUM);
+        eyebrow(body,"06 / OPEN EVERY DAY, NO PENALTY FOR MISSING ONE",28,HumkinVisuals.PLUM);
         add(body,"TODAY'S ORDERS",29,HumkinVisuals.INK,true,5);
         LinearLayout orders=card(body,0xfffffdf6,11);
         String[] assignments={"TAKE A FOUR-MINUTE SHIFT","HEAR THREE DIFFERENT SONGS","SCOUT THE TOP 42 BOARD"};
@@ -316,13 +363,13 @@ public final class OutpostActivity extends Activity {
         }
         shiftText=add(orders,"SHIFTS RESET AT CENTRAL TIME MIDNIGHT",10,HumkinVisuals.PLUM,true,14);
 
-        eyebrow(body,"06 / YOUR TROPHY CABINET",28,HumkinVisuals.PLUM);
+        eyebrow(body,"07 / YOUR TROPHY CABINET",28,HumkinVisuals.PLUM);
         add(body,"WALL OF ODDITIES",29,HumkinVisuals.INK,true,5);
         LinearLayout trophy=card(body,0xfffffdf6,11);
         achievementText=add(trophy,"The shelf is still empty.",12,HumkinVisuals.INK,true,0);
         add(trophy,"Nothing here changes the public song charts. They're your own little radio stories.",11,HumkinVisuals.PLUM,false,10);
 
-        eyebrow(body,"07 / THE OFFICE OF QUESTIONABLE NOTICES",28,HumkinVisuals.PLUM);
+        eyebrow(body,"08 / THE OFFICE OF QUESTIONABLE NOTICES",28,HumkinVisuals.PLUM);
         add(body,"THE NIGHT DESK",29,HumkinVisuals.INK,true,5);
         LinearLayout desk=card(body,0xffeee0ec,11);
         eyebrow(desk,"LOCAL EVENT LOG  /  THE COMMITTEE IS AWAY",0,HumkinVisuals.PLUM);
@@ -331,7 +378,7 @@ public final class OutpostActivity extends Activity {
             "Nobody's broadcasts or points are fictionalized.",11,HumkinVisuals.PLUM,false,12);
 
         LinearLayout leagueCard=card(body,HumkinVisuals.YELLOW,25);
-        eyebrow(leagueCard,"08 / YOUR OTHER GAME IS RUNNING",0,HumkinVisuals.PLUM);
+        eyebrow(leagueCard,"09 / YOUR OTHER GAME IS RUNNING",0,HumkinVisuals.PLUM);
         add(leagueCard,"THE TOP 42",32,HumkinVisuals.INK,true,8);
         add(leagueCard,"Your listening helps the real station chart. Make EPs, draft weekly albums, and champion the songs you love.",13,HumkinVisuals.INK,false,6);
         Button open=pill("OPEN THE RECORD LEAGUE ↗",HumkinVisuals.MINT,15);
@@ -382,6 +429,14 @@ public final class OutpostActivity extends Activity {
             moduleButtons[i].setText(tier>=SignalMath.MAX_MODULE?"MAXED":
                 "UPGRADE\n"+price+" SIGNAL");
             moduleButtons[i].setEnabled(tier<SignalMath.MAX_MODULE&&s.wallet>=price);
+        }
+        for(int i=0;i<SignalFeatures.DOORS.length;i++){
+            SignalFeatures.Door door=SignalFeatures.DOORS[i];
+            Button button=featureButtons[i];
+            if(button==null)continue;
+            boolean enabled=SignalFeatures.unlocked(door,s.tower,s.archive,s.crew);
+            button.setEnabled(enabled);
+            button.setText(!door.implemented?"PLANNED":enabled?"✳ OPEN":"LOCKED\nTIER "+door.tier);
         }
         missionChoices.setVisibility(s.missionActive?View.GONE:View.VISIBLE);
         missionActive.setVisibility(s.missionActive?View.VISIBLE:View.GONE);
