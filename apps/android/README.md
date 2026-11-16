@@ -1,64 +1,56 @@
-# HUMKIN RADIO · Android native receiver (prototype)
+# HUMKIN RADIO · Android native receiver
 
-**Status: source prototype, NOT tested on a physical device or published to Google Play.**
+**Version 0.2 source prototype, CI build required, not Google Play published.**
 
-A real Android app, not a WebView wrapper: AndroidX Media3 / ExoPlayer
-with MediaSessionService provides native audio playback and Android lock-screen
-media controls. It reads the same public static playlist and published Supabase
-crate as the existing browser radio. Publishing music to the existing Crate
-Loader makes that recording eligible on the next native Tune In / Reshuffle.
+The native receiver uses AndroidX Media3/ExoPlayer MediaSessionService, enabling
+audio to continue when its Activity disappears on screen lock.
 
-## Scope and honest limitations
+## Two native listening modes
 
-- V0.1 runs **native Road Shuffle**, not the shared browser clock. The
-  SAME-TIME button explicitly opens the existing web dial. No 24/7 hosted
-  transmitter or broadcast license is implied.
-- Native MediaSessionService keeps playback running while screen is locked,
-  subject to network, battery management and Android's service policies.
-  Device QA is required before asserting reliable background operation.
-- Reads only public content with the same **publishable / RLS-restricted** key
-  already embedded in the public FM page. Never commit service-role secrets.
-- No login, tracking SDK, advertising SDK, contacts, location or microphone.
-  Streaming consumes data. Files are not saved for offline playback.
-- Bumper cadence comes from live public settings. When that read fails, the
-  app does not claim or insert a synthetic cadence.
-- At the end of a catalog cycle the player repeats that cycle's order. Full
-  reseeding/automatic periodic reload, schedules, artwork curation, Android
-  Auto integration, and in-app Same-Time mode are future work.
-- The browser station and its public sites are untouched.
+1. **Same-Time Radio (new):** Java port of the browser's `seededShuffle`,
+   cycle-duration calculation and every-N station ID insertion. It reads
+   static `fm/rotation.json`, the nine owner-approved `fm/air-carts.json`
+   items, public static metadata overrides, cloud published/approved tracks,
+   public bumper settings and the station clock RPC. When you tune in it seeks
+   once to the shared nominal song and position. Subsequent songs play in full,
+   and MediaSessionService extends deterministic cycles even screen-off.
+2. **Road Shuffle:** native personal shuffle + approved bumpers; next button.
 
-## Build from repo
+Both avoid WebView playback, ads and analytics.
 
-Requires JDK 17, Android SDK platform 36, Gradle 8.13, internet access.
+## Important radio boundaries
+
+- **Same-Time** is a client-side approximate sync, not an Icecast transmitter.
+  Media buffering, Android clock drift and reconnections may move receivers
+  out of phase. Explicit **CATCH UP TO AIR** retunes to the nominal time.
+- **The native V0.2 clock implements the ordinary seeded rotation only.**
+  Currently no active scheduled program is stored in the station DB. If
+  special scheduled shows are later enabled, the web dial may differ.
+- Browser-only analogue static texture (37.8% setting) is **not yet** present
+  natively. No baked hiss on Road Shuffle or source MP3s.
+- The public cloud catalog must be reachable to achieve clock parity. If any
+  source fails, the receiver labels itself *approximate*, not perfectly synced.
+- The service's rolling station plan lives inside the app process; if Android
+  kills the service process, use Tune In again.
+- New approved songs join when the user retunes. Currently playing songs
+  complete; the app does not interrupt one for real-time catalog updates.
+- Supabase publishable key uses existing public RLS-only endpoints; not service
+  role credentials. No tracking, login, location, microphone or offline cache.
+
+## Build & verification
+
+Requires JDK 17 / Android SDK 36 / Gradle 8.13.
 
 ```sh
 cd apps/android
-gradle :app:assembleDebug
+gradle :app:assembleDebug :app:testDebugUnitTest
 ```
 
-Install the resulting `app/build/outputs/apk/debug/app-debug.apk` on a device
-for testing. CI uploads a debug APK artifact when the `Android radio prototype`
-workflow runs; this is **not a Google Play release**. It is unsigned for Play
-distribution; do not put signing credentials into source control.
+Debug APK is attached to CI. Device test required, preferably Android 11 and
+Android 16: tune-in Same-Time vs website during same minute; listen through
+three song boundaries with screen locked; make an incoming call and verify
+audio focus; press Catch Up; test Road Shuffle and Bluetooth headset controls.
+This code is not a Play Store release; owner enrollment and signed AAB are
+still required.
 
-## Pre-release acceptance tests
-
-1. Start radio on phone; verify music and the native media notification.
-2. Lock screen for **three full tracks**; verify complete transitions, then
-   exercise pause/next from Bluetooth and lock screen.
-3. Exercise loss/recovery of data and headphone unplug (pause), audio focus.
-4. Test current Android 16 target behavior and Android 11 compatibility.
-5. Confirm live crate additions and enabled bumpers appear on a fresh tune-in.
-6. Confirm no private staging tracks play and no static sound is baked in.
-7. Add proper adaptive launcher icon, screenshots, content-rating, data-safety
-   declarations, privacy/support pages, signed AAB, on-device review.
-8. Complete Google Play developer verification and closed testing requirements
-   if applicable. The owner controls enrollment, signing key and publishing.
-
-Native build tooling is isolated in `apps/android`, with no changes to the
-GitHub Pages site. To stop this experiment, close the PR and delete the branch.
-
-## Naming
-
-Prototype package ID: `org.abundent.humkinradio`. Confirm final package name
-before any Play Console creation; Play package IDs are permanent once published.
+Package ID `org.abundent.humkinradio`; confirm before store registration.
