@@ -169,13 +169,14 @@ async function postBeacon(data:any,req:Request) {
     .select("id",{head:true,count:"exact"}).eq("station_day",day).eq("network_hash",network);
   if(quotaError)throw quotaError;
   if((count||0)>=30)return {error:"Today's request line is full for this connection",status:429};
-  const {error}=await db.from("humkin_league_beacons")
-    .insert({station_day:day,track_id:id,actor_hash:actor,network_hash:network});
+  const {data:row,error}=await db.from("humkin_league_beacons")
+    .insert({station_day:day,track_id:id,actor_hash:actor,network_hash:network})
+    .select("id").single();
   if(error){
     if(error.code==="23505")return {error:"You already requested a song today. The desk reopens tomorrow.",status:409};
     throw error;
   }
-  return {accepted:true,day,track_id:id,
+  return {accepted:true,day,track_id:id,beacon_id:row.id,
     note:"Request filed. Not a chart play, a vote or a guaranteed radio spin."};
 }
 async function state(u:URL) {
