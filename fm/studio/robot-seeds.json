@@ -1,0 +1,258 @@
+{
+  "schema": "humkin.radio.robot-seeds/v1",
+  "description": "Canonical built-in robot script seed library; owner overrides are approval-gated in Supabase",
+  "seeds": [
+    {
+      "slug": "neighbor-soup",
+      "script": "A neighbor brought soup. We have been promoted to friends.",
+      "level": "plain",
+      "family": "neighbors",
+      "role": "character"
+    },
+    {
+      "slug": "bread-box",
+      "script": "The key was in the bread box. Again. Everything is all right.",
+      "level": "plain",
+      "family": "kitchen",
+      "role": "station_id"
+    },
+    {
+      "slug": "three-brooms",
+      "script": "We own three brooms. Not one of them has swept the floor.",
+      "level": "plain",
+      "family": "chores",
+      "role": "character"
+    },
+    {
+      "slug": "last-pancake",
+      "script": "Nobody wanted the last pancake. So it stayed for breakfast.",
+      "level": "plain",
+      "family": "kitchen",
+      "role": "character"
+    },
+    {
+      "slug": "rooster-sleep",
+      "script": "The rooster started early. The hens voted to sleep in.",
+      "level": "plain",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "extra-chair",
+      "script": "HUMKIN RADIO. There's an extra chair at the table. Pull it up.",
+      "level": "plain",
+      "family": "neighbors",
+      "role": "station_id"
+    },
+    {
+      "slug": "good-wood",
+      "script": "The wood was wet. The fire took its time. So did we.",
+      "level": "plain",
+      "family": "hearth",
+      "role": "station_id"
+    },
+    {
+      "slug": "one-more-song",
+      "script": "The kettle has boiled. The work can wait one more song.",
+      "level": "plain",
+      "family": "kitchen",
+      "role": "station_id"
+    },
+    {
+      "slug": "quiet-gift",
+      "script": "Someone left the porch light on. Nobody asked who.",
+      "level": "plain",
+      "family": "neighbors",
+      "role": "character"
+    },
+    {
+      "slug": "proper-hat",
+      "script": "The hat was upside down. We wore it anyway.",
+      "level": "wry",
+      "family": "clothing",
+      "role": "character"
+    },
+    {
+      "slug": "committee-broom",
+      "script": "The committee on sweeping has agreed to meet after the sweeping.",
+      "level": "wry",
+      "family": "chores",
+      "role": "character"
+    },
+    {
+      "slug": "hay-meeting",
+      "script": "A meeting was held in the hayloft. The hay was absent.",
+      "level": "wry",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "goose-refused",
+      "script": "We asked the goose for directions. It has declined to comment.",
+      "level": "wry",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "two-mugs",
+      "script": "HUMKIN RADIO. Two mugs, one kettle, and a very long argument over who asked first.",
+      "level": "wry",
+      "family": "kitchen",
+      "role": "station_id"
+    },
+    {
+      "slug": "chair-vote",
+      "script": "The chairs voted on whether to move. The motion did not carry.",
+      "level": "wry",
+      "family": "furniture",
+      "role": "character"
+    },
+    {
+      "slug": "ladder-report",
+      "script": "The ladder has been inspected. The inspector is still up there.",
+      "level": "wry",
+      "family": "chores",
+      "role": "character"
+    },
+    {
+      "slug": "cake-judges",
+      "script": "We held a contest for the best cake. The judges ate the results.",
+      "level": "wry",
+      "family": "kitchen",
+      "role": "character"
+    },
+    {
+      "slug": "counting-eggs",
+      "script": "The eggs have been counted twice. The hens disagree.",
+      "level": "wry",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "cow-apology",
+      "script": "The cow issued a formal apology. Nobody remembers what for.",
+      "level": "strange",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "wooden-spoon",
+      "script": "The wooden spoon has resigned from the soup. It would like to stir elsewhere.",
+      "level": "strange",
+      "family": "kitchen",
+      "role": "character"
+    },
+    {
+      "slug": "barn-visitor",
+      "script": "The barn has asked to be treated as a guest. It has always lived here.",
+      "level": "strange",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "chair-needs-chair",
+      "script": "The chair has requested a chair to sit on. We are considering it.",
+      "level": "strange",
+      "family": "furniture",
+      "role": "character"
+    },
+    {
+      "slug": "lost-tuesday",
+      "script": "We found the missing day behind a sack of flour. It was still fresh.",
+      "level": "strange",
+      "family": "kitchen",
+      "role": "character"
+    },
+    {
+      "slug": "boots-union",
+      "script": "HUMKIN RADIO. The boots have formed a union. They refuse to walk alone.",
+      "level": "strange",
+      "family": "clothing",
+      "role": "station_id"
+    },
+    {
+      "slug": "quiet-committee",
+      "script": "The committee on silence has made an announcement. It was well received.",
+      "level": "strange",
+      "family": "records",
+      "role": "character"
+    },
+    {
+      "slug": "supper-clock",
+      "script": "The supper bell rang at breakfast. Everybody came anyway.",
+      "level": "strange",
+      "family": "kitchen",
+      "role": "character"
+    },
+    {
+      "slug": "fence-argument",
+      "script": "The fence has taken both sides of an argument. This is normal for a fence.",
+      "level": "strange",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "moon-invoice",
+      "script": "The moon sent the barn a bill for light. The barn requested a candle.",
+      "level": "cosmic",
+      "family": "farm",
+      "role": "character"
+    },
+    {
+      "slug": "wind-hat",
+      "script": "The wind has resigned. The hats have never been happier.",
+      "level": "cosmic",
+      "family": "clothing",
+      "role": "character"
+    },
+    {
+      "slug": "future-bread",
+      "script": "Tomorrow came by looking for bread. We told it to come back yesterday.",
+      "level": "cosmic",
+      "family": "kitchen",
+      "role": "character"
+    },
+    {
+      "slug": "north-south",
+      "script": "The north wind and the south wind shook hands. The house fell quiet.",
+      "level": "cosmic",
+      "family": "hearth",
+      "role": "character"
+    },
+    {
+      "slug": "patient-mountain",
+      "script": "HUMKIN RADIO. The mountain has been waiting for us. It says there is no hurry.",
+      "level": "cosmic",
+      "family": "earth",
+      "role": "station_id"
+    },
+    {
+      "slug": "oldest-chair",
+      "script": "This chair has witnessed a thousand dinners. It remembers the pie.",
+      "level": "cosmic",
+      "family": "furniture",
+      "role": "character"
+    },
+    {
+      "slug": "universe-chores",
+      "script": "The universe asked what we were making. We said supper. It stayed.",
+      "level": "cosmic",
+      "family": "kitchen",
+      "role": "character"
+    },
+    {
+      "slug": "stars-garden",
+      "script": "The stars planted a garden in the dark. The weeds look magnificent.",
+      "level": "cosmic",
+      "family": "earth",
+      "role": "character"
+    },
+    {
+      "slug": "kingdom-soup",
+      "script": "The king asked for riches. The cook brought soup. Nobody complained.",
+      "level": "cosmic",
+      "family": "kitchen",
+      "role": "character"
+    }
+  ]
+}
