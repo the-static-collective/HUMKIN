@@ -4,6 +4,8 @@ import android.os.Handler;
 import android.content.SharedPreferences;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import android.os.Looper;
 import android.os.SystemClock;
 import org.json.JSONArray;
@@ -25,6 +27,7 @@ import androidx.media3.session.MediaSessionService;
  */
 public final class RadioPlaybackService extends MediaSessionService {
     private static RadioCatalog.Station sameTimeStation;
+    private static RadioCatalog.Station roadShuffleStation;
     private static volatile boolean staticEnabled = true;
     private static RadioPlaybackService activeService;
     private static long upcomingCycle;
@@ -50,12 +53,20 @@ public final class RadioPlaybackService extends MediaSessionService {
     };
 
     static void armSameTime(RadioCatalog.Station station,long firstUnqueuedCycle) {
+        roadShuffleStation=null;
         sameTimeStation=station;
         upcomingCycle=firstUnqueuedCycle;
         if (activeService != null) activeService.syncWarmStatic();
     }
-    static void clearSameTime() {
+    static void armRoadShuffle(RadioCatalog.Station station) {
         sameTimeStation=null;
+        roadShuffleStation=station;
+        if (activeService != null) activeService.syncWarmStatic();
+    }
+    static void clearSameTime() {
+        // Album playback is neither a broadcast nor a roaming shuffle.
+        sameTimeStation=null;
+        roadShuffleStation=null;
         if (activeService != null) activeService.syncWarmStatic();
     }
     static void setWarmStaticEnabled(boolean enabled) {
@@ -200,13 +211,34 @@ public final class RadioPlaybackService extends MediaSessionService {
     }
 
     private void extendClockIfNeeded() {
-        if (sameTimeStation==null||player==null||player.getMediaItemCount()==0)return;
+        if(player==null||player.getMediaItemCount()==0)return;
         int current=player.getCurrentMediaItemIndex();
-        // Extend before the end of a cycle without seeking/cutting a track.
-        if(current>=0&&player.getMediaItemCount()-current<=4) {
+        if(current<0)return;
+        int remaining=player.getMediaItemCount()-current;
+        if (sameTimeStation!=null && remaining<=4) {
+            // Browser-style shared clock: remain on the published schedule.
             player.addMediaItems(sameTimeStation.itemsForCycle(upcomingCycle++));
+        } else if (roadShuffleStation!=null && remaining<=4) {
+            // Overnight Road Shuffle must not wrap back to the *same* queue.
+            // Rebuild ahead of time with local recent-play history.
+            Map<String,Long> heard = new HashMap<>();
+            try {
+                JSONArray history = new JSONArray(
+                    getSharedPreferences("humkin-radio", MODE_PRIVATE)
+                            .getString("recent-records", "[]"));
+                long now = System.currentTimeMillis();
+                for (int i=0; i<history.length(); i++) {
+                    JSONObject row = history.optJSONObject(i);
+                    if (row != null && now-row.optLong("time",0L)
+                            < FreshRotation.HOUR_MS)
+                        heard.put(row.optString("id",""),row.optLong("time",0L));
+                }
+                if (previousRecord != null) heard.put(previousRecord.mediaId,now);
+            } catch (Exception ignored) { /* Playback never waits for history. */ }
+            player.addMediaItems(roadShuffleStation.shuffleQueue(
+                    heard, System.currentTimeMillis()));
         }
-        // Bound long-running playlist memory while keeping previous/next tracks.
+        // Limit the native playlist in memory without cutting current music.
         if(current>100)player.removeMediaItems(0,current-3);
     }
 
@@ -267,6 +299,7 @@ public final class RadioPlaybackService extends MediaSessionService {
         checkpointHandler.removeCallbacks(checkpointTick);
         checkpointScheduled = false;
         sameTimeStation=null;
+        roadShuffleStation=null;
         stopWeather();
         if (warmStatic != null) {
             warmStatic.close();
