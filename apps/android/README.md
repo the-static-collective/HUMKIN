@@ -1,3 +1,17 @@
+# HUMKIN RADIO Android v0.17 · REAL STATION GUILDS (FIELD TEST)
+
+- **Install label:** HUMKIN RADIO · GUILDS
+- **Test applicationId:** `org.abundent.humkinradio.guilds`
+- **Feature:** First-class `STATION GUILDS` link from the native radio and Signal Outpost, opening contained first-party `/fm/participate/` (not a second audio player).
+- **Phone video/audio intake:** Android WebView uses native document picker via `WebChromeClient.onShowFileChooser` and `startActivityForResult` (Android 8+). User can choose existing recorded media without sharing arbitrary filesystem access. The web desk obtains a short-lived signed upload token for a single private Storage object; review is owner-only.
+- **Street Team:** Manual social posting, public proof link, optional handle, clear material-connection disclosure, human verification. No social passwords/OAuth scraping or autoposting.
+- **HUM:** Local Orchard shopping HUM is still separate from the new server-reviewed, nontransferable verified contribution HUM. No automatic credits for an upload or hardware claim.
+- **Native radio:** Media3 background service, controls, Top 42 and existing Outpost are unchanged.
+- **Privacy:** Contribution passes belong to the contained WebView install's private storage. Back up the participation pass from the Guild page to recover receipts if uninstalling this field-test APK.
+- **Status:** CI debug/field-test APK is a test build. Physical-phone video picker, large-file transfer, and background playback still require hands-on QA. Native v0.17 is not a production Play Store release. It installs alongside older test variants but does not import their local saves.
+
+---
+
 # HUMKIN RADIO Android · v0.16 Field Test — The Listening Orchard
 
 **Install name:** HUMKIN RADIO · ORCHARD  

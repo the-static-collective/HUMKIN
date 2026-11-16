@@ -329,6 +329,13 @@ public final class MainActivity extends Activity {
             startActivity(new Intent(this, LeagueActivity.class));
         });
         radioScreen.addView(chart, wrap(9));
+        // Real station jobs: upload original audio/video, submit honest public
+        // street-team posts or volunteer a server without asking for an email.
+        Button guilds=pill("✳  STATION GUILDS  /  REAL MISSIONS",null,YELLOW,16);
+        guilds.setMinHeight(dp(58));
+        guilds.setContentDescription("Open the station guild mission board and submission studio");
+        guilds.setOnClickListener(v -> startActivity(new Intent(this,GuildActivity.class)));
+        radioScreen.addView(guilds,wrap(11));
 
         Button share = pill("SHARE THE DIAL", null, MINT, 13);
         share.setOnClickListener(v -> {
