@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
@@ -261,10 +262,44 @@ public final class MainActivity extends Activity {
         status = message(INK);
         radioScreen.addView(status, wrap(5));
 
-        // These values remain live for the overflow, without a tall card.
-        onDeck = text("Tune in to see what's next.", 14, INK, true);
-        recentlyHeard = text("The dial remembers.", 12, INK, false);
+        // A compact two-row station log, rather than the old explanation,
+        // full technical card and five-line history panel.
+        LinearLayout stationLog = column();
+        stationLog.setGravity(Gravity.START);
+        stationLog.setPadding(dp(13), dp(11), dp(13), dp(11));
+        android.graphics.drawable.GradientDrawable logPaper =
+                HumkinVisuals.shape(this, 0xfffffdf6, 9);
+        logPaper.setStroke(dp(2), INK);
+        stationLog.setBackground(logPaper);
+
+        TextView nextLabel = text("COMING UP", 10, PLUM, true);
+        nextLabel.setGravity(Gravity.START);
+        nextLabel.setLetterSpacing(.09f);
+        stationLog.addView(nextLabel, wrap(0));
+        onDeck = text("—", 14, INK, true);
+        onDeck.setGravity(Gravity.START);
+        onDeck.setSingleLine(true);
+        onDeck.setEllipsize(TextUtils.TruncateAt.END);
+        stationLog.addView(onDeck, wrap(3));
+
+        View divider = new View(this);
+        divider.setBackgroundColor(0xffead5dc);
+        LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(-1, dp(1));
+        dividerSize.topMargin = dp(9);
+        dividerSize.bottomMargin = dp(8);
+        stationLog.addView(divider, dividerSize);
+
+        TextView heardLabel = text("JUST PLAYED", 10, PLUM, true);
+        heardLabel.setGravity(Gravity.START);
+        heardLabel.setLetterSpacing(.09f);
+        stationLog.addView(heardLabel, wrap(0));
+        recentlyHeard = text("—", 13, INK, false);
+        recentlyHeard.setGravity(Gravity.START);
+        recentlyHeard.setMaxLines(2);
+        recentlyHeard.setEllipsize(TextUtils.TruncateAt.END);
+        stationLog.addView(recentlyHeard, wrap(3));
         updateRecentRecords();
+        radioScreen.addView(stationLog, wrap(12));
 
         Button albums = HumkinVisuals.pill(this, "ALBUMS", Icon.ALBUMS, YELLOW, 29, true);
         albums.setMinHeight(dp(61));
@@ -321,18 +356,6 @@ public final class MainActivity extends Activity {
             titles.add("Reshuffle");
             actions.add(() -> fetchRadio(true, false));
         }
-        titles.add("Coming up");
-        actions.add(() -> new AlertDialog.Builder(this)
-                .setTitle("COMING UP ON THE DIAL")
-                .setMessage(onDeck.getText().toString())
-                .setPositiveButton("Close", null).show());
-        titles.add("Just heard here");
-        actions.add(() -> {
-            updateRecentRecords();
-            new AlertDialog.Builder(this).setTitle("JUST HEARD HERE")
-                    .setMessage(recentlyHeard.getText().toString())
-                    .setPositiveButton("Close", null).show();
-        });
         titles.add("Station archive");
         actions.add(() -> visit("https://humkin.abundent.org/fm/archive/"));
         titles.add("Privacy");
@@ -795,20 +818,15 @@ public final class MainActivity extends Activity {
                     .getString("recent-records", "[]");
             JSONArray rows = new JSONArray(stored);
             StringBuilder lines = new StringBuilder();
-            for (int i = 0; i < Math.min(rows.length(), 3); i++) {
+            for (int i = 0; i < Math.min(rows.length(), 2); i++) {
                 JSONObject row = rows.optJSONObject(i);
                 if (row == null) continue;
                 if (lines.length() > 0) lines.append("\n");
                 lines.append("✳ ").append(row.optString("title", "Unknown record"));
-                String artist = row.optString("artist", "");
-                if (!artist.isEmpty() && !"HUMKIN".equals(artist))
-                    lines.append(" — ").append(artist);
             }
-            recentlyHeard.setText(lines.length() == 0
-                    ? "The dial remembers, once you've heard a few records."
-                    : lines.toString());
+            recentlyHeard.setText(lines.length() == 0 ? "—" : lines.toString());
         } catch (Exception ignored) {
-            recentlyHeard.setText("Recent records unavailable.");
+            recentlyHeard.setText("—");
         }
     }
 
@@ -836,9 +854,13 @@ public final class MainActivity extends Activity {
             updateRecentRecords();
         }
         if (!ready) {
-            onDeck.setText("Tune in to see what's next.");
+            onDeck.setText("—");
         } else if ("album".equals(source)) {
-            onDeck.setText("Album playback · the radio dial is one tap away.");
+            int nextIndex = controller.getCurrentMediaItemIndex() + 1;
+            MediaItem upcoming = nextIndex < controller.getMediaItemCount()
+                    ? controller.getMediaItemAt(nextIndex) : null;
+            onDeck.setText(upcoming == null || upcoming.mediaMetadata.title == null
+                    ? "—" : upcoming.mediaMetadata.title.toString());
         } else {
             int nextIndex = controller.getCurrentMediaItemIndex() + 1;
             MediaItem upcoming = nextIndex < controller.getMediaItemCount()
@@ -846,9 +868,7 @@ public final class MainActivity extends Activity {
             String nextTitle = upcoming == null || upcoming.mediaMetadata.title == null
                     ? "Finding the next record…"
                     : upcoming.mediaMetadata.title.toString();
-            onDeck.setText(nextTitle + (radioMode
-                    ? "  ·  approximate Same-Time rotation"
-                    : "  ·  your Road Shuffle queue"));
+            onDeck.setText(nextTitle);
         }
         boolean albumActive = item != null && "album".equals(source);
         boolean playing = item != null && controller.isPlaying();
