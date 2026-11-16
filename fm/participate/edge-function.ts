@@ -274,13 +274,13 @@ async function withdraw(data:any){
  const listener=String(data.listener||""),id=String(data.id||"");
  if(!validListener(listener)||!validUuid(id))return {error:"Invalid receipt",status:400};
  const actor=await hmac("actor:v1:"+listener);
- const {data,error}=await db.from("humkin_contribution_intake")
+ const {data:rows,error}=await db.from("humkin_contribution_intake")
   .update({state:"withdrawn"}).eq("id",id).eq("actor_hash",actor)
   .in("state",["awaiting_upload","pending_review"]).select("id,media_path");
  if(error)throw error;
- if(!data?.length)return {error:"This item cannot be withdrawn; please contact the station about accepted work.",status:409};
- if(data[0].media_path){
-  await db.storage.from(BUCKET).remove([data[0].media_path]);
+ if(!rows?.length)return {error:"This item cannot be withdrawn; please contact the station about accepted work.",status:409};
+ if(rows[0].media_path){
+  await db.storage.from(BUCKET).remove([rows[0].media_path]);
  }
  return {withdrawn:true,id};
 }
