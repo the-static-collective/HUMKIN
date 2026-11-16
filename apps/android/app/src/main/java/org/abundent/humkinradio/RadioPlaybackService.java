@@ -3,6 +3,8 @@ package org.abundent.humkinradio;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
@@ -35,6 +37,7 @@ public final class RadioPlaybackService extends MediaSessionService {
     private boolean signalRunning;
     private long dipStartMs;
     private float cleanVolume = 1f;
+    private MediaItem previousRecord;
 
     static void armSameTime(RadioCatalog.Station station,long firstUnqueuedCycle) {
         sameTimeStation=station;
@@ -116,6 +119,40 @@ public final class RadioPlaybackService extends MediaSessionService {
             player.setVolume(cleanVolume);
     }
 
+    /**
+     * Only public playback metadata goes into this device's private history;
+     * nothing is uploaded, and no identifying listener data is collected.
+     * Capture the *previous* item on a transition rather than claiming a
+     * newly selected record has already been heard.
+     */
+    private void rememberRecord(MediaItem item) {
+        if (item == null || item.mediaMetadata.title == null) return;
+        try {
+            String title = item.mediaMetadata.title.toString();
+            if (title.trim().isEmpty()) return;
+            JSONObject entry = new JSONObject()
+                    .put("id", item.mediaId)
+                    .put("title", title)
+                    .put("artist", item.mediaMetadata.artist == null
+                            ? "HUMKIN" : item.mediaMetadata.artist.toString())
+                    .put("time", System.currentTimeMillis());
+            String old = getSharedPreferences("humkin-radio", MODE_PRIVATE)
+                    .getString("recent-records", "[]");
+            JSONArray before = new JSONArray(old);
+            JSONArray after = new JSONArray();
+            after.put(entry);
+            for (int i = 0; i < before.length() && after.length() < 12; i++) {
+                JSONObject row = before.optJSONObject(i);
+                if (row != null && !item.mediaId.equals(row.optString("id")))
+                    after.put(row);
+            }
+            getSharedPreferences("humkin-radio", MODE_PRIVATE).edit()
+                    .putString("recent-records", after.toString()).apply();
+        } catch (Exception ignored) {
+            // History must never delay or break a song transition.
+        }
+    }
+
     private void extendClockIfNeeded() {
         if (sameTimeStation==null||player==null||player.getMediaItemCount()==0)return;
         int current=player.getCurrentMediaItemIndex();
@@ -147,6 +184,10 @@ public final class RadioPlaybackService extends MediaSessionService {
                 if(state==Player.STATE_READY)consecutiveFailures=0;
             }
             @Override public void onMediaItemTransition(MediaItem item,int reason) {
+                if (previousRecord != null && item != null
+                        && !previousRecord.mediaId.equals(item.mediaId))
+                    rememberRecord(previousRecord);
+                previousRecord = item;
                 extendClockIfNeeded();
             }
             @Override public void onPlayerError(PlaybackException error) {
