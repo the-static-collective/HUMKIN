@@ -305,6 +305,11 @@ public final class MainActivity extends Activity {
         albums.setMinHeight(dp(61));
         albums.setOnClickListener(v -> showAlbums(true));
         radioScreen.addView(albums, wrap(12));
+        // Separate league screen, without replacing native player or station controls.
+        Button chart = pill("THE TOP 42 · RECORD LEAGUE", null, MINT, 17);
+        chart.setMinHeight(dp(53));
+        chart.setOnClickListener(v -> startActivity(new Intent(this, LeagueActivity.class)));
+        radioScreen.addView(chart, wrap(9));
 
         Button share = pill("SHARE THE DIAL", null, MINT, 13);
         share.setOnClickListener(v -> {
