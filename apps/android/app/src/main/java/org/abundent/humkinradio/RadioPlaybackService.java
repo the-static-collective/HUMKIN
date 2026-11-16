@@ -1,6 +1,9 @@
 package org.abundent.humkinradio;
 
 import android.os.Handler;
+import android.content.SharedPreferences;
+import java.util.ArrayList;
+import java.util.List;
 import android.os.Looper;
 import android.os.SystemClock;
 import org.json.JSONArray;
@@ -38,6 +41,13 @@ public final class RadioPlaybackService extends MediaSessionService {
     private long dipStartMs;
     private float cleanVolume = 1f;
     private MediaItem previousRecord;
+    private final Handler checkpointHandler = new Handler(Looper.getMainLooper());
+    private boolean checkpointScheduled;
+    private final Runnable checkpointTick = () -> {
+        checkpointScheduled = false;
+        savePlaybackCheckpoint();
+        updateCheckpointTimer();
+    };
 
     static void armSameTime(RadioCatalog.Station station,long firstUnqueuedCycle) {
         sameTimeStation=station;
@@ -153,6 +163,42 @@ public final class RadioPlaybackService extends MediaSessionService {
         }
     }
 
+    /** Save only public track IDs and current playhead; never cache MP3 URLs. */
+    private void savePlaybackCheckpoint() {
+        if (player == null || player.getMediaItemCount() == 0) return;
+        try {
+            MediaItem item = player.getCurrentMediaItem();
+            int current = player.getCurrentMediaItemIndex();
+            if (item == null || current < 0) return;
+            String mode = sameTimeStation != null ? "radio"
+                    : item.mediaId.startsWith("album:") ? "album" : "shuffle";
+            List<String> remaining = new ArrayList<>();
+            int limit = Math.min(player.getMediaItemCount(),
+                    current + PlaybackContinuity.MAX_QUEUE_IDS);
+            for (int i = current; i < limit; i++) {
+                MediaItem queued = player.getMediaItemAt(i);
+                if (queued != null && queued.mediaId != null && !queued.mediaId.isEmpty())
+                    remaining.add(queued.mediaId);
+            }
+            PlaybackContinuity.save(getSharedPreferences("humkin-radio", MODE_PRIVATE),
+                    new PlaybackContinuity.Saved(mode, item.mediaId,
+                            System.currentTimeMillis(),
+                            player.getCurrentPosition(), player.isPlaying(), remaining));
+        } catch (Exception ignored) {
+            // Not a prerequisite for making or continuing radio.
+        }
+    }
+
+    private void updateCheckpointTimer() {
+        if (player != null && player.isPlaying() && !checkpointScheduled) {
+            checkpointScheduled = true;
+            checkpointHandler.postDelayed(checkpointTick, 12000L);
+        } else if ((player == null || !player.isPlaying()) && checkpointScheduled) {
+            checkpointHandler.removeCallbacks(checkpointTick);
+            checkpointScheduled = false;
+        }
+    }
+
     private void extendClockIfNeeded() {
         if (sameTimeStation==null||player==null||player.getMediaItemCount()==0)return;
         int current=player.getCurrentMediaItemIndex();
@@ -179,6 +225,15 @@ public final class RadioPlaybackService extends MediaSessionService {
         player.addListener(new Player.Listener(){
             @Override public void onEvents(Player player,Player.Events events) {
                 syncWarmStatic();
+                updateCheckpointTimer();
+            }
+            @Override public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+                SharedPreferences.Editor edit = getSharedPreferences("humkin-radio", MODE_PRIVATE)
+                        .edit();
+                if (!playWhenReady) edit.putLong("paused-at-ms", System.currentTimeMillis());
+                else edit.remove("paused-at-ms");
+                edit.apply();
+                savePlaybackCheckpoint();
             }
             @Override public void onPlaybackStateChanged(int state) {
                 if(state==Player.STATE_READY)consecutiveFailures=0;
@@ -189,6 +244,7 @@ public final class RadioPlaybackService extends MediaSessionService {
                     rememberRecord(previousRecord);
                 previousRecord = item;
                 extendClockIfNeeded();
+                savePlaybackCheckpoint();
             }
             @Override public void onPlayerError(PlaybackException error) {
                 if(++consecutiveFailures<=3&&player.getMediaItemCount()>1){
@@ -206,6 +262,10 @@ public final class RadioPlaybackService extends MediaSessionService {
     }
 
     @Override public void onDestroy() {
+        // Capture where the last record stopped before clearing mode state.
+        savePlaybackCheckpoint();
+        checkpointHandler.removeCallbacks(checkpointTick);
+        checkpointScheduled = false;
         sameTimeStation=null;
         stopWeather();
         if (warmStatic != null) {
