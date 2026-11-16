@@ -1,5 +1,9 @@
 package org.abundent.humkinradio;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
+
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
@@ -23,6 +27,14 @@ public final class RadioPlaybackService extends MediaSessionService {
     private MediaSession session;
     private int consecutiveFailures;
     private WarmStaticBed warmStatic;
+    private final Handler signalHandler = new Handler(Looper.getMainLooper());
+    private final Runnable startDip = this::beginDip;
+    private final Runnable stepDip = this::advanceDip;
+    private FractalSignalPattern weather;
+    private FractalSignalPattern.Cue dip;
+    private boolean signalRunning;
+    private long dipStartMs;
+    private float cleanVolume = 1f;
 
     static void armSameTime(RadioCatalog.Station station,long firstUnqueuedCycle) {
         sameTimeStation=station;
@@ -38,11 +50,70 @@ public final class RadioPlaybackService extends MediaSessionService {
         if (activeService != null) activeService.syncWarmStatic();
     }
 
+    private boolean radioAudible() {
+        return staticEnabled && sameTimeStation != null && player != null
+                && player.isPlaying() && player.getPlaybackState() == Player.STATE_READY;
+    }
+
     private void syncWarmStatic() {
         if (warmStatic == null || player == null) return;
-        // Never add this layer to Road Shuffle or album playback.
-        warmStatic.setAudible(staticEnabled && sameTimeStation != null
-                && player.isPlaying() && player.getPlaybackState() == Player.STATE_READY);
+        boolean on = radioAudible();
+        // All weather follows the radio-only static preference; never albums or shuffle.
+        warmStatic.setAudible(on);
+        if (on && !signalRunning) {
+            signalRunning = true;
+            cleanVolume = player.getVolume();
+            if (weather == null) weather = new FractalSignalPattern(
+                    SystemClock.elapsedRealtimeNanos() ^ System.currentTimeMillis());
+            scheduleNextDip();
+        } else if (!on && signalRunning) {
+            stopWeather();
+        }
+    }
+
+    private void scheduleNextDip() {
+        if (!signalRunning || !radioAudible()) return;
+        dip = weather.next();
+        signalHandler.postDelayed(startDip, dip.delayMs);
+    }
+
+    private void beginDip() {
+        if (!signalRunning || !radioAudible() || dip == null) {
+            syncWarmStatic();
+            return;
+        }
+        dipStartMs = SystemClock.uptimeMillis();
+        advanceDip();
+    }
+
+    private void advanceDip() {
+        if (!signalRunning || !radioAudible() || dip == null) {
+            syncWarmStatic();
+            return;
+        }
+        double progress = (SystemClock.uptimeMillis() - dipStartMs)
+                / (double) dip.durationMs;
+        float envelope = FractalSignalPattern.envelope(progress);
+        // Change only ExoPlayer's session gain, never system volume or source audio.
+        // The static bed narrows toward mono while the signal gently loses level.
+        player.setVolume(cleanVolume * (1f - dip.depth * envelope));
+        warmStatic.setNarrowing(envelope);
+        if (progress < 1.0) {
+            signalHandler.postDelayed(stepDip, 25);
+        } else {
+            dip = null;
+            scheduleNextDip();
+        }
+    }
+
+    private void stopWeather() {
+        signalRunning = false;
+        signalHandler.removeCallbacks(startDip);
+        signalHandler.removeCallbacks(stepDip);
+        dip = null;
+        if (warmStatic != null) warmStatic.setNarrowing(0f);
+        if (player != null && player.getVolume() != cleanVolume)
+            player.setVolume(cleanVolume);
     }
 
     private void extendClockIfNeeded() {
@@ -95,6 +166,7 @@ public final class RadioPlaybackService extends MediaSessionService {
 
     @Override public void onDestroy() {
         sameTimeStation=null;
+        stopWeather();
         if (warmStatic != null) {
             warmStatic.close();
             warmStatic=null;
