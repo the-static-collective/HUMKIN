@@ -27,6 +27,9 @@
             android:name=".OutpostActivity"
             android:exported="false" />
         <activity
+            android:name=".OrchardActivity"
+            android:exported="false" />
+        <activity
             android:name=".LeagueActivity"
             android:exported="false" />
         <service

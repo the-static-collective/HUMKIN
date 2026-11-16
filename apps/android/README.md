@@ -1,3 +1,17 @@
+# HUMKIN RADIO Android · v0.16 Field Test — The Listening Orchard
+
+**Install name:** HUMKIN RADIO · ORCHARD  
+**Independent test package:** \`org.abundent.humkinradio.orchard\`  
+**GitHub Actions artifact:** \`humkin-radio-android-field-test\` containing \`app-fieldTest.apk\`.
+
+The **native** main receiver now has **YOUR LISTENING ORCHARD**, a separate playable illustrated room and evolving garden. It draws its own record player and trees, allows buying/placing/stowing thirty curiosities, and discovers eight strange local artifacts over actual Media3 listening time. Native HUM is a device-only in-game currency. The native radio's already measured, audible \`SignalRpg.totalMs\` is the *only* source of listening HUM; opening the scene or leaving the phone on without real playback yields no points. Existing Signal Outpost, Top 42, playlists, audio behavior, album art and field-test privacy boundaries stay separate.
+
+There is an explicit **level-4 voluntary local catalog workbench**. One click reads only the public JSON radio manifest (max 100 KB), validates song entries, computes SHA-256 and records at most one local reward/day. No arbitrary remote task execution or background compute; battery below 25% while unplugged causes HOLD. Browser/PWA Orchard and native Android Orchard are two **separate local saves** and have different earned balances. Neither store implies globally scarce serial numbers, peer trades, monetary tokens or a signed GHoT network receipt.
+
+App stores and account-backed trading require another implementation. This is a CI-built APK, *not* an update to older test package identities. Keep existing builds installed; a stable signing key remains prerequisite for in-place upgrades. Validate on a phone: true Media3 background play accrual, garden drawings, shop purchases, 4-minute artifact, manifest audit, and audio continuing while switching screens.
+
+---
+
 # HUMKIN RADIO Android · v0.15 Field Test — Outpost Ability Tree
 
 **Install name:** HUMKIN RADIO · OUTPOST+  
