@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#29203a">
+<meta name="description" content="The living HUMKIN Orchard: visit signed homes, share your listening room, trade server-issued curiosities, and help check the station catalog.">
+<meta property="og:title" content="HUMKIN · THE LIVING ORCHARD">
+<title>THE LIVING ORCHARD · HUMKIN RADIO</title>
+<link rel="stylesheet" href="./network.css">
+<script defer src="./model.js"></script>
+<script defer src="./network.js"></script>
+</head>
+<body>
+<header class="top"><a class="logo" href="../">HUMKIN <b>✳</b></a><nav><a href="../">RADIO</a><a href="./">MY ORCHARD</a><a href="../top42/">TOP 42</a><a href="../participate/">STATION GUILDS</a></nav></header>
+<main>
+<section class="hero">
+ <p class="overline">HUMKIN RADIO · ORCHARD NETWORK 004</p>
+ <h1>A GARDEN<br><em>OF LITTLE SIGNALS.</em></h1>
+ <p>Music, growing places, curious objects, and real people helping the station. A small room can become a public porch. A gift can travel between two listeners. A signed machine can volunteer a little work.</p>
+ <div class="facts"><span>FREE TO ENTER</span><span>NO BLOCKCHAIN / NO CASH VALUE</span><span>PUBLIC ONLY BY CHOICE</span></div>
+</section>
+<section class="ticker" aria-label="Station links">
+ <a href="../">▶ ON THE AIR · HUMKIN RADIO</a>
+ <a href="../top42/">THE TOP 42 · TODAY'S RECORD LEAGUE</a>
+ <a href="../participate/">STATION GUILDS · HELP MAKE THE SHOW</a>
+ <span id="network-signal" role="status">CONNECTING TO THE COMMUNITY ORCHARD…</span>
+</section>
+<section class="layout">
+<div class="main-column">
+<article class="section" id="room-section">
+ <p class="overline">01 / YOUR KEY TO THE GARDEN</p>
+ <h2>YOUR LITTLE <em>PORCH.</em></h2>
+ <p>This network uses a private signing key kept in this browser. No email, password, follower account, or social-media feed is required. You choose whether your room becomes public.</p>
+ <div class="identity-console">
+  <p id="identity-status" role="status">Checking this browser for an existing listener key…</p>
+  <button type="button" class="action" id="enroll">✳ ESTABLISH MY LISTENER KEY</button>
+  <div id="my-identity" hidden><b>YOUR NETWORK RECEIVER ID</b><code id="my-id"></code>
+  <button type="button" id="copy-id" class="sub">COPY ID FOR TRADING</button></div>
+  <p class="warning">Your private key never leaves this browser. At this stage, losing this browser profile or clearing its storage can permanently lose access to server-held objects. Do not treat them as valuable assets.</p>
+ </div>
+ <div id="publish-controls" hidden>
+  <label class="field">YOUR PUBLIC NAME (OPTIONAL)<input id="display-name" maxlength="32" value="A Neighbor" autocomplete="nickname"></label>
+  <label class="field">LISTENING ROOM<input id="home-name" maxlength="32" placeholder="The Room With The Radio"></label>
+  <div class="preview"><p class="overline">YOUR DECORATIVE SNAPSHOT</p><p id="snapshot-preview">Your current local room will appear here.</p><small>Decorations and minutes are self-reported. Verified network artifacts have their own ledger below.</small></div>
+  <label class="checkbox"><input id="publish-optin" type="checkbox"><span>YES, let other listeners see this sanitized room name and decoration summary.</span></label>
+  <div class="buttons"><button type="button" id="publish" class="action">✳ SAVE / UPDATE MY NETWORK HOME</button><button type="button" id="refresh-own" class="sub">REFRESH MY NETWORK STATE</button></div>
+  <p id="publish-message" role="status">Your room remains private until you opt in.</p>
+  <div class="buttons"><label class="checkbox"><input type="checkbox" id="presence-optin"><span>Show me as PRESENT while this page is open.</span></label><button type="button" id="presence-now" class="sub">SIGN A PRESENCE HEARTBEAT</button></div>
+  <p class="tiny">Presence is a signed message to the network. It expires after two minutes. Your phone is not acting as a public web server. No HUM is earned just for staying online.</p>
+ </div>
+</article>
+<article class="section" id="homes-section">
+ <div class="section-top"><div><p class="overline">02 / GUEST PORCHES</p><h2>THE WORLD <em>IS GROWING.</em></h2></div><button class="sub" type="button" id="refresh-world">↻ REFRESH WORLD</button></div>
+ <p><span id="world-count">0</span> voluntarily published rooms. Only names and sanitized scene summaries appear here.</p>
+ <div id="homes" class="homes"><div class="empty">Looking for somebody's little room…</div></div>
+ <div id="visitor" hidden>
+   <div class="section-top"><h3 id="visitor-name">A LISTENING ROOM</h3><button type="button" class="sub" id="close-visitor">CLOSE VISIT</button></div>
+   <p id="visitor-meta"></p>
+   <div class="visitor-scene" id="visitor-scene"></div>
+   <p id="visitor-artifacts"></p>
+   <button type="button" class="sub" id="choose-recipient">OFFER THIS LISTENER A NETWORK COLLECTIBLE</button>
+ </div>
+</article>
+<article class="section" id="trade-section">
+ <p class="overline">03 / THE OLD TRADING POST</p>
+ <h2>THE <em>CURIOSITY EXCHANGE.</em></h2>
+ <p>These are <strong>actual server-issued artifact IDs</strong> with ownership recorded by the network. They can be transferred once through a signed, recipient-accepted transaction. They are not NFTs, money, or limited-edition investment instruments.</p>
+ <div id="cabinet"><div class="empty">Establish your receiver key to open the network cabinet.</div></div>
+ <div class="offer-form" id="offer-controls" hidden>
+  <label class="field">RECIPIENT'S PUBLIC RECEIVER ID<input id="recipient-id" maxlength="64" placeholder="64-character public key fingerprint" autocapitalize="off"></label>
+  <label class="field">YOUR COLLECTIBLE TO OFFER<select id="artifact-choice"></select></label>
+  <button type="button" id="offer" class="action">↗ MAKE A ONE-DAY TRADE OFFER</button>
+  <p class="tiny">No item leaves your cabinet until the intended recipient accepts. An offered item is reserved against competing offers.</p>
+ </div>
+ <div class="two-columns">
+  <div><h3>INCOMING OFFERS</h3><div id="inbox" class="offer-list"><p class="empty">No signed listener key yet.</p></div></div>
+  <div><h3>OUTGOING OFFERS</h3><div id="outbox" class="offer-list"><p class="empty">No signed listener key yet.</p></div></div>
+ </div>
+</article>
+<article class="section" id="engine-section">
+ <p class="overline">04 / GHoT · THE LITTLE ENGINE</p><h2>HELP THE <em>STATION THINK.</em></h2>
+ <p>Offer one small, voluntary device task. The station issues a short-lived, bounded catalog challenge. Your browser checks the public song list and sends a signed digest. The server validates the result, records a receipt, and issues a uniquely identified <strong>Relay Leaf</strong> that you can give away.</p>
+ <div class="engine-layout">
+  <div><button id="run-work" type="button" class="action" disabled>✳ ACCEPT ONE LIGHT NETWORK JOB</button>
+    <p id="work-status" role="status">Establish a receiver key to participate.</p>
+    <div id="work-receipts"></div>
+  </div>
+  <div class="work-notes">
+   <span class="big-gear" aria-hidden="true">⚙</span>
+   <b>LIGHT / OPT-IN / REPEATABLE</b>
+   <p>Catalog metadata only. No private files, microphone, arbitrary code, screen-on points, or background battery usage. One network receipt per Chicago day.</p>
+   <p><strong>Current limit:</strong> This validates catalog agreement, NOT that the device performed irreplaceable labor or that it is running a native GHoT peer.</p>
+  </div>
+ </div>
+</article>
+</div>
+<aside class="side-column">
+ <article class="side"><p class="overline">ON THE DIAL</p><h2>THE <em>TOP 42.</em></h2>
+ <p id="chart-day">Today's chart is counting.</p>
+ <ol id="chart-mini" class="chart-mini"><li>Connecting to the record office…</li></ol>
+ <a href="../top42/" class="go">MAKE A RECORD · SEE ALL 42 ↗</a>
+ <p class="tiny">The chart counts qualified music listens. Network trades and device work do NOT mint chart plays.</p>
+ </article>
+ <article class="side mint"><p class="overline">THE GUILDS</p><h2>MAKE THE <em>STATION.</em></h2>
+ <p>Street team, video makers, bumper voice actors, music makers, writers, local reporters, and server operators all have useful work.</p>
+ <a href="../participate/" class="go">ENTER THE STATION GUILDS ↗</a>
+ <p class="tiny">Guild review credits are a separate ledger. No automatic transfer into local shopping HUM.</p>
+ </article>
+ <article class="side"><p class="overline">A REAL DISTINCTION</p><h3>PRESENCE ISN'T STAKE.</h3><p>Your signing key identifies this browser; a heartbeat witnesses recent contact. Publishing a room causes the server to serve its snapshot. It does not make your phone a 24/7 server, and doesn't earn financial assets.</p>
+ <a class="go" href="https://github.com/the-static-collective/GHoT">THE GHoT COMPUTE PROJECT ↗</a></article>
+</aside>
+</section>
+</main>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<footer><a href="../">← RADIO</a><span>HUMKIN ORCHARD NETWORK 004 · NO ADS · NO CASH VALUE</span><a href="./">MY LOCAL ORCHARD ↗</a></footer>
+</body>
+</html>
