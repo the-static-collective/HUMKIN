@@ -45,11 +45,38 @@ for(const n of [21,65,86,125]){
   }
  }
 }
+// Curated singles and release tracks get precisely two slots; other songs
+// get one. Bonus plays stay spread out and do not break the shared clock seam.
+for(const [count,featuredCount] of [[21,20],[22,20],[65,20],[125,20],[125,125]]){
+ const featured=Array.from({length:featuredCount},(_,i)=>i);
+ let previous=null;
+ for(let round=0;round<90;round++){
+  const order=fair.weightedCycle(count,round,seededShuffle,featured);
+  assert.equal(order.length,count+featuredCount,"Weighted duration/count changed");
+  assert.deepEqual(order,fair.weightedCycle(count,round,seededShuffle,featured),
+    "Two shared-clock radios must agree on featured slots");
+  const totals=new Map();
+  for(const i of order)totals.set(i,(totals.get(i)||0)+1);
+  for(let i=0;i<count;i++)assert.equal(totals.get(i),i<featuredCount?2:1,
+    "Curated release weighting must be exactly 2:1");
+  for(let i=1;i<order.length;i++)
+   assert.notEqual(order[i],order[i-1],"A song must never immediately repeat");
+  if(previous)for(const id of order.slice(0,4))
+   assert(!previous.slice(-4).includes(id),"Weighted seam repeated a recent song");
+  previous=order;
+ }
+}
+const curated=JSON.parse(fs.readFileSync("fm/rotation.json","utf8")).featured_rotation;
+assert.equal(curated.multiplier,2);
+assert.deepEqual(curated.albums,["MUTANT POP","everywhere;near you"]);
+assert.deepEqual(curated.singles,["haileylu-bloom"]);
+
 const radio=fs.readFileSync("fm/radio.js","utf8");
 const listener=fs.readFileSync("fm/index.html","utf8");
 const sw=fs.readFileSync("sw.js","utf8");
 assert(radio.includes("HUMKIN_FAIR_ROTATION?.cycle"),"Fairness must be active in shared clock");
-assert(radio.includes("HUMKIN_FAIR_ROTATION?.mix"),"Road shuffle must interleave station eras");
+assert(radio.includes("weightedMusic(originals,seed)"),"Road shuffle must use 2x era-mixed music");
+assert(radio.includes("weightedMusic(eligible,rotation)"),"Shared clock must include curated extra spins");
 assert(listener.includes('src="./fair-rotation.js"'),"Fairness helper must load before radio.js");
 assert(sw.includes("./fm/fair-rotation.js"),"Offline shell must include fairness helper");
 assert(radio.includes("LIMITED DIAL"),"Cloud outages must disclose restricted catalog");
