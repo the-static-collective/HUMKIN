@@ -1,4 +1,36 @@
-# HUMKIN RADIO Android · v0.6
+# HUMKIN RADIO Android · v0.7
+
+## Listener-first receiver / install recovery
+
+**Install this build as `HUMKIN RADIO FIELD TEST`**, a separate Android
+package `org.abundent.humkinradio.fieldtest`. GitHub runners may generate
+different debug signing keys on each run; Android refuses to replace an
+installed same-package build signed with a different key ("App not installed").
+The field-test package has its own identity, so it can be installed alongside
+a previous HUMKIN RADIO debug APK without removing the older receiver.
+Install the file `app-fieldTest.apk` from the CI field-test artifact.
+
+This is a **one-time compatibility workaround**, not stable production signing.
+Subsequent field-test upgrades can still hit the signature conflict if CI uses
+a new ephemeral key. A permanent protected keystore and production signing
+process are needed before a public/store release. If installation still fails,
+check the Android unknown-apps permission, device storage, complete download,
+and the exact installer error. Do not uninstall the original app prematurely.
+
+### New listener affordances
+- **Coming up on the dial:** the actual next queued Media3 record; Same-Time
+  labels this an approximation, not a claimed synced 24/7 transmitter.
+- **Just heard here:** last three completed/transited records, read from a
+  private, device-only recent-history list. Lock-screen transitions are
+  recorded by the playback service; no listener log is uploaded.
+- **Share the dial:** invokes Android's native share sheet, linking to
+  the public station (no tracking/deep link).
+- **Request line:** opens the existing verified-status station switchboard
+  page. It does **not** falsely claim the line is accepting requests or
+  automatically broadcast messages. No new permissions or backend.
+
+The radio and its music service still take priority over social features.
+
 
 The native Radio screen now borrows the published HUMKIN site's dark-ink
 masthead, yellow station ticker, warm paper dial, high-contrast buttons and
@@ -47,20 +79,26 @@ narrow screens or with larger system text.
   packaging or additional runtime permissions.
 
 ## Device acceptance
-Run `gradle -p apps/android :app:assembleDebug :app:testDebugUnitTest`.
+Run `gradle -p apps/android :app:assembleDebug :app:assembleFieldTest :app:testDebugUnitTest :app:testFieldTestUnitTest`.
 On device verify:
-1. The cream/ink/yellow UI scales at 320–420dp and scrolls with readable labels.
-2. Tune both radio modes, then visit ALBUMS and return without losing playback.
+1. Install the **Field Test** APK alongside the original if its debug signature differs.
+   Confirm separate app icon/label and verify it does not erase the old app.
+2. The cream/ink/yellow UI scales at 320–420dp and scrolls with readable labels.
+3. Tune both radio modes, then visit ALBUMS and return without losing playback.
    Next Record is available in Road Shuffle. Catch Up to Air follows Same-Time Radio.
-3. PLAY either album; test sequential playing on the locked screen and
+4. PLAY either album; test sequential playing on the locked screen and
    the next-track control; test switching back to radio.
-4. Verify fallbacks on slow/no network, theme colors and cover loading.
-5. Confirm the three-song station ID cadence still comes from backend config.
-6. Toggle STATIC + SIGNAL DIPS on Same-Time; check quiet hiss and subtle,
+5. Verify fallbacks on slow/no network, theme colors and cover loading.
+6. Confirm the three-song station ID cadence still comes from backend config.
+7. Toggle STATIC + SIGNAL DIPS on Same-Time; check quiet hiss and subtle,
    irregular level fades with static briefly narrowing toward mono. Verify
    phone pause, lock screen, audio focus interruption, buffering, mode changes,
    and **no hiss or dips** in Road Shuffle or album PLAY. Persist preference
    across app restarts.
+8. Verify on-deck is the actual next queue entry, recent records update
+   after transitions (including during lock screen), and Share uses a native
+   chooser. Open Request Line and confirm it reports switchboard status
+   honestly; sending a note does not publish it.
 
 This is an unsigned-for-store debug build; Google Play developer enrollment,
 physical receiver tests, and production signing are still pending.
