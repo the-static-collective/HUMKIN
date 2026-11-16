@@ -27,6 +27,8 @@ import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -611,6 +613,24 @@ public final class MainActivity extends Activity {
         else if(radioMode)fetchRadio(true);
         else controller.play();
     }
+    private Map<String,Long> recentPlayTimes() {
+        Map<String,Long> times = new HashMap<>();
+        try {
+            JSONArray rows = new JSONArray(getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                    .getString("recent-records","[]"));
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject entry = rows.optJSONObject(i);
+                if (entry == null) continue;
+                String id = entry.optString("id","");
+                long time = entry.optLong("time",0);
+                if (!id.isEmpty() && time > 0) times.put(id,time);
+            }
+        } catch (Exception ignored) {
+            // A missing/corrupt local history should never prevent tuning.
+        }
+        return times;
+    }
+
     private void fetchRadio(boolean force){
         if(controller==null||!loading.compareAndSet(false,true)){
             if(controller==null && status!=null)showMessage(status, "Connecting receiver…");
@@ -622,7 +642,8 @@ public final class MainActivity extends Activity {
         worker.execute(()->{
             try{
                 RadioCatalog.Station loaded=RadioCatalog.loadStation();
-                List<MediaItem> shuffle=requested?null:loaded.shuffleQueue();
+                List<MediaItem> shuffle=requested?null:
+                        loaded.shuffleQueue(recentPlayTimes(),System.currentTimeMillis());
                 runOnUiThread(()->{
                     loading.set(false);setBusy(false);
                     if(!alive||controller==null)return;
