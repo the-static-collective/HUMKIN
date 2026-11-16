@@ -20,8 +20,9 @@ const log = message => {
 function feedback(msg) { $("feedback").textContent = msg; log(msg) }
 function isWav(f) {return /\.wav$/i.test(f.name)}
 function isMp3(f) {return /\.mp3$/i.test(f.name)}
+function isM4a(f) {return /\.m4a$/i.test(f.name)}
 function titleFromName(name){
- return name.replace(/\.(mp3|wav)$/i,"").replace(/^\d{1,3}[\s._-]+/,"")
+ return name.replace(/\.(mp3|wav|m4a)$/i,"").replace(/^\d{1,3}[\s._-]+/,"")
    .replace(/[_]+/g," ").replace(/\s+/g," ").trim().slice(0,240) || "Untitled song";
 }
 function drawQueue(){
@@ -29,9 +30,22 @@ function drawQueue(){
  let knownSeconds=0, pending=0;
  for(const item of selected){
    if(item.duration) knownSeconds += item.duration; else pending++;
-   const li=document.createElement("li"),name=document.createElement("span"),status=document.createElement("span");
+   const li=document.createElement("li"),details=document.createElement("div"),
+     name=document.createElement("span"),status=document.createElement("span"),row=document.createElement("div");
    name.textContent=item.file.name+" · "+fmtBytes(item.file.size)+(item.duration?" · "+fmtTime(item.duration):"");
-   status.className="state";status.textContent=item.status;li.append(name,status);$("queue").append(li);
+   const title=document.createElement("input");title.type="text";title.maxLength=120;
+   title.value=item.title;title.setAttribute("aria-label","On-air title for "+item.file.name);
+   title.addEventListener("input",()=>{item.title=title.value});
+   const kind=document.createElement("select");
+   kind.setAttribute("aria-label","Recording category for "+item.file.name);
+   for(const [value,label] of [["song","SONG"],["bumper","STATION BUMPER"]]){
+     const option=document.createElement("option");option.value=value;option.textContent=label;
+     kind.append(option);
+   }
+   kind.value=item.kind;kind.addEventListener("change",()=>{item.kind=kind.value});
+   row.className="queue-controls";row.append(title,kind);
+   details.append(name,row);status.className="state";status.textContent=item.status;
+   li.append(details,status);$("queue").append(li);
  }
  $("selection").textContent=selected.length+" files selected; "+pending+" durations still being scanned.";
  $("selected-time").textContent=fmtTime(knownSeconds)+" total duration detected.";
@@ -44,7 +58,7 @@ function drawAuth(){
  $("signed-in").classList.toggle("hidden",!activeUser);
  $("signed-label").textContent=activeUser?"Connected: "+activeUser.email:"";
  drawQueue();
- $("publish").disabled=busy||!activeUser||!drafts.length;
+ $("publish").disabled=busy||!activeUser||!drafts.some(row=>row.kind!=="bumper");
 }
 function setBusy(value){
  busy=value;drawQueue();drawAuth();$("refresh-drafts").disabled=busy;
@@ -71,10 +85,10 @@ async function getDuration(file){
 async function addFiles(files){
  const existing=new Set(selected.map(x=>[x.file.name,x.file.size,x.file.lastModified].join("|")));
  for(const file of files){
-   if(!isMp3(file)&&!isWav(file))continue;
+   if(!isMp3(file)&&!isWav(file)&&!isM4a(file))continue;
    const key=[file.name,file.size,file.lastModified].join("|");
    if(existing.has(key))continue;existing.add(key);
-   selected.push({file,status:"READY",duration:0});
+   selected.push({file,status:"READY",duration:0,title:titleFromName(file.name),kind:"song"});
  }
  drawQueue();
  for(const item of selected){
@@ -110,7 +124,7 @@ async function convertWav(item){
      if(pos%(block*256)===0){item.status="ENCODING "+Math.round(pos/left.length*100)+"%";drawQueue();await new Promise(done=>setTimeout(done,0))}
    }
    const tail=encoder.flush();if(tail.length)out.push(new Uint8Array(tail));
-   const result=new File(out,item.file.name.replace(/\.wav$/i,".mp3"),{type:"audio/mpeg"});
+   const result=new File(out,item.file.name.replace(/\.(wav|m4a)$/i,".mp3"),{type:"audio/mpeg"});
    log("Converted "+item.file.name+" → "+fmtBytes(result.size)+" MP3. Original unchanged.");
    return result;
  }finally{await ctx.close()}
@@ -153,7 +167,7 @@ async function uploadFile(file,path,onProgress){
 }
 async function loadKnown(){
  const {data,error}=await db.from("humkin_radio_tracks")
-   .select("id,sha256,storage_path,title,bytes,duration_seconds,published_at")
+   .select("id,sha256,storage_path,title,kind,enabled,bytes,duration_seconds,published_at")
    .order("created_at",{ascending:false}).limit(2000);
  if(error)throw error;
  known=data||[];
@@ -163,14 +177,20 @@ async function loadKnown(){
    const li=document.createElement("li");li.textContent="Nothing staged. Choose a batch above."; $("draft-list").append(li);
  }else for(const row of drafts){
    const li=document.createElement("li");
-   li.textContent=row.title+" · "+fmtTime(row.duration_seconds)+" · "+fmtBytes(row.bytes);
-   $("draft-list").append(li);
+   const label=document.createElement("span");
+   label.textContent=(row.kind==="bumper"?"BUMPER · ":"SONG · ")+row.title+
+     " · "+fmtTime(row.duration_seconds)+" · "+fmtBytes(row.bytes);
+   const action=document.createElement("button");
+   action.type="button";action.className="accent";
+   action.textContent=row.kind==="bumper"?"REVIEW + AIR THIS BUMPER":"REVIEW + AIR THIS SONG";
+   action.addEventListener("click",()=>publishOne(row));
+   li.append(label,action);$("draft-list").append(li);
  }
  const used=known.reduce((s,r)=>s+(r.bytes||0),0);
  const secs=known.filter(x=>x.published_at).reduce((s,r)=>s+Number(r.duration_seconds||0),0);
  $("stats").textContent=known.filter(x=>x.published_at).length+" cloud songs on air · "+drafts.length+" private drafts · "+fmtBytes(used)+" uploaded";
  $("total").textContent=fmtTime(secs)+" new cloud airtime";
- $("publish").disabled=busy||!drafts.length;
+ $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper");
 }
 async function stage(){
  if(busy||!selected.length)return;
@@ -185,7 +205,7 @@ async function stage(){
      item.status="PREPARING";drawQueue();
      try{
        if(!(item.duration>0&&item.duration<14400))item.duration=await getDuration(item.file);
-       const mp3=isWav(item.file)?await convertWav(item):item.file;
+       const mp3=isWav(item.file)||isM4a(item.file)?await convertWav(item):item.file;
        if(mp3.size>MAX_FILE)throw Error("MP3 larger than 50 MiB; use desktop converter at 128 kbps.");
        if(!(item.duration>0&&item.duration<14400))throw Error("Cannot determine track duration.");
        const sha=await digest(mp3);
@@ -205,9 +225,12 @@ async function stage(){
          log("Object already staged; retrying metadata registration.");
        }
        const record={uploaded_by:user.id,sha256:sha,storage_path:path,original_name:item.file.name,
-         title:titleFromName(item.file.name),artist:"HUMKIN",album:"HUMKIN RADIO · INBOX",
+         title:(item.title.trim().slice(0,120)||titleFromName(item.file.name)),
+         artist:"HUMKIN",album:"HUMKIN RADIO · INBOX",
+         kind:item.kind==="bumper"?"bumper":"song",
+         enabled:item.kind!=="bumper",
          duration_seconds:item.duration,bytes:mp3.size};
-       const {data,error}=await db.from("humkin_radio_tracks").insert(record).select("id,sha256,storage_path,title,bytes,duration_seconds,published_at").single();
+       const {data,error}=await db.from("humkin_radio_tracks").insert(record).select("id,sha256,storage_path,title,kind,enabled,bytes,duration_seconds,published_at").single();
        if(error){
          if(error.code==="23505"){skipped++;item.status="DUPLICATE";drawQueue();continue}
          throw error;
@@ -226,11 +249,12 @@ async function stage(){
 async function publish(){
  if(busy)return;
  try{await ensureSession();await loadKnown()}catch(err){feedback(err.message);return}
- if(!drafts.length)return;
- if(!confirm("Make "+drafts.length+" staged track(s) PUBLIC and add them to HUMKIN RADIO?"))return;
+ const songDrafts=drafts.filter(row=>row.kind!=="bumper");
+ if(!songDrafts.length)return;
+ if(!confirm("Approve and publish all "+songDrafts.length+" SONG draft(s)? Bumpers require individual review."))return;
  setBusy(true);let live=0,failed=0;
  try{
-   for(const row of [...drafts]){
+   for(const row of songDrafts){
      try{
        const result=await db.storage.from(INBOX).move(row.storage_path,row.storage_path,{destinationBucket:LIVE});
        if(result.error){
@@ -241,13 +265,42 @@ async function publish(){
          const {data:objects,error:listingError}=await db.storage.from(LIVE).list(parent,{search:name,limit:100});
          if(listingError||!objects?.some(x=>x.name===name))throw result.error;
        }
-       const {error}=await db.from("humkin_radio_tracks").update({published_at:new Date().toISOString()}).eq("id",row.id);
+       const {error}=await db.from("humkin_radio_tracks").update({published_at:new Date().toISOString(),enabled:true}).eq("id",row.id);
        if(error)throw error;
        live++;log("ON AIR: "+row.title);
      }catch(err){failed++;log("Publication failed for "+row.title+": "+err.message)}
    }
    feedback("Published "+live+" songs. "+failed+" need retry. Reload the station to hear the new crate.");
  }finally{setBusy(false);try{await loadKnown()}catch(err){log(err.message)}}
+}
+
+
+async function publishOne(selectedRow){
+ if(busy)return;
+ try{await ensureSession();await loadKnown()}catch(err){feedback(err.message);return}
+ const row=drafts.find(r=>r.id===selectedRow.id);
+ if(!row)return feedback("This draft is already published or unavailable. Refresh the crate.");
+ const isBumper=row.kind==="bumper";
+ const claim=isBumper
+  ?"Approve this exact bumper for public between-song rotation? Confirm content, voice rights, and any references to time, weather, or requests are appropriate. Longer spots may play in the ordinary bumper lottery."
+  :"Approve this exact song for public rotation? Confirm you own or have permission to air the recording.";
+ if(!confirm(claim+"\n\n"+row.title))return;
+ setBusy(true);
+ try{
+   const moved=await db.storage.from(INBOX).move(row.storage_path,row.storage_path,{destinationBucket:LIVE});
+   if(moved.error){
+     const parent=row.storage_path.slice(0,row.storage_path.lastIndexOf("/"));
+     const name=row.storage_path.slice(parent.length+1);
+     const {data:objects,error:listingError}=await db.storage.from(LIVE).list(parent,{search:name,limit:100});
+     if(listingError||!objects?.some(x=>x.name===name))throw moved.error;
+   }
+   const {error}=await db.from("humkin_radio_tracks").update({
+     published_at:new Date().toISOString(),enabled:true
+   }).eq("id",row.id);
+   if(error)throw error;
+   feedback("PUBLISHED + ENABLED · "+row.title+". Check a completed song boundary in the radio to confirm actual audio playback.");
+ }catch(err){feedback("Could not publish "+row.title+": "+err.message)}
+ finally{setBusy(false);try{await loadKnown()}catch(err){log("Refresh failure: "+err.message)}}
 }
 
 $("pick").addEventListener("change",e=>addFiles(e.target.files));

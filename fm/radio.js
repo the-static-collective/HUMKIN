@@ -13,6 +13,7 @@ let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
 let remoteStream=null,hostedNowPlayingUrl=null,hostedPollTimer=null;
 let programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
+let cloudCatalogHealthy=false;
 async function refreshHostedMetadata(){
  if(!remoteStream||!hostedNowPlayingUrl)return;
  try{
@@ -159,7 +160,7 @@ async function getPublishedCrate(){
   try{
     // Published rows only; anonymous reads are constrained by Postgres RLS.
     const abort=new AbortController();
-    const timer=setTimeout(()=>abort.abort(),4500);
+    const timer=setTimeout(()=>abort.abort(),7000);
     let rows;
     try{
       const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,art_asset_id,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
@@ -168,6 +169,7 @@ async function getPublishedCrate(){
       rows=await response.json();
     }finally{clearTimeout(timer)}
     if(!Array.isArray(rows))throw Error("Unexpected catalog response");
+    cloudCatalogHealthy=true;
     return rows.map(row=>{
       if(row.enabled===false)return null;
       const storagePath=String(row.storage_path||"");
@@ -241,7 +243,7 @@ function tuneAt(ms){
   const elapsed=Math.max(0,ms-base);
   const rotation=Math.floor(elapsed/total);
   const within=elapsed%total;
-  const sequence=withStationIds(seededShuffle(eligible.length,rotation).map(i=>eligible[i]));
+  const sequence=withStationIds((window.HUMKIN_FAIR_ROTATION?.cycle(eligible.length,rotation,seededShuffle)||seededShuffle(eligible.length,rotation)).map(i=>eligible[i]));
   let soFar=0;
   for(let i=0;i<sequence.length;i++){
     const track=tracks[sequence[i]];
@@ -745,14 +747,17 @@ async function boot(){
     const baseIds=new Set(tracks.map(t=>t.id));
     tracks.push(...cloud.filter(t=>!baseIds.has(t.id)));
     const stationIds=bumperIndices().length;
-    $("playlist-note").textContent=(config.status_note||"Continuous music from the HUMKIN catalog.")+
-      (tracks.length>originalCount?" PLUS "+(tracks.length-originalCount)+" new creator-loaded recordings on the dial.":"")+
-      (stationIds&&stationSettings.bumper_every?" STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
+    const songCount=musicIndices().length;
+    const catalogLabel=cloudCatalogHealthy
+      ?"CURRENT DIAL · "+songCount+" songs · "+stationIds+" station carts."
+      :"LIMITED DIAL · "+songCount+" local songs available. Cloud songs did not load; refresh when your connection improves.";
+    $("playlist-note").textContent=catalogLabel+" "+
+      (stationIds&&stationSettings.bumper_every?"STATION IDs EVERY "+stationSettings.bumper_every+" SONGS.":"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
     beginHostedMetadata();
     setMessage("Press TUNE IN. No autoplay; you're in control.");
-    status.textContent="✳ THE DIAL IS READY";
+    status.textContent=cloudCatalogHealthy?"✳ THE DIAL IS READY":"✳ LIMITED CATALOG — RETRY";
   }catch(err){
     title.textContent="THE RADIO NEEDS A SIGNAL";
     $("playlist-note").textContent="Couldn't load the rotation right now. Try again online.";
