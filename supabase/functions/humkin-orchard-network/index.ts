@@ -15,7 +15,7 @@ const ACTORS=/^[0-9a-f]{64}$/;
 const NONCES=/^[0-9a-f]{32,64}$/;
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const HEX=/^[0-9a-f]{64}$/;
-const ACTIONS=new Set(["register","state","publish","heartbeat","challenge","complete","offer","accept","cancel"]);
+const ACTIONS=new Set(["register","state","publish","heartbeat","challenge","complete","offer","accept","cancel","request_live","poll_live","serve_live"]);
 function respond(data:unknown,status=200,origin=""){
  const allow=ORIGINS.has(origin)?origin:"https://humkin.abundent.org";
  return new Response(JSON.stringify(data),{status,headers:{
@@ -112,28 +112,42 @@ async function state(actor:string){
 }
 async function publicHome(actor:string){
  const {data,error}=await db.from("humkin_orchard_nodes")
-   .select("id,display_name,home,updated_at,last_seen").eq("id",actor).eq("is_public",true).maybeSingle();
+   .select("id,display_name,home,updated_at,last_seen,serving_until").eq("id",actor).eq("is_public",true).maybeSingle();
  if(error)err("Network home unavailable",503);
  if(!data)err("This home is not publicly shared",404);
  const {data:arts,error:errArt}=await db.from("humkin_orchard_artifacts")
   .select("id,serial,kind,origin,created_at").eq("owner_id",actor).order("serial",{ascending:false}).limit(40);
  if(errArt)err("Network cabinet unavailable",503);
  const online=!!data.last_seen&&Date.now()-Date.parse(data.last_seen)<120000;
- return {identity:data.id,name:data.display_name,home:data.home,updated_at:data.updated_at,
+ const serving=online&&!!data.serving_until&&Date.now()<Date.parse(data.serving_until);
+ return {serving,identity:data.id,name:data.display_name,home:data.home,updated_at:data.updated_at,
    online,server_artifacts:arts??[]};
 }
 async function world(){
  const {data,error}=await db.from("humkin_orchard_nodes")
-   .select("id,display_name,home,updated_at,last_seen")
+   .select("id,display_name,home,updated_at,last_seen,serving_until")
    .eq("is_public",true).order("updated_at",{ascending:false}).limit(36);
  if(error)err("Community orchard unavailable",503);
  const nodes=(data??[]).map(x=>({identity:x.id,name:x.display_name,stage:x.home?.stage??0,
   room:x.home?.room??"A Listening Room",updated_at:x.updated_at,
-  online:!!x.last_seen&&Date.now()-Date.parse(x.last_seen)<120000}));
+  online:!!x.last_seen&&Date.now()-Date.parse(x.last_seen)<120000,
+  serving:!!x.serving_until&&Date.now()<Date.parse(x.serving_until)}));
  return {schema:"humkin.orchard.network/v1",type:"public-world",
   homes:nodes,online_now:nodes.filter(x=>x.online).length,
-  notice:"Signed recent contact is presence, not a phone server, proof of work or proof of stake."};
+  notice:"Public homes are server-hosted; an opt-in foreground browser may additionally answer a bounded, signed live snapshot request. Neither is proof of financial stake."};
 }
+
+async function liveResult(requestId:string){
+ const {data,error}=await db.from("humkin_orchard_live_requests")
+  .select("id,state,target_id,expires_at,served_at,served_home").eq("id",requestId).maybeSingle();
+ if(error)err("Live relay unavailable",503);
+ if(!data)err("Live request not found",404);
+ const current=data.state==="pending"&&Date.parse(data.expires_at)<=Date.now()?"expired":data.state;
+ return {schema:"humkin.orchard.live/v1",request_id:data.id,state:current,
+   served_at:data.served_at,home:current==="served"?data.served_home:null,
+   note:"A fresh public snapshot from an opted-in browser, forwarded by the station relay; not a direct public phone server."};
+}
+
 async function register(p:any){
  const {count,error:limitError}=await db.from("humkin_orchard_nodes")
   .select("id",{head:true,count:"exact"}).gte("created_at",new Date(Date.now()-86400000).toISOString());
@@ -201,14 +215,15 @@ async function handle(p:any){
   return {ok:true,published:v.public,home};
  }
  case "heartbeat":{
-  const {data:n,error:readError}=await db.from("humkin_orchard_nodes")
-   .select("last_seen").eq("id",actor).single();
-  if(readError)err("Presence unavailable",503);
-  if(n.last_seen&&Date.now()-Date.parse(n.last_seen)<35000)return {ok:true,online:true,limited:true};
-  const {error}=await db.from("humkin_orchard_nodes")
-   .update({last_seen:new Date().toISOString()}).eq("id",actor);
+  const wantsService=v.serve===true;
+  const now=new Date();
+  const {error}=await db.from("humkin_orchard_nodes").update({
+    last_seen:now.toISOString(),
+    serving_until:wantsService?new Date(now.getTime()+120000).toISOString():null
+  }).eq("id",actor);
   if(error)err("Presence unavailable",503);
-  return {ok:true,online:true,expires_in_seconds:120,proof:"signed-contact-only"};
+  return {ok:true,online:true,serving:wantsService,expires_in_seconds:120,
+    proof:"signed-contact-only"};
  }
  case "challenge":{
   const today=dayChicago();
@@ -237,6 +252,51 @@ async function handle(p:any){
    {p_node:actor,p_challenge:v.challenge_id,p_digest:v.digest});
   if(error)err("Catalog audit rejected: "+String(error.message).slice(0,110),409);
   return {ok:true,receipt:data,proof:"server-checked catalog agreement; not proof of unique CPU work"};
+ }
+ case "request_live":{
+   const to=String(v.to||"");
+   if(!ACTORS.test(to)||to===actor)err("A different valid public receiver ID is required");
+   const {data:target,error:targetError}=await db.from("humkin_orchard_nodes")
+     .select("is_public,serving_until").eq("id",to).maybeSingle();
+   if(targetError)err("Live service lookup unavailable",503);
+   if(!target?.is_public||!target.serving_until||
+      Date.now()>=Date.parse(target.serving_until))err("That listener is not currently offering live snapshots",409);
+   const since=new Date(Date.now()-86400000).toISOString();
+   const {count,error:limitErr}=await db.from("humkin_orchard_live_requests")
+    .select("id",{count:"exact",head:true}).eq("requester_id",actor).gte("created_at",since);
+   if(limitErr)err("Live request quota unavailable",503);
+   if((count??0)>=24)err("You have reached today's live request limit",429);
+   await db.from("humkin_orchard_live_requests").update({state:"expired"})
+      .eq("requester_id",actor).eq("target_id",to).eq("state","pending")
+      .lt("expires_at",new Date().toISOString());
+   const {data,error}=await db.from("humkin_orchard_live_requests")
+      .insert({requester_id:actor,target_id:to})
+      .select("id,expires_at").single();
+   if(error)err("A live request is already waiting or cannot be opened",409);
+   return {ok:true,request:data,kind:"foreground.home.snapshot.v1"};
+ }
+ case "poll_live":{
+   const {data:status,error:statusError}=await db.from("humkin_orchard_nodes")
+      .select("is_public,serving_until").eq("id",actor).single();
+   if(statusError)err("Live service unavailable",503);
+   if(!status.is_public||!status.serving_until||
+      Date.now()>=Date.parse(status.serving_until))
+      return {ok:true,requests:[],serving:false};
+   const {data,error}=await db.from("humkin_orchard_live_requests")
+      .select("id,requester_id,expires_at").eq("target_id",actor)
+      .eq("state","pending").gt("expires_at",new Date().toISOString())
+      .order("created_at",{ascending:true}).limit(3);
+   if(error)err("Live request queue unavailable",503);
+   return {ok:true,requests:data??[],serving:true};
+ }
+ case "serve_live":{
+   if(!UUID.test(v.request_id??""))err("Valid live request required");
+   const home=cleanseHome(v.home);
+   const {data,error}=await db.rpc("humkin_orchard_serve_live",
+     {p_actor:actor,p_request:v.request_id,p_home:home});
+   if(error)err("Live service refused: "+String(error.message).slice(0,100),409);
+   return {ok:true,served:data,
+     proof:"server-received signed fresh public projection; not cryptographic proof of continuous hosting"};
  }
  case "offer":{
   if(!UUID.test(v.artifact_id??"")||!ACTORS.test(v.to??""))
@@ -273,6 +333,11 @@ Deno.serve(async req=>{
     const actor=url.searchParams.get("id")||"";
     if(!ACTORS.test(actor))err("Valid public home ID required");
     return respond({schema:"humkin.orchard.network/v1",...await publicHome(actor)},200,origin);
+   }
+   if(url.searchParams.get("mode")==="live-result"){
+    const id=url.searchParams.get("id")||"";
+    if(!UUID.test(id))err("Valid live request ID required");
+    return respond(await liveResult(id),200,origin);
    }
    if(url.searchParams.get("mode")==="world"||!url.searchParams.has("mode"))
     return respond(await world(),200,origin);
