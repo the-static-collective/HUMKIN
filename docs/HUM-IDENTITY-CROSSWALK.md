@@ -33,6 +33,26 @@ already in code from proposed shared-account capabilities.
    independently verified human identity or a live audience login.
    A signature proves key control over signed bytes, not music rights, honest
    listening, unique human existence, or a legal identity.
+6. **CANNON CANON FIELD (CANNON PR #2 experimental branch, #4 crossing,
+   #5 present-use and #92 independent MOTIF branch-native selection)**:
+   `MAIN != CANON`; exact source Git commits on **unmerged experimental
+   branches are eligible for scoped owner selection, verification, reuse
+   and adapter testing**. Git branch status is not a capability score or a
+   default rejection. Pin repository, full commit SHA, original source bytes,
+   allowed scope, and evidence of passing tests. Selection can be promoted
+   or superseded without merging the source repository's main branch.
+   However `TESTED != SELECTED` and `SELECTION != EXECUTION`: publishing
+   signed selection does not install a backend, connect accounts or confer
+   spend authority. Receiver ownership and production deployment remain
+   explicit gates.
+7. **Jubilee Treasury experimental accounting (007 signed asset ledger,
+   PENNY-014 conserved work/physical custody model)**:
+   exact signed, hash-linked, replayable events; quantities and reservations;
+   refusal of duplicate claims and impossible double allocation. These
+   **working experimental branches** supply eligible original-source modules
+   for a CANNON-scoped HUMKIN adapter. The HUM wallet should borrow only
+   bounded event-accounting and conservation, not imply that in-game HUM is
+   physical PENNY, cash, external legal ownership or a real financial token.
 
 ## Recommended clean joining points
 
@@ -83,14 +103,75 @@ already in code from proposed shared-account capabilities.
   identity must require control of that pass and explicit user action;
   never silently replace or expose it.
 
+## Automatic earn and invisible keyring (accepted UX target)
+
+**No buttons to claim listening HUM.** Listeners participate by listening,
+not by operating a wallet. The goal is Ethereum-like *deterministic triggers*
+without requiring a blockchain, gas fees, transaction prompts or a crypto
+account. A single small, short-lived on-screen flourish says `+3 HUM`
+when the authoritative award is first confirmed; `+1 HUM` on later
+milestones. The icon moves up/fades out near the radio dial in ~0.7s,
+with accessibility announcement and reduced-motion fallback. Never interrupt
+audio or show a modal. An off-screen award simply updates the balance; don't
+stack celebratory banners or repeatedly replay old awards on reopening.
+
+**Initial schedule (per America/Chicago broadcast day):** 10 distinct minutes
+of qualified audible playback -> +3, 30 -> +1, 50 -> +1, 80 -> +1;
+maximum **6 HUM/day** from these ordinary listening thresholds. Track
+cumulative qualified playback, not the number of times a song is started.
+The listener's station and library remain usable without opening a wallet.
+Do not silently award HUM for elapsed clock time or off-air/background
+silence. These are proposed grant rates until the actual server ledger
+is connected and tested.
+
+**The automatic transaction** should be one idempotent backend action,
+keyed by `(listener-account, broadcast-day, milestone)`, validating
+eligibility and atomically incrementing the HUM balance exactly once.
+Never create spendable server-backed HUM from client-edited counters.
+A client can show pending offline progress but must not flash a *confirmed*
+coin or inflate the authoritative balance until the grant is accepted.
+If a reward arrives late, show at most one unobtrusive receipt, not a backlog
+of animations. Abuse controls must not involve invasive human surveillance
+or claims that device signatures alone prove a distinct human/listen event.
+
+**Keyring wraps the wallet, without UI ceremony.** An optional device-bound
+key in Android Keystore establishes session continuity after a one-time
+enrollment. Keyring stores/accesses that capability; the HUM balance and
+issuance history are server-owned. In everyday use no passphrase, browser
+keyring or signature prompt appears. Offer an explicit recovery/second-device
+path before relying on a nonexportable device key alone. Reuse WebZ's
+encrypted-link transport concepts later for invitations and artist doors;
+do **not** import its browser IndexedDB blob and call it a native signed
+login. Artist contributions can add bounded signed declarations and human
+review when materially necessary.
+
+**What makes a coin legitimate:** the wallet must be able to immediately
+redeem it for an actual, DRM-free `My Records` collection action (normally
+1 HUM/song, 2/current single), and the user must be able to redownload
+previously collected music without spending again. No pretend spending
+currency may replace the real feature. Until redemption and authoritative
+earning exist, prototype the animation only as a *nonspendable preview*
+in developer field tests, never imply public HUM has been issued.
+
+**CANNON flip boundary:** select and verify a pinned source commit and its
+adapter; conduct reproducible source-owner tests, adapter tests, exact
+receiver permissions and real build QA; finally enable the *feature flag*.
+Do not make `feature_enabled=true` a bypass for missing wallet authority,
+anti-replay, collection entitlements or artist rights. Production activation
+can be quick once these conditions are satisfied, regardless of whether
+the selected source originally lived on an experimental branch.
+
 ## Safe build order
 
 1. **Now**: enforce Antenna-first static control; retain all existing earned
    local progress and no extra menu clutter.
-2. **Next**: implement native `My Records` and offline MediaStore MP3 handling,
-   then simple local gameplay HUM display with clear *local* scope, if desired.
-3. **Before cross-device spending**: add anonymous/pseudonymous account binding,
-   an idempotent server HUM ledger and opt-in encrypted/recoverable keys.
+2. **Next**: build native `My Records`, its DRM-free MediaStore MP3 lifecycle
+   and ordinary song entitlement rules; integrate with verified-HUM rewards
+   rather than offering cosmetic coins that cannot purchase anything.
+3. **Before live HUM credit or debit**: build optional device/key enrollment,
+   an idempotent server-side HUM grant-and-spend ledger and independently
+   replayable, source-pinned Jubilee/CANNON accounting tests. Add the
+   half-second UI coin flourish only after an actual award succeeds.
 4. **For submissions**: reuse signed witness/receipt concepts with rights
    review, not draft owner-delegation authority or forced government ID.
 5. **Later**: wallet link handoff for station rooms and shareable collection
