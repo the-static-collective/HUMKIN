@@ -143,7 +143,8 @@ function plan(songs,bumpers,every,tracks,policy={}){
    }else if(groups.medium.length&&nominalSeconds>=nextMid){
      // Do not cram a medium feature immediately after a long one merely
      // because two independent 11/22-minute targets nearly coincided.
-     if(nominalSeconds-lastAnchorAt>=midEvery*0.55)
+     const longSoon=groups.long.length&&nextLong-nominalSeconds<=midEvery*0.55;
+     if(!longSoon&&nominalSeconds-lastAnchorAt>=midEvery*0.55)
        chosen=pick("medium");
      while(nextMid<=nominalSeconds)nextMid+=midEvery;
    }else if(shortDue){
