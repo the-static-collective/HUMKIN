@@ -13,6 +13,9 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Public, published album manifests only. No private upload access.
@@ -41,27 +44,90 @@ final class AlbumCatalog {
         "https://humkin.abundent.org/releases/everywhere-near-you/"
     );
 
-    static List<MediaItem> load(Album album) throws Exception {
-        URL manifest=new URL(album.manifestUrl);
-        if (!"https".equals(manifest.getProtocol()) ||
-                !"humkin.abundent.org".equals(manifest.getHost()))
-            throw new IOException("Untrusted album source");
-        HttpURLConnection connection=(HttpURLConnection)manifest.openConnection();
+    // This public index is updated at publication, not at Android build time.
+    // Its order is editorial: newest published album first.
+    private static final String INDEX =
+            "https://humkin.abundent.org/releases/catalog.json";
+
+    static List<Album> builtIn() {
+        List<Album> albums=new ArrayList<>();
+        albums.add(EVERYWHERE); // currently newest approved web record
+        albums.add(MUTANT_POP);
+        return albums;
+    }
+
+    static List<Album> discover() throws Exception {
+        return parsePublished(readLimited(new URL(INDEX), 65536));
+    }
+
+    // A status gate prevents accidental preorder/draft leaks. Reject arbitrary
+    // remote media hosts and paths: the app plays only owner-published files.
+    static List<Album> parsePublished(String json) throws Exception {
+        JSONObject root=new JSONObject(json);
+        if(root.getInt("version") != 1) throw new IOException("Unsupported album index");
+        JSONArray entries=root.getJSONArray("albums");
+        if(entries.length()<1 || entries.length()>60) throw new IOException("Invalid album count");
+        List<Album> published=new ArrayList<>();
+        Set<String> used=new HashSet<>();
+        for(int i=0;i<entries.length();i++) {
+            JSONObject item=entries.getJSONObject(i);
+            if(!"published".equals(item.optString("status"))) continue;
+            String id=item.getString("id");
+            String title=item.getString("title").trim();
+            String detail=item.optString("detail","").trim();
+            if(!id.matches("[a-z0-9]+(?:-[a-z0-9]+)*") || id.length()>70 ||
+                    title.isEmpty() || title.length()>85 || detail.length()>150 ||
+                    !used.add(id)) throw new IOException("Invalid published album entry");
+            String pathPrefix="mutant-pop".equals(id) ? "/" : "/releases/"+id+"/";
+            String manifest=item.getString("manifest");
+            String cover=item.getString("cover");
+            String page=item.getString("page");
+            if(!manifest.equals(pathPrefix+"tracks.json") ||
+                    !page.equals(pathPrefix) ||
+                    !cover.startsWith(pathPrefix) ||
+                    !(cover.endsWith(".jpg") || cover.endsWith(".jpeg") ||
+                            cover.endsWith(".png") || cover.endsWith(".webp")) ||
+                    cover.indexOf('/',pathPrefix.length())>=0) {
+                throw new IOException("Album paths are not within the published release");
+            }
+            published.add(new Album(id,title,detail,site(manifest),site(cover),site(page)));
+        }
+        if(published.isEmpty()) throw new IOException("No published albums");
+        return Collections.unmodifiableList(published);
+    }
+
+    private static String site(String path) throws IOException {
+        if(!path.startsWith("/") || path.startsWith("//") || path.contains("..") ||
+                path.contains("\\\\") || path.contains("?") || path.contains("#"))
+            throw new IOException("Invalid site path");
+        return "https://humkin.abundent.org"+path;
+    }
+
+    static String readLimited(URL url, int limit) throws IOException {
+        if(!"https".equals(url.getProtocol()) ||
+                !"humkin.abundent.org".equals(url.getHost()) ||
+                url.getUserInfo()!=null) throw new IOException("Untrusted album source");
+        HttpURLConnection connection=(HttpURLConnection)url.openConnection();
+        connection.setInstanceFollowRedirects(false);
         connection.setConnectTimeout(9000);connection.setReadTimeout(9000);
         connection.setRequestProperty("Accept","application/json");
-        String json;
-        try{
-            if(connection.getResponseCode()!=200)throw new IOException("Album not published");
+        try {
+            if(connection.getResponseCode()!=200) throw new IOException("Published album list unavailable");
             try(InputStream stream=connection.getInputStream()) {
                 ByteArrayOutputStream data=new ByteArrayOutputStream();
                 byte[] bytes=new byte[8192];int count;
                 while((count=stream.read(bytes))!=-1){
-                    if(data.size()+count>140000)throw new IOException("Album catalog too large");
+                    if(data.size()+count>limit)throw new IOException("Album list too large");
                     data.write(bytes,0,count);
                 }
-                json=new String(data.toByteArray(), StandardCharsets.UTF_8);
+                return new String(data.toByteArray(), StandardCharsets.UTF_8);
             }
-        }finally{connection.disconnect();}
+        } finally {connection.disconnect();}
+    }
+
+    static List<MediaItem> load(Album album) throws Exception {
+        URL manifest=new URL(album.manifestUrl);
+        String json=readLimited(manifest, 140000);
 
         JSONObject doc=new JSONObject(json);
         JSONArray tracks=doc.getJSONArray("tracks");
