@@ -65,8 +65,9 @@ public final class MyRecordsActivity extends Activity {
         balance=label("ⓗ 0 HUM",22,HumkinVisuals.INK,true);
         page.addView(balance,wrap(12));
         page.addView(label(
-            "HUM is earned automatically while the radio plays. These credits and your collection "+
-            "are stored on this phone until portable accounts launch. The MP3s themselves are ordinary, "+
+            "HUM is credited by the station server while you listen. "+
+            "Your phone's protected key quietly opens this wallet, but account recovery and "+
+            "device transfers are not available yet. The MP3s themselves are ordinary, "+
             "unencrypted files: keep them, move them or play them elsewhere.",12,HumkinVisuals.PLUM,false),
             wrap(8));
         notice=label("",12,HumkinVisuals.PLUM,false);
@@ -79,6 +80,7 @@ public final class MyRecordsActivity extends Activity {
     }
     @Override public void onStart(){
         super.onStart();
+        HumServerBridge.refresh(getApplicationContext());
         SessionToken token=new SessionToken(this,new ComponentName(this,RadioPlaybackService.class));
         connecting=new MediaController.Builder(this,token).buildAsync();
         connecting.addListener(()->{
@@ -102,10 +104,17 @@ public final class MyRecordsActivity extends Activity {
     private void render(){
         if(shelf==null)return;
         HumWallet.Snapshot wallet=HumWallet.snapshot(this);
-        balance.setText("ⓗ "+wallet.balance+" HUM   ·   "+wallet.records.size()+" RECORDS");
+        HumServerBridge.Snapshot server=HumServerBridge.snapshot(this);
+        balance.setText((server.known?"ⓗ "+server.balance+" HUM":"ⓗ CONNECTING…")+
+            "   ·   "+server.records.length()+" RECORDS");
+        if(!server.known)notice.setText(
+            "The server wallet hasn't connected yet. Your downloaded MP3s still play.");
         shelf.removeAllViews();
         if(wallet.records.isEmpty()){
-            shelf.addView(label("The shelf is empty. Find a song on the dial and tap KEEP "+
+            shelf.addView(label(server.records.length()>0?
+                "Your station wallet has collected records, but this device has no cached song files. "+
+                "Play a record on the dial and tap KEEP to restore it without another charge.":
+                "The shelf is empty. Find a song on the dial and tap KEEP "+
                 "to put your first record here.",14,HumkinVisuals.INK,false),wrap(10));
             return;
         }
