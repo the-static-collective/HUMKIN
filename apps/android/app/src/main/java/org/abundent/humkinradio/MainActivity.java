@@ -8,6 +8,8 @@ import android.graphics.Typeface;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -69,6 +71,16 @@ public final class MainActivity extends Activity {
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
     private Button tune,sameTime,road,albumNext,outpostButton,reactionButton;
+    private Button keepRecordButton,keepAlbumButton;
+    private TextView humChip,coinBurst;
+    private boolean keepDownloading;
+    private long lastAwardSeen;
+    private final Handler humHandler=new Handler(Looper.getMainLooper());
+    private final Runnable humPulse=new Runnable(){
+        @Override public void run(){
+            if(alive){updateHumStatus();humHandler.postDelayed(this,3500L);}
+        }
+    };
     private RebelReceiverSkin.Dial receiverDial;
     private boolean warmStaticEnabled;
     private ScrollView scroll;
@@ -101,6 +113,7 @@ public final class MainActivity extends Activity {
                 getSharedPreferences("humkin-radio",MODE_PRIVATE)
                         .getBoolean("analog-static",true);
         RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
+        lastAwardSeen=HumWallet.snapshot(this).awardSequence;
         buildScreen();
         if (Build.VERSION.SDK_INT >= 35) {
             WindowInsetsController bars = getWindow().getInsetsController();
@@ -180,6 +193,7 @@ public final class MainActivity extends Activity {
         albumsScreen = column();
         radioScreen.setPadding(dp(10), dp(7), dp(10), dp(18));
         radioScreen.setBackgroundColor(RebelReceiverSkin.NAVY);
+        radioScreen.setClipChildren(false);
         albumsScreen.setPadding(dp(inset), dp(12), dp(inset), dp(22));
         albumsScreen.setBackgroundColor(RebelReceiverSkin.PAPER);
         outer.addView(radioScreen, wrap(0));
@@ -230,12 +244,24 @@ public final class MainActivity extends Activity {
         badge.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
         badge.setLetterSpacing(.06f);
         heading.addView(badge,new LinearLayout.LayoutParams(0,dp(42),1f));
+        humChip=labelHumChip();
+        heading.addView(humChip,new LinearLayout.LayoutParams(-2,dp(42)));
         Button more=pill("⋯",null,CREAM,22);
         more.setContentDescription("More radio controls, unlocked signal settings and history");
         more.setMinHeight(dp(42));
         more.setOnClickListener(v->showMoreRadio());
         heading.addView(more,new LinearLayout.LayoutParams(dp(52),dp(42)));
         radioScreen.addView(heading,wrap(0));
+        FrameLayout littleCoin=new FrameLayout(this);
+        littleCoin.setClipChildren(false);
+        littleCoin.setClipToPadding(false);
+        coinBurst=text("ⓗ +3 HUM",22,RebelReceiverSkin.GOLD,true);
+        coinBurst.setVisibility(View.INVISIBLE);
+        coinBurst.setElevation(dp(10));
+        FrameLayout.LayoutParams coinPosition=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.END);
+        coinPosition.rightMargin=dp(56);
+        littleCoin.addView(coinBurst,coinPosition);
+        radioScreen.addView(littleCoin,new LinearLayout.LayoutParams(-1,dp(0)));
 
         receiverDial=new RebelReceiverSkin.Dial(this);
         receiverDial.setSameTime(radioMode);
@@ -263,6 +289,11 @@ public final class MainActivity extends Activity {
         reactionButton.setOnClickListener(v->reactToSong());
         reactionButton.setVisibility(View.GONE);
         radioScreen.addView(reactionButton,wrap(7));
+        keepRecordButton=pill("ⓗ KEEP THIS RECORD",null,RebelReceiverSkin.GOLD,12);
+        keepRecordButton.setMinHeight(dp(45));
+        keepRecordButton.setVisibility(View.GONE);
+        keepRecordButton.setOnClickListener(v->keepNowPlaying());
+        radioScreen.addView(keepRecordButton,wrap(5));
 
         sameTime=pill("◉ SAME-TIME RADIO",null,YELLOW,11);
         road=pill("↝ ROAD SHUFFLE",null,MINT,11);
@@ -507,6 +538,9 @@ public final class MainActivity extends Activity {
         Button back = pill("BACK TO RADIO", Icon.BACK, YELLOW, 16);
         back.setOnClickListener(v -> showAlbums(false));
         albumsScreen.addView(back, wrap(9));
+        Button myRecords=pill("ⓗ MY RECORDS  /  OFFLINE LIBRARY ↗",null,MINT,13);
+        myRecords.setOnClickListener(v->openMyRecords());
+        albumsScreen.addView(myRecords,wrap(9));
 
         albumGrid=column();
         albumsScreen.addView(albumGrid,wrap(3));
@@ -535,6 +569,10 @@ public final class MainActivity extends Activity {
         // Resolve at click time so newly published records require no APK rebuild.
         feature.setOnClickListener(v -> playAlbum(featuredAlbum));
         albumsScreen.addView(feature, wrap(13));
+        keepAlbumButton=pill("ⓗ KEEP THIS TRACK",null,MINT,13);
+        keepAlbumButton.setVisibility(View.GONE);
+        keepAlbumButton.setOnClickListener(v->keepNowPlaying());
+        albumsScreen.addView(keepAlbumButton,wrap(8));
 
         albumState = message(INK);
         albumsScreen.addView(albumState, wrap(5));
@@ -830,6 +868,8 @@ public final class MainActivity extends Activity {
                         .getBoolean("analog-static",true);
         RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
         refreshAlbumIndex();
+        humHandler.removeCallbacks(humPulse);
+        humHandler.post(humPulse);
         SessionToken token=new SessionToken(this,new ComponentName(this,RadioPlaybackService.class));
         controllerFuture=new MediaController.Builder(this,token).buildAsync();
         controllerFuture.addListener(()->{
@@ -861,6 +901,7 @@ public final class MainActivity extends Activity {
     }
     @Override public void onStop(){
         alive=false;
+        humHandler.removeCallbacks(humPulse);
         if (radioWaveform != null) radioWaveform.setActive(false);
         if (albumWaveform != null) albumWaveform.setActive(false);
         if(controller!=null){controller.removeListener(listener);controller=null;}
@@ -1079,6 +1120,7 @@ public final class MainActivity extends Activity {
                 if(!wording.contentEquals(reactionButton.getText()))reactionButton.setText(wording);
             }
         }
+        updateKeepButtons(item);
         if (!lastRenderedTrackId.equals(thisId)) {
             lastRenderedTrackId = thisId;
             updateRecentRecords();
