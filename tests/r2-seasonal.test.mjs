@@ -7,7 +7,14 @@ const fair=require("../fm/fair-rotation.js");
 const rotation=JSON.parse(readFileSync("fm/rotation.json","utf8"));
 const empty=JSON.parse(readFileSync("fm/r2-tracks.json","utf8"));
 assert.equal(empty.schema,"humkin.radio.r2/v1");
-assert.equal(empty.tracks.length,0,"Never invent or automatically publish an R2 upload");
+assert.equal(empty.tracks.length,1,"The actual user-supplied R2 object key is staged");
+const staged=empty.tracks[0];
+assert.equal(staged.id,"blue-at-the-tip");
+assert.equal(staged.object_key,"tracks/Blue At The Tip.mp3");
+assert.equal(staged.seasonal,true,"Owner specified seasonal 3x intent");
+assert.equal(staged.approved,false,"Do not air a file before live URL and duration are confirmed");
+assert.equal(r2.objectUrl(staged.object_key),
+  "https://media.abundent.org/tracks/Blue%20At%20The%20Tip.mp3");
 assert.equal(r2.parse(empty,"cover.jpg").length,0);
 assert.equal(r2.objectUrl("tracks/Fall Anthem.mp3"),
  "https://media.abundent.org/tracks/Fall%20Anthem.mp3");
