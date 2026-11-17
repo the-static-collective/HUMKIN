@@ -1,7 +1,9 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id);
-const root=new URL("../",document.baseURI);
-const here=new URL("./",document.baseURI);
+// The iOS14 pocket receiver reuses this engine from /fm/iphone/; its
+// content root is still the canonical /fm/, never the document subfolder.
+const here=window.HUMKIN_RADIO_BASE?new URL(window.HUMKIN_RADIO_BASE,location.origin):new URL("./",document.baseURI);
+const root=new URL("../",here);
 const audio=$("air");
 const status=$("station-status");
 const title=$("current-title");
