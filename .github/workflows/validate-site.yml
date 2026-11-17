@@ -26,6 +26,8 @@ jobs:
       - run: node tests/radio-singles.test.cjs
       - run: node tests/radio-fairness-intake.test.cjs
       - run: node tests/top42.test.cjs
+      - run: node --test tests/resonance.test.cjs
+      - run: node --check fm/top42/resonance.js
       - run: node --test tests/orchard.test.cjs
       - run: node --test tests/signal.test.cjs
       - run: node --test tests/signal-seed.test.cjs
