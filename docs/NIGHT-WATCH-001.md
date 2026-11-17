@@ -21,7 +21,7 @@ Existing full FM controls and homepage are preserved. Chart-qualified plays, ser
 
 ## Android limitations and next layer
 
-Browser playback may stop when Android suspends or kills a tab; Web MediaSession and preloading cannot guarantee next-track transitions while the app is backgrounded. No fake airtime is credited during a suspension. The existing `PHONE PLAYER PLAYLIST` provides a more reliable native-player route for screen-off listening but does not send native-player playback records back into Night Watch. Fully dependable background playback **with** Night Watch recording requires a native Android Media3 foreground playback service with user-visible notification, carefully scoped local history persistence, and the correct integration with the existing APK project (not present in this GitHub repository).
+Browser playback may stop when Android suspends or kills a tab; Web MediaSession and preloading cannot guarantee next-track transitions while the app is backgrounded. No fake airtime is credited during a suspension. The existing `PHONE PLAYER PLAYLIST` provides a more reliable native-player route for screen-off listening but does not send native-player playback records back into Night Watch. Fully dependable background playback **with** Night Watch recording requires a native Android Media3 foreground playback service with user-visible notification, carefully scoped local history persistence, and a native journal integrated into the Android feature branch. That Android source lives on the unmerged `feat/native-android-radio-001` branch, not on `main`; companion PR #93 adds native Night Watch to that branch.
 
 ## Tests
 
