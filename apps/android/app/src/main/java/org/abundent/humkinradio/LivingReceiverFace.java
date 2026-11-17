@@ -52,15 +52,18 @@ final class LivingReceiverFace extends FrameLayout {
     private final Operations commands;
     private final FacePaint painter;
     private final SlicedReceiverSkin chassis;
+    // The old ancestor-search listener never produced the usable Android
+    // window height on the user's phone, so the entire instrument stayed at
+    // its original aspect ratio with hundreds of blank navy pixels below.
+    // MainActivity now explicitly supplies its ScrollView's viewport height.
     private int viewportHeightPx=0;
-    private View boundViewport;
-    private final View.OnLayoutChangeListener viewportListener=(v,l,t,r,b,ol,ot,oright,ob)->{
-        int actual=b-t;
-        if(actual>0&&actual!=viewportHeightPx){
-            viewportHeightPx=actual;
+    void setViewportHeight(int pixels){
+        if(pixels>0 && pixels!=viewportHeightPx){
+            viewportHeightPx=pixels;
             requestLayout();
+            invalidate();
         }
-    };
+    }
     private final ImageView realArt;
     private final TextView title,artist;
     private final View dialTouch;
@@ -85,6 +88,11 @@ final class LivingReceiverFace extends FrameLayout {
         addView(chassis,new FrameLayout.LayoutParams(-1,-1));
         painter=new FacePaint(c);
         addView(painter,new FrameLayout.LayoutParams(-1,-1));
+        // Temporary fallback: replaced by the actual ScrollView height after
+        // the first Android layout pass. Works even if post-layout callbacks
+        // are delayed while connecting Media3 or on a slow 2021 handset.
+        viewportHeightPx=Math.max(0,getResources().getDisplayMetrics().heightPixels
+                -Math.round(28f*getResources().getDisplayMetrics().density));
 
         Bitmap art=BitmapFactory.decodeResource(getResources(),R.drawable.living_receiver_face);
         // The active objects are cut out of the exact uploaded picture, so they
@@ -267,31 +275,6 @@ final class LivingReceiverFace extends FrameLayout {
      * offers. This avoids inventing status/navigation bar dimensions and
      * removes the giant blank navy rectangle on tall Android 11 handsets.
      */
-    @Override protected void onAttachedToWindow(){
-        super.onAttachedToWindow();
-        post(()->{
-            if(getParent()==null)return;
-            View candidate=this;
-            while(candidate.getParent() instanceof View){
-                candidate=(View)candidate.getParent();
-                if(candidate instanceof ScrollView){
-                    if(boundViewport!=candidate){
-                        if(boundViewport!=null)boundViewport.removeOnLayoutChangeListener(viewportListener);
-                        boundViewport=candidate;
-                        boundViewport.addOnLayoutChangeListener(viewportListener);
-                    }
-                    viewportListener.onLayoutChange(candidate,0,0,candidate.getWidth(),
-                            candidate.getHeight(),0,0,0,0);
-                    break;
-                }
-            }
-        });
-    }
-    @Override protected void onDetachedFromWindow(){
-        if(boundViewport!=null)boundViewport.removeOnLayoutChangeListener(viewportListener);
-        boundViewport=null;
-        super.onDetachedFromWindow();
-    }
     @Override protected void onMeasure(int widthMeasureSpec,int heightMeasureSpec){
         int w=MeasureSpec.getSize(widthMeasureSpec);
         if(w<=0)w=864;
