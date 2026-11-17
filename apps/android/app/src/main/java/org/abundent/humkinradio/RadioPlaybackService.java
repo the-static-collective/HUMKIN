@@ -157,7 +157,11 @@ public final class RadioPlaybackService extends MediaSessionService {
         if (activeService != null) activeService.syncWarmStatic();
     }
     static void setWarmStaticEnabled(boolean enabled) {
-        staticEnabled=enabled;
+        // UI is not the enforcement boundary: persisted old preferences or
+        // another caller cannot turn off the station's default signal before
+        // the listener has earned the first Antenna upgrade.
+        staticEnabled = activeService == null || SignalRpg.canControlRadioStatic(activeService)
+                ? enabled : true;
         if (activeService != null) activeService.syncWarmStatic();
     }
 
@@ -339,8 +343,9 @@ public final class RadioPlaybackService extends MediaSessionService {
     @Override public void onCreate() {
         super.onCreate();
         activeService=this;
-        staticEnabled=getSharedPreferences("humkin-radio",MODE_PRIVATE)
-                .getBoolean("analog-static",true);
+        staticEnabled=!SignalRpg.canControlRadioStatic(this) ||
+                getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                        .getBoolean("analog-static",true);
         warmStatic=new WarmStaticBed();
         player=new ExoPlayer.Builder(this).build();
         player.setAudioAttributes(new AudioAttributes.Builder()
