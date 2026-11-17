@@ -29,3 +29,15 @@
 .orchard-portal{margin:22px 0 0;font-size:11px;font-weight:950;letter-spacing:.06em}
 .orchard-portal a{display:inline-block;border:2px solid #fff3e1;border-radius:24px;padding:9px 13px;color:#fff3e1;text-decoration:none}
 .orchard-portal a:hover{background:#ffe0a0;color:#221b39}
+
+/* The quiet human side of the record league: not a rank or a popularity vote. */
+.weather{background:#efe8ec}
+.weather-list{list-style:none;padding:0;margin:20px 0;border:2px solid var(--ink);background:var(--paper);box-shadow:6px 7px 0 var(--mint)}
+.weather-list>li{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;border-bottom:1px solid #e2d4df}
+.weather-list>li:last-child{border-bottom:0}
+.weather-name{min-width:0}
+.weather-name strong{display:block;overflow-wrap:anywhere;font-size:15px}
+.weather-name small{font-size:10px;font-weight:800;letter-spacing:.08em;color:#665472;display:block;margin-top:4px}
+.weather-feelings{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.weather-tag{font-size:10px;font-weight:850;letter-spacing:.02em;border:1px solid var(--ink);border-radius:15px;background:var(--yellow);padding:5px 8px;white-space:nowrap}
+@media(max-width:620px){.weather-list{box-shadow:4px 5px 0 var(--mint)}.weather-list>li{align-items:flex-start;flex-direction:column}.weather-feelings{justify-content:flex-start}}
