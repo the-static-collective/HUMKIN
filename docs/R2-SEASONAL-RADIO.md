@@ -4,9 +4,9 @@
 
 - The public radio currently runs at `https://humkin.abundent.org/fm/`.
 - DNS for `media.abundent.org` exists in the connected Cloudflare zone; that does **not** prove a particular R2 object can be retrieved or that the bucket is attached correctly.
-- The creator provided the exact R2 dashboard object-details URL for `tracks/Blue At The Tip.mp3` in bucket `humkin-radio-media` on November 17. This confirms the intended **object key**, not a publicly playable link or measured duration.
-- `fm/r2-tracks.json` safely stages this recording with `approved: false` and `seasonal: true`. It will remain off air until the real audio metadata and public endpoint are verified. The title derives from the filename; the HUMKIN artist and seasonal album label are provisional.
-- **Verified by the owner's Cloudflare DNS screenshot:** `media.abundent.org` appears as DNS record **Type: R2**, **Target: `humkin-radio-media`**, **Proxy: Proxied**. Cloudflare internally represents its target as `public.r2.dev` in the DNS editor, but this record is specifically R2-managed, not an unsupported user-created CNAME to a development hostname. **Do not delete or change this record.** The remaining check is whether the bucket's Custom Domains status is **Active** and the specific MP3 is publicly playable.
+- On November 17 the creator provided the R2 object key `tracks/Blue At The Tip.mp3` and confirmed successful public playback. An independent GitHub Actions job downloaded the actual public MP3, verified it as audio, determined **193.960000 seconds** with ffprobe, confirmed **6,095,160 bytes** and an HTTP byte-range response of **206**.
+- `fm/r2-tracks.json` publishes the now-verified recording with `approved: true`, `duration_seconds: 193.96` and `seasonal: true` (3× total airtime per cycle). The title derives from the exact object filename. The artist and editorial seasonal label are user-project defaults.
+- **Verified by the owner's Cloudflare DNS screenshot:** `media.abundent.org` appears as DNS record **Type: R2**, **Target: `humkin-radio-media`**, **Proxy: Proxied**. Cloudflare internally represents its target as `public.r2.dev` in the DNS editor, but this record is specifically R2-managed, not an unsupported user-created CNAME to a development hostname. **Do not delete or change this record.** The public MP3 has been successfully downloaded, decoded and measured by GitHub Actions. Cloudflare's bucket Custom Domains dashboard can still be checked directly for its status.
 - Never surface contents of `humkin-radio-private` or an unpublished production/stem bucket. This manifest is strictly for owner-approved public media.
 - Website and Android releases are separate: a browser-radio change does not silently update or re-sign the native APK.
 
@@ -15,7 +15,7 @@
 1. In Cloudflare R2, select the public bucket `humkin-radio-media`. The DNS screen confirms a **Type R2** record points to this bucket; confirm **Custom Domains** includes `media.abundent.org` with status **Active** and HTTPS. **Do not delete its R2 DNS record.**
 2. Copy the uploaded MP3's **object key**, not a private S3 URL or token. Example: `tracks/Fall Anthem.mp3`. Do not assume the example exists.
 3. Confirm the file is public, approved for broadcast, and has correct `Content-Type: audio/mpeg`.
-4. Obtain its accurate duration in seconds (decimals supported), title and artist. For `Blue At The Tip`, the filename gives a provisional title but not a duration. Do not use a made-up duration; synchronized radio requires a reliable length.
+4. Obtain its accurate duration in seconds (decimals supported), title and artist. For `Blue At The Tip`, this was measured through ffprobe on the actual public R2 MP3 as `193.960000`. No invented duration was used.
 5. Add an entry to `fm/r2-tracks.json` and explicitly mark it `approved: true`:
 
 ```json
@@ -36,7 +36,7 @@
 }
 ```
 
-**This Fall Anthem example is fictional, not a published track; the Blue At The Tip entry is currently staged separately.** An unapproved or invalid entry is ignored. An empty manifest is a deliberate safe default. Object keys are URL-encoded per path segment and served from the allowlisted `https://media.abundent.org` origin; the static site never contains Cloudflare secret keys.
+**This Fall Anthem example is fictional, not a published track; the verified Blue At The Tip entry is now approved in the canonical R2 manifest.** An unapproved or invalid entry is ignored. An empty manifest is a deliberate safe default. Object keys are URL-encoded per path segment and served from the allowlisted `https://media.abundent.org` origin; the static site never contains Cloudflare secret keys.
 
 6. Confirm the resulting HTTPS object URL is directly playable, supports byte range requests for seeking, and has suitable CORS for frontend preloading. For the browser at `https://humkin.abundent.org`, grant only needed public GET/HEAD methods and origin; localhost needs a separate origin during local development. The native audio element can still fall back to direct playback if a JavaScript prefetch is refused.
 7. Run `node tests/r2-seasonal.test.mjs`, then the existing radio tests, merge and verify the actual live web player. Preserve published GitHub Pages audio as backup until confirmed.
@@ -64,10 +64,10 @@ Expect `200` for an ordinary GET/HEAD, `206 Partial Content` for ranged GET wher
 
 R2 is public file delivery, **not** an always-on live Icecast/AzuraCast stream or a substitute for broadcast rights checks. The computer can produce shows and future server schedules while the existing site distributes approved recordings independently.
 
-## Blue At The Tip pending activation
+## Blue At The Tip verified activation
 
 - Actual R2 object key: `tracks/Blue At The Tip.mp3`
 - Expected URL **after supported custom-domain connection**: `https://media.abundent.org/tracks/Blue%20At%20The%20Tip.mp3`
 - Requested editorial rotation: **3× total** per music cycle, `seasonal: true`.
-- Cloudflare DNS record is confirmed as **Type R2** and correctly bound to the bucket; **do not remove it**. Pending: Custom Domains status **Active**, actual file 200/206 playback, verified duration and cross-origin handling. This is deliberately not yet in the live rotation.
-- Once verified, set accurate `duration_seconds` and `approved: true`, run tests and publish. A website audio listing and a user-private R2 dashboard URL are different resources.
+- Cloudflare DNS record is confirmed as **Type R2** and bound to the bucket; **do not remove it**. Public MP3 fetch passed, actual mp3 duration measured **193.960000 seconds**, range requests returned **206**. JavaScript cross-origin prefetch may require an R2 CORS policy; direct HTML audio playback remains the fallback.
+- Verification is complete; `duration_seconds` and `approved` are set. SHA-256: `2958309e915c076bed880349fbb61c0c8d8b9dcd97f4e619a5f6c5661a23cd16`. GitHub Pages deployment and phone testing still establish actual end-user radio behavior; the R2 dashboard URL itself is private.
