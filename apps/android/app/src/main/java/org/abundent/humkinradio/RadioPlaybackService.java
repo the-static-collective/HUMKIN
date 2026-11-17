@@ -73,8 +73,9 @@ public final class RadioPlaybackService extends MediaSessionService {
             // The server, not editable phone preferences, now authorizes
             // spendable HUM. Only actual Media3 station listening batches feed
             // cumulative broadcast time to signed, rate-bounded receipts.
-            HumServerBridge.maybeSync(getApplicationContext(),
-                    SignalRpg.snapshot(getApplicationContext()).humTodayMs);
+            if(!outpostTrackId.startsWith("library:"))
+                HumServerBridge.maybeSync(getApplicationContext(),
+                        SignalRpg.snapshot(getApplicationContext()).humTodayMs);
             // Same bounded, actually audible Media3 batch. No independent
             // clock or background XP generator in the listening report.
             OrchardLedger.Snapshot orchard=OrchardLedger.snapshot(getApplicationContext());
