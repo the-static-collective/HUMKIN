@@ -2,6 +2,10 @@ package org.abundent.humkinradio;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.app.AlertDialog;
+import android.net.Uri;
+import android.util.Base64;
+import java.nio.charset.StandardCharsets;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Bundle;
@@ -141,6 +145,17 @@ public final class OrchardActivity extends Activity {
         LinearLayout.LayoutParams a2=new LinearLayout.LayoutParams(0,dp(56),1);
         a2.leftMargin=dp(9);actions.addView(outpost,a2);
         page.addView(actions,block(18));
+        Button live=button("🌐 OPEN THE LIVE ORCHARD / TRADING POST",MINT);
+        live.setOnClickListener(v->openNetwork(false));
+        page.addView(live,block(12));
+        Button carry=button("↗ CARRY MY NATIVE SCENE TO THE NETWORK",ROSE);
+        carry.setOnClickListener(v->new AlertDialog.Builder(this)
+            .setTitle("Share a little scene?")
+            .setMessage("This will put only your garden stage, locally owned decorative item names, and total listening minutes in a temporary website link. The network page previews them first; nothing is published until you explicitly choose PUBLIC and SAVE. The temporary link can appear in browser or server logs. Your native HUM, Signal, possessions and private keys are NOT transferred.")
+            .setNegativeButton("NOT NOW",null)
+            .setPositiveButton("OPEN SCENE PREVIEW",(dialog,which)->openNetwork(true))
+            .show());
+        page.addView(carry,block(7));
         add(page,"HUM IS LOCAL-ONLY GAME CURRENCY · 1 HUM PER 18 SECONDS OF REAL MEDIA3 PLAYBACK",10,0xff795466,true,17);
         add(page,"THE CABINET OF STRANGE THINGS",26,INK,true,38);
         add(page,"Place something in four room places or four garden places. Everything is kept locally on this Android installation.",13,INK,false,7);
@@ -268,6 +283,40 @@ public final class OrchardActivity extends Activity {
                 "BUILDING · NOT YET A LIVE SERVER FEATURE",10,0xff84516d,true,5);
         }
     }
+
+    /**
+     * This is explicitly a SHARE OF A DECORATIVE PROJECTION, never migration of
+     * the native SignalRpg wallet or an authority claim about listened time.
+     */
+    private void openNetwork(boolean includeSnapshot){
+        Uri.Builder link=Uri.parse("https://humkin.abundent.org/fm/orchard/network.html").buildUpon();
+        if(includeSnapshot){
+            try{
+                OrchardLedger.Snapshot state=OrchardLedger.snapshot(this);
+                JSONObject values=new JSONObject();
+                values.put("v",1);
+                values.put("room","Native Listening Room");
+                values.put("stage",state.stage);
+                values.put("minutes",Math.min(100000,state.totalMs/60000L));
+                JSONArray things=new JSONArray();
+                int count=0;
+                for(OrchardLedger.Spec object:OrchardLedger.SHOP)
+                    if(state.owned.contains(object.id)&&count++<24)things.put(object.id);
+                for(OrchardLedger.Spec object:OrchardLedger.RARE)
+                    if(state.owned.contains(object.id)&&count++<24)things.put(object.id);
+                values.put("things",things);
+                String encoded=Base64.encodeToString(
+                    values.toString().getBytes(StandardCharsets.UTF_8),
+                    Base64.URL_SAFE|Base64.NO_PADDING|Base64.NO_WRAP);
+                link.appendQueryParameter("native",encoded);
+            }catch(Exception e){
+                say("Couldn't prepare the public scene preview.");return;
+            }
+        }
+        try{startActivity(new Intent(Intent.ACTION_VIEW,link.build()));}
+        catch(Exception e){say("No browser was available for the living network.");}
+    }
+
     private void runWork(){
         if(auditBusy)return;
         OrchardLedger.Snapshot s=OrchardLedger.snapshot(this);

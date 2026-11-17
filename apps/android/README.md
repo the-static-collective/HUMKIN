@@ -1,3 +1,17 @@
+# HUMKIN RADIO Android · v0.18 Field Test — Live Network Crossing
+
+**Install name:** HUMKIN RADIO · NETWORK
+**Independent APK package:** org.abundent.humkinradio.network
+**Build artifact:** humkin-radio-android-field-test / app-fieldTest.apk
+
+Native radio / Signal Outpost / Orchard / Guilds are preserved. The native Orchard now links to the *real* web-hosted listener network and Trading Post, with a separate voluntary **CARRY MY NATIVE SCENE** option. The latter asks permission and opens a browser URL preview of only the decorative stage, locally owned object type IDs and aggregate minutes. The URL may appear in browser or server logs. The browser strips the query from address bar once loaded. Nothing publishes until explicit PUBLIC opt-in and SAVE; no native HUM or artifacts transfer into the canonical network.
+
+The live browser network offers opt-in signed HOME snapshots, live foreground snapshot requests, server-issued collectibles, atomic two-party gift transfers and voluntary catalog work. This does NOT turn the native Android app into a persistent background GHoT worker or replace the Media3 radio process. Native and browser signing identities and economies remain distinct. The .network suffix is side-by-side with earlier field-test identities and is not an in-place update because production signing remains unresolved.
+
+Physical Android validation is still needed. Do not uninstall prior APKs.
+
+---
+
 # HUMKIN RADIO Android v0.17 · REAL STATION GUILDS (FIELD TEST)
 
 - **Install label:** HUMKIN RADIO · GUILDS
