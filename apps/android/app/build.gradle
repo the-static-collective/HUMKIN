@@ -10,8 +10,8 @@ android {
         applicationId 'org.abundent.humkinradio'
         minSdk 26
         targetSdk 36
-        versionCode 34
-        versionName '0.34.0'
+        versionCode 35
+        versionName '0.35.0'
         resValue 'string', 'app_name', 'HUMKIN RADIO'
     }
 
@@ -76,6 +76,14 @@ android {
             applicationIdSuffix '.classic'
             versionNameSuffix '-classic'
             resValue 'string', 'app_name', 'HUMKIN · CLASSIC RADIO'
+        }
+        // The old APK has a different one-time CI debug signature, so publish
+        // the R2 repair side-by-side rather than requiring uninstall/data loss.
+        radioR2 {
+            initWith debug
+            applicationIdSuffix '.r2repair'
+            versionNameSuffix '-r2repair'
+            resValue 'string', 'app_name', 'HUMKIN · R2 RADIO'
         }
         nightWatch {
             initWith debug
