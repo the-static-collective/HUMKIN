@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>HUMKIN · Stem Orchard Receiving Desk</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#2b233d;background:#fff8ee}
+*{box-sizing:border-box}body{margin:0}header{background:#2b233d;color:white;padding:18px 5vw}
+a{color:#663c87}header a{color:#ffe38b}main{max-width:820px;padding:20px 16px 64px;margin:auto}
+h1{font-size:clamp(2.5rem,9vw,5rem);line-height:.97;letter-spacing:-.06em}
+section,article{background:white;border:2px solid #2b233d;border-radius:12px;box-shadow:4px 5px 0 #2b233d;padding:18px;margin:20px 0}
+button,input{font:inherit;padding:10px}button{font-weight:800;background:#f9d883;color:#2b233d;border:2px solid #2b233d;border-radius:7px;cursor:pointer}
+button:hover{background:#bff8d3}button:focus-visible,input:focus-visible{outline:3px solid #ae77c7}
+input{width:100%;border:2px solid #2b233d;border-radius:7px}
+#candidates article{box-shadow:none;background:#fcf8e5;margin:12px 0}p{line-height:1.55}small{display:block;color:#554e67;overflow-wrap:anywhere}
+.status{font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+</style>
+<script defer src="./phonograph-bridge.js"></script>
+<script defer src="./phonograph-desk.js"></script></head>
+<body><header><a href="../">← HUMKIN RADIO</a> / <a href="./">LIVING DISCOGRAPHY</a></header>
+<main><p class="status">Private production / human review</p><h1>THE STEM<br>ORCHARD.</h1>
+<p>One HUMKIN song remembers another. Haunted Phonograph renders cross-song arrangements from creator-supplied stems; this receiving desk preserves their receipts as <strong>candidates</strong>, not releases.</p>
+<section><h2>1 · Receive a musical proposal</h2>
+<p>Import the <code>candidate.humkin.json</code> handoff produced by Haunted Phonograph. It must cite two existing HUMKIN recordings and carry source, output and receipt hashes. The underlying audio stays private in Cloudflare R2 until separately reviewed.</p>
+<label for="handoff">Phonograph candidate handoff (JSON, max 100 KB)</label><input id="handoff" type="file" accept=".json,application/json">
+<p id="message" role="status" aria-live="polite">No manifest imported. Nothing is broadcasting.</p>
+</section>
+<section><h2>2 · Held candidates</h2><p>The browser remembers these on this device only. Import verifies the manifest shape and catalog references—not the remote audio bytes, source rights or receipt cryptographically. No network calls, uploads or station changes are made.</p>
+<div id="candidates"></div><button id="export">EXPORT REVIEW LIST</button></section>
+<section><h2>3 · The human crossing</h2>
+<p>Audition a private WAV via the R2 owner's tools; compare the source recordings, musical fit and receipt. To publish, the station operator must separately approve a new broadcast-ready encode, transfer it to approved public media storage, and register it through the existing Station Manager. Nothing here edits the live rotation or sets a public URL.</p>
+<p><a href="../../dj.html">DJ crate</a> · <a href="../manage/">Station Manager</a></p></section>
+</main></body></html>
