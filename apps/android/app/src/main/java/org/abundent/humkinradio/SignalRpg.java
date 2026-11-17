@@ -22,7 +22,7 @@ final class SignalRpg {
 
     static final class Snapshot {
         final int xp,level,wallet,capacitor,capacity,tower,archive,crew,discovered,missions;
-        final long totalMs,todayMs;
+        final long totalMs,todayMs,humTodayMs;
         final int uniqueToday,dailyClaims;
         final boolean chartVisited,missionActive,onAir;
         final int missionId,missionProgress,missionTarget;
@@ -40,6 +40,7 @@ final class SignalRpg {
             missions=p.getInt("missions_completed",0);
             totalMs=p.getLong("total_ms",0);
             todayMs=p.getLong("today_ms",0);
+            humTodayMs=p.getLong("hum_today_ms",0);
             uniqueToday=p.getStringSet("today_tracks",java.util.Collections.emptySet()).size();
             dailyClaims=p.getInt("daily_claims",0);
             chartVisited=p.getBoolean("chart_visit",false);
@@ -89,6 +90,7 @@ final class SignalRpg {
             // Do not reset actual experience or ongoing expeditions.
             p.edit().putString("day",day)
                 .putLong("today_ms",0L)
+                .putLong("hum_today_ms",0L)
                 .putStringSet("today_tracks",new HashSet<>())
                 .putInt("daily_claims",0)
                 .putBoolean("chart_visit",false)
@@ -120,6 +122,10 @@ final class SignalRpg {
 
     /** The service batches real playback deltas; max one 15s batch. */
     static synchronized void audible(Context c,long deltaMs) {
+        audible(c,deltaMs,true);
+    }
+    /** Local file playback still grows XP, but cannot mint fresh HUM. */
+    static synchronized void audible(Context c,long deltaMs,boolean eligibleForHum) {
         if(deltaMs<=0)return;
         SharedPreferences p=store(c);
         rollDay(p);
@@ -137,6 +143,8 @@ final class SignalRpg {
         SharedPreferences.Editor edit=p.edit()
             .putLong("total_ms",after)
             .putLong("today_ms",p.getLong("today_ms",0L)+bounded)
+            .putLong("hum_today_ms",p.getLong("hum_today_ms",0L)+
+                    (eligibleForHum?bounded:0L))
             .putLong("last_audible_elapsed",SystemClock.elapsedRealtime())
             .putInt("xp",experience)
             .putInt("capacitor",cache);
