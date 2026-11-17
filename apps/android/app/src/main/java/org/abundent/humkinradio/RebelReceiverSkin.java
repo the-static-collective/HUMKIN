@@ -195,7 +195,7 @@ final class RebelReceiverSkin {
         }
         @Override public boolean onKeyDown(int keyCode,KeyEvent e){
             if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT||keyCode==KeyEvent.KEYCODE_DPAD_RIGHT){
-                setFrequency(frequency+(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT?.2f:-.2f));
+                setFrequency(frequency+(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT ? 0.2f : -0.2f));
                 pressedCircuit="DIAL";performClick();return true;
             }
             return super.onKeyDown(keyCode,e);
