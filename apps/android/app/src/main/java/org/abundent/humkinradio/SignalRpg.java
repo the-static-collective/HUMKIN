@@ -102,6 +102,11 @@ final class SignalRpg {
         return new Snapshot(p);
     }
 
+    /** Local level-gate, independent of general player XP or chart standings. */
+    static boolean canControlRadioStatic(Context c) {
+        return SignalMath.canControlRadioStatic(snapshot(c).tower);
+    }
+
     /** Local-only procedural station lore, not a claim about real-world events.
      * Only the eight newest entries remain; nothing enters the radio charts. */
     private static void log(SharedPreferences.Editor edit,SharedPreferences p,String event) {
