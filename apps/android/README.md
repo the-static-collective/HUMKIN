@@ -1,3 +1,65 @@
+# HUMKIN RADIO Android · v0.22 Field Test — THE UNFOLDING OUTPOST
+
+**Install name:** HUMKIN · OUTPOST 022  
+**Independent test package:** `org.abundent.humkinradio.discovery`  
+**Artifact:** `humkin-radio-android-field-test` → `app-fieldTest.apk`
+
+This release deliberately returns to **a simple first encounter**: tune in,
+play albums, mark what a song meant to you, and visit the **Signal Outpost**.
+There is no longer a full-size Bootleg Frequency or Orchard button on the main
+radio. The world/Top 42/Guilds shortcut is tucked into the radio's ⋯ menu;
+record league and Guilds remain available through the Outpost.
+
+The earlier three-song browser sketchbook is deliberately not linked in the
+radio overflow: it must not become a shortcut around the Level 7 personal
+station reveal. Its implementation remains in the repo, not active on the
+new first-run radio face.
+
+The Outpost now owns two **earned, persistently unlocked listening worlds**:
+
+- **Level 4 — THE LISTENING ORCHARD.** Its first gateway is initially
+  presented as a sealed green room. At level 4 it reveals the real native
+  Orchard, with collectibles, furnishing and garden stages. The existing
+  Orchard's own item levels/workbench requirements still apply.
+- **Level 7 — BOOTLEG FREQUENCY.** Not revealed by name until the Orchard
+  opens. Level 7 gives the listener the full native, emotion-shaped pirate
+  radio dial powered by private song responses and opted-in public Listener
+  Weather.
+
+These levels already correspond to the existing RPG's first Backroom and
+Long-Range sectors, so no new currency or arbitrary checklist was created.
+The XP thresholds are `SignalMath.levelFloor(4)` and `levelFloor(7)`;
+experience comes only from actually audible native Media3 audio, never
+silence, the wall clock, spending or station-view visits. Existing Outpost
+progress within **the same package and signing identity** is honored. The
+discovery board visibly reports XP remaining before the next door.
+The two activity entrypoints also check the Outpost level so hiding a radio
+button isn't mistaken for a functioning gate.
+
+The workshop itself now **reveals only the next tier** in each department,
+instead of showing nine locked/projected abilities to a newcomer. This avoids
+spoiling the later station and preserves progression. The native radio,
+qualified Top 42 listening, previously approved carts, explicit permission
+for anonymous emotion sharing and all current Outpost economics are unchanged.
+
+**Field-test caveat:** `.discovery` is separate from previous
+`.frequency` and `.weather` packages. Because current CI Android debug
+signing is not stable, old listening XP/Orchard HUM/private reactions do not
+automatically migrate. Keep previous apps installed; a stable release key and
+explicit migration/export workflow remain prerequisites for safe upgrades.
+Physical Android 11 field testing remains to be done.
+
+**Acceptance:** Fresh install must show one main Outpost entrance, no
+Orchard or Bootleg button on radio; in Outpost only first-tier workshop doors
+are visible. With XP below `levelFloor(4)`, neither activity may open
+even via internal Intents. At level 4, Orchard reveals, personal frequency
+remains sealed; at level 7 both open. Changing radio modes must not alter
+the level; leaving an Orchard/Frequency screen must return to Outpost.
+Listening in the background earns levels; opening screens alone does not.
+Confirm older unlocked profiles in the *same app install* retain doors.
+
+---
+
 # HUMKIN RADIO Android · v0.21 Field Test — BOOTLEG FREQUENCY
 
 **Install name:** HUMKIN · BOOTLEG FM  

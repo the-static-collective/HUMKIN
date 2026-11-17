@@ -79,6 +79,12 @@ public final class OrchardActivity extends Activity {
     }
     @Override public void onCreate(Bundle bundle){
         super.onCreate(bundle);
+        if(!OutpostMilestones.unlocked(OutpostMilestones.ORCHARD,
+                SignalRpg.snapshot(this).level)){
+            Toast.makeText(this,"The Orchard opens through Outpost level 4.",
+                    Toast.LENGTH_LONG).show();
+            finish();return;
+        }
         getWindow().setStatusBarColor(CREAM);getWindow().setNavigationBarColor(CREAM);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|
             View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);

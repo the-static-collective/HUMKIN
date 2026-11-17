@@ -318,39 +318,18 @@ public final class MainActivity extends Activity {
         albums.setOnClickListener(v -> showAlbums(true));
         radioScreen.addView(albums, wrap(12));
 
-        // Make the selected record the first record of a *native* pirate dial.
-        // No WebView, secondary player or automatic radio interruption here.
-        Button makeSignal=pill("✳  BOOTLEG FREQUENCY  ↗",null,PINK,18);
-        makeSignal.setMinHeight(dp(58));
-        makeSignal.setContentDescription("Build your own native station from song feelings and the listener community");
-        makeSignal.setOnClickListener(v -> {
-            MediaItem selected=controller==null?null:controller.getCurrentMediaItem();
-            String seed=selected==null?"":selected.mediaId;
-            Intent intent=new Intent(this,PirateRadioActivity.class);
-            intent.putExtra(PirateRadioActivity.EXTRA_ANCHOR,seed);
-            startActivity(intent);
-        });
-        radioScreen.addView(makeSignal,wrap(11));
-
-        // The two native places people inhabit: growth and capability. Keep
-        // them a single row and let the actual radio dominate the first screen.
-        outpostButton=pill("✳ OUTPOST / LEVEL 1",null,YELLOW,12);
-        outpostButton.setMinHeight(dp(54));
-        outpostButton.setContentDescription("Open the native Signal Outpost listening RPG");
+        // Early game is *just radio + the Outpost*. The garden and personal
+        // pirate dial are discoveries earned through the native RPG, not
+        // a row of available features spoiled on first launch.
+        outpostButton=pill("✳ THE SIGNAL OUTPOST / LEVEL 1 ↗",null,YELLOW,15);
+        outpostButton.setMinHeight(dp(62));
+        outpostButton.setContentDescription("Enter the Signal Outpost to collect Signal and discover new radio abilities");
         outpostButton.setOnClickListener(v ->
                 startActivity(new Intent(this,OutpostActivity.class)));
-        Button orchardDoor=pill("🌱 MY ORCHARD",null,MINT,12);
-        orchardDoor.setMinHeight(dp(54));
-        orchardDoor.setContentDescription("Open your native listening garden and collectibles");
-        orchardDoor.setOnClickListener(v ->
-                startActivity(new Intent(this,OrchardActivity.class)));
-        addPair(radioScreen,outpostButton,orchardDoor,9);
+        radioScreen.addView(outpostButton,wrap(12));
 
-        // The Top 42, contribution Guilds and public network are real but
-        // secondary, grouped behind one door rather than three large banners.
-        Button world=pill("↗  EXPLORE THE STATION WORLD",null,CREAM,14);
-        world.setOnClickListener(v->showWorldMenu());
-        radioScreen.addView(world,wrap(10));
+        // Unlocked departments are available in Outpost and the ⋯ drawer,
+        // without turning a first tune-in into a page of unexplained doors.
 
         Button share = pill("SHARE THE DIAL", null, MINT, 13);
         share.setOnClickListener(v -> {
@@ -375,16 +354,13 @@ public final class MainActivity extends Activity {
                 .setTitle("THE HUMKIN WORLD")
                 .setItems(new String[]{
                         "THE TOP 42 · record league",
-                        "STATION GUILDS · make something real",
-                        "THE LIVING NETWORK · homes & trading"
+                        "STATION GUILDS · make something real"
                 }, (dialog, choice) -> {
                     if(choice==0){
                         SignalRpg.visitLeague(this);
                         startActivity(new Intent(this,LeagueActivity.class));
-                    }else if(choice==1){
-                        startActivity(new Intent(this,GuildActivity.class));
                     }else{
-                        visit("https://humkin.abundent.org/fm/orchard/network.html");
+                        startActivity(new Intent(this,GuildActivity.class));
                     }
                 })
                 .setNegativeButton("Back to radio",null)
@@ -479,15 +455,10 @@ public final class MainActivity extends Activity {
             titles.add("Reshuffle");
             actions.add(() -> fetchRadio(true, false));
         }
-        titles.add("The old three-song studio · sketchbook");
-        actions.add(() -> {
-            MediaItem selected=controller==null?null:controller.getCurrentMediaItem();
-            String seed=selected==null?"":selected.mediaId;
-            if(controller!=null&&controller.isPlaying())controller.pause();
-            Intent sketch=new Intent(this,SignalStudioActivity.class);
-            sketch.putExtra(SignalStudioActivity.EXTRA_SEED_TRACK,seed);
-            startActivity(sketch);
-        });
+        titles.add("Other station departments · Top 42 and Guilds");
+        actions.add(this::showWorldMenu);
+        // The earlier three-record sketchbook no longer appears as a
+        // first-level shortcut around the earned LV7 pirate radio door.
         titles.add("Listener Weather · how the songs landed");
         actions.add(() -> visit("https://humkin.abundent.org/fm/top42/#listener-weather"));
         titles.add(SongReactions.sharing(this)==1
@@ -987,7 +958,7 @@ public final class MainActivity extends Activity {
         if (tune == null) return;
         if (outpostButton != null) {
             int level=SignalRpg.snapshot(this).level;
-            String name="✳ OUTPOST / LEVEL "+level;
+            String name="✳ THE SIGNAL OUTPOST / LEVEL "+level+" ↗";
             if(!name.contentEquals(outpostButton.getText()))outpostButton.setText(name);
         }
         boolean pirateLive="pirate".equals(source)&&RadioPlaybackService.isPirateArmed();

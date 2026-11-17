@@ -73,6 +73,12 @@ public final class PirateRadioActivity extends Activity {
     }
     @Override public void onCreate(Bundle bundle){
         super.onCreate(bundle);
+        if(!OutpostMilestones.unlocked(OutpostMilestones.BOOTLEG,
+                SignalRpg.snapshot(this).level)){
+            Toast.makeText(this,"Bootleg Frequency opens through Outpost level 7.",
+                    Toast.LENGTH_LONG).show();
+            finish();return;
+        }
         getWindow().setStatusBarColor(HumkinVisuals.INK);
         getWindow().setNavigationBarColor(HumkinVisuals.CREAM);
         current=PirateFrequency.last(this);
