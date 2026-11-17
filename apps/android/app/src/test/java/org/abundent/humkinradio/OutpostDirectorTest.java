@@ -14,6 +14,12 @@ public final class OutpostDirectorTest {
     private OutpostDirector.Verb choose(OutpostDirector.Facts s){
         return OutpostDirector.choose(s).verb;
     }
+    @Test public void absoluteFirstInteractionIsStillJustTheMusic(){
+        OutpostDirector.Facts first=new OutpostDirector.Facts(
+                1,0,0,0,0,0,0,0,0,0L,false,false,-1,0,0,0,false);
+        assertEquals(OutpostDirector.Verb.RADIO,choose(first));
+        assertTrue(OutpostDirector.choose(first).why.contains("actually hear"));
+    }
     @Test public void firstRewardIsARealRadioControlNotAnImaginaryHarvest(){
         assertEquals(OutpostDirector.Verb.ANTENNA,
                 choose(state(1,80,35,0,0,0,0,false,false,0,0,false)));
