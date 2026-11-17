@@ -25,6 +25,7 @@ class ProgrammingTests(unittest.TestCase):
         songs=[make_track("s%02d" % i,album="RELEASE" if i<6 else "INBOX")
                for i in range(18)]
         songs[8]["is_single"]=True
+        songs[8]["source"]="cloud"
         songs[10]["seasonal"]=True
         songs[10]["source"]="r2"
         bumpers=[make_track("short-a",kind="bumper",duration=7),
