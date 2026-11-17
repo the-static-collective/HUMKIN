@@ -38,4 +38,9 @@ for(const bad of [manager,loader,studio,radio,r2]){
 assert(migration.includes("storage_provider"),"Schema has provider");
 assert(migration.includes("r2_object_key"),"Schema has object key");
 assert(migration.includes("r2_synced_at"),"Schema marks verified copy");
+// Guard against the literal-dot escape bug that rejected all migrated R2 keys.
+const repair=read("supabase/migrations/20261117224200_fix_r2_key_regex.sql");
+assert(repair.includes("[.]mp3$"),"R2 SQL key pattern must use literal-dot character class");
+assert(repair.includes("drop constraint if exists humkin_radio_r2_key_ck"),
+ "Migration must replace the broken check constraint");
 console.log("HUMKIN R2 primary storage plumbing verified");
