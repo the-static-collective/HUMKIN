@@ -142,6 +142,10 @@ async function liveResult(requestId:string){
   .select("id,state,target_id,expires_at,served_at,served_home").eq("id",requestId).maybeSingle();
  if(error)err("Live relay unavailable",503);
  if(!data)err("Live request not found",404);
+ const {data:owner,error:privacyError}=await db.from("humkin_orchard_nodes")
+   .select("is_public").eq("id",data.target_id).maybeSingle();
+ if(privacyError)err("Live privacy status temporarily unavailable",503);
+ if(!owner?.is_public)err("This listener has withdrawn their public room",404);
  const current=data.state==="pending"&&Date.parse(data.expires_at)<=Date.now()?"expired":data.state;
  return {schema:"humkin.orchard.live/v1",request_id:data.id,state:current,
    served_at:data.served_at,home:current==="served"?data.served_home:null,
