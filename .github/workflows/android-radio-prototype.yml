@@ -31,7 +31,7 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Build debug receiver
-        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest
+        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:assembleRadioDoctor :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest :app:testRadioDoctorUnitTest
       - uses: actions/upload-artifact@v4
         with:
           name: humkin-radio-android-debug
@@ -58,6 +58,12 @@ jobs:
         with:
           name: humkin-radio-android-living-028
           path: apps/android/app/build/outputs/apk/radioLiving/app-radioLiving.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-crash-doctor-029
+          path: apps/android/app/build/outputs/apk/radioDoctor/app-radioDoctor.apk
           if-no-files-found: error
 
       # Explicit one-shot smoke check. Never create disposable test accounts

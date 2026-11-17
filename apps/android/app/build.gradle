@@ -44,6 +44,14 @@ android {
             versionNameSuffix '-living'
             resValue 'string', 'app_name', 'HUMKIN · LIVING RECEIVER'
         }
+        // Recovery-only side-by-side build. This does not replace the crashed
+        // .living installation or share its local HUM and preferences.
+        radioDoctor {
+            initWith debug
+            applicationIdSuffix '.doctor'
+            versionNameSuffix '-doctor'
+            resValue 'string', 'app_name', 'HUMKIN · CRASH DOCTOR'
+        }
         nightWatch {
             initWith debug
             applicationIdSuffix '.nightwatch'

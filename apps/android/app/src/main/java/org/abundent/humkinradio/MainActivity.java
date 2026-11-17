@@ -83,6 +83,7 @@ public final class MainActivity extends Activity {
     };
     private RebelReceiverSkin.Dial receiverDial;
     private boolean warmStaticEnabled;
+    private boolean crashRecoveryVisible, safeStartup;
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;
     private boolean alive,radioMode=true,onAlbums=false;
@@ -98,6 +99,18 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         HumCrashNote.install(getApplicationContext());
+        // Isolate startup faults from the actual radio. Doctor package is a
+        // side-by-side install; no local HUM or older APK data is touched.
+        safeStartup=getIntent().getBooleanExtra("humkin.safe-startup",false);
+        if(getPackageName().endsWith(".doctor")
+                && !getIntent().getBooleanExtra("humkin.ignore-crash-note",false)) {
+            String lastCrash=HumCrashNote.report(this);
+            if(!lastCrash.isEmpty()) {
+                crashRecoveryVisible=true;
+                showCrashRecovery(lastCrash);
+                return;
+            }
+        }
 
         // Remember the listener's dial choice, not the first default station.
         radioMode = getSharedPreferences("humkin-radio", MODE_PRIVATE)
@@ -114,7 +127,9 @@ public final class MainActivity extends Activity {
                 getSharedPreferences("humkin-radio",MODE_PRIVATE)
                         .getBoolean("analog-static",true);
         RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
-        lastAwardSeen=HumServerBridge.snapshot(this).awardSequence;
+        // Diagnostics can bypass nonessential remote refresh work while
+        // leaving the actual native playback and library operational.
+        lastAwardSeen=safeStartup?0L:HumServerBridge.snapshot(this).awardSequence;
         buildScreen();
         if (Build.VERSION.SDK_INT >= 35) {
             WindowInsetsController bars = getWindow().getInsetsController();
@@ -134,6 +149,58 @@ public final class MainActivity extends Activity {
             getWindow().getDecorView().setSystemUiVisibility(0);
         }
     }
+    /**
+     * A crash report lives only in this package's private preferences. No
+     * telemetry or external upload. A plain screen appears before buildScreen
+     * on the next launch, so a crash loop never prevents copying the trace.
+     */
+    private void showCrashRecovery(String stack){
+        LinearLayout page=column();
+        page.setBackgroundColor(0xff102c52);
+        page.setPadding(dp(22),dp(24),dp(22),dp(20));
+        TextView header=text("HUMKIN RECEIVER · RECOVERY DESK",24,0xffffd55a,true);
+        header.setGravity(Gravity.START);
+        page.addView(header,wrap(0));
+        TextView explanation=text(
+                "The last app crash was saved privately on this phone. "
+                +"The diagnostic below is not sent anywhere automatically. "
+                +"Copy it before trying the receiver again.",
+                15,0xfffff2d7,false);
+        explanation.setGravity(Gravity.START);
+        page.addView(explanation,wrap(16));
+        Button copy=pill("COPY CRASH REPORT",null,RebelReceiverSkin.GOLD,16);
+        copy.setOnClickListener(v->{
+            android.content.ClipboardManager clipboard=
+                    (android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+            if(clipboard!=null){
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("HUMKIN crash report",stack));
+                Toast.makeText(this,"Crash report copied. Paste it into the chat.",Toast.LENGTH_LONG).show();
+            }
+        });
+        page.addView(copy,wrap(16));
+        Button safe=pill("TRY SAFE RADIO START",null,RebelReceiverSkin.MINT,16);
+        safe.setOnClickListener(v->restartAfterCrash(true));
+        page.addView(safe,wrap(12));
+        Button normal=pill("TRY NORMAL START",null,RebelReceiverSkin.PEACH,15);
+        normal.setOnClickListener(v->restartAfterCrash(false));
+        page.addView(normal,wrap(10));
+        TextView detail=text(stack,11,0xffe9dbbd,false);
+        detail.setTextIsSelectable(true);
+        detail.setGravity(Gravity.START);
+        page.addView(detail,wrap(18));
+        ScrollView wrapper=new ScrollView(this);
+        wrapper.setFillViewport(true);
+        wrapper.addView(page);
+        setContentView(wrapper);
+    }
+    private void restartAfterCrash(boolean safe) {
+        Intent reopen=new Intent(this,MainActivity.class);
+        reopen.putExtra("humkin.ignore-crash-note",true);
+        reopen.putExtra("humkin.safe-startup",safe);
+        startActivity(reopen);
+        finish();
+    }
+
     @Override public void onSaveInstanceState(Bundle out) {
         out.putBoolean("radioMode",radioMode);
         out.putBoolean("onAlbums",onAlbums);
@@ -1019,17 +1086,21 @@ public final class MainActivity extends Activity {
     }
 
     @Override public void onStart(){
-        super.onStart();alive=true;
+        super.onStart();
+        if(crashRecoveryVisible)return;
+        alive=true;
         // Returning from the Outpost may have earned the first Antenna tier.
         // Older OFF preferences cannot suppress the default before then.
         warmStaticEnabled=!SignalRpg.canControlRadioStatic(this) ||
                 getSharedPreferences("humkin-radio",MODE_PRIVATE)
                         .getBoolean("analog-static",true);
         RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
-        HumServerBridge.refresh(getApplicationContext());
-        refreshAlbumIndex();
+        if(!safeStartup){
+            HumServerBridge.refresh(getApplicationContext());
+            refreshAlbumIndex();
+        }
         humHandler.removeCallbacks(humPulse);
-        humHandler.post(humPulse);
+        if(!safeStartup)humHandler.post(humPulse);
         SessionToken token=new SessionToken(this,new ComponentName(this,RadioPlaybackService.class));
         controllerFuture=new MediaController.Builder(this,token).buildAsync();
         controllerFuture.addListener(()->{
