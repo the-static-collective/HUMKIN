@@ -239,10 +239,11 @@ public final class PirateRadioActivity extends Activity {
                 }
                 situation.setText(ready.pirateCatalog().size()+" PUBLISHED SONGS · YOUR OWN FREQUENCY");
                 refreshControls();
-                weatherCount.setText(signal.total==0
-                    ?"NO COMMUNITY RESPONSES YET · YOUR EARS LEAD THE WAY"
-                    :signal.total+" OPT-IN FEELINGS SHARED THIS WEEK · "
-                      +(signal.live?"LIVE NEIGHBORHOOD SIGNAL":"CACHED / MAY BE STALE"));
+                int myWeather=SongReactions.snapshot(this).size();
+                weatherCount.setText(myWeather+" PRIVATE SONG MEMORIES · "+
+                    (signal.total==0?"NO COMMUNITY RESPONSES YET"
+                     :signal.total+" OPT-IN COMMUNITY RESPONSES · "+
+                        (signal.live?"LIVE":"CACHED / MAY BE STALE")));
                 tuneButton.setEnabled(true);
                 shuffleButton.setEnabled(true);
                 drawPreview();
@@ -265,8 +266,31 @@ public final class PirateRadioActivity extends Activity {
             if(i>0)lines.append("\n");
             lines.append(String.format(java.util.Locale.US,"%02d",i+1))
                 .append("  ").append(title==null?"HUMKIN":title);
+            String id=SongReactionId.canonical(item.mediaId);
+            String mine=id==null?null:SongReactions.get(this,id);
+            PirateSelector.Weather crowd=id==null||weather==null?null:weather.tracks.get(id);
+            if(mine!=null && !PirateSelector.OPEN.equals(current.mood)
+                    && current.mood.equals(mine)) {
+                lines.append("  ·  YOUR ").append(feelingShort(mine));
+            }else if(crowd!=null && !PirateSelector.OPEN.equals(current.mood)
+                    && crowd.forMood(current.mood)>0) {
+                lines.append("  ·  ROOM ")
+                    .append(crowd.forMood(current.mood)).append(" ")
+                    .append(feelingShort(current.mood));
+            }
         }
         example.setText(lines.toString());
+    }
+    private String feelingShort(String code) {
+        switch(code){
+            case "hope":return "HOPE";
+            case "tears":return "TEARS";
+            case "seen":return "LESS ALONE";
+            case "laugh":return "LAUGHTER";
+            case "move":return "MOVEMENT";
+            case "stayed":return "STAYED";
+            default:return "FEELING";
+        }
     }
     @Override protected void onStart(){
         super.onStart();active=true;
