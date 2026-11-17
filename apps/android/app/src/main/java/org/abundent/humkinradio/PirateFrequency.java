@@ -63,6 +63,6 @@ final class PirateFrequency {
                 recentlyHeard(c),entropy);
         // Resolves IDs only through the current published station catalog.
         // Never construct a media URL from a user-supplied seed or reaction.
-        return station.queueFromIds(ids);
+        return station.pirateQueueFromIds(ids,entropy);
     }
 }
