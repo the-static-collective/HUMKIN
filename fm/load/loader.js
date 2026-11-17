@@ -274,7 +274,7 @@ async function refreshR2Status(){
  if(!activeUser)return;
  try{
   const status=await r2Bridge(db,"status");
-  $("r2-storage-note").textContent=(status.configured?"R2 BACKEND READY":"R2 CREDENTIALS REQUIRED")+
+  $("r2-storage-note").textContent=(status.configured?"R2 CREDENTIALS PRESENT":"R2 CREDENTIALS REQUIRED")+
     " · "+status.migrated_tracks+" R2 tracks · "+status.pending_tracks+
     " Supabase published · "+fmtBytes(status.supabase_storage_estimate_bytes)+
     " still stored in Supabase";
