@@ -71,5 +71,5 @@ test("one approved on-air song seeds an editable three-song station, never a gue
  assert.equal(M.fromSeed("?seed="+("x".repeat(91)),rows),null);
  assert.equal(M.fromSeed("?t=a1.b1.c1&seed=a2",rows),null);
  assert.equal(M.fromSeed("",rows),null);
- assert.match(read("fm/signal/signal.js"),/M\\.fromSeed\\(location\\.search,tracks\\)/);
+ assert.ok(read("fm/signal/signal.js").includes("M.fromSeed(location.search,tracks)"));
 });
