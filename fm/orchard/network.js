@@ -10,7 +10,7 @@ const ROTATION="https://humkin.abundent.org/fm/rotation.json";
 const DB_NAME="humkin-orchard-listener-key-v1";
 const M=window.HumkinOrchard;
 const $=id=>document.getElementById(id);
-let keys=null,mine=null,allHomes=[],recipient="",running=false,toastTimer=0,heartbeatTimer=0;
+let keys=null,mine=null,allHomes=[],recipient="",running=false,toastTimer=0,heartbeatTimer=0,requestBusy=false,servingBusy=false;
 function node(tag,cls,text){
  const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text);return e;
 }
@@ -169,10 +169,10 @@ function drawState(){
 }
 function name(kind){
  return {"chipped-blue-cup":"Chipped Blue Cup","window-seed":"Window Seed",
-   "relay-leaf":"The Relay Leaf"}[kind]||kind.replace(/-/g," ");
+   "relay-leaf":"The Relay Leaf","porch-bell":"The Porch Bell"}[kind]||kind.replace(/-/g," ");
 }
 function glyph(kind){
- return {"chipped-blue-cup":"☕","window-seed":"🌱","relay-leaf":"🍃"}[kind]||"✳";
+ return {"chipped-blue-cup":"☕","window-seed":"🌱","relay-leaf":"🍃","porch-bell":"🔔"}[kind]||"✳";
 }
 function drawOffers(id,offers,isInbox){
  const area=$(id);
@@ -216,8 +216,10 @@ async function publish(){
 async function presence(){
  if(!keys)return;
  try{
-  await signed("heartbeat",{offered_capabilities:["home.snapshot.v1","radio.catalog.audit.v1"]});
-  $("network-signal").textContent="SIGNED PRESENCE · VISIBLE AS RECENT FOR TWO MINUTES";
+  const serve=$("serve-optin").checked;
+  await signed("heartbeat",{serve,offered_capabilities:["home.snapshot.v1","radio.catalog.audit.v1"]});
+  $("network-signal").textContent=serve?"SIGNED PRESENCE · LIVE SNAPSHOT SERVICE OFFERED":"SIGNED PRESENCE · VISIBLE AS RECENT FOR TWO MINUTES";
+  $("serve-status").textContent=serve?"LIVE PORCH SERVICE OFFERED · YOUR BROWSER WILL ANSWER ONLY WHILE THE PAGE IS VISIBLE.":"LIVE SERVICE OFF · NO SNAPSHOTS ARE BEING SERVED.";
  }catch(e){tip(errorText(e))}
 }
 async function refreshWorld(){
@@ -234,7 +236,8 @@ async function refreshWorld(){
    button.append(node("span","glyph",h.stage>=4?"🌳":h.stage>=1?"🌱":"📻"));
    button.append(node("b","",h.room||"A Listening Room"));
    button.append(node("small","",h.name+" · STAGE "+(h.stage+1)));
-   if(h.online)button.append(node("small","live","✳ RECENTLY PRESENT"));
+   if(h.serving)button.append(node("small","live","✳ SERVING LIVE SNAPSHOTS"));
+   else if(h.online)button.append(node("small","live","✳ RECENTLY PRESENT"));
    button.addEventListener("click",()=>visit(h.identity));
    cards.append(button);
   });
@@ -244,9 +247,11 @@ async function visit(actor){
  try{
   const h=await apiGet("home",actor);
   recipient=h.identity;
+  $("request-live").disabled=!keys||!h.serving;
+  $("request-status").textContent=h.serving?"Live request available when both listeners have signed keys.":"The listener is not offering a foreground live snapshot at this moment.";
   $("visitor").hidden=false;
   $("visitor-name").textContent=h.home?.room||"A Listening Room";
-  $("visitor-meta").textContent=h.name+" · "+(h.online?"RECENTLY PRESENT":"NOT CURRENTLY PRESENT")+
+  $("visitor-meta").textContent=h.name+" · "+(h.serving?"OFFERING LIVE SNAPSHOTS":h.online?"RECENTLY PRESENT":"NOT CURRENTLY PRESENT")+
    " · GARDEN STAGE "+((h.home?.stage||0)+1)+"/7 · public owner ID "+formatId(h.identity);
   $("visitor-scene").replaceChildren();
   const things=(h.home?.things||[]).slice(0,15);
@@ -320,6 +325,61 @@ async function lightWork(){
  }catch(e){status.textContent="WORK HELD / REFUSED · "+errorText(e)}
  finally{running=false;$("run-work").disabled=!keys}
 }
+
+async function pollLive(){
+ if(servingBusy||!keys||!$("serve-optin").checked||document.visibilityState!=="visible")return;
+ servingBusy=true;
+ try{
+  const job=await signed("poll_live",{capability:"foreground.home.snapshot.v1"});
+  if(job.serving&&Array.isArray(job.requests)&&job.requests.length){
+   for(const request of job.requests){
+    const reply=await signed("serve_live",{request_id:request.id,home:local()});
+    $("serve-status").textContent="SERVED A REAL FRESH SNAPSHOT · "+new Date().toLocaleTimeString()+
+      " · "+formatId(request.requester_id)+ " RECEIVED A SERVER-RELAYED ROOM.";
+    tip(reply.served?.first_service_artifact?
+      "FIRST LIVE SERVICE! YOUR NETWORK CABINET RECEIVED A PORCH BELL.":
+      "A NEIGHBOR RECEIVED A FRESH SNAPSHOT FROM YOUR OPEN BROWSER.");
+   }
+   await sync();await refreshWorld();
+  }
+ }catch(e){$("serve-status").textContent="LIVE SERVICE HELD · "+errorText(e)}
+ finally{servingBusy=false}
+}
+async function askLive(){
+ if(requestBusy)return;
+ if(!keys){tip("Establish your listener key before asking for a fresh snapshot.");return}
+ if(!recipient){tip("Choose a public listening room first.");return}
+ requestBusy=true;$("request-live").disabled=true;
+ try{
+  $("request-status").textContent="Requesting one signed, voluntary fresh room snapshot…";
+  const request=await signed("request_live",{to:recipient});
+  const uid=request.request.id;
+  const expiry=Date.parse(request.request.expires_at);
+  let served=false;
+  while(Date.now()<expiry&&document.visibilityState==="visible"){
+   await new Promise(resolve=>setTimeout(resolve,5000));
+   const reply=await apiGet("live-result",uid);
+   if(reply.state==="served"){
+    served=true;
+    $("request-status").textContent="LIVE SERVICE RETURNED · A fresh server-relayed snapshot arrived from that browser at "+new Date(reply.served_at).toLocaleTimeString()+".";
+    const home=reply.home||{};
+    $("visitor-scene").replaceChildren();
+    const things=(home.things||[]).slice(0,15);
+    (things.length?things:["📻","🌱"]).forEach(t=>{
+     const spec=M?.item?.(t);
+     const el=node("span","",spec?.icon||"✳");el.title=spec?.name||"Listening room";
+     $("visitor-scene").append(el);
+    });
+    tip("A REAL NEIGHBOR'S PHONE OR BROWSER SERVED A FRESH ROOM SNAPSHOT.");
+    break;
+   }
+   if(reply.state==="expired")break;
+  }
+  if(!served)$("request-status").textContent="NO LIVE ANSWER · That listener may have closed the page. The ordinary public snapshot remains available.";
+ }catch(e){$("request-status").textContent="LIVE REQUEST HELD · "+errorText(e)}
+ finally{requestBusy=false;$("request-live").disabled=false}
+}
+
 async function chart(){
  try{
   const r=await fetch(CHART,{cache:"no-store"});
@@ -362,10 +422,28 @@ $("offer").addEventListener("click",offer);
 $("run-work").addEventListener("click",lightWork);
 $("presence-optin").addEventListener("change",()=>{
  if($("presence-optin").checked)presence();
- else tip("Presence is disabled. Your last signed heartbeat will expire naturally.");
+ else{
+  $("serve-optin").checked=false;
+  presence();
+ }
 });
+$("serve-optin").addEventListener("change",async()=>{
+ if($("serve-optin").checked){
+  if(!keys||!mine?.node?.is_public){
+   $("serve-optin").checked=false;
+   tip("Establish your listener key and PUBLISH your public room before offering fresh live service.");
+   return;
+  }
+  $("presence-optin").checked=true;
+  await presence();await pollLive();
+ }else{
+  await presence();
+ }
+});
+$("request-live").addEventListener("click",askLive);
+setInterval(pollLive,20000);
 heartbeatTimer=setInterval(()=>{
- if(keys&&$("presence-optin").checked&&document.visibilityState==="visible")presence();
+ if(keys&&($("presence-optin").checked||$("serve-optin").checked)&&document.visibilityState==="visible")presence();
 },60000);
 boot();
 })();
