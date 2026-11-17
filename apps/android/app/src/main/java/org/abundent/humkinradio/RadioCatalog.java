@@ -132,6 +132,28 @@ final class RadioCatalog {
             return result;
         }
 
+        /** Insert only owner-approved radio carts, at the station's published
+         * bumper cadence. This is an actual radio feel, not browser static.
+         * A zero cadence stays off exactly as the station operator intended.
+         */
+        List<MediaItem> pirateQueueFromIds(List<String> ids,long entropy) {
+            List<MediaItem> songs=queueFromIds(ids);
+            if(cadence<1)return songs;
+            List<MediaItem> carts=new ArrayList<>();
+            for(Track track:tracks)if(track.bumper)carts.add(track.mediaItem());
+            if(carts.isEmpty())return songs;
+            java.util.Random random=new java.util.Random(entropy);
+            List<MediaItem> playlist=new ArrayList<>(songs.size()+songs.size()/cadence+1);
+            int cartOffset=random.nextInt(carts.size());
+            for(int i=0;i<songs.size();i++){
+                playlist.add(songs.get(i));
+                if((i+1)%cadence==0){
+                    playlist.add(carts.get((cartOffset++)%carts.size()));
+                }
+            }
+            return playlist;
+        }
+
         long resumePositionMs(String trackId, long requestedMs) {
             for (Track track : tracks) {
                 if (track.id.equals(trackId))
