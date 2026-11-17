@@ -113,7 +113,7 @@ public final class MainActivity extends Activity {
                 getSharedPreferences("humkin-radio",MODE_PRIVATE)
                         .getBoolean("analog-static",true);
         RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
-        lastAwardSeen=HumWallet.snapshot(this).awardSequence;
+        lastAwardSeen=HumServerBridge.snapshot(this).awardSequence;
         buildScreen();
         if (Build.VERSION.SDK_INT >= 35) {
             WindowInsetsController bars = getWindow().getInsetsController();
@@ -428,11 +428,13 @@ public final class MainActivity extends Activity {
 
     /** An earned coin is just a 760ms visual acknowledgment, never a prompt. */
     private void updateHumStatus(){
-        HumWallet.Snapshot wallet=HumWallet.snapshot(this);
+        HumServerBridge.Snapshot wallet=HumServerBridge.snapshot(this);
         if(humChip!=null){
-            String text="ⓗ "+wallet.balance;
-            if(!text.contentEquals(humChip.getText()))humChip.setText(text);
-            humChip.setContentDescription(wallet.balance+" local HUM, open My Records");
+            String wording=wallet.known?"ⓗ "+wallet.balance:"ⓗ …";
+            if(!wording.contentEquals(humChip.getText()))humChip.setText(wording);
+            humChip.setContentDescription(wallet.known?
+                wallet.balance+" server HUM, open My Records":
+                "Station wallet connecting, open My Records");
         }
         if(wallet.awardSequence!=lastAwardSeen){
             lastAwardSeen=wallet.awardSequence;
@@ -463,9 +465,9 @@ public final class MainActivity extends Activity {
         boolean suitable=current!=null && current.localConfiguration!=null &&
                 HumEconomy.canonicalId(current.mediaId)!=null &&
                 HumEconomy.approvedAudio(current.localConfiguration.uri.toString());
-        HumWallet.Snapshot wallet=suitable?HumWallet.snapshot(this):null;
+        HumServerBridge.Snapshot wallet=suitable?HumServerBridge.snapshot(this):null;
         String id=suitable?HumEconomy.canonicalId(current.mediaId):null;
-        boolean owned=suitable&&wallet.find(id)!=null;
+        boolean owned=suitable&&(wallet.owns(id)||HumWallet.snapshot(this).find(id)!=null);
         int price=suitable?HumWallet.price(current):1;
         String label=owned?"✓ IN MY RECORDS  ↗":"ⓗ KEEP THIS RECORD  ·  "+price+" HUM";
         if(keepRecordButton!=null){
@@ -487,46 +489,44 @@ public final class MainActivity extends Activity {
         MediaItem item=controller==null?null:controller.getCurrentMediaItem();
         if(item==null || item.localConfiguration==null)return;
         String id=HumEconomy.canonicalId(item.mediaId);
-        int result=HumWallet.keep(this,item);
-        if(result==HumWallet.INSUFFICIENT){
-            Toast.makeText(this,"Listen a little longer to earn more HUM.",
+        if(id==null){
+            Toast.makeText(this,"That recording isn't an approved song.",
                     Toast.LENGTH_LONG).show();
-            return;
-        }
-        if(result==HumWallet.INVALID||id==null){
-            Toast.makeText(this,"This recording isn't available to collect yet.",
-                    Toast.LENGTH_LONG).show();
-            return;
-        }
-        HumWallet.Record record=HumWallet.snapshot(this).find(id);
-        if(record==null)return;
-        updateHumStatus();
-        updateKeepButtons(item);
-        if(MusicLibrary.exists(this,record.uri)){
-            openMyRecords();
             return;
         }
         keepDownloading=true;
         updateKeepButtons(item);
-        Toast.makeText(this,result==HumWallet.ALREADY_OWNED?
-            "Already yours. Downloading again for free…":
-            "ⓗ "+record.price+" HUM · Taking this record home…",Toast.LENGTH_SHORT).show();
         worker.execute(()->{
-            boolean saved=false;
+            boolean authorized=false,saved=false;
+            String error="";
             try{
-                Uri file=MusicLibrary.download(getApplicationContext(),record);
-                saved=HumWallet.setDownloaded(getApplicationContext(),record.id,file.toString());
-                if(!saved)MusicLibrary.delete(getApplicationContext(),file.toString());
-            }catch(Exception ignored){}
-            final boolean ok=saved;
+                // A real server-side transaction owns the HUM debit and
+                // collection record. No local mint or speculative charge.
+                HumServerBridge.collect(getApplicationContext(),item);
+                authorized=HumWallet.cacheServerRecord(getApplicationContext(),item);
+                if(!authorized)throw new java.io.IOException("Couldn't cache record details");
+                HumWallet.Record record=HumWallet.snapshot(getApplicationContext()).find(id);
+                if(record==null)throw new java.io.IOException("Couldn't open collected song");
+                if(MusicLibrary.exists(getApplicationContext(),record.uri))saved=true;
+                else{
+                    Uri file=MusicLibrary.download(getApplicationContext(),record);
+                    saved=HumWallet.setDownloaded(getApplicationContext(),record.id,file.toString());
+                    if(!saved)MusicLibrary.delete(getApplicationContext(),file.toString());
+                }
+            }catch(Exception e){error=e.getMessage()==null?"Station unavailable":e.getMessage();}
+            final boolean collected=authorized,downloaded=saved;
+            final String reason=error;
             runOnUiThread(()->{
                 keepDownloading=false;
                 if(isFinishing()||isDestroyed())return;
                 updateHumStatus();
                 updateKeepButtons(controller==null?null:controller.getCurrentMediaItem());
-                Toast.makeText(this,ok?
-                    "Saved in Music/HUMKIN · also in My Records.":
-                    "Download interrupted. Kept in My Records; retry without paying again.",
+                Toast.makeText(this,downloaded?
+                    "Your record is home · Music/HUMKIN · no DRM.":
+                    collected?
+                    "Collected! Download interrupted; retry for free in My Records.":
+                    (reason.contains("Listen a little")?reason:
+                       "Station wallet unavailable. Nothing spent. Try again."),
                     Toast.LENGTH_LONG).show();
             });
         });
@@ -539,46 +539,32 @@ public final class MainActivity extends Activity {
             Toast.makeText(this,"Tune to a published song first.",Toast.LENGTH_SHORT).show();
             return;
         }
-        String title=item.mediaMetadata.title==null?"THIS SONG":item.mediaMetadata.title.toString();
+        String title=item.mediaMetadata.title==null?"THIS SONG":
+                item.mediaMetadata.title.toString();
+        // The first-response crash persisted after delaying the nested dialog.
+        // Remove the entire first-response follow-up/modal branch. A feeling
+        // saves quietly and locally; sharing is a separate, existing ⋯ choice.
+        // Never redraw the entire receiver inside AlertDialog's item callback.
         new AlertDialog.Builder(this)
-                .setTitle("HOW DID IT LAND?  ·  "+title)
-                .setItems(SongReactions.CHOICES,(dialog,which)->{
-                    String code=SongReactions.codeAt(which);
-                    if(code==null||!SongReactions.save(this,id,code)) {
-                        Toast.makeText(this,"Couldn't save that response.",Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    redraw();
-                    // The answer exists privately on this device regardless of
-                    // Internet availability or whether the person elects to share.
-                    if(SongReactions.sharing(this)==0){
-                        // First answer previously opened a SECOND AlertDialog
-                        // synchronously while the choices dialog was closing.
-                        // Defer it until that window has been dismissed, so a
-                        // first-time response cannot collide with its token.
-                        dialog.dismiss();
-                        reactionButton.postDelayed(()->{
-                            if(isFinishing()||isDestroyed()||!alive)return;
-                            new AlertDialog.Builder(this)
-                                .setTitle("SHARE IT WITH THE STATION?")
-                                .setMessage("Share the selected song and response as an anonymous, provisional mark in HUMKIN's Listener Weather. A random app key prevents duplicate responses. No name, email or listening history. This will not award chart plays.")
-                                .setPositiveButton("Share my responses",(d,w)->{
-                                    SongReactions.setSharing(this,1);
-                                    transmitReaction(id,code);
-                                })
-                                .setNegativeButton("Keep on my phone",(d,w)->{
-                                    SongReactions.setSharing(this,2);
-                                    Toast.makeText(this,"Kept on this phone.",Toast.LENGTH_SHORT).show();
-                                }).show();
-                        },120L);
-                    }else if(SongReactions.sharing(this)==1){
+            .setTitle("HOW DID IT LAND?  ·  "+title)
+            .setItems(SongReactions.CHOICES,(dialog,which)->{
+                String code=SongReactions.codeAt(which);
+                if(code==null)return;
+                try{
+                    if(!SongReactions.save(getApplicationContext(),id,code))
+                        throw new IllegalStateException("Unable to persist song memory");
+                    if(reactionButton!=null)
+                        reactionButton.setText("✳  THIS ONE: "+SongReactions.phrase(code)+"  ↗");
+                    Toast.makeText(this,"Kept in your song memories.",
+                            Toast.LENGTH_SHORT).show();
+                    if(SongReactions.sharing(getApplicationContext())==1)
                         transmitReaction(id,code);
-                    }else{
-                        Toast.makeText(this,"Saved to your private song memories.",Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Not this time",null)
-                .show();
+                }catch(RuntimeException failed){
+                    android.util.Log.e("HUMKIN-REACTION","Unable to save first feeling",failed);
+                    Toast.makeText(this,"Couldn't save that feeling on this phone.",
+                            Toast.LENGTH_LONG).show();
+                }
+            }).setNegativeButton("Not this time",null).show();
     }
 
     private void transmitReaction(String id,String code){
@@ -994,6 +980,7 @@ public final class MainActivity extends Activity {
                 getSharedPreferences("humkin-radio",MODE_PRIVATE)
                         .getBoolean("analog-static",true);
         RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
+        HumServerBridge.refresh(getApplicationContext());
         refreshAlbumIndex();
         humHandler.removeCallbacks(humPulse);
         humHandler.post(humPulse);
