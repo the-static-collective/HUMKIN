@@ -71,3 +71,11 @@ footer a{text-decoration:none}
 @media(max-width:850px){.body-grid{grid-template-columns:1fr}.side{grid-template-columns:1fr 1fr}.tower{width:240px;flex-basis:240px}.r3{width:205px;height:205px}.earth{left:-80px}}
 @media(max-width:620px){.mast{padding:44px 5% 30px;min-height:0}.tower{display:none}.body-grid{padding:28px 4% 65px}.side{grid-template-columns:1fr}.top nav{font-size:10px;gap:10px}.song-choice{grid-template-columns:1fr;gap:5px}.on-air img{width:180px}.paper h2{font-size:42px}h1{font-size:74px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.station-seed-tools{background:#e8efe4;border:1px solid #9eb8a6;border-radius:10px;padding:12px 15px;margin:13px 0 18px}
+.station-seed-tools summary{font-size:11px;font-weight:950;letter-spacing:.09em;cursor:pointer}
+.station-seed-tools p{font-size:13px;margin:12px 0 8px;line-height:1.55}
+.station-seed-tools small{display:block;font-size:11px;line-height:1.5;color:#625669;margin-top:11px}
+.seed-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.seed-actions button,.restore-label{display:inline-flex;align-items:center;justify-content:center;background:#fff8ec;border:1px solid var(--ink);border-radius:20px;padding:9px 12px;font-size:10px;font-weight:900;cursor:pointer;min-height:38px}
+.seed-actions button:disabled{opacity:.5;cursor:not-allowed}
