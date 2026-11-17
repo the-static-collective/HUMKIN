@@ -53,3 +53,9 @@ jobs:
           name: humkin-radio-android-rebel-027
           path: apps/android/app/build/outputs/apk/radioRebel/app-radioRebel.apk
           if-no-files-found: error
+
+      # Explicit one-shot smoke check. Never create disposable test accounts
+      # on ordinary Android build pushes; the test uses an ephemeral signing key.
+      - name: Verify signed HUM server transaction boundaries (one-time)
+        if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, 'HUM-WALLET-LIVE-TEST') }}
+        run: node tests/hum-wallet-live-smoke.mjs
