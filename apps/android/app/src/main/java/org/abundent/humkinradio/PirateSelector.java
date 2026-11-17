@@ -91,20 +91,21 @@ final class PirateSelector {
         }
         Collections.sort(ranked,Comparator.comparingDouble(r->r.key));
         List<String> order=new ArrayList<>(ranked.size());
+        Set<String> used=new HashSet<>();
         // The founding song never disappears when the listener asks for it.
-        if(anchor!=null&&known.contains(anchor))order.add(anchor);
+        if(anchor!=null&&known.contains(anchor)){order.add(anchor);used.add(anchor);}
         int lastEra=-1,run=0;
         while(order.size()<ranked.size()) {
             int pick=-1;
             for(int i=0;i<ranked.size();i++){
                 Ranked r=ranked.get(i);
-                if(order.contains(r.song.id))continue;
+                if(used.contains(r.song.id))continue;
                 int era=r.song.newEra?1:0;
                 if(run>=2 && era==lastEra)continue;
                 pick=i;break;
             }
             if(pick<0)for(int i=0;i<ranked.size();i++){
-                if(!order.contains(ranked.get(i).song.id)){pick=i;break;}
+                if(!used.contains(ranked.get(i).song.id)){pick=i;break;}
             }
             if(pick<0)break;
             Ranked chosen=ranked.get(pick);
@@ -112,6 +113,7 @@ final class PirateSelector {
             run=era==lastEra?run+1:1;
             lastEra=era;
             order.add(chosen.song.id);
+            used.add(chosen.song.id);
         }
         return order;
     }
