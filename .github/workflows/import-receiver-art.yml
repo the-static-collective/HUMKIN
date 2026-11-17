@@ -17,10 +17,11 @@ jobs:
           python-version: '3.11'
       - name: Download approved concept art from Canva design
         run: |
+          # Attempt original 864x1536 user-supplied art, not the Canva
+          # document's smaller preview. A failed asset fetch never changes
+          # the previously committed resource.
           curl --fail --location --retry 2 --connect-timeout 10 --max-time 120 \
-            'https://design.canva.ai/M7KPvcwZXvtRCqv' -o /tmp/living_receiver_source || \
-          curl --fail --location --retry 2 --connect-timeout 10 --max-time 120 \
-            'https://media.canva.com/v2/document-image/hash:983785515/height:596/id:DAHbL6zpxIc/type:B/width:335?brand=BAHRX61Rv5g&csig=AAAAAAAAAAAAAAAAAAAAABIOsuuNloItWuqiLAkzGJqo4kA724_5oLi_DYlIPJXZ&exp=1794940545&fallback=https%3A%2F%2Fs3.amazonaws.com%2Fdocument-export.canva.com%2FzpxIc%2FDAHbL6zpxIc%2F1%2Fthumbnail%2F0001.png%3FX-Amz-Algorithm%3DAWS4-HMAC-SHA256%26X-Amz-Credential%3DAKIAQYCGKMUHW27RK5IK%252F20261117%252Fus-east-1%252Fs3%252Faws4_request%26X-Amz-Date%3D20261117T012310Z%26X-Amz-Expires%3D61507%26X-Amz-Signature%3Dc7708db437b543ba284beb87b329587faddd1d736a4e64818a63041a256b3a68%26X-Amz-SignedHeaders%3Dhost%26response-expires%3DTue%252C%252017%2520Nov%25202026%252018%253A28%253A17%2520GMT&osig=AAAAAAAAAAAAAAAAAAAAAJMfAArlaQrDS9y_n9RvUDP945sETCI1JcX_ia5fLUf7&page=1&signed=brand%2Cfallback%2Cpage%2Cversion&signer=document-rpc&version=1' -o /tmp/living_receiver_source
+            'https://media.canva.com/v2/image-resize/format:JPG/height:1536/quality:90/uri:ifs%3A%2F%2FM%2F15484de4-baeb-49b6-91cf-73a357a16be9/watermark:F/width:864?csig=AAAAAAAAAAAAAAAAAAAAANEff1QjY3NlqdEW9swP81Zf2vwjcNp0HpkkU6LKuoTB&exp=1794951454&osig=AAAAAAAAAAAAAAAAAAAAAOigLGxoEJLAGVcig4XclMAGXJLq9OOZ-b37YdVzS3xT&signer=media-rpc&token=AAIAAU0AJDE1NDg0ZGU0LWJhZWItNDliNi05MWNmLTczYTM1N2ExNmJlOQAAAAABoetxnTDdQZVkLX_B4OuqXxsylabzKs2ajPeTgoK2Qsxq6gsESg&x-canva-quality=thumbnail' -o /tmp/living_receiver_source
           file /tmp/living_receiver_source
           python -m pip -q install pillow
           python - <<'PY'
