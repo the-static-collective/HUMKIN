@@ -10,8 +10,8 @@ android {
         applicationId 'org.abundent.humkinradio'
         minSdk 26
         targetSdk 36
-        versionCode 18
-        versionName '0.18.0'
+        versionCode 19
+        versionName '0.19.0'
         resValue 'string', 'app_name', 'HUMKIN RADIO'
     }
 
@@ -21,9 +21,9 @@ android {
     buildTypes {
         fieldTest {
             initWith debug
-            applicationIdSuffix '.network'
+            applicationIdSuffix '.station'
             versionNameSuffix '-fieldtest'
-            resValue 'string', 'app_name', 'HUMKIN RADIO · NETWORK'
+            resValue 'string', 'app_name', 'HUMKIN RADIO · STATION'
         }
     }
 
