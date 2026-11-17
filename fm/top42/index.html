@@ -10,6 +10,7 @@
 <title>THE TOP 42 · HUMKIN RADIO</title>
 <link rel="stylesheet" href="./league.css">
 <script defer src="./league.js"></script>
+<script defer src="./resonance.js"></script>
 </head>
 <body>
 <header class="topline">
@@ -45,6 +46,17 @@
  <div class="table-labels" aria-hidden="true"><span>RANK / RECORDING</span><span>RADIO</span><span>PLAYLIST</span><span>PLAYS</span></div>
  <ol id="chart-list" class="chart-list"><li class="waiting">The scorekeepers are coming.</li></ol>
  <p class="footnote">Only counted, qualifying listeners earn points—not automatic station spins. Counts are provisional and subject to duplicate limits. Zero-play songs remain discoverable in the builder, not invented chart hits.</p>
+</section>
+
+<section class="weather section" id="listener-weather" aria-labelledby="weather-heading">
+  <div class="section-header"><div>
+    <p class="eyebrow">THE LISTENER WEATHER / SONGS THAT REACHED SOMEONE</p>
+    <h2 id="weather-heading">HOW IT <em>LANDED.</em></h2>
+    <p>Not stars. Not likes. A song gave somebody hope, made them cry, or simply stayed with them. One small, honest answer at a time.</p>
+  </div><div class="chart-actions"><button type="button" class="outline" id="weather-refresh">↻ CHECK THE WEATHER</button></div></div>
+  <p class="small" id="weather-status" role="status">Looking out the station window…</p>
+  <ol id="weather-list" class="weather-list" aria-live="polite"><li class="waiting">Waiting for a human signal…</li></ol>
+  <p class="footnote">Anonymous, opt-in and provisional. One current response per song per random device key per station week. A reaction is not a qualified listen, a verified person, a vote, or guaranteed airtime. It never alters the official Top 42 score.</p>
 </section>
 
 <section class="build section" id="make" aria-labelledby="build-heading">
