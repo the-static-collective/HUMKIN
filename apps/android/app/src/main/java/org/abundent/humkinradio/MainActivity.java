@@ -97,6 +97,7 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        HumCrashNote.install(getApplicationContext());
 
         // Remember the listener's dial choice, not the first default station.
         radioMode = getSharedPreferences("humkin-radio", MODE_PRIVATE)
@@ -634,6 +635,24 @@ public final class MainActivity extends Activity {
                 ? "Future responses can be sent anonymously; existing memories stay local."
                 : "Future responses will stay on this phone.",Toast.LENGTH_LONG).show();
         });
+        String lastCrash=HumCrashNote.report(this);
+        if(!lastCrash.isEmpty()){
+            titles.add("LAST APP CRASH · copy diagnostic");
+            actions.add(()->new AlertDialog.Builder(this)
+                .setTitle("LAST HUMKIN CRASH")
+                .setMessage("A private crash note was saved on this phone. "+
+                    "Nothing is uploaded automatically. Copy it to share with a developer.")
+                .setPositiveButton("Copy report",(d,w)->{
+                    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)
+                        getSystemService(CLIPBOARD_SERVICE);
+                    if(clipboard!=null)
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+                            "HUMKIN crash report",lastCrash));
+                    Toast.makeText(this,"Crash details copied.",Toast.LENGTH_SHORT).show();
+                })
+                .setNeutralButton("Clear note",(d,w)->HumCrashNote.clear(this))
+                .setNegativeButton("Close",null).show());
+        }
         titles.add("Station archive");
         actions.add(() -> visit("https://humkin.abundent.org/fm/archive/"));
         titles.add("Privacy");
