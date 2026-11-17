@@ -22,6 +22,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from scheduler_v2 import StationV2
 
 API="https://kbhqacsdvjsstzyplqij.supabase.co"
 KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"
@@ -116,7 +117,7 @@ class Station:
 def cache_track(item,cache):
     cache.mkdir(parents=True,exist_ok=True)
     url=str(item["url"])
-    if not url.startswith(("https://humkin.abundent.org/","https://kbhqacsdvjsstzyplqij.supabase.co/storage/v1/object/public/humkin-radio-live/")):
+    if not url.startswith(("https://humkin.abundent.org/","https://kbhqacsdvjsstzyplqij.supabase.co/storage/v1/object/public/humkin-radio-live/","https://media.abundent.org/")):
         raise ValueError("Track URL is outside approved audio origins")
     name=hashlib.sha256(url.encode()).hexdigest()+".mp3"
     final=cache/name
@@ -205,8 +206,13 @@ def output_process(destination,bitrate,realtime=True):
       *inputs,
       "-af","dynaudnorm=f=250:g=15:p=0.9",
       "-codec:a","libmp3lame","-b:a",str(bitrate)+"k",
-      "-content_type","audio/mpeg","-f","mp3",destination
-    ],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL)
+      "-content_type","audio/mpeg",
+      # Use FFmpeg's encrypted Icecast source connection; fail closed if TLS
+      # is not supported by the host. Source URL is visible to local admins
+      # through FFmpeg argv, so restrict workstation access.
+      *(["-tls","1","-ice_name","HUMKIN RADIO"] if destination.startswith("icecast://") else []),
+      "-f","mp3",destination
+    ],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
 def streaming(catalog,args):
     if not shutil.which("ffmpeg"):raise RuntimeError("FFmpeg must be installed")
@@ -216,7 +222,7 @@ def streaming(catalog,args):
     output=str(args.file_output) if args.file_output else url
     if not args.file_output and not output.startswith("icecast://"):
         raise RuntimeError("HUMKIN_ICECAST_URL must start with icecast://")
-    station=Station(catalog)
+    station=StationV2(catalog,seed=args.seed if args.seed is not None else int(time.time())) if catalog.get("policy_version")==2 else Station(catalog)
     cache=Path(args.cache).expanduser().resolve()
     encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output))
     written=0
@@ -235,6 +241,7 @@ def streaming(catalog,args):
         current=station.next()
         ahead=station.next()
         decode_current=decode(cache_track(current,cache))
+        cache_track(ahead,cache)
         while True:
             print("ON AIR:",current["artist"],"—",current["title"],flush=True)
             tail_size=overlap_bytes(current,ahead,args.crossfade)
@@ -250,6 +257,7 @@ def streaming(catalog,args):
                 # If decoder reads less than requested, no source data is dropped.
                 current=ahead
                 ahead=station.next()
+                cache_track(ahead,cache)
                 decode_current=head_process
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
                 print("Audio source problem; moving on:",exc,file=sys.stderr)
@@ -278,6 +286,8 @@ def streaming(catalog,args):
 def main():
     p=argparse.ArgumentParser(description="HUMKIN always-on audio source; physical server setup required")
     p.add_argument("--dry-run",action="store_true",help="show the next 20 selections; no downloads or publishing")
+    p.add_argument("--seed",type=int,help="deterministic program selection for offline tests")
+    p.add_argument("--retry-count",type=int,default=5,help="bounded retries after Icecast disconnect")
     p.add_argument("--fixture",type=Path,help="test with a local exported catalog JSON")
     p.add_argument("--at",help="dry-run timestamp (e.g. 2026-11-13T13:30:00+00:00)")
     p.add_argument("--cache",default="./radio-cache",help="local MP3 cache folder")
@@ -288,16 +298,26 @@ def main():
     p.add_argument("--crossfade",type=float,default=1.5,help="equal-power crossfade seconds, 0–5")
     args=p.parse_args()
     if not 0<=args.crossfade<=5:p.error("--crossfade must be between 0 and 5")
+    if not 0<=args.retry_count<=100:p.error("--retry-count must be between 0 and 100")
     if args.fixture:catalog=json.loads(args.fixture.read_text(encoding="utf-8"))
     else:catalog=live_catalog()
     if args.dry_run:
-        station=Station(catalog)
+        station=StationV2(catalog,seed=args.seed if args.seed is not None else 2026) if catalog.get("policy_version")==2 else Station(catalog)
         at=datetime.fromisoformat(args.at.replace("Z","+00:00")) if args.at else datetime.now(timezone.utc)
         print("SIMULATED show:",(station.program(at) or {}).get("name","all-music"),"at",at.astimezone(ZONE))
         for n in range(20):
             track=station.next(at)
             print(f"{n+1:02d} {track['kind']:7} {track.get('artist','HUMKIN')} — {track['title']}")
         return
-    streaming(catalog,args)
+    for attempt in range(args.retry_count+1):
+        try:
+            streaming(catalog,args)
+            return
+        except (OSError,RuntimeError,subprocess.SubprocessError):
+            if args.file_output or attempt>=args.retry_count:raise
+            delay=min(60,2**attempt)
+            print("Broadcast disconnected; reconnecting after "+str(delay)+"s.",file=sys.stderr)
+            time.sleep(delay)
+            if not args.fixture:catalog=live_catalog()
 if __name__=="__main__":
     main()
