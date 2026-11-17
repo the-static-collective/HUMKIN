@@ -34,6 +34,14 @@ public class SignalMathTest {
         assertEquals(3,SignalMath.experiencePerPulse(1));
         assertTrue(SignalMath.cacheCapacity(1,1)>SignalMath.cacheCapacity(1,0));
     }
+    @Test public void antennaUpgradeEarnsControlOfRadioStatic() {
+        assertFalse(SignalMath.canControlRadioStatic(0));
+        assertTrue(SignalMath.canControlRadioStatic(1));
+        assertTrue(SignalMath.canControlRadioStatic(9));
+        // XP level alone never unlocks hardware settings.
+        assertFalse(SignalMath.canControlRadioStatic(0));
+    }
+
     @Test public void expeditionsHaveLegibleFiniteGoals() {
         assertEquals(8,SignalMath.missionGoal(0));
         assertEquals(4,SignalMath.missionGoal(1));
