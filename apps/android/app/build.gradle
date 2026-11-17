@@ -21,9 +21,9 @@ android {
     buildTypes {
         fieldTest {
             initWith debug
-            applicationIdSuffix '.network'
+            applicationIdSuffix '.station'
             versionNameSuffix '-fieldtest'
-            resValue 'string', 'app_name', 'HUMKIN RADIO · NETWORK'
+            resValue 'string', 'app_name', 'HUMKIN RADIO · STATION'
         }
     }
 
