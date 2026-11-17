@@ -57,6 +57,13 @@ public final class OutpostActivity extends Activity {
     private int lastMilestoneStage=-1;
     private OutpostMapView map;
     private ScrollView scroll;
+    private LinearLayout stationDrawers;
+    private Button drawerToggle, directorButton, orchardDoor, frequencyDoor;
+    private TextView directorEyebrow, directorTitle, directorWhy, directorEffect,
+                     directorProof, directorDelta;
+    private boolean drawersOpen;
+    private String lastRealChange="";
+    private int lastSeenGrafts=-1;
 
     private int dp(float x){return HumkinVisuals.dp(this,x);}
     private LinearLayout vertical(){
@@ -190,14 +197,6 @@ public final class OutpostActivity extends Activity {
         statusText=add(hero,"○ THE RECEIVER IS QUIET",11,HumkinVisuals.WHITE,true,15);
         page.addView(hero,full(0));
 
-        LinearLayout world=vertical();
-        world.setPadding(dp(15),dp(16),dp(15),0);
-        map=new OutpostMapView(this);
-        map.setContentDescription("Illustrated radio-tower map. More relay sites unlock at higher levels.");
-        LinearLayout.LayoutParams mapParams=new LinearLayout.LayoutParams(-1,dp(196));
-        world.addView(map,mapParams);
-        page.addView(world,full(0));
-
         LinearLayout body=vertical();
         body.setPadding(dp(15),dp(8),dp(15),dp(38));
         page.addView(body,full(0));
@@ -229,6 +228,32 @@ public final class OutpostActivity extends Activity {
             discoveryBoard=vertical();
             body.addView(discoveryBoard,full(14));
         }
+
+        // The next MOVE comes first: no wall of currencies or invented quests.
+        // This stateful storylet presents one verifiable real change at a time.
+        LinearLayout director=card(body,0xffffe5b5,9);
+        directorEyebrow=eyebrow(director,"WHAT CAN CHANGE NEXT?",0,HumkinVisuals.PLUM);
+        directorTitle=add(director,"The receiver has a purpose.",25,HumkinVisuals.INK,true,9);
+        directorWhy=add(director,"Listen to something real.",13,HumkinVisuals.INK,false,9);
+        directorEffect=add(director,"You will hear an actual song.",12,HumkinVisuals.PLUM,true,10);
+        directorButton=pill("RETURN TO RADIO",HumkinVisuals.YELLOW,17);
+        directorButton.setOnClickListener(v->performDirectedStep());
+        director.addView(directorButton,full(12));
+        directorDelta=add(director,"",13,HumkinVisuals.INK,true,12);
+        directorDelta.setVisibility(View.GONE);
+        directorProof=add(director,"0m actually heard",11,HumkinVisuals.PLUM,true,12);
+
+        // Earned worlds stay discoverable. Their names are not spoiled early.
+        LinearLayout worldDoors=horizontal();
+        orchardDoor=pill("✳ THE ORCHARD ↗",HumkinVisuals.MINT,13);
+        orchardDoor.setOnClickListener(v->openMilestone(OutpostMilestones.ORCHARD));
+        worldDoors.addView(orchardDoor,new LinearLayout.LayoutParams(0,dp(56),1f));
+        frequencyDoor=pill("♫ MY FREQUENCY ↗",HumkinVisuals.YELLOW,13);
+        frequencyDoor.setOnClickListener(v->openMilestone(OutpostMilestones.BOOTLEG));
+        LinearLayout.LayoutParams secondDoor=new LinearLayout.LayoutParams(0,dp(56),1f);
+        secondDoor.leftMargin=dp(8);
+        worldDoors.addView(frequencyDoor,secondDoor);
+        body.addView(worldDoors,full(11));
 
         // The service remembers only actual audible progress. Keep this one
         // small optional ticket ahead of the game dashboards.
@@ -272,9 +297,30 @@ public final class OutpostActivity extends Activity {
         });
         vault.addView(claimCache,full(13));
 
-        eyebrow(body,"02 / MAKE THE TOWER BETTER",23,HumkinVisuals.PLUM);
-        add(body,"THE WORKSHOP",28,HumkinVisuals.INK,true,6);
-        add(body,"Each upgrade improves what the station earns from real listening. "+
+        // A Dark Room / Universal Paperclips lesson: one clear next verb,
+        // the rest available on demand. No earned ability is deleted.
+        drawerToggle=pill("＋ OPEN THE STATION'S OTHER DESKS",HumkinVisuals.MINT,14);
+        drawerToggle.setOnClickListener(v->{
+            drawersOpen=!drawersOpen;
+            stationDrawers.setVisibility(drawersOpen?View.VISIBLE:View.GONE);
+            drawerToggle.setText(drawersOpen?"− CLOSE THE OTHER DESKS":
+                    "＋ OPEN THE STATION'S OTHER DESKS");
+        });
+        body.addView(drawerToggle,full(14));
+        stationDrawers=vertical();
+        stationDrawers.setVisibility(View.GONE);
+        body.addView(stationDrawers,full(3));
+        LinearLayout world=vertical();
+        world.setPadding(dp(0),dp(6),dp(0),0);
+        map=new OutpostMapView(this);
+        map.setContentDescription("Illustrated radio-tower map of actually earned sectors.");
+        LinearLayout.LayoutParams mapParams=new LinearLayout.LayoutParams(-1,dp(172));
+        world.addView(map,mapParams);
+        stationDrawers.addView(world,full(6));
+
+        eyebrow(stationDrawers,"02 / MAKE THE TOWER BETTER",23,HumkinVisuals.PLUM);
+        add(stationDrawers,"THE WORKSHOP",28,HumkinVisuals.INK,true,6);
+        add(stationDrawers,"Each upgrade improves what the station earns from real listening. "+
             "New activities will arrive when there is something real to do.",12,HumkinVisuals.PLUM,false,5);
         String[] moduleNames={"THE ANTENNA","THE TAPE ARCHIVE","THE NIGHT CREW"};
         String[] moduleDesc={
@@ -284,7 +330,7 @@ public final class OutpostActivity extends Activity {
         };
         for(int i=0;i<3;i++){
             final int module=i;
-            LinearLayout panel=card(body,0xfffffdf6,11);
+            LinearLayout panel=card(stationDrawers,0xfffffdf6,11);
             eyebrow(panel,"WORKSHOP  /  "+String.format(java.util.Locale.US,"%02d",i+1),0,HumkinVisuals.PLUM);
             LinearLayout info=horizontal();
             LinearLayout labels=vertical();
@@ -313,18 +359,20 @@ public final class OutpostActivity extends Activity {
             panel.addView(info,full(3));
         }
 
-        // A visible capability tree with actual interaction screens, not
-        // cosmetic level-up text. Unimplemented doors remain honest previews.
-        if(SHOW_EXPERIMENTAL_PANELS){
-        eyebrow(body,"04 / REPAIR THE STATION, CHANGE WHAT YOU CAN DO",30,HumkinVisuals.PLUM);
-        add(body,"THE UNLOCK BOARD",30,HumkinVisuals.INK,true,6);
-        add(body,"The board unfolds as each workshop department improves. "+
+        // Earned specialist desks are REAL capabilities. Keep their skill
+        // board inside the optional drawer rather than disabling access to
+        // working Chart Radar / Crate / Little Press / Beacon / Night Editor.
+        // The board still reveals only one prospective tier per specialty.
+        {
+        eyebrow(stationDrawers,"04 / REPAIR THE STATION, CHANGE WHAT YOU CAN DO",30,HumkinVisuals.PLUM);
+        add(stationDrawers,"THE UNLOCK BOARD",30,HumkinVisuals.INK,true,6);
+        add(stationDrawers,"The board unfolds as each workshop department improves. "+
             "You won't see every mystery at the beginning.",
             12,HumkinVisuals.PLUM,false,7);
         String[] departments={"ANTENNA","TAPE ARCHIVE","NIGHT CREW"};
         for(int i=0;i<SignalFeatures.DOORS.length;i++){
             SignalFeatures.Door door=SignalFeatures.DOORS[i];
-            LinearLayout card=card(body,door.implemented?0xfffffdf6:0xffeee7ec,11);
+            LinearLayout card=card(stationDrawers,door.implemented?0xfffffdf6:0xffeee7ec,11);
             featureCards[i]=card;
             eyebrow(card,departments[door.module]+"  /  TIER "+door.tier+
                 (door.implemented?"  /  READY TO UNLOCK":"  /  FUTURE PROJECT"),
@@ -354,10 +402,10 @@ public final class OutpostActivity extends Activity {
         }
         }
 
-        eyebrow(body,"03 / REAL LISTENING CHALLENGES",23,HumkinVisuals.PLUM);
-        add(body,"FIELD MISSIONS",29,HumkinVisuals.INK,true,7);
-        add(body,"Pick a listening challenge. Progress counts only while actual music plays.",12,HumkinVisuals.PLUM,false,6);
-        LinearLayout expeditions=card(body,0xffeee0ec,12);
+        eyebrow(stationDrawers,"03 / REAL LISTENING CHALLENGES",23,HumkinVisuals.PLUM);
+        add(stationDrawers,"FIELD MISSIONS",29,HumkinVisuals.INK,true,7);
+        add(stationDrawers,"Pick a listening challenge. Progress counts only while actual music plays.",12,HumkinVisuals.PLUM,false,6);
+        LinearLayout expeditions=card(stationDrawers,0xffeee0ec,12);
         missionChoices=vertical();
         String[] missions={"STAY TUNED  /  8 MINUTES",
                 "HEAR FOUR DIFFERENT SONGS",
@@ -386,9 +434,9 @@ public final class OutpostActivity extends Activity {
         missionActive.addView(missionClaim,full(13));
         expeditions.addView(missionActive,full(0));
 
-        eyebrow(body,"04 / TODAY ON THE RADIO",23,HumkinVisuals.PLUM);
-        add(body,"TODAY'S ORDERS",29,HumkinVisuals.INK,true,5);
-        LinearLayout orders=card(body,0xfffffdf6,11);
+        eyebrow(stationDrawers,"04 / TODAY ON THE RADIO",23,HumkinVisuals.PLUM);
+        add(stationDrawers,"TODAY'S ORDERS",29,HumkinVisuals.INK,true,5);
+        LinearLayout orders=card(stationDrawers,0xfffffdf6,11);
         String[] assignments={"TAKE A FOUR-MINUTE SHIFT","HEAR THREE DIFFERENT SONGS","SCOUT THE TOP 42 BOARD"};
         String[] rewards={"+40 SIGNAL · +15 XP","+50 SIGNAL · +25 XP","+25 SIGNAL · +12 XP"};
         for(int i=0;i<3;i++){
@@ -416,15 +464,15 @@ public final class OutpostActivity extends Activity {
         // secondary dashboards on the receiver. Their data and real station
         // destinations remain available elsewhere for future integrations.
         if(SHOW_EXPERIMENTAL_PANELS){
-        eyebrow(body,"07 / YOUR TROPHY CABINET",28,HumkinVisuals.PLUM);
-        add(body,"WALL OF ODDITIES",29,HumkinVisuals.INK,true,5);
-        LinearLayout trophy=card(body,0xfffffdf6,11);
+        eyebrow(stationDrawers,"07 / YOUR TROPHY CABINET",28,HumkinVisuals.PLUM);
+        add(stationDrawers,"WALL OF ODDITIES",29,HumkinVisuals.INK,true,5);
+        LinearLayout trophy=card(stationDrawers,0xfffffdf6,11);
         achievementText=add(trophy,"The shelf is still empty.",12,HumkinVisuals.INK,true,0);
         add(trophy,"Nothing here changes the public song charts. They're your own little radio stories.",11,HumkinVisuals.PLUM,false,10);
 
-        eyebrow(body,"08 / THE OFFICE OF QUESTIONABLE NOTICES",28,HumkinVisuals.PLUM);
-        add(body,"THE NIGHT DESK",29,HumkinVisuals.INK,true,5);
-        LinearLayout desk=card(body,0xffeee0ec,11);
+        eyebrow(stationDrawers,"08 / THE OFFICE OF QUESTIONABLE NOTICES",28,HumkinVisuals.PLUM);
+        add(stationDrawers,"THE NIGHT DESK",29,HumkinVisuals.INK,true,5);
+        LinearLayout desk=card(stationDrawers,0xffeee0ec,11);
         eyebrow(desk,"LOCAL EVENT LOG  /  THE COMMITTEE IS AWAY",0,HumkinVisuals.PLUM);
         chronicleText=add(desk,"No reports filed yet. Suspicious.",13,HumkinVisuals.INK,false,12);
         add(desk,"Reports are generated from your actual discoveries, upgrades and crew returns. "+
@@ -432,7 +480,7 @@ public final class OutpostActivity extends Activity {
 
         // Joining the station is a real capability: the Guild Desk accepts
         // authenticated-by-evidence work, not purchased public chart plays.
-        LinearLayout stationGuild=card(body,HumkinVisuals.MINT,25);
+        LinearLayout stationGuild=card(stationDrawers,HumkinVisuals.MINT,25);
         eyebrow(stationGuild,"10 / THE STATION IS ACTUALLY HERE",0,HumkinVisuals.PLUM);
         add(stationGuild,"THE STATION GUILDS",29,HumkinVisuals.INK,true,8);
         add(stationGuild,"Put the radio to work. Submit an original bumper, music video, song, script, honest street-team post, or unused server for actual review. "+
@@ -442,7 +490,7 @@ public final class OutpostActivity extends Activity {
         guildEntry.setOnClickListener(v->startActivity(new Intent(this,GuildActivity.class)));
         stationGuild.addView(guildEntry,full(14));
 
-        LinearLayout leagueCard=card(body,HumkinVisuals.YELLOW,25);
+        LinearLayout leagueCard=card(stationDrawers,HumkinVisuals.YELLOW,25);
         eyebrow(leagueCard,"09 / YOUR OTHER GAME IS RUNNING",0,HumkinVisuals.PLUM);
         add(leagueCard,"THE TOP 42",32,HumkinVisuals.INK,true,8);
         add(leagueCard,"Your listening helps the real station chart. Make EPs, draft weekly albums, and champion the songs you love.",13,HumkinVisuals.INK,false,6);
@@ -522,9 +570,80 @@ public final class OutpostActivity extends Activity {
         }
     }
 
+    /** A measurable snapshot of *already-existing* game and audio facts. */
+    private OutpostDirector.Facts facts(SignalRpg.Snapshot s) {
+        return new OutpostDirector.Facts(
+                s.level,s.xp,s.wallet,s.capacitor,s.tower,s.archive,s.crew,
+                s.discovered,s.missions,s.totalMs,s.missionActive,s.missionReady(),
+                s.missionId,s.missionProgress,s.missionTarget,
+                GraftTapeStore.snapshot(this).queuedCount,s.onAir);
+    }
+
+    private void confirmedMutation(OutpostDirector.Facts before,boolean accepted) {
+        if(!accepted){announce("Nothing changed. Your progress is safe.");return;}
+        OutpostDirector.Facts after=facts(SignalRpg.snapshot(this));
+        String result=OutpostDirector.delta(before,after);
+        if(!result.isEmpty()){
+            lastRealChange=result;
+            directorButton.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+        }
+        drawState();
+    }
+
+    /** Re-evaluates right before acting. No stale storylet grants authority. */
+    private void performDirectedStep() {
+        SignalRpg.Snapshot now=SignalRpg.snapshot(this);
+        OutpostDirector.Facts before=facts(now);
+        OutpostDirector.Step step=OutpostDirector.choose(before);
+        switch(step.verb) {
+            case RADIO: radio();return;
+            case GRAFT:
+                if(OutpostMilestones.unlocked(OutpostMilestones.ORCHARD,now.level))
+                    startActivity(new Intent(this,GraftTapeActivity.class));
+                return;
+            case PERSONAL_FREQUENCY:
+                openMilestone(OutpostMilestones.BOOTLEG);return;
+            case COLLECT:
+                confirmedMutation(before,SignalRpg.collect(this)>0);return;
+            case ANTENNA:
+                confirmedMutation(before,SignalRpg.upgrade(this,0));return;
+            case ARCHIVE:
+                confirmedMutation(before,SignalRpg.upgrade(this,1));return;
+            case CREW:
+                confirmedMutation(before,SignalRpg.upgrade(this,2));return;
+            case START_MISSION:
+                confirmedMutation(before,SignalRpg.startMission(this,0));return;
+            case CLAIM_MISSION:
+                confirmedMutation(before,SignalRpg.claimMission(this));return;
+        }
+    }
+
+    private void paintDirector(SignalRpg.Snapshot state) {
+        OutpostDirector.Facts f=facts(state);
+        if(lastSeenGrafts<0)lastSeenGrafts=f.queuedTapes;
+        else if(f.queuedTapes>lastSeenGrafts){
+            // A Media3 queue check occurred inside the Grafting Bench.
+            lastRealChange="CONFIRMED · a new two-song listening queue was accepted (graft #"+
+                    f.queuedTapes+").";
+            lastSeenGrafts=f.queuedTapes;
+        }
+        OutpostDirector.Step step=OutpostDirector.choose(f);
+        directorEyebrow.setText(step.eyebrow);
+        directorTitle.setText(step.title);
+        directorWhy.setText(step.why);
+        directorEffect.setText("WHAT CHANGES → "+step.effect);
+        directorButton.setText("✳ "+step.button);
+        directorProof.setText("OBSERVED · "+OutpostDirector.witness(f));
+        directorDelta.setVisibility(lastRealChange.isEmpty()?View.GONE:View.VISIBLE);
+        if(!lastRealChange.isEmpty())directorDelta.setText(lastRealChange);
+        orchardDoor.setVisibility(state.level>=4?View.VISIBLE:View.GONE);
+        frequencyDoor.setVisibility(state.level>=7?View.VISIBLE:View.GONE);
+    }
+
     private void drawState() {
         if(levelText==null)return;
         SignalRpg.Snapshot s=SignalRpg.snapshot(this);
+        paintDirector(s);
         levelText.setText("LEVEL "+s.level);
         rankText.setText(s.rank);
         chapterText.setText(s.chapter+"  /  SECTOR "+(1+(s.level>=4?1:0)+(s.level>=7?1:0)+(s.level>=11?1:0)));
