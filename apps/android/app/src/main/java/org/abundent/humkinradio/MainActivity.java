@@ -328,8 +328,9 @@ public final class MainActivity extends Activity {
                 startActivity(new Intent(this,OutpostActivity.class)));
         radioScreen.addView(outpostButton,wrap(12));
 
-        // The Top 42, contribution Guilds and public network are real but
-        // secondary, grouped behind one door rather than three large banners.
+        // The Top 42 and real-world station Guilds remain independently useful.
+        // The Orchard's separate Living Network link stays inside its earned
+        // Outpost level-4 room, not a shortcut around the progression.
         Button world=pill("↗  EXPLORE THE STATION WORLD",null,CREAM,14);
         world.setOnClickListener(v->showWorldMenu());
         radioScreen.addView(world,wrap(10));
@@ -357,16 +358,13 @@ public final class MainActivity extends Activity {
                 .setTitle("THE HUMKIN WORLD")
                 .setItems(new String[]{
                         "THE TOP 42 · record league",
-                        "STATION GUILDS · make something real",
-                        "THE LIVING NETWORK · homes & trading"
+                        "STATION GUILDS · make something real"
                 }, (dialog, choice) -> {
                     if(choice==0){
                         SignalRpg.visitLeague(this);
                         startActivity(new Intent(this,LeagueActivity.class));
-                    }else if(choice==1){
-                        startActivity(new Intent(this,GuildActivity.class));
                     }else{
-                        visit("https://humkin.abundent.org/fm/orchard/network.html");
+                        startActivity(new Intent(this,GuildActivity.class));
                     }
                 })
                 .setNegativeButton("Back to radio",null)
