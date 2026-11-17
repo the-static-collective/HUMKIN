@@ -33,7 +33,8 @@ test("server keeps human responses out of official listens and restricts private
  assert.match(edge,/new Set\(\["hope","tears","seen","laugh","move","stayed"\]\)/);
  assert.match(edge,/actor_hash/);
  assert.match(edge,/hash\("resonance\.actor\.v1:"/);
- assert.match(edge,/verify/gi);
+ assert.match(edge,/ALLOWED\.includes\(origin\)/);
+ assert.match(edge,/catalogId\(id\)/);
  assert.doesNotMatch(edge,/\.from\(["']humkin_league_plays/);
  assert.doesNotMatch(edge,/\.rpc\(["']humkin_league_scores/);
  assert.doesNotMatch(edge,/raw_ip|user_email|full_name/i);
