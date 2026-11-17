@@ -34,6 +34,12 @@ final class SignalMath {
     static int experiencePerPulse(int archive) {
         return 2 + archive;
     }
+
+    /** The first Antenna upgrade earns control of analog radio static.
+     * Prior to this, static remains ON during Same-Time radio playback. */
+    static boolean canControlRadioStatic(int antennaTier) {
+        return antennaTier >= 1;
+    }
     static int missionGoal(int missionId) {
         if(missionId==0)return 8; // minutes
         if(missionId==1)return 4; // distinct qualified songs
