@@ -62,13 +62,18 @@ public final class RadioPlaybackService extends MediaSessionService {
     private String leagueTrackId="";
     private long leagueHeardMs=0L,leagueLastTick=0L;
     private boolean leagueSent=false;
-    private String outpostTrackId="";
+    private String outpostTrackId="",outpostTrackTitle="";
     private long outpostTrackHeardMs=0L,outpostUnbankedMs=0L;
     private boolean outpostTrackQualified=false;
 
     private void flushOutpost() {
         if(outpostUnbankedMs>0L){
             SignalRpg.audible(getApplicationContext(),outpostUnbankedMs);
+            // Same bounded, actually audible Media3 batch. No independent
+            // clock or background XP generator in the listening report.
+            OrchardLedger.Snapshot orchard=OrchardLedger.snapshot(getApplicationContext());
+            NativeNightWatch.record(getApplicationContext(),outpostTrackId,
+                    outpostTrackTitle,outpostUnbankedMs,orchard.level,orchard.owned);
             outpostUnbankedMs=0L;
         }
     }
@@ -91,7 +96,10 @@ public final class RadioPlaybackService extends MediaSessionService {
             // the public Top 42's separate radio restrictions stay unchanged.
             if(!id.equals(outpostTrackId)){
                 flushOutpost();
-                outpostTrackId=id;outpostTrackHeardMs=0L;outpostTrackQualified=false;
+                outpostTrackId=id;
+                outpostTrackTitle=current==null||current.mediaMetadata.title==null?
+                        id:current.mediaMetadata.title.toString();
+                outpostTrackHeardMs=0L;outpostTrackQualified=false;
             }
             boolean audible=player!=null && player.isPlaying() &&
                     player.getPlaybackState()==Player.STATE_READY && !id.isEmpty();
@@ -358,7 +366,8 @@ public final class RadioPlaybackService extends MediaSessionService {
             }
             @Override public void onMediaItemTransition(MediaItem item,int reason) {
                 flushOutpost();
-                outpostTrackId="";outpostTrackHeardMs=0L;outpostTrackQualified=false;
+                outpostTrackId="";outpostTrackTitle="";
+                outpostTrackHeardMs=0L;outpostTrackQualified=false;
                 leagueTrackId="";leagueHeardMs=0L;leagueSent=false;
                 if (previousRecord != null && item != null
                         && !previousRecord.mediaId.equals(item.mediaId))
