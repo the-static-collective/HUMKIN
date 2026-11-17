@@ -413,6 +413,125 @@ public final class MainActivity extends Activity {
                 .show();
     }
 
+    private TextView labelHumChip(){
+        TextView chip=text("ⓗ 0",15,RebelReceiverSkin.GOLD,true);
+        chip.setGravity(Gravity.CENTER);
+        chip.setPadding(dp(7),0,dp(6),0);
+        chip.setContentDescription("My HUM balance and records");
+        chip.setOnClickListener(v->openMyRecords());
+        return chip;
+    }
+
+    private void openMyRecords(){
+        startActivity(new Intent(this,MyRecordsActivity.class));
+    }
+
+    /** An earned coin is just a 760ms visual acknowledgment, never a prompt. */
+    private void updateHumStatus(){
+        HumWallet.Snapshot wallet=HumWallet.snapshot(this);
+        if(humChip!=null){
+            String text="ⓗ "+wallet.balance;
+            if(!text.contentEquals(humChip.getText()))humChip.setText(text);
+            humChip.setContentDescription(wallet.balance+" local HUM, open My Records");
+        }
+        if(wallet.awardSequence!=lastAwardSeen){
+            lastAwardSeen=wallet.awardSequence;
+            if(wallet.lastAward>0 && System.currentTimeMillis()-wallet.awardAt<12000L)
+                floatCoin(wallet.lastAward);
+        }
+    }
+
+    private void floatCoin(int amount){
+        if(coinBurst==null||onAlbums||isFinishing())return;
+        if(!android.animation.ValueAnimator.areAnimatorsEnabled()){
+            humChip.announceForAccessibility("Plus "+amount+" HUM");
+            return;
+        }
+        coinBurst.animate().cancel();
+        coinBurst.setText("ⓗ  +"+amount+" HUM");
+        coinBurst.setAlpha(1f);
+        coinBurst.setTranslationY(0f);
+        coinBurst.setVisibility(View.VISIBLE);
+        coinBurst.animate()
+            .translationY(-dp(43)).alpha(0f).setDuration(760L)
+            .withEndAction(()->coinBurst.setVisibility(View.INVISIBLE))
+            .start();
+        humChip.announceForAccessibility("Plus "+amount+" HUM");
+    }
+
+    private void updateKeepButtons(MediaItem current){
+        boolean suitable=current!=null && current.localConfiguration!=null &&
+                HumEconomy.canonicalId(current.mediaId)!=null &&
+                HumEconomy.approvedAudio(current.localConfiguration.uri.toString());
+        HumWallet.Snapshot wallet=suitable?HumWallet.snapshot(this):null;
+        String id=suitable?HumEconomy.canonicalId(current.mediaId):null;
+        boolean owned=suitable&&wallet.find(id)!=null;
+        int price=suitable?HumWallet.price(current):1;
+        String label=owned?"✓ IN MY RECORDS  ↗":"ⓗ KEEP THIS RECORD  ·  "+price+" HUM";
+        if(keepRecordButton!=null){
+            keepRecordButton.setVisibility(suitable?View.VISIBLE:View.GONE);
+            if(suitable)keepRecordButton.setText(label);
+            keepRecordButton.setEnabled(!keepDownloading);
+        }
+        if(keepAlbumButton!=null){
+            keepAlbumButton.setVisibility(suitable?View.VISIBLE:View.GONE);
+            if(suitable)keepAlbumButton.setText(label);
+            keepAlbumButton.setEnabled(!keepDownloading);
+        }
+    }
+
+    /** One tap keeps the record and initiates a real DRM-free MP3 download.
+     * A failed download never consumes HUM twice: the entitlement persists. */
+    private void keepNowPlaying(){
+        if(keepDownloading)return;
+        MediaItem item=controller==null?null:controller.getCurrentMediaItem();
+        if(item==null || item.localConfiguration==null)return;
+        String id=HumEconomy.canonicalId(item.mediaId);
+        int result=HumWallet.keep(this,item);
+        if(result==HumWallet.INSUFFICIENT){
+            Toast.makeText(this,"Listen a little longer to earn more HUM.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        if(result==HumWallet.INVALID||id==null){
+            Toast.makeText(this,"This recording isn't available to collect yet.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        HumWallet.Record record=HumWallet.snapshot(this).find(id);
+        if(record==null)return;
+        updateHumStatus();
+        updateKeepButtons(item);
+        if(MusicLibrary.exists(this,record.uri)){
+            openMyRecords();
+            return;
+        }
+        keepDownloading=true;
+        updateKeepButtons(item);
+        Toast.makeText(this,result==HumWallet.ALREADY_OWNED?
+            "Already yours. Downloading again for free…":
+            "ⓗ "+record.price+" HUM · Taking this record home…",Toast.LENGTH_SHORT).show();
+        worker.execute(()->{
+            boolean saved=false;
+            try{
+                Uri file=MusicLibrary.download(getApplicationContext(),record);
+                saved=HumWallet.setDownloaded(getApplicationContext(),record.id,file.toString());
+                if(!saved)MusicLibrary.delete(getApplicationContext(),file.toString());
+            }catch(Exception ignored){}
+            final boolean ok=saved;
+            runOnUiThread(()->{
+                keepDownloading=false;
+                if(isFinishing()||isDestroyed())return;
+                updateHumStatus();
+                updateKeepButtons(controller==null?null:controller.getCurrentMediaItem());
+                Toast.makeText(this,ok?
+                    "Saved in Music/HUMKIN · also in My Records.":
+                    "Download interrupted. Kept in My Records; retry without paying again.",
+                    Toast.LENGTH_LONG).show();
+            });
+        });
+    }
+
     private void reactToSong() {
         MediaItem item=controller==null?null:controller.getCurrentMediaItem();
         String id=item==null?null:SongReactionId.canonical(item.mediaId);
@@ -433,7 +552,14 @@ public final class MainActivity extends Activity {
                     // The answer exists privately on this device regardless of
                     // Internet availability or whether the person elects to share.
                     if(SongReactions.sharing(this)==0){
-                        new AlertDialog.Builder(this)
+                        // First answer previously opened a SECOND AlertDialog
+                        // synchronously while the choices dialog was closing.
+                        // Defer it until that window has been dismissed, so a
+                        // first-time response cannot collide with its token.
+                        dialog.dismiss();
+                        reactionButton.postDelayed(()->{
+                            if(isFinishing()||isDestroyed()||!alive)return;
+                            new AlertDialog.Builder(this)
                                 .setTitle("SHARE IT WITH THE STATION?")
                                 .setMessage("Share the selected song and response as an anonymous, provisional mark in HUMKIN's Listener Weather. A random app key prevents duplicate responses. No name, email or listening history. This will not award chart plays.")
                                 .setPositiveButton("Share my responses",(d,w)->{
@@ -444,6 +570,7 @@ public final class MainActivity extends Activity {
                                     SongReactions.setSharing(this,2);
                                     Toast.makeText(this,"Kept on this phone.",Toast.LENGTH_SHORT).show();
                                 }).show();
+                        },120L);
                     }else if(SongReactions.sharing(this)==1){
                         transmitReaction(id,code);
                     }else{
