@@ -1,0 +1,172 @@
+{
+  "schema": "humkin.skill-tree.slice/v1",
+  "id": "outpost",
+  "mount_at": "radio.outpost",
+  "nodes": [
+    {
+      "id": "outpost.antenna",
+      "parent": "radio.outpost",
+      "title": "Antenna",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_tower",
+          "gte": 1
+        }
+      ],
+      "capability": "humkin.radio.static-control.v1",
+      "description": "Existing first antenna upgrade."
+    },
+    {
+      "id": "outpost.antenna.radar",
+      "parent": "outpost.antenna",
+      "title": "Chart Radar",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_tower",
+          "gte": 1
+        }
+      ],
+      "capability": "humkin.chart.radar.v1",
+      "description": "Real standings and sleepers."
+    },
+    {
+      "id": "outpost.antenna.beacon",
+      "parent": "outpost.antenna.radar",
+      "title": "Request Beacon",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_tower",
+          "gte": 2
+        }
+      ],
+      "capability": "humkin.chart.nomination.v1",
+      "description": "Nominations require a separate user action."
+    },
+    {
+      "id": "outpost.antenna.community",
+      "parent": "outpost.antenna.beacon",
+      "title": "Community Frequencies",
+      "release": "planned",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_tower",
+          "gte": 4
+        }
+      ],
+      "capability": "humkin.frequency.community.v1",
+      "description": "Future: not executable."
+    },
+    {
+      "id": "outpost.archive",
+      "parent": "radio.outpost",
+      "title": "Tape Archive",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_archive",
+          "gte": 1
+        }
+      ],
+      "capability": "humkin.archive.scout-crate.v1",
+      "description": "Private discovery list."
+    },
+    {
+      "id": "outpost.archive.press",
+      "parent": "outpost.archive",
+      "title": "Little Press",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_archive",
+          "gte": 2
+        }
+      ],
+      "capability": "humkin.archive.ep-draft.v1",
+      "description": "Prepares an editable EP, never publishes it."
+    },
+    {
+      "id": "outpost.archive.trade",
+      "parent": "outpost.archive.press",
+      "title": "Record Trading Post",
+      "release": "planned",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_archive",
+          "gte": 4
+        }
+      ],
+      "capability": "humkin.archive.trade.v1",
+      "description": "Future; no monetary transfers."
+    },
+    {
+      "id": "outpost.crew",
+      "parent": "radio.outpost",
+      "title": "Night Crew",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_crew",
+          "gte": 1
+        }
+      ],
+      "capability": "humkin.crew.challenge.v1",
+      "description": "Shareable discovery challenges."
+    },
+    {
+      "id": "outpost.crew.editor",
+      "parent": "outpost.crew",
+      "title": "Night Editor",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_crew",
+          "gte": 2
+        }
+      ],
+      "capability": "humkin.crew.bulletin.v1",
+      "description": "Draft a chart-grounded station bulletin."
+    },
+    {
+      "id": "outpost.crew.relay",
+      "parent": "outpost.crew.editor",
+      "title": "Co-op Relay",
+      "release": "planned",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "module_crew",
+          "gte": 4
+        }
+      ],
+      "capability": "humkin.crew.relay.v1",
+      "description": "Future distributed station work."
+    },
+    {
+      "id": "outpost.orchard",
+      "parent": "radio.outpost",
+      "title": "The Listening Orchard",
+      "release": "live",
+      "reveal": "tease",
+      "requires": [
+        {
+          "fact": "level",
+          "gte": 4
+        }
+      ],
+      "capability": "humkin.orchard.open.v1",
+      "description": "Sealed until level four."
+    }
+  ]
+}
