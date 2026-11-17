@@ -67,7 +67,9 @@ async function publicBoard(){
   const ranked=[...tracks].map(([id,feels])=>({
     id,total:[...feels.values()].reduce((a,b)=>a+b,0),
     feelings:Object.fromEntries(feels)
-  })).sort((a,b)=>b.total-a.total||a.id.localeCompare(b.id)).slice(0,42);
+  })).sort((a,b)=>b.total-a.total||a.id.localeCompare(b.id)).slice(0,500);
+  // The browser selects its own top 12 by a chosen feeling. Returning only
+  // the 42 most-reacted-to titles would silently hide rare-feeling songs.
   return {schema:"humkin.listener-weather/v1",week_start:week,tracks:ranked,
     provisional:true,truncated:(data??[]).length===5000,
     definition:"Distinct app-submitted, anonymous self-reports this station week. One current feeling per song and random listener key. Not verified people, chart plays or votes."};
