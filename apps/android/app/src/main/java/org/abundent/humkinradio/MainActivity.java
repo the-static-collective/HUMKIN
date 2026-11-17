@@ -990,12 +990,17 @@ public final class MainActivity extends Activity {
             String name="✳ OUTPOST / LEVEL "+level;
             if(!name.contentEquals(outpostButton.getText()))outpostButton.setText(name);
         }
-        if (!modeStyled || sameTime.isSelected() != radioMode) {
-            HumkinVisuals.setPillFill(sameTime, radioMode ? YELLOW : MINT, false);
-            HumkinVisuals.setPillFill(road, radioMode ? MINT : YELLOW, false);
-            sameTime.setSelected(radioMode);
-            road.setSelected(!radioMode);
-            modeStyled = true;
+        boolean pirateLive="pirate".equals(source)&&RadioPlaybackService.isPirateArmed();
+        boolean sameSelected=!pirateLive&&radioMode;
+        boolean shuffleSelected=!pirateLive&&!radioMode;
+        if(!modeStyled || sameTime.isSelected()!=sameSelected
+                || road.isSelected()!=shuffleSelected) {
+            // Bootleg Frequency is its own dial. Never label it "Same-Time".
+            HumkinVisuals.setPillFill(sameTime,sameSelected?YELLOW:MINT,false);
+            HumkinVisuals.setPillFill(road,shuffleSelected?YELLOW:MINT,false);
+            sameTime.setSelected(sameSelected);
+            road.setSelected(shuffleSelected);
+            modeStyled=true;
         }
         boolean ready = controller != null && controller.getMediaItemCount() > 0;
         boolean stationPlaying = ready && controller.isPlaying()
