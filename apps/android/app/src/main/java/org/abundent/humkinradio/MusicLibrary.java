@@ -60,6 +60,9 @@ final class MusicLibrary {
                 ContentValues values=new ContentValues();
                 values.put(MediaStore.MediaColumns.DISPLAY_NAME,filename(record));
                 values.put(MediaStore.MediaColumns.MIME_TYPE,"audio/mpeg");
+                values.put(MediaStore.Audio.Media.TITLE,record.title);
+                values.put(MediaStore.Audio.Media.ARTIST,record.artist);
+                values.put(MediaStore.Audio.Media.ALBUM,"HUMKIN");
                 values.put(MediaStore.MediaColumns.RELATIVE_PATH,
                         Environment.DIRECTORY_MUSIC+"/HUMKIN/");
                 values.put(MediaStore.MediaColumns.IS_PENDING,1);
