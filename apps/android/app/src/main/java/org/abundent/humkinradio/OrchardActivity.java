@@ -141,6 +141,16 @@ public final class OrchardActivity extends Activity {
         scene.setBackground(edge);
         LinearLayout.LayoutParams sceneParams=new LinearLayout.LayoutParams(-1,dp(350));sceneParams.topMargin=dp(24);
         page.addView(scene,sceneParams);
+        // First earned change in experienced reality: the native player hears
+        // an actual new two-record pairing. Not another ornamental inventory.
+        LinearLayout graft=card(page,0xffdce8df,17);
+        add(graft,"THE GRAFTING BENCH  /  LEVEL 4",11,INK,true,0);
+        add(graft,"Plant two real songs together. Hear the changed sequence immediately. "+
+                "The little room should change what happens, not merely how many things you own.",
+                14,INK,false,8);
+        Button graftTape=button("▶ GRAFT TWO RECORDS · HEAR THE RESULT",GOLD);
+        graftTape.setOnClickListener(v->startActivity(new Intent(this,GraftTapeActivity.class)));
+        graft.addView(graftTape,block(11));
         status=add(page,"The radio makes the garden grow.",12,0xff654b61,true,15);
         LinearLayout actions=row();
         Button radio=button("♫ BACK TO THE RADIO",GOLD);

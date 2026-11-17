@@ -14,6 +14,21 @@
       "description": "Existing local furnishings and artifacts."
     },
     {
+      "id": "orchard.graft",
+      "parent": "outpost.orchard",
+      "title": "The Grafting Bench",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "level",
+          "gte": 4
+        }
+      ],
+      "capability": "humkin.orchard.graft-tape.v1",
+      "description": "Combine two published recordings, replace your private player queue with a two-song loop, and retain a local receipt."
+    },
+    {
       "id": "orchard.catalog",
       "parent": "outpost.orchard",
       "title": "Catalog Workbench",
