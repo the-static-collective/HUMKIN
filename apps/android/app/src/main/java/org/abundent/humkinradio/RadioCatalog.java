@@ -27,6 +27,7 @@ final class RadioCatalog {
     private static final String ORIGIN="https://humkin.abundent.org/";
     private static final String CONFIG=ORIGIN+"fm/rotation.json";
     private static final String AIR=ORIGIN+"fm/air-carts.json";
+    private static final String R2_MANIFEST=ORIGIN+"fm/r2-tracks.json";
     private static final String API="https://kbhqacsdvjsstzyplqij.supabase.co";
     // Public publishable key from the station site, NOT a service-role secret.
     private static final String KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
@@ -270,20 +271,50 @@ final class RadioCatalog {
 
         try{
             JSONArray rows=new JSONArray(fetch(API+"/rest/v1/humkin_radio_tracks"
-                    +"?select=id,title,artist,album,kind,is_single,storage_path,duration_seconds"
+                    +"?select=id,title,artist,album,kind,is_single,storage_path,storage_provider,r2_object_key,duration_seconds"
                     +"&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",true));
             for(int i=0;i<rows.length();i++){
                 JSONObject t=rows.getJSONObject(i);
-                String path=t.optString("storage_path","");
-                if(!path.matches("[0-9a-fA-F-]{36}/[0-9a-fA-F]{64}\\.mp3"))continue;
+                String source=RadioSourceUrl.published(
+                        t.optString("storage_provider","supabase"),
+                        t.optString("storage_path",""),t.optString("r2_object_key",""));
+                if(source==null)continue;
                 long duration=durationMs(t.optDouble("duration_seconds",0));
                 if(duration<=0||duration>=14400000)continue;
                 tracks.add(new Track("crate-"+t.optString("id"),
                         t.optString("title","HUMKIN"),t.optString("artist","HUMKIN"),
                         t.optString("album","HUMKIN RADIO"),
-                        API+"/storage/v1/object/public/humkin-radio-live/"+path,
+                        source,
                         duration,"bumper".equals(t.optString("kind")),
                         t.optBoolean("is_single",false),t.optBoolean("is_single",false)));
+            }
+        }catch(Exception e){complete=false;}
+
+        // Supplement the dynamic Supabase catalog with explicitly approved
+        // R2-only recordings. An object merely existing in the public bucket
+        // does NOT grant automatic airtime.
+        try{
+            JSONObject manifest=new JSONObject(fetch(R2_MANIFEST,false));
+            if(!"humkin.radio.r2/v1".equals(manifest.optString("schema")))
+                throw new IOException("R2 catalog schema mismatch");
+            JSONArray approved=manifest.getJSONArray("tracks");
+            if(approved.length()>2000)throw new IOException("R2 catalog too large");
+            java.util.Set<String> seen=new java.util.HashSet<>();
+            for(int i=0;i<approved.length();i++){
+                JSONObject row=approved.optJSONObject(i);
+                if(row==null||!row.optBoolean("approved",false))continue;
+                String bareId=row.optString("id","");
+                if(!bareId.matches("[a-z0-9][a-z0-9-]{2,79}"))continue;
+                String id="r2-"+bareId;
+                if(!seen.add(id))continue;
+                String url=RadioSourceUrl.approvedManifestObject(row.optString("object_key",""));
+                String title=row.optString("title","").trim();
+                long duration=durationMs(row.optDouble("duration_seconds",0));
+                if(url==null||title.isEmpty()||title.length()>240||
+                        duration<=0||duration>=14400000)continue;
+                tracks.add(new Track(id,title,row.optString("artist","HUMKIN"),
+                        row.optString("album","HUMKIN RADIO · R2"),
+                        url,duration,false,false));
             }
         }catch(Exception e){complete=false;}
 
