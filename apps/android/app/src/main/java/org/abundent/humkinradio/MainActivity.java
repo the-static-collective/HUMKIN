@@ -83,7 +83,9 @@ public final class MainActivity extends Activity {
     };
     private RebelReceiverSkin.Dial receiverDial;
     private LivingReceiverFace livingFace;
-    private boolean isLivingFaceBuild(){return getPackageName().endsWith(".pocket");}
+    private boolean isLivingFaceBuild(){
+        return getPackageName().endsWith(".pocket")||getPackageName().endsWith(".flex");
+    }
     private boolean warmStaticEnabled;
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;

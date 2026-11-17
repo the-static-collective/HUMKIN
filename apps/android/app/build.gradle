@@ -52,6 +52,15 @@ android {
             versionNameSuffix '-pocket'
             resValue 'string', 'app_name', 'HUMKIN · POCKET RECEIVER'
         }
+        // New permanent side-by-side package until a stable release-signing
+        // key is provisioned. Every GitHub-run debug keystore changes, so
+        // claiming that separate CI debug APKs update in-place is incorrect.
+        radioFlex {
+            initWith debug
+            applicationIdSuffix '.flex'
+            versionNameSuffix '-flex'
+            resValue 'string', 'app_name', 'HUMKIN · FLEX RECEIVER'
+        }
         nightWatch {
             initWith debug
             applicationIdSuffix '.nightwatch'
