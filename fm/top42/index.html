@@ -55,6 +55,16 @@
     <p>Not stars. Not likes. A song gave somebody hope, made them cry, or simply stayed with them. One small, honest answer at a time.</p>
   </div><div class="chart-actions"><button type="button" class="outline" id="weather-refresh">↻ CHECK THE WEATHER</button></div></div>
   <p class="small" id="weather-status" role="status">Looking out the station window…</p>
+  <label class="weather-sort" for="weather-filter">TUNE THE ROOM BY FEELING
+  <select id="weather-filter" aria-label="Sort Listener Weather songs by feeling">
+    <option value="all">All human weather</option>
+    <option value="hope">Gave hope</option>
+    <option value="tears">Brought tears</option>
+    <option value="seen">Less alone</option>
+    <option value="laugh">Made somebody laugh</option>
+    <option value="move">Made somebody move</option>
+    <option value="stayed">Stayed with somebody</option>
+  </select></label>
   <ol id="weather-list" class="weather-list" aria-live="polite"><li class="waiting">Waiting for a human signal…</li></ol>
   <div class="weather-reply">
     <button class="outline" type="button" id="weather-open" aria-expanded="false" aria-controls="weather-booth">✳ THIS RECORD GOT TO ME · TELL THE STATION ↗</button>
