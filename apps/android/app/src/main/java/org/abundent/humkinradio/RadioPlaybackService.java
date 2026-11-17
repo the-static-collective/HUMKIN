@@ -69,6 +69,11 @@ public final class RadioPlaybackService extends MediaSessionService {
     private void flushOutpost() {
         if(outpostUnbankedMs>0L){
             SignalRpg.audible(getApplicationContext(),outpostUnbankedMs);
+            // Automatic HUM grant: same measured audio event as XP, never an
+            // extra clock or a collect button. Persistent milestone receipts
+            // ensure the 10/30/50/80m awards happen at most once each day.
+            HumWallet.settleListening(getApplicationContext(),
+                    SignalRpg.snapshot(getApplicationContext()));
             // Same bounded, actually audible Media3 batch. No independent
             // clock or background XP generator in the listening report.
             OrchardLedger.Snapshot orchard=OrchardLedger.snapshot(getApplicationContext());
