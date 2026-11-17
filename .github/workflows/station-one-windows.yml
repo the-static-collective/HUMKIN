@@ -1,0 +1,30 @@
+name: HUMKIN Station One Windows launcher validation
+on:
+  pull_request:
+    paths:
+      - 'tools/radio-broadcast/windows/**'
+      - 'tools/radio-broadcast/engine.py'
+      - 'tests/radio-broadcast.test.py'
+      - '.github/workflows/station-one-windows.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-script-syntax:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse PowerShell script (no execution, no credentials)
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'tools/radio-broadcast/windows/station-one.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | Format-List | Out-String | Write-Host; exit 1 }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Python planner and PCM offline unit tests
+        shell: powershell
+        run: python tests/radio-broadcast.test.py
