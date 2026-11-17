@@ -135,6 +135,32 @@ final class HumWallet {
             return commit(c,state)?ACQUIRED:INVALID;
         }catch(Exception ignored){return INVALID;}
     }
+    /** Cache an independently server-confirmed entitlement on this phone.
+     * Never writes a HUM balance, credit, or debit here; the server owns that. */
+    static synchronized boolean cacheServerRecord(Context c,MediaItem item){
+        if(item==null||item.localConfiguration==null)return false;
+        String id=HumEconomy.canonicalId(item.mediaId);
+        String audio=item.localConfiguration.uri.toString();
+        if(id==null||!HumEconomy.approvedAudio(audio))return false;
+        JSONObject state=load(c);
+        try{
+            JSONObject rows=state.optJSONObject("collection");
+            if(rows==null)rows=new JSONObject();
+            if(rows.has(id))return true;
+            String title=item.mediaMetadata.title==null?"Unknown Record":
+                    item.mediaMetadata.title.toString().trim();
+            String artist=item.mediaMetadata.artist==null?"HUMKIN":
+                    item.mediaMetadata.artist.toString().trim();
+            if(title.length()>180)title=title.substring(0,180);
+            if(artist.length()>120)artist=artist.substring(0,120);
+            rows.put(id,new JSONObject().put("title",title).put("artist",artist)
+                .put("audio",audio).put("at",System.currentTimeMillis())
+                .put("price",price(item)).put("uri",""));
+            state.put("collection",rows);
+            return commit(c,state);
+        }catch(Exception ignored){return false;}
+    }
+
     static int price(MediaItem item){
         android.os.Bundle extras=item==null?null:item.mediaMetadata.extras;
         return HumEconomy.price(extras!=null&&extras.getBoolean("humkin_current_single",false));
