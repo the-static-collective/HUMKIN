@@ -149,8 +149,8 @@ async function register(p:any){
   if(error&&error.code!=="23505")err("Could not register network identity",503);
   // Cosmetic starter IDs are unique objects with no financial scarcity promise.
   const seeds=[
-   {owner_id:p.actor,kind:"chipped-blue-cup",origin:"welcome:cup"},
-   {owner_id:p.actor,kind:"window-seed",origin:"welcome:seed"}
+   {owner_id:p.actor,issued_to:p.actor,kind:"chipped-blue-cup",origin:"welcome:cup"},
+   {owner_id:p.actor,issued_to:p.actor,kind:"window-seed",origin:"welcome:seed"}
   ];
   const {error:giftError}=await db.from("humkin_orchard_artifacts").insert(seeds);
   if(giftError&&giftError.code!=="23505")err("Starter cabinet temporarily unavailable",503);
