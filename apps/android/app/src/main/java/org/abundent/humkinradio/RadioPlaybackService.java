@@ -68,7 +68,8 @@ public final class RadioPlaybackService extends MediaSessionService {
 
     private void flushOutpost() {
         if(outpostUnbankedMs>0L){
-            SignalRpg.audible(getApplicationContext(),outpostUnbankedMs);
+            SignalRpg.audible(getApplicationContext(),outpostUnbankedMs,
+                    !outpostTrackId.startsWith("library:"));
             // Automatic HUM grant: same measured audio event as XP, never an
             // extra clock or a collect button. Persistent milestone receipts
             // ensure the 10/30/50/80m awards happen at most once each day.
