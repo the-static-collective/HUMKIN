@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#231b37">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HUMKIN RADIO">
+  <meta name="description" content="HUMKIN RADIO on your iPhone. Music for the long way home.">
+  <meta property="og:title" content="HUMKIN RADIO · Pocket Receiver">
+  <meta property="og:description" content="A little station you can carry. No login, no ads.">
+  <meta property="og:image" content="https://humkin.abundent.org/cover.jpg">
+  <title>HUMKIN RADIO · Pocket Receiver</title>
+  <link rel="apple-touch-icon" href="../../cover.jpg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./iphone.css">
+  <script defer src="../scheduler.js"></script>
+  <script defer src="../autodj.js"></script>
+  <script defer src="../bumper-brain.js"></script>
+  <script defer src="../art-library.js"></script>
+  <script defer src="../rotation-memory.js"></script>
+  <script defer src="../fair-rotation.js"></script>
+  <script defer src="../clock-sync.js"></script>
+  <script defer src="../hosted-nowplaying.js"></script>
+  <script defer src="../chart-rotation.js"></script>
+  <script defer src="../radio.js"></script>
+  <script defer src="./iphone.js"></script>
+</head>
+<body>
+  <div class="receiver">
+    <header class="mast">
+      <span class="eyebrow">THE POCKET RECEIVER · EDITION 014</span>
+      <h1>HUMKIN <span>RADIO</span><i>✳</i></h1>
+      <p>MUSIC FOR THE LONG WAY HOME.</p>
+    </header>
+
+    <main id="main">
+      <section class="display-card" aria-label="Now playing">
+        <div class="art-frame">
+          <img id="current-art" src="../../cover.jpg" width="1080" height="1080" alt="HUMKIN album cover">
+          <div class="frequency-seal" aria-hidden="true">YOU<br>ARE<br>HERE</div>
+        </div>
+        <div class="signal-led" aria-hidden="true"><span class="blink"></span> THE MUSIC IS OUT THERE</div>
+        <div class="now">
+          <p id="station-status" class="station-status" role="status">CONNECTING THE TUNER…</p>
+          <p class="minor-label">YOU ARE LISTENING TO</p>
+          <h2 id="current-title">FINDING A SONG…</h2>
+          <p id="current-artist" class="artist">HUMKIN · RADIO</p>
+          <div id="waveform" class="waveform" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="deck" aria-label="Radio controls">
+        <div class="modes" role="group" aria-label="Listening mode">
+          <button id="mode-clock" type="button" disabled aria-pressed="true">◉ SAME-TIME</button>
+          <button id="mode-shuffle" type="button" disabled aria-pressed="false">↝ ROAD SHUFFLE</button>
+        </div>
+        <button id="listen" class="tune" type="button" disabled>▶ TUNE IN</button>
+        <audio id="air" controls preload="metadata" aria-label="HUMKIN audio playback"></audio>
+        <p id="playback-message" class="tip" role="status" aria-live="polite">Touch TUNE IN to start. No autoplay.</p>
+        <div class="mini-controls">
+          <button id="catch-up" type="button" disabled>⟳ CATCH UP</button>
+          <button id="next-song" type="button" hidden disabled>NEXT SONG →</button>
+          <button id="share-station" type="button">↗ SHARE</button>
+        </div>
+        <p id="mode-help" class="mode-help">Same-time radio uses the station clock.</p>
+        <p id="counter" class="counter">✳</p>
+      </section>
+
+      <section id="album-screen" class="album-screen" hidden aria-label="Albums">
+        <div class="section-cap"><span>RECORD SHELF</span><button id="close-albums" type="button" aria-label="Close album shelf">CLOSE ×</button></div>
+        <h2>TAKE A RECORD<br>WITH YOU.</h2>
+        <p>Tap an album to play it here. All music stays on the same player.</p>
+        <div id="album-list" class="album-list"><p>Finding your records…</p></div>
+      </section>
+
+      <section class="on-deck-section" aria-label="Station queue">
+        <p class="section-cap">COMING UP / JUST HEARD</p>
+        <p id="on-deck" class="on-deck">ON DECK · Getting records together.</p>
+        <div class="heard"><strong>JUST HEARD</strong><ol id="just-heard"><li>Your listening history begins here.</li></ol></div>
+      </section>
+
+      <section id="install-help" class="install-card" hidden aria-label="Home screen installation">
+        <strong>MAKE IT AN IPHONE APP.</strong>
+        <p>Open this page in <b>Safari</b>, tap the Share button (square with arrow), then choose <b>Add to Home Screen</b>. Tap ADD. It will appear with your apps.</p>
+        <button id="dismiss-install" type="button">GOT IT ✳</button>
+      </section>
+
+      <details class="details">
+        <summary>STATION NOTES &amp; OTHER ROOMS +</summary>
+        <p id="playlist-note">Loading the published station catalog…</p>
+        <p>This is the same HUMKIN radio engine as the website. Until a verified continuous broadcast is connected, Same-Time is an approximate shared clock, not one centralized stream.</p>
+        <p><b>iOS 14 note:</b> Your current track may continue with the screen locked, but Safari may pause between songs when background JavaScript is suspended. Once our real continuous stream is online, the same-time mode can use it without browser-controlled track changes.</p>
+        <p>Listening always starts on your tap. No account, ads or automatic music downloads.</p>
+        <button id="phone-playlist" type="button" hidden disabled>EXPORT PLAYLIST</button>
+        <button id="spotlight" type="button" hidden disabled>PLAY NEW SINGLE</button>
+        <a href="../">FULL STATION DESK ↗</a>
+      </details>
+    </main>
+
+    <nav class="tabs" aria-label="Pocket receiver navigation">
+      <button id="tab-radio" class="tab active" type="button" aria-current="page"><b aria-hidden="true">◉</b>RADIO</button>
+      <button id="tab-albums" class="tab" type="button"><b aria-hidden="true">▤</b>ALBUMS</button>
+      <a class="tab" href="../orchard/"><b aria-hidden="true">✳</b>OUTPOST</a>
+      <a class="tab" href="../signal/"><b aria-hidden="true">≋</b>SIGNAL</a>
+    </nav>
+  </div>
+</body>
+</html>
