@@ -328,12 +328,8 @@ public final class MainActivity extends Activity {
                 startActivity(new Intent(this,OutpostActivity.class)));
         radioScreen.addView(outpostButton,wrap(12));
 
-        // The Top 42 and real-world station Guilds remain independently useful.
-        // The Orchard's separate Living Network link stays inside its earned
-        // Outpost level-4 room, not a shortcut around the progression.
-        Button world=pill("↗  EXPLORE THE STATION WORLD",null,CREAM,14);
-        world.setOnClickListener(v->showWorldMenu());
-        radioScreen.addView(world,wrap(10));
+        // Unlocked departments are available in Outpost and the ⋯ drawer,
+        // without turning a first tune-in into a page of unexplained doors.
 
         Button share = pill("SHARE THE DIAL", null, MINT, 13);
         share.setOnClickListener(v -> {
@@ -459,6 +455,8 @@ public final class MainActivity extends Activity {
             titles.add("Reshuffle");
             actions.add(() -> fetchRadio(true, false));
         }
+        titles.add("Other station departments · Top 42 and Guilds");
+        actions.add(this::showWorldMenu);
         titles.add("The old three-song studio · sketchbook");
         actions.add(() -> {
             MediaItem selected=controller==null?null:controller.getCurrentMediaItem();
