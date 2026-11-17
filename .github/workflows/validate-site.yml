@@ -27,6 +27,7 @@ jobs:
       - run: node tests/radio-fairness-intake.test.cjs
       - run: node tests/top42.test.cjs
       - run: node --test tests/orchard.test.cjs
+      - run: node --test tests/signal.test.cjs
       - run: node --check fm/orchard/network.js
       - run: node --test tests/participation.test.cjs
       - run: node --check fm/participate/desk.js

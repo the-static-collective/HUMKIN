@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#281f3b">
+<meta name="description" content="Make a little radio signal of your own: three real HUMKIN songs, your station name, and a shareable listening link.">
+<meta property="og:title" content="HUMKIN RADIO · MAKE IT YOURS">
+<meta property="og:description" content="A little signal. Three songs. A station of your own.">
+<title>MY LITTLE SIGNAL · HUMKIN RADIO</title>
+<link rel="stylesheet" href="./signal.css">
+<script defer src="./model.js"></script>
+<script defer src="./signal.js"></script>
+</head>
+<body>
+<header class="top">
+ <a class="brand" href="../">HUMKIN <span>✳</span> RADIO</a>
+ <nav aria-label="Station links"><a href="../">THE DIAL</a><a href="../orchard/">MY ORCHARD</a><a href="../orchard/network.html">THE NETWORK</a></nav>
+</header>
+<main>
+<section class="mast">
+ <div class="headline">
+  <p class="eyebrow">THE LITTLE SIGNAL · STATION 001</p>
+  <h1>MAKE IT<br><em>YOURS.</em></h1>
+  <p>Everybody starts as a listener. Pick three songs, name your little station and send its signal somewhere. One listener is enough.</p>
+  <div class="facts"><span>REAL HUMKIN MUSIC</span><span>NO ACCOUNT</span><span>NO AUTOPLAY</span></div>
+ </div>
+ <div class="tower" aria-hidden="true"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="pole"><i></i></div><div class="tower-base"></div><div class="earth"></div></div>
+</section>
+<section class="body-grid">
+ <article class="paper composer">
+  <p class="eyebrow">01 / YOUR FREQUENCY</p>
+  <h2>THE LITTLE<br>TRANSMISSION.</h2>
+  <p class="note">Make a personal three-song program from the published radio catalog. No recording uploads or public station changes.</p>
+  <div class="receive" id="receive" hidden><b>A SIGNAL FOUND YOU.</b><p>Somebody shared these songs with you. Listen as they arranged them, or carry the idea into your own station.</p><button type="button" id="inherit">MAKE THIS ONE MINE ↗</button></div>
+  <div class="field">
+   <label for="station-name">YOUR STATION NAME</label>
+   <input id="station-name" maxlength="48" placeholder="The Little Station at the End of the Dial" autocomplete="off">
+  </div>
+  <div class="field">
+   <label for="station-mode">YOUR PROGRAMMING RULE</label>
+   <select id="station-mode">
+    <option value="across">ACROSS THE DIAL · favor different albums</option>
+    <option value="together">ONE RECORD · stay with an album</option>
+    <option value="surprise">WILDCARD · let the catalog choose</option>
+   </select>
+  </div>
+  <div class="field">
+   <label for="station-intro">YOUR INTRODUCTION <small>(OPTIONAL · TEXT ONLY)</small></label>
+   <textarea id="station-intro" rows="2" maxlength="160" placeholder="A little something to listen to on the way home."></textarea>
+  </div>
+  <div class="track-head"><span class="eyebrow">THREE SONGS / YOUR ORDER</span><button type="button" id="find" class="text-button">⤨ FIND THREE</button></div>
+  <div id="track-choices" class="track-choices" aria-label="Your three-song program"><p class="quiet">Opening the music catalog…</p></div>
+  <div class="buttons">
+   <button type="button" class="primary" id="play" disabled>▶ HEAR MY SIGNAL</button>
+   <button type="button" id="share" disabled>↗ SEND THE SIGNAL</button>
+  </div>
+  <p id="message" class="message" role="status" aria-live="polite">Your draft stays on this device until you choose to share it.</p>
+  <div id="fallback" hidden><label for="share-url" class="eyebrow">YOUR LINK · COPY IT MANUALLY</label><input id="share-url" readonly aria-label="Shareable station link"></div>
+ </article>
+ <aside class="side">
+  <div class="on-air">
+   <p class="eyebrow">NOW PLAYING / YOUR LITTLE SIGNAL</p>
+   <img id="art" alt="" src="../../cover.jpg" width="240" height="240">
+   <h2 id="now-title">NOTHING ON THE DIAL YET.</h2>
+   <p id="now-meta">Choose three songs to begin.</p>
+   <p id="now-position" class="position">01 / 03</p>
+   <audio id="signal-audio" controls preload="none" aria-label="Listen to your three-song signal"></audio>
+   <p class="tiny">Playback begins only when you press play. Three tracks, then silence. This is not a radio-frequency broadcast.</p>
+  </div>
+  <div class="quiet-card">
+   <p class="eyebrow">02 / THE WORLD BEYOND YOUR ROOM</p>
+   <h3>ONE SMALL<br>LIGHT TRAVELS.</h3>
+   <p>Your shared link is a playable invitation, not a claim about reach. Another listener can hear the same songs and make their own version.</p>
+   <div class="two-links"><a href="../orchard/">GROW YOUR ORCHARD ↗</a><a href="../participate/">HELP MAKE THE STATION ↗</a><a href="../orchard/network.html">VISIT THE NETWORK ↗</a></div>
+  </div>
+ </aside>
+</section>
+</main>
+<footer><a href="../">← BACK TO RADIO</a><span>HUMKIN RADIO · MAKE IT YOURS.</span><span>YOUR LINK IS PUBLIC TO ANYONE YOU GIVE IT TO. NO PLAY COUNTS ARE CLAIMED.</span></footer>
+</body>
+</html>
