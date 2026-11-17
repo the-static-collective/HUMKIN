@@ -22,6 +22,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from blue_lemon import BlueLemon
 
 API="https://kbhqacsdvjsstzyplqij.supabase.co"
 KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"
@@ -218,6 +219,10 @@ def streaming(catalog,args):
         raise RuntimeError("HUMKIN_ICECAST_URL must start with icecast://")
     station=Station(catalog)
     cache=Path(args.cache).expanduser().resolve()
+    lemon=None
+    if args.blue_lemon and not args.file_output:
+        candidate=BlueLemon()
+        if candidate.start(catalog):lemon=candidate
     encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output))
     written=0
     maximum=int(args.seconds*RATE*FRAME_BYTES) if args.seconds else None
@@ -234,12 +239,28 @@ def streaming(catalog,args):
     try:
         current=station.next()
         ahead=station.next()
+        current_lemon=None
+        ahead_lemon=None
+        deferred=[]  # ordinary selections displaced by a verified priority request
         decode_current=decode(cache_track(current,cache))
         while True:
             print("ON AIR:",current["artist"],"—",current["title"],flush=True)
             tail_size=overlap_bytes(current,ahead,args.crossfade)
             try:
                 tail=pump_with_tail(decode_current,write,tail_size)
+                # Check the real station queue at the boundary. Never interrupt
+                # a current recording, scheduled show, or station-ID bumper.
+                if lemon and ahead.get("kind")!="bumper" and not station.program():
+                    claimed=lemon.take()
+                    if claimed:
+                        requested=station.track_by_id.get(claimed.get("track_id"))
+                        if requested and requested.get("kind")!="bumper":
+                            deferred.insert(0,ahead)
+                            ahead=requested
+                            ahead_lemon=claimed["id"]
+                            tail_size=overlap_bytes(current,ahead,args.crossfade)
+                        else:
+                            lemon.finish(claimed.get("id"),False)
                 head_process=decode(cache_track(ahead,cache))
                 head=read_exact(head_process.stdout,tail_size)
                 n=min(len(head),len(tail))//FRAME_BYTES*FRAME_BYTES
@@ -248,11 +269,21 @@ def streaming(catalog,args):
                     write(equal_power_mix(tail[-n:],head[:n]))
                 else:write(tail)
                 # If decoder reads less than requested, no source data is dropped.
+                if lemon and current_lemon:
+                    lemon.finish(current_lemon,True)
                 current=ahead
-                ahead=station.next()
+                current_lemon=ahead_lemon
+                ahead_lemon=None
+                ahead=deferred.pop(0) if deferred else station.next()
                 decode_current=head_process
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
                 print("Audio source problem; moving on:",exc,file=sys.stderr)
+                if lemon and current_lemon:
+                    lemon.finish(current_lemon,False)
+                    current_lemon=None
+                if lemon and ahead_lemon:
+                    lemon.finish(ahead_lemon,False)
+                    ahead_lemon=None
                 if 'head_process' in locals() and head_process.poll() is None:
                     head_process.kill();head_process.wait()
                 current=ahead
@@ -269,6 +300,7 @@ def streaming(catalog,args):
                 proc.kill()
                 try:proc.wait(timeout=5)
                 except subprocess.TimeoutExpired:pass
+        if lemon:lemon.close()
         try:encoder.stdin.close()
         except (BrokenPipeError,OSError):pass
         try:encoder.wait(timeout=45)
@@ -278,6 +310,7 @@ def streaming(catalog,args):
 def main():
     p=argparse.ArgumentParser(description="HUMKIN always-on audio source; physical server setup required")
     p.add_argument("--dry-run",action="store_true",help="show the next 20 selections; no downloads or publishing")
+    p.add_argument("--blue-lemon",action="store_true",help="enable authenticated Blue Lemon request queue when live Icecast streaming")
     p.add_argument("--fixture",type=Path,help="test with a local exported catalog JSON")
     p.add_argument("--at",help="dry-run timestamp (e.g. 2026-11-13T13:30:00+00:00)")
     p.add_argument("--cache",default="./radio-cache",help="local MP3 cache folder")
