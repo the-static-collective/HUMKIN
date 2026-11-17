@@ -1,0 +1,29 @@
+name: Verify R2 seasonal radio
+on:
+  pull_request:
+    paths:
+      - "fm/r2-catalog.js"
+      - "fm/r2-tracks.json"
+      - "fm/fair-rotation.js"
+      - "fm/radio.js"
+      - "fm/rotation.json"
+      - "tests/r2-seasonal.test.mjs"
+      - ".github/workflows/r2-seasonal.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-r2-seasonal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check module syntax
+        run: |
+          node --check fm/r2-catalog.js
+          node --check fm/fair-rotation.js
+          node --check fm/radio.js
+      - name: Verify public manifest and 3x seasonal rotation
+        run: node tests/r2-seasonal.test.mjs

@@ -57,20 +57,25 @@ function cycle(n,number,shuffle){
  }
  return current;
 }
-// An extra slot per curated release or single. Weave it through the usual
-// era-mixed shuffle, keeping the base order and the clock seam guards intact.
-function weightedCycle(n,number,shuffle,featuredPositions){
+// An extra slot per curated release or single; optionally add explicit
+// seasonal slots. Preserve base order and clock seam guards between cycles.
+function weightedCycle(n,number,shuffle,featuredPositions,extraPositions=[]){
  const base=cycle(n,number,shuffle);
- if(!Array.isArray(featuredPositions)||!featuredPositions.length)return base;
- const featured=[...new Set(featuredPositions.filter(i=>Number.isInteger(i)&&i>=0&&i<n))];
- if(!featured.length)return base;
- const bonus=shuffle(featured.length,(number^0x548e4ad5)>>>0).map(i=>featured[i]);
+ const featured=[...new Set((Array.isArray(featuredPositions)?featuredPositions:[])
+   .filter(i=>Number.isInteger(i)&&i>=0&&i<n))];
+ // Supplemental seasonal slots deliberately allow duplicate positions.
+ // The editor determines the total target count (usually 3 including base).
+ const extra=(Array.isArray(extraPositions)?extraPositions:[])
+   .filter(i=>Number.isInteger(i)&&i>=0&&i<n);
+ const bonuses=[...featured,...extra];
+ if(!bonuses.length)return base;
+ const bonus=shuffle(bonuses.length,(number^0x548e4ad5)>>>0).map(i=>bonuses[i]);
  const guard=Math.min(4,Math.floor(n/4)),interior=n-2*guard;
  if(interior<1)return base.concat(bonus);
  const out=base.slice(0,guard),bonusLocations=[];
  let added=0;
  for(let i=guard;i<n-guard;i++){
-   const due=Math.floor((i-guard+1)*featured.length/interior);
+   const due=Math.floor((i-guard+1)*bonuses.length/interior);
    while(added<due){
      let slot=bonus.findIndex(id=>!out.slice(-4).includes(id)&&
        !base.slice(i,Math.min(n,i+4)).includes(id));

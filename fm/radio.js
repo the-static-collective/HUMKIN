@@ -232,6 +232,23 @@ async function getPublishedCrate(){
     }).filter(t=>t?.title);
   }catch(error){console.warn("HUMKIN additional crate unavailable; using original radio rotation.",error);return []}
 }
+// Optional, owner-reviewed public R2 catalog. Merely uploading to R2
+// does not put a recording on air.
+async function getPublicR2Tracks(){
+ try{
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),5000);
+  try{
+   const response=await fetch(fileUrl(config?.r2_catalog||"r2-tracks.json",here),
+     {cache:"no-cache",signal:ctrl.signal});
+   if(!response.ok)return [];
+   return window.HUMKIN_R2_CATALOG?.parse(
+     await response.json(),fileUrl("cover.jpg",root))||[];
+  }finally{clearTimeout(timer)}
+ }catch(error){
+  console.warn("Optional R2 manifest unavailable; original station continues.",error);
+  return [];
+ }
+}
 const safeText=s=>typeof s==="string"?s:"";
 const fileUrl=(relative,base)=>new URL(relative,base).href;
 const setMessage=s=>{message.textContent=s};
@@ -262,16 +279,23 @@ function featuredPositions(eligible){
       (song.source==="cloud"&&song.kind!=="bumper"&&song.is_single===true)?position:-1;
   }).filter(i=>i>=0);
 }
+function seasonalExtraPositions(eligible,featured){
+ return window.HUMKIN_R2_CATALOG?.additionalPositions(
+   eligible,tracks,featured,config?.seasonal_rotation)||[];
+}
 function chartBonus(music){
  return window.HUMKIN_TOP42_ROTATION?.bonusIds(music,tracks,chartAirIds,chartStationDay)||[];
 }
 function weightedMusic(eligible,rotation){
+  const featured=featuredPositions(eligible);
+  const seasonal=seasonalExtraPositions(eligible,featured);
   const slots=window.HUMKIN_FAIR_ROTATION?.weightedCycle(
-    eligible.length,rotation,seededShuffle,featuredPositions(eligible))
+    eligible.length,rotation,seededShuffle,featured,seasonal)
     ||window.HUMKIN_FAIR_ROTATION?.cycle(eligible.length,rotation,seededShuffle)
     ||seededShuffle(eligible.length,rotation);
   const standard=slots.map(i=>eligible[i]);
-  const bonus=chartBonus([...eligible,...featuredPositions(eligible).map(i=>eligible[i])]);
+  const bonus=chartBonus([...eligible,...featured.map(i=>eligible[i]),
+    ...seasonal.map(i=>eligible[i])]);
   return window.HUMKIN_TOP42_ROTATION?.weave(standard,bonus)||standard;
 }
 function withStationIds(music){
@@ -314,7 +338,9 @@ function tuneAt(ms){
   // One fixed bumper order per cycle keeps every cycle exactly the same length.
   // The clock's total length must include the extra featured plays, while
   // remaining constant across cycles for every same-time listener.
-  const bonus=featuredPositions(eligible).map(i=>eligible[i]);
+  const featured=featuredPositions(eligible);
+  const seasonal=seasonalExtraPositions(eligible,featured);
+  const bonus=[...featured,...seasonal].map(i=>eligible[i]);
   const chart=chartBonus([...eligible,...bonus]);
   const totalOrder=withStationIds([...eligible,...bonus,...chart]);
   const total=totalOrder.reduce((s,i)=>s+Math.round(tracks[i].duration*1000),0);
@@ -341,7 +367,7 @@ function updateModeUI(){
   modeHelp.textContent=mode==="album"
    ?"Playing a complete published album in its recorded order. Tap SAME-TIME or ROAD SHUFFLE to return to radio."
    :mode==="shuffle"
-   ?"Your own shuffle blends old and new. Released album cuts and designated singles get roughly twice the airtime; each song keeps a one-hour repeat memory."
+   ?"Your own shuffle blends old and new. Releases receive 2× airtime; seasonal recordings receive 3× total, with a one-hour repeat memory."
    :remoteStream
    ?"Tuning an independent continuous broadcast stream. Everyone connected to that stream receives the same live program."
    :"Same-time radio approximates a shared broadcast clock using official MP3s. It isn't a real server broadcast; playback may drift with buffering.";
@@ -603,7 +629,7 @@ function startShuffle(shouldPlay){
   if(!order.length)buildShuffle(index);
   if(!order.length)return;
   showTrack(order[cursor]);setTrackSource(order[cursor],0,shouldPlay);
-  setMessage("Road Shuffle mixes releases twice as often, with 60-minute memory for every recording.");
+  setMessage("Road Shuffle: releases 2×; approved seasonal tracks 3×; 60-minute repeat memory.");
 }
 function nextShuffle(shouldPlay){
   if(!order.length)return;
@@ -846,8 +872,9 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
-    const [cloud,overrides,schedule,settings,artRows,clockSample,airCarts,leagueSnapshot]=await Promise.all([
+    const [cloud,r2,overrides,schedule,settings,artRows,clockSample,airCarts,leagueSnapshot]=await Promise.all([
       getPublishedCrate(),
+      getPublicR2Tracks(),
       fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind,art_asset_id","&limit=1000"),
       fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority,art_asset_id","&is_active=eq.true&limit=100"),
       fetchExtras("humkin_radio_settings","id,bumper_every,station_label","&id=eq.main&limit=1"),
@@ -876,12 +903,18 @@ async function boot(){
     programs=schedule;
     const originalCount=tracks.length;
     const baseIds=new Set(tracks.map(t=>t.id));
-    tracks.push(...cloud.filter(t=>!baseIds.has(t.id)));
+    const additional=[...cloud,...r2].filter(t=>{
+      if(baseIds.has(t.id))return false;
+      baseIds.add(t.id);return true;
+    });
+    tracks.push(...additional);
     const stationIds=bumperIndices().length;
     const songCount=musicIndices().length;
+    const r2Count=tracks.filter(t=>t.source==="r2").length;
+    const r2Label=r2Count?" · "+r2Count+" R2 record"+(r2Count===1?"":"s"):"";
     const catalogLabel=cloudCatalogHealthy
-      ?"CURRENT DIAL · "+songCount+" songs · "+stationIds+" station carts."
-      :"LIMITED DIAL · "+songCount+" local songs available. Cloud songs did not load; refresh when your connection improves.";
+      ?"CURRENT DIAL · "+songCount+" songs · "+stationIds+" station carts"+r2Label+"."
+      :"LIMITED DIAL · "+songCount+" available songs"+r2Label+". Supabase crate did not load; retry later.";
     $("playlist-note").textContent=catalogLabel+" "+
       (stationIds&&stationSettings.bumper_every?
         (config?.bumper_brain?.medium_target_seconds?
