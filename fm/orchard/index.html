@@ -11,12 +11,14 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="stylesheet" href="./orchard.css">
 <script defer src="./model.js"></script>
+<script defer src="./night-watch.js"></script>
 <script defer src="./orchard.js"></script>
+<script defer src="./night-watch-ui.js"></script>
 </head>
 <body>
 <header class="mast">
   <a class="logo" href="../">HUMKIN <span>✳</span> RADIO</a>
-  <nav aria-label="Station links"><a href="../">THE DIAL ↗</a><a href="../top42/">TOP 42 ↗</a><a href="../participate/">STATION GUILDS ↗</a><a href="./network.html">LIVE NETWORK ↗</a><a href="../../">THE ALBUM ↗</a></nav>
+  <nav aria-label="Station links"><a href="../">THE DIAL ↗</a><a href="../top42/">TOP 42 ↗</a><a href="../../">THE ALBUM ↗</a></nav>
 </header>
 <main>
 <section class="title-card">
@@ -32,6 +34,16 @@
   <div><span class="stat-label">REAL LISTENING</span><strong id="listen-total">0 MIN</strong></div>
   <div><span class="stat-label">COLLECTED OBJECTS</span><strong id="count">0</strong></div>
   <div class="xp-wrap"><span class="stat-label" id="xp-label">NEXT LEVEL</span><div class="xp-track"><div id="xp-fill"></div></div></div>
+</section>
+
+<section class="outpost-unlocks" aria-label="Your Outpost's later doors">
+ <div><p class="eyebrow">THE OUTPOST OPENS SLOWLY</p><strong>JUST A RADIO, UNTIL IT ISN'T.</strong></div>
+ <div class="outpost-links">
+  <a id="door-signal" href="../signal/" hidden>✳ MY LITTLE SIGNAL ↗</a>
+  <a id="door-guild" href="../participate/" hidden>✳ STATION GUILDS ↗</a>
+  <a id="door-network" href="./network.html" hidden>✳ THE LIVING ORCHARD ↗</a>
+  <span id="next-door">NEXT DOOR · PERSONAL SIGNAL AT LEVEL 3</span>
+ </div>
 </section>
 
 <section class="playroom">
@@ -75,6 +87,7 @@
     <p class="player-status" id="player-status" role="status" aria-live="polite">Choose PLAY to begin. Actual playback earns HUM, not merely opening this page.</p>
     <a class="text-link" href="../">NEED THE FULL SAME-TIME RADIO / HOSTS / BUMPERS? ↗</a>
   </article>
+  <div id="nightwatch-mount" class="night-watch-mount" aria-label="Your Night Watch report"></div>
 
   <article class="now-card">
     <div><p class="eyebrow">THE NEXT SMALL THING</p><h2 id="quest-title">Put the first object on your shelf.</h2><p id="quest-copy">Your starter HUM can buy something odd from the shop.</p></div>
@@ -87,7 +100,7 @@
 </div>
 </section>
 
-<section class="collection" id="guild-portal" aria-labelledby="guild-portal-title">
+<section class="collection" id="guild-portal" aria-labelledby="guild-portal-title" hidden>
  <div class="section-heading"><div>
   <p class="eyebrow">AN ACTUAL STATION IN NEED OF ACTUAL HUMANS</p>
   <h2 id="guild-portal-title">THE <em>STATION GUILDS.</em></h2>
@@ -95,7 +108,7 @@
   <p><strong>Verified HUM credits</strong> for accepted real contributions are recorded separately on the station server. Your existing local Orchard HUM never gets silently converted, erased or duplicated.</p>
  </div><a href="../participate/" class="primary">✳ OPEN THE PARTICIPATION ENGINE ↗</a></div>
  </section>
-<section class="network-link-banner" style="background:#c9e5cf;border-block:3px solid #241b32;padding:22px 5%;display:flex;gap:17px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+<section class="network-link-banner" id="network-banner" hidden style="background:#c9e5cf;border-block:3px solid #241b32;padding:22px 5%;display:flex;gap:17px;align-items:center;justify-content:space-between;flex-wrap:wrap">
  <div><p class="eyebrow">YOUR LITTLE TOWER · MAKE IT YOURS</p><h2 style="font:900 clamp(27px,3.8vw,43px)/1.06 Georgia,serif;margin:0 0 7px">EVERY ROOM CAN <em>SEND A SIGNAL.</em></h2>
  <p style="margin:0;max-width:690px">Choose three real songs. Share your own little program. Or visit the network when you feel like opening your porch to neighbors.</p></div>
  <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="primary" href="../signal/">✳ MAKE MY SIGNAL ↗</a><a class="secondary" href="./network.html">VISIT THE NETWORK ↗</a></div>
@@ -147,6 +160,6 @@
 </section>
 </main>
 <div class="toast" id="toast" aria-live="polite" hidden></div>
-<footer><a href="../">← STATION</a><span>HUMKIN ORCHARD 001 · GROW SOMETHING GOOD</span><a href="../top42/">THE TOP 42 ↗</a><a href="./network.html">LIVE NETWORK ↗</a><a href="../participate/">STATION GUILDS ↗</a><a href="https://github.com/the-static-collective/HUMKIN">SOURCE ↗</a></footer>
+<footer><a href="../">← STATION</a><span>HUMKIN ORCHARD 001 · GROW SOMETHING GOOD</span><a href="../top42/">THE TOP 42 ↗</a><a href="https://github.com/the-static-collective/HUMKIN">SOURCE ↗</a></footer>
 </body>
 </html>
