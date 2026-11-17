@@ -27,6 +27,7 @@ import android.graphics.Outline;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.ScrollView;
 
 /**
  * HUMKIN's new native front panel: the approved radio image supplies the
@@ -50,6 +51,16 @@ final class LivingReceiverFace extends FrameLayout {
     private static final float W=864f,H=1536f;
     private final Operations commands;
     private final FacePaint painter;
+    private final SlicedReceiverSkin chassis;
+    private int viewportHeightPx=0;
+    private View boundViewport;
+    private final View.OnLayoutChangeListener viewportListener=(v,l,t,r,b,ol,ot,oright,ob)->{
+        int actual=b-t;
+        if(actual>0&&actual!=viewportHeightPx){
+            viewportHeightPx=actual;
+            requestLayout();
+        }
+    };
     private final ImageView realArt;
     private final TextView title,artist;
     private final View dialTouch;
@@ -68,9 +79,9 @@ final class LivingReceiverFace extends FrameLayout {
         setClipToPadding(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         setContentDescription("HUMKIN Living Receiver. Interactive virtual radio, not terrestrial RF.");
-        ImageView chassis=new ImageView(c);
-        chassis.setImageResource(R.drawable.living_receiver_face);
-        chassis.setScaleType(ImageView.ScaleType.FIT_XY);
+        // Source art remains fixed-size in every hardware band. Between them
+        // the navy enamel and worn edge rails genuinely repeat, never scale.
+        chassis=new SlicedReceiverSkin(c);
         addView(chassis,new FrameLayout.LayoutParams(-1,-1));
         painter=new FacePaint(c);
         addView(painter,new FrameLayout.LayoutParams(-1,-1));
@@ -251,17 +262,52 @@ final class LivingReceiverFace extends FrameLayout {
     private float nominalTitleSize=49;
     private float scale=1f;
 
+    /**
+     * Ask the containing ScrollView how much visible height the phone really
+     * offers. This avoids inventing status/navigation bar dimensions and
+     * removes the giant blank navy rectangle on tall Android 11 handsets.
+     */
+    @Override protected void onAttachedToWindow(){
+        super.onAttachedToWindow();
+        post(()->{
+            if(getParent()==null)return;
+            View candidate=this;
+            while(candidate.getParent() instanceof View){
+                candidate=(View)candidate.getParent();
+                if(candidate instanceof ScrollView){
+                    if(boundViewport!=candidate){
+                        if(boundViewport!=null)boundViewport.removeOnLayoutChangeListener(viewportListener);
+                        boundViewport=candidate;
+                        boundViewport.addOnLayoutChangeListener(viewportListener);
+                    }
+                    viewportListener.onLayoutChange(candidate,0,0,candidate.getWidth(),
+                            candidate.getHeight(),0,0,0,0);
+                    break;
+                }
+            }
+        });
+    }
+    @Override protected void onDetachedFromWindow(){
+        if(boundViewport!=null)boundViewport.removeOnLayoutChangeListener(viewportListener);
+        boundViewport=null;
+        super.onDetachedFromWindow();
+    }
     @Override protected void onMeasure(int widthMeasureSpec,int heightMeasureSpec){
         int w=MeasureSpec.getSize(widthMeasureSpec);
         if(w<=0)w=864;
-        int h=Math.round(w*H/W);
+        int originalHeight=Math.round(w*H/W);
+        // In a short/landscape viewport we scroll rather than crushing knobs.
+        int desired=Math.max(originalHeight,viewportHeightPx);
         super.onMeasure(MeasureSpec.makeMeasureSpec(w,MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(h,MeasureSpec.EXACTLY));
+                MeasureSpec.makeMeasureSpec(desired,MeasureSpec.EXACTLY));
     }
     private int px(float design){return Math.round(design*scale);}
     private void put(View v,int x,int y,int w,int h){
         FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(px(w),px(h));
-        lp.leftMargin=px(x);lp.topMargin=px(y);v.setLayoutParams(lp);
+        lp.leftMargin=px(x);
+        float extra=ReceiverSliceGeometry.expansion(getWidth(),getHeight());
+        lp.topMargin=px(ReceiverSliceGeometry.mapY(y,extra));
+        v.setLayoutParams(lp);
     }
     private void positionChildren(int actualWidth){
         scale=actualWidth/W;
@@ -304,7 +350,13 @@ final class LivingReceiverFace extends FrameLayout {
         @Override protected void onDraw(Canvas original){
             super.onDraw(original);
             Canvas c=original;
-            c.save();c.scale(getWidth()/W,getHeight()/H);
+            c.save();
+            // Never stretch the artwork vertically: use the same geometry as
+            // the sliced chassis and every interactive hit target.
+            c.scale(getWidth()/W,getWidth()/W);
+            float extra=ReceiverSliceGeometry.expansion(getWidth(),getHeight());
+            float upper=ReceiverSliceGeometry.shiftBefore(743f,extra);
+            c.save();c.translate(0,upper);
             // The mockup's original fake track title is covered with a paper
             // insert. Its artwork, speaker grille and chrome stay intact.
             p.setShader(new LinearGradient(421,744,780,931,
@@ -322,13 +374,16 @@ final class LivingReceiverFace extends FrameLayout {
                 rect.set(445+i*13.3f,904-tall/2,449+i*13.3f,904+tall/2);
                 c.drawRoundRect(rect,3,3,p);
             }
+            c.restore();
             // Actual station state sits on the existing little lamps.
             if(playing){
                 p.setColor(0x66ffe270);c.drawCircle(760,661,22,p);
                 p.setColor(0xffffec92);c.drawCircle(760,661,11,p);
             }
+            c.save();c.translate(0,upper);
             if(!sameTime){p.setColor(0xffffe47e);c.drawCircle(479,996,9,p);}
             else{p.setColor(0xffffe47e);c.drawCircle(143,996,9,p);}
+            c.restore();
             // Physically rotating, cropped hardware layers from the reference.
             if(tuningWheel!=null){
                 c.save();c.rotate((frequency-98.2f)*13f,433,506);
@@ -347,6 +402,7 @@ final class LivingReceiverFace extends FrameLayout {
                 c.drawRoundRect(new RectF(598,398,680,519),10,10,p);p.setStyle(Paint.Style.FILL);
             }
             if(playing){
+                c.save();c.translate(0,upper);
                 // Cover the baked TUNE IN label with a dynamic physical placard.
                 p.setShader(new LinearGradient(0,1071,0,1138,
                         new int[]{0xffffe47e,0xfff8c340,0xfff5b83d},null,Shader.TileMode.CLAMP));
@@ -354,6 +410,7 @@ final class LivingReceiverFace extends FrameLayout {
                 p.setTypeface(Typeface.create("sans-serif-black",Typeface.BOLD_ITALIC));
                 p.setTextSize(64);p.setTextAlign(Paint.Align.CENTER);p.setColor(INK);
                 c.drawText("PAUSE",485,1123,p);
+                c.restore();
             }
             c.restore();
             if(playing)postInvalidateDelayed(220);
