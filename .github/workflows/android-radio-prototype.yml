@@ -67,7 +67,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: humkin-pocket-receiver-030
+          name: humkin-pocket-receiver-031
           path: apps/android/app/build/outputs/apk/radioPocket/app-radioPocket.apk
           if-no-files-found: error
 
