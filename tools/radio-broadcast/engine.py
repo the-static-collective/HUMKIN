@@ -23,6 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from scheduler_v2 import StationV2
+from catalog_sources import optional_catalog
+import re
 
 API="https://kbhqacsdvjsstzyplqij.supabase.co"
 KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"
@@ -42,7 +44,7 @@ def get_json(url,api=False):
 def live_catalog():
     base=get_json(RADIO+"rotation.json")
     static_overrides=get_json(API+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled&limit=1000",True)
-    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&limit=1000",True)
+    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",True)
     shows=get_json(API+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,track_ids,is_active,priority&is_active=eq.true&limit=100",True)
     settings=get_json(API+"/rest/v1/humkin_radio_settings?select=bumper_every,station_label&id=eq.main&limit=1",True)
     overrides={o["track_id"]:o for o in static_overrides}
@@ -52,18 +54,30 @@ def live_catalog():
         if o.get("enabled") is False:continue
         tracks.append(dict(id=t["id"],title=o.get("title") or t["title"],
                            artist=o.get("artist") or t.get("artist","HUMKIN"),
-                           kind=o.get("kind","song"),
+                           kind=o.get("kind",t.get("kind","song")),
+                           album=o.get("album") or t.get("album",""),source="static",
                            duration=float(t["duration"]),
                            url=urllib.parse.urljoin(RADIO,t["src"])))
     for t in cloud:
         path=t.get("storage_path","")
-        if not (isinstance(path,str) and len(path.split("/"))==2 and path.endswith(".mp3")):continue
+        if not isinstance(path,str) or not re.fullmatch(r"[0-9a-f-]{36}/[0-9a-f]{64}\\.mp3",path):continue
         if not t.get("enabled",True):continue
+        duration=float(t.get("duration_seconds") or 0)
+        if not 0<duration<14400:continue
+        kind="bumper" if t.get("kind")=="bumper" else "song"
         tracks.append(dict(id="crate-"+t["id"],title=t.get("title","Untitled"),
-                           artist=t.get("artist","HUMKIN"),kind=t.get("kind","song"),
-                           duration=float(t["duration_seconds"]),
+                           artist=t.get("artist","HUMKIN"),kind=kind,
+                           album=t.get("album") or "HUMKIN RADIO",
+                           source="cloud",is_single=t.get("is_single") is True,
+                           duration=duration,
                            url=API+"/storage/v1/object/public/humkin-radio-live/"+path))
-    return {"tracks":tracks,"shows":shows,"settings":settings[0] if settings else {"bumper_every":0}}
+    extras,chart_ids=optional_catalog(get_json,RADIO,API)
+    known={t["id"] for t in tracks}
+    for item in extras:
+        if item["id"] not in known:
+            tracks.append(item);known.add(item["id"])
+    return {"tracks":tracks,"shows":shows,"settings":settings[0] if settings else {"bumper_every":0},
+            "rotation":base,"chart_ids":chart_ids,"policy_version":2}
 
 class Station:
     def __init__(self,catalog,seed=2026):
