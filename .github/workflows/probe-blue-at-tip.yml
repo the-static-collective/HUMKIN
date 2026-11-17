@@ -1,0 +1,33 @@
+name: Probe published Blue At The Tip R2 audio
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/probe-blue-at-tip.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audio-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download public R2 MP3 and inspect factual duration
+        env:
+          TRACK_URL: "https://media.abundent.org/tracks/Blue%20At%20The%20Tip.mp3"
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --location --fail --show-error --silent --retry 2 --max-time 120             --output /tmp/blue-at-the-tip.mp3 "$TRACK_URL"
+          printf 'Downloaded size: '
+          stat -c '%s bytes' /tmp/blue-at-the-tip.mp3
+          printf 'File signature: '
+          file --brief /tmp/blue-at-the-tip.mp3
+          if ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          echo 'Actual recording metadata:'
+          ffprobe -v error -show_entries format=duration,size,format_name,bit_rate             -of default=noprint_wrappers=1 /tmp/blue-at-the-tip.mp3
+          echo 'Object SHA256:'
+          sha256sum /tmp/blue-at-the-tip.mp3
+          echo 'Range request status:'
+          curl -L -sS --max-time 30 -o /dev/null -w '%{http_code}\n'             --range 0-1023 "$TRACK_URL"

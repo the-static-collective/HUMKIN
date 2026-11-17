@@ -8,9 +8,11 @@
       "title": "Blue At The Tip",
       "artist": "HUMKIN",
       "album": "HUMKIN RADIO · SEASONAL",
-      "approved": false,
+      "approved": true,
       "seasonal": true,
-      "note": "Filename and 3x seasonal request confirmed by creator. Airplay remains disabled pending public R2 URL connectivity and measured duration_seconds; artist/album provisional."
+      "note": "Creator-confirmed public playback 2026-11-17; GitHub-hosted ffprobe independently verified 193.960000 seconds, 6,095,160 bytes, MP3, HTTP Range 206. Seasonal radio: 3 total slots per rotation.",
+      "duration_seconds": 193.96,
+      "sha256": "2958309e915c076bed880349fbb61c0c8d8b9dcd97f4e619a5f6c5661a23cd16"
     }
   ]
 }
