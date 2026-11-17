@@ -55,6 +55,7 @@ jobs:
       - run: node tests/living-discography.test.mjs
       - run: python3 -m py_compile tools/radio-broadcast/modal_hour.py
       - run: python3 tests/radio-broadcast.test.py
+      - run: python3 tests/blue-lemon.test.py
       - run: python3 tests/radio-house-host.test.py
       - run: python3 tests/radio-house-bridge.test.py
       - run: python3 tests/radio-convert.test.py
