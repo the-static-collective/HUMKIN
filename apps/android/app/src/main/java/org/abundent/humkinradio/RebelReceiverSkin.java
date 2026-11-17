@@ -124,6 +124,7 @@ final class RebelReceiverSkin {
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
         private boolean sameTime=true,archive=false;
         private float frequency=VirtualChannels.HUMKIN_FREQUENCY;
+        private float volume=.75f;
         private String pressedCircuit="DIAL";
         private boolean handlingTouch;
         interface OnTuneListener { void onTune(String circuit,float frequency,boolean archive); }
@@ -138,6 +139,7 @@ final class RebelReceiverSkin {
         boolean isMainStationTuned(){return VirtualChannels.isPlayable(archive,frequency);}
         boolean isArchive(){return archive;}
         float frequency(){return frequency;}
+        void setVolume(float value){volume=Math.max(0f,Math.min(1f,value));invalidate();}
         void setSameTime(boolean same) {
             if(sameTime==same)return;
             sameTime=same;
@@ -165,14 +167,17 @@ final class RebelReceiverSkin {
                     }else if(y>=135f&&x<=105f)pressedCircuit="VOLUME";
                     else if(y>=145f&&x>=260f)pressedCircuit="SIGNAL";
                     if("DIAL".equals(pressedCircuit))updateFromPoint(x,y);
+                    else if("VOLUME".equals(pressedCircuit))updateVolumeFromPoint(x,y);
                     if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);
                     return true;
                 case MotionEvent.ACTION_MOVE:
                     if(handlingTouch&&"DIAL".equals(pressedCircuit))updateFromPoint(x,y);
+                    else if(handlingTouch&&"VOLUME".equals(pressedCircuit))updateVolumeFromPoint(x,y);
                     return handlingTouch;
                 case MotionEvent.ACTION_UP:
                     if(!handlingTouch)return super.onTouchEvent(event);
                     if("DIAL".equals(pressedCircuit))updateFromPoint(x,y);
+                    else if("VOLUME".equals(pressedCircuit))updateVolumeFromPoint(x,y);
                     if("BAND".equals(pressedCircuit)){archive=!archive;updateAccessibility();invalidate();}
                     performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
                     handlingTouch=false;
@@ -193,6 +198,11 @@ final class RebelReceiverSkin {
             float v=88f+(float)((Math.max(-140,Math.min(140,theta))+140d)/280d)*20f;
             setFrequency(v);
         }
+        private void updateVolumeFromPoint(float x,float y){
+            double theta=Math.toDegrees(Math.atan2(x-54f,194f-y));
+            volume=Math.max(0f,Math.min(1f,(float)((theta+130d)/260d)));
+            invalidate();
+        }
         @Override public boolean onKeyDown(int keyCode,KeyEvent e){
             if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT||keyCode==KeyEvent.KEYCODE_DPAD_RIGHT){
                 setFrequency(frequency+(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT ? 0.2f : -0.2f));
@@ -202,7 +212,8 @@ final class RebelReceiverSkin {
         }
         @Override public boolean performClick(){
             super.performClick();
-            if(onTuneListener!=null)onTuneListener.onTune(pressedCircuit,frequency,archive);
+            if(onTuneListener!=null)onTuneListener.onTune(pressedCircuit,
+                "VOLUME".equals(pressedCircuit)?volume:frequency,archive);
             pressedCircuit="DIAL";
             return true;
         }
@@ -295,7 +306,8 @@ final class RebelReceiverSkin {
             label(c,"THE POCKET",16,111,12,WHITE,false);
             label(c,"RECEIVER  ✳",16,128,12,GOLD,false);
             label(c,"VOLUME",18,157,11,WHITE,false);
-            knob(c,54,194,28,PEACH);
+            c.save();c.rotate(-130f+volume*260f,54,194);
+            knob(c,54,194,28,PEACH);c.restore();
             label(c,"−",13,234,13,GOLD,false);label(c,"+",94,234,13,GOLD,false);
             label(c,"SIGNAL",298,157,11,WHITE,true);
             knob(c,305,196,25,MINT);
@@ -304,8 +316,9 @@ final class RebelReceiverSkin {
             for(int i=0;i<3;i++){
                 float x=259+i*33;
                 rect(c,x-10,100,x+10,126,6,0xffd5b276);
-                fill(DARK);c.drawCircle(x,113,6,p);
-                fill(0xfff3debd);c.drawCircle(x+1,109,4,p);
+                float leverY=i==0&&archive?119:113;
+                fill(DARK);c.drawCircle(x,leverY,6,p);
+                fill(0xfff3debd);c.drawCircle(x+1,leverY-4,4,p);
             }
             label(c,"AM",259,96,8,archive?PEACH:GOLD,true);
             label(c,"MON",292,96,8,GOLD,true);
