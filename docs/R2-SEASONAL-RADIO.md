@@ -6,13 +6,13 @@
 - DNS for `media.abundent.org` exists in the connected Cloudflare zone; that does **not** prove a particular R2 object can be retrieved or that the bucket is attached correctly.
 - The creator provided the exact R2 dashboard object-details URL for `tracks/Blue At The Tip.mp3` in bucket `humkin-radio-media` on November 17. This confirms the intended **object key**, not a publicly playable link or measured duration.
 - `fm/r2-tracks.json` safely stages this recording with `approved: false` and `seasonal: true`. It will remain off air until the real audio metadata and public endpoint are verified. The title derives from the filename; the HUMKIN artist and seasonal album label are provisional.
-- The Cloudflare zone currently contains `media.abundent.org` CNAME -> `public.r2.dev` (proxied), **not** evidence that the bucket's R2 Custom Domains flow is connected. Cloudflare explicitly advises against CNAME-to-r2.dev as an unsupported production path. Attach the custom domain in **R2 > bucket > Settings > Custom Domains > Add**, letting Cloudflare create the proper DNS record; remove the conflicting manually created CNAME through Cloudflare when prompted. Do not repoint existing unrelated site or MX records.
+- **Verified by the owner's Cloudflare DNS screenshot:** `media.abundent.org` appears as DNS record **Type: R2**, **Target: `humkin-radio-media`**, **Proxy: Proxied**. Cloudflare internally represents its target as `public.r2.dev` in the DNS editor, but this record is specifically R2-managed, not an unsupported user-created CNAME to a development hostname. **Do not delete or change this record.** The remaining check is whether the bucket's Custom Domains status is **Active** and the specific MP3 is publicly playable.
 - Never surface contents of `humkin-radio-private` or an unpublished production/stem bucket. This manifest is strictly for owner-approved public media.
 - Website and Android releases are separate: a browser-radio change does not silently update or re-sign the native APK.
 
 ## One-track owner-approved load-in
 
-1. In Cloudflare R2, select the public bucket `humkin-radio-media`. Confirm its **Custom Domains** includes `media.abundent.org` with active HTTPS.
+1. In Cloudflare R2, select the public bucket `humkin-radio-media`. The DNS screen confirms a **Type R2** record points to this bucket; confirm **Custom Domains** includes `media.abundent.org` with status **Active** and HTTPS. **Do not delete its R2 DNS record.**
 2. Copy the uploaded MP3's **object key**, not a private S3 URL or token. Example: `tracks/Fall Anthem.mp3`. Do not assume the example exists.
 3. Confirm the file is public, approved for broadcast, and has correct `Content-Type: audio/mpeg`.
 4. Obtain its accurate duration in seconds (decimals supported), title and artist. For `Blue At The Tip`, the filename gives a provisional title but not a duration. Do not use a made-up duration; synchronized radio requires a reliable length.
@@ -69,5 +69,5 @@ R2 is public file delivery, **not** an always-on live Icecast/AzuraCast stream o
 - Actual R2 object key: `tracks/Blue At The Tip.mp3`
 - Expected URL **after supported custom-domain connection**: `https://media.abundent.org/tracks/Blue%20At%20The%20Tip.mp3`
 - Requested editorial rotation: **3× total** per music cycle, `seasonal: true`.
-- Pending: Cloudflare-supported R2 custom domain binding, actual file 200/206 playback, verified duration and cross-origin handling. This is deliberately not yet in the live rotation.
+- Cloudflare DNS record is confirmed as **Type R2** and correctly bound to the bucket; **do not remove it**. Pending: Custom Domains status **Active**, actual file 200/206 playback, verified duration and cross-origin handling. This is deliberately not yet in the live rotation.
 - Once verified, set accurate `duration_seconds` and `approved: true`, run tests and publish. A website audio listing and a user-private R2 dashboard URL are different resources.
