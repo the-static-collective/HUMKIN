@@ -44,7 +44,7 @@ function setBusy(v){
  for(const id of ["save-cart","pilot","clear","song-add","save-draft","save-show","export"])
   $(id).disabled=v;
 }
-function buildLibrary(config,cloud,overrides){
+function buildLibrary(config,cloud,overrides,r2Manifest){
  const base=new Map((overrides||[]).map(o=>[o.track_id,o]));
  const staticTracks=config.tracks.map(t=>{
   const o=base.get(t.id);
@@ -56,10 +56,17 @@ function buildLibrary(config,cloud,overrides){
   const path=String(t.storage_path||"");
   if(!/^[0-9a-f-]{36}\/[0-9a-f]{64}\.mp3$/.test(path))return null;
   return {id:"crate-"+t.id,title:t.title,artist:t.artist,album:t.album,kind:t.kind,
-   duration:Number(t.duration_seconds),src:API+"/storage/v1/object/public/"+BUCKET+"/"+path,
+   duration:Number(t.duration_seconds),src:t.storage_provider==="r2"
+     ?window.HUMKIN_R2_CATALOG?.objectUrl(String(t.r2_object_key||""))
+     :API+"/storage/v1/object/public/"+BUCKET+"/"+path,
    enabled:t.enabled,published:!!t.published_at};
  }).filter(Boolean);
- return [...staticTracks,...cloudTracks];
+ const manualR2=(window.HUMKIN_R2_CATALOG?.parse(r2Manifest,
+  new URL("../../cover.jpg",ORIGIN).href)||[]).map(t=>({
+  id:t.id,title:t.title,artist:t.artist,album:t.album,
+  kind:"song",duration:t.duration,src:t.src,enabled:true,published:true
+ }));
+ return [...staticTracks,...cloudTracks,...manualR2];
 }
 function renderPickers(){
  const selection=[$("cart-track"),$("song-pick")];
@@ -366,12 +373,13 @@ async function boot(){
   await requireOwner();
   $("auth").textContent="UNLOCKED · "+user.email+" · this production room is private.";
   $("sign-in").classList.add("hidden");
-  const [response,cloud,overrides,bibleRes]=await Promise.all([
+  const [response,cloud,overrides,bibleRes,r2Response]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
-   db.from("humkin_radio_tracks").select("id,title,artist,album,duration_seconds,storage_path,enabled,kind,published_at")
+   db.from("humkin_radio_tracks").select("id,title,artist,album,duration_seconds,storage_path,storage_provider,r2_object_key,enabled,kind,published_at")
      .limit(1500),
    db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,kind,enabled").limit(1000),
-   fetch("./station-bible.json",{cache:"no-store"}).catch(()=>null)
+   fetch("./station-bible.json",{cache:"no-store"}).catch(()=>null),
+   fetch("../r2-tracks.json",{cache:"no-store"}).catch(()=>null)
   ]);
   if(!response.ok)throw Error("Cannot read published station catalog");
   if(cloud.error||overrides.error)throw Error(cloud.error?.message||overrides.error?.message);
@@ -379,7 +387,8 @@ async function boot(){
   try{
    stationBible=bibleRes?.ok?BIBLE.validate(await bibleRes.json()):null;
   }catch{stationBible=null}
-  tracks=buildLibrary(config,cloud.data,overrides.data);
+  const r2Manifest=r2Response?.ok?await r2Response.json():null;
+  tracks=buildLibrary(config,cloud.data,overrides.data,r2Manifest);
   renderPickers();
   renderBible();
   await loadFieldCarts();

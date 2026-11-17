@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import * as tus from "https://esm.sh/tus-js-client@4.3.1";
+import {r2Bridge} from "../r2-bridge-client.js";
 
 const API = "https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY = "sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public, RLS-scoped key. Never a secret/service key.
@@ -167,7 +168,7 @@ async function uploadFile(file,path,onProgress){
 }
 async function loadKnown(){
  const {data,error}=await db.from("humkin_radio_tracks")
-   .select("id,sha256,storage_path,title,kind,is_single,enabled,bytes,duration_seconds,published_at")
+   .select("id,sha256,storage_path,title,kind,is_single,enabled,bytes,duration_seconds,published_at,storage_provider,supabase_source_removed_at")
    .order("created_at",{ascending:false}).limit(2000);
  if(error)throw error;
  known=data||[];
@@ -186,9 +187,9 @@ async function loadKnown(){
    action.addEventListener("click",()=>publishOne(row));
    li.append(label,action);$("draft-list").append(li);
  }
- const used=known.reduce((s,r)=>s+(r.bytes||0),0);
+ const used=known.filter(r=>!r.supabase_source_removed_at).reduce((s,r)=>s+Number(r.bytes||0),0);
  const secs=known.filter(x=>x.published_at).reduce((s,r)=>s+Number(r.duration_seconds||0),0);
- $("stats").textContent=known.filter(x=>x.published_at).length+" cloud songs on air · "+drafts.length+" private drafts · "+fmtBytes(used)+" uploaded";
+ $("stats").textContent=known.filter(x=>x.published_at).length+" cloud recordings on air · "+drafts.length+" private drafts · "+fmtBytes(used)+" still in Supabase storage · "+known.filter(x=>x.storage_provider==="r2").length+" served by R2";
  $("total").textContent=fmtTime(secs)+" new cloud airtime";
  $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper");
 }
@@ -212,7 +213,7 @@ async function stage(){
        if(known.some(x=>x.sha256===sha)){
          skipped++;item.status="DUPLICATE";drawQueue();continue;
        }
-       const used=known.reduce((s,x)=>s+(x.bytes||0),0);
+       const used=known.filter(x=>!x.supabase_source_removed_at).reduce((s,x)=>s+Number(x.bytes||0),0);
        if(used+mp3.size>BUDGET)throw Error("700 MiB radio soft budget reached; stop and choose larger storage before continuing.");
        const {user}=await ensureSession();
        const path=user.id+"/"+sha+".mp3";
@@ -246,6 +247,39 @@ async function stage(){
    try{await loadKnown()}catch(err){log("Refresh failure: "+err.message)}
  }
 }
+// R2 becomes the publication destination; the Supabase inbox is temporary.
+async function publishStorage(row){
+ try{
+  const result=await r2Bridge(db,"publish",row.id);
+  log("R2 ON AIR: "+row.title+" · "+result.object_key);
+  return "R2";
+ }catch(error){
+  if(error.code!=="R2_NOT_CONFIGURED")throw error;
+  // Safe reversible compatibility until restricted R2 credentials are installed.
+  log("R2 credentials absent; using the existing Supabase publishing path.");
+  const moved=await db.storage.from(INBOX).move(row.storage_path,row.storage_path,{destinationBucket:LIVE});
+  if(moved.error){
+   const parent=row.storage_path.slice(0,row.storage_path.lastIndexOf("/"));
+   const name=row.storage_path.slice(parent.length+1);
+   const {data:objects,error:listingError}=await db.storage.from(LIVE).list(parent,{search:name,limit:100});
+   if(listingError||!objects?.some(x=>x.name===name))throw moved.error;
+  }
+  const {error:writeError}=await db.from("humkin_radio_tracks")
+   .update({published_at:new Date().toISOString(),enabled:true}).eq("id",row.id);
+  if(writeError)throw writeError;
+  return "Supabase (R2 not configured yet)";
+ }
+}
+async function refreshR2Status(){
+ if(!activeUser)return;
+ try{
+  const status=await r2Bridge(db,"status");
+  $("r2-storage-note").textContent=(status.configured?"R2 CREDENTIALS PRESENT":"R2 CREDENTIALS REQUIRED")+
+    " · "+status.migrated_tracks+" R2 tracks · "+status.pending_tracks+
+    " Supabase published · "+fmtBytes(status.supabase_storage_estimate_bytes)+
+    " still stored in Supabase";
+ }catch(err){$("r2-storage-note").textContent="R2 connection: "+err.message}
+}
 async function publish(){
  if(busy)return;
  try{await ensureSession();await loadKnown()}catch(err){feedback(err.message);return}
@@ -256,18 +290,8 @@ async function publish(){
  try{
    for(const row of songDrafts){
      try{
-       const result=await db.storage.from(INBOX).move(row.storage_path,row.storage_path,{destinationBucket:LIVE});
-       if(result.error){
-         // If a previous attempt moved the object but failed to update the row,
-         // the live object might already exist. Confirm before updating metadata.
-         const parent=row.storage_path.slice(0,row.storage_path.lastIndexOf("/"));
-         const name=row.storage_path.slice(parent.length+1);
-         const {data:objects,error:listingError}=await db.storage.from(LIVE).list(parent,{search:name,limit:100});
-         if(listingError||!objects?.some(x=>x.name===name))throw result.error;
-       }
-       const {error}=await db.from("humkin_radio_tracks").update({published_at:new Date().toISOString(),enabled:true}).eq("id",row.id);
-       if(error)throw error;
-       live++;log("ON AIR: "+row.title);
+       const provider=await publishStorage(row);
+       live++;log("ON AIR via "+provider+": "+row.title);
      }catch(err){failed++;log("Publication failed for "+row.title+": "+err.message)}
    }
    feedback("Published "+live+" songs. "+failed+" need retry. Reload the station to hear the new crate.");
@@ -287,18 +311,8 @@ async function publishOne(selectedRow){
  if(!confirm(claim+"\n\n"+row.title))return;
  setBusy(true);
  try{
-   const moved=await db.storage.from(INBOX).move(row.storage_path,row.storage_path,{destinationBucket:LIVE});
-   if(moved.error){
-     const parent=row.storage_path.slice(0,row.storage_path.lastIndexOf("/"));
-     const name=row.storage_path.slice(parent.length+1);
-     const {data:objects,error:listingError}=await db.storage.from(LIVE).list(parent,{search:name,limit:100});
-     if(listingError||!objects?.some(x=>x.name===name))throw moved.error;
-   }
-   const {error}=await db.from("humkin_radio_tracks").update({
-     published_at:new Date().toISOString(),enabled:true
-   }).eq("id",row.id);
-   if(error)throw error;
-   feedback("PUBLISHED + ENABLED · "+row.title+". Check a completed song boundary in the radio to confirm actual audio playback.");
+   const provider=await publishStorage(row);
+   feedback("PUBLISHED + ENABLED via "+provider+" · "+row.title+". Check a completed song boundary in the radio to confirm actual audio playback.");
  }catch(err){feedback("Could not publish "+row.title+": "+err.message)}
  finally{setBusy(false);try{await loadKnown()}catch(err){log("Refresh failure: "+err.message)}}
 }
@@ -365,7 +379,7 @@ async function updateSession(){
  activeUser=user?.email?.toLowerCase()===OWNER?user:null;
  drawAuth();
  if(user&&!activeUser)$("auth-message").textContent="This account is not the designated HUMKIN owner.";
- if(activeUser){$("auth-message").textContent="Crate unlocked.";try{await loadKnown()}catch(e){feedback("Catalog unavailable: "+e.message)}}
+ if(activeUser){$("auth-message").textContent="Crate unlocked.";try{await loadKnown();await refreshR2Status()}catch(e){feedback("Catalog unavailable: "+e.message)}}
  else if(error)log("Authentication: "+error.message);
 }
 db.auth.onAuthStateChange((_event,_session)=>{setTimeout(updateSession,0)});

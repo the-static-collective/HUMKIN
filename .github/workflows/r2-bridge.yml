@@ -1,0 +1,39 @@
+name: Verify R2 primary storage
+on:
+  pull_request:
+    paths:
+      - "fm/radio.js"
+      - "fm/load/**"
+      - "fm/manage/**"
+      - "fm/studio/**"
+      - "fm/r2-bridge-client.js"
+      - "supabase/functions/humkin-r2-bridge/**"
+      - "supabase/migrations/*humkin_r2*"
+      - "tests/r2-storage.test.mjs"
+      - ".github/workflows/r2-bridge.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Browser module syntax
+        run: |
+          node --check fm/radio.js
+          node --check fm/load/loader.js
+          node --check fm/manage/manager.js
+          node --check fm/studio/studio.js
+          node --check fm/r2-bridge-client.js
+          node --check fm/r2-catalog.js
+      - name: Verify storage bridge contracts
+        run: node tests/r2-storage.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check live Edge Function TypeScript and dependencies
+        run: deno check supabase/functions/humkin-r2-bridge/index.ts

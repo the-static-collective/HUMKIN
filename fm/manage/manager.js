@@ -1,5 +1,6 @@
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import {prepareCover} from "./art-upload.js";
+import {r2Bridge} from "../r2-bridge-client.js";
 
 // Publishable key only. Every write is checked again by owner-only Postgres RLS.
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
@@ -10,6 +11,7 @@ const $=id=>document.getElementById(id);
 const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 let user=null,library=[],shows=[],staticList=[],editing=null,editingShow=null,slots=[],busy=false;
 let artAssets=[];
+let r2Status=null;
 let stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 let bumperPolicy={};
 const selected=new Set();
@@ -51,7 +53,7 @@ async function requireOwner(){
 }
 function setBusy(v){
  busy=v;
- for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off","auto-save","art-upload"])
+ for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off","auto-save","art-upload","r2-migrate","r2-cleanup"])
    $(id).disabled=v;
 }
 async function checkOne(result,action){
@@ -74,10 +76,10 @@ async function loadDesk(){
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
  try{
-  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts]=await Promise.all([
+  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts,r2Manifest]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks")
-    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,is_single,art_asset_id,published_at,created_at")
+    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,is_single,art_asset_id,published_at,created_at,storage_provider,r2_object_key,supabase_source_removed_at")
     .order("created_at",{ascending:false}).limit(2000),
    db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind,art_asset_id").limit(1000),
    db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at,art_asset_id")
@@ -85,7 +87,8 @@ async function loadDesk(){
    db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label").eq("id","main").limit(1),
    db.from("humkin_radio_art_assets").select("id,owner_id,sha256,storage_path,label,width,height,bytes,created_at")
     .order("created_at",{ascending:false}).limit(500),
-   fetch("../air-carts.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
+   fetch("../air-carts.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null),
+   fetch("../r2-tracks.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
   ]);
   if(!configResponse.ok)throw Error("Original rotation not reachable");
   for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult],["station settings",settingsResult],["art shelf",artResult]])
@@ -115,17 +118,31 @@ async function loadDesk(){
      duration:Number(track.duration),url:new URL(track.src,"https://humkin.abundent.org/fm/").href,
      originalName:String(track.src),bytes:null};
   });
-  const cloud=(cloudResult.data||[]).map(track=>({
-   id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,
-   artist:track.artist,album:track.album,kind:track.kind,is_single:track.is_single===true,
-   enabled:track.enabled,published:!!track.published_at,art_asset_id:track.art_asset_id||null,
-   artwork:new URL("../../cover.jpg",location.href).href,
-   duration:Number(track.duration_seconds),bytes:track.bytes,
-   originalName:track.original_name,
-   url:track.published_at?publicSrc(track.storage_path):"",
-   storagePath:track.storage_path,publishedAt:track.published_at
+  const cloud=(cloudResult.data||[]).map(track=>{
+   const provider=track.storage_provider==="r2"?"r2":"supabase";
+   const r2Url=provider==="r2"?window.HUMKIN_R2_CATALOG?.objectUrl(track.r2_object_key):"";
+   return {
+    id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,
+    artist:track.artist,album:track.album,kind:track.kind,is_single:track.is_single===true,
+    enabled:track.enabled,published:!!track.published_at,art_asset_id:track.art_asset_id||null,
+    artwork:new URL("../../cover.jpg",location.href).href,
+    duration:Number(track.duration_seconds),bytes:track.bytes,
+    originalName:track.original_name,
+    url:track.published_at?(provider==="r2"?r2Url:publicSrc(track.storage_path)):"",
+    storage_provider:provider,r2ObjectKey:track.r2_object_key||null,
+    sourceRemoved:!!track.supabase_source_removed_at,
+    storagePath:track.storage_path,publishedAt:track.published_at
+   };
+  });
+  // Read-only catalog entries explicitly approved in the GitHub R2 manifest.
+  // Do not expose a public-bucket listing or infer consent from arbitrary uploads.
+  const r2Static=(window.HUMKIN_R2_CATALOG?.parse(r2Manifest,
+      new URL("../../cover.jpg",location.href).href)||[]).map(t=>({
+    ...t,source:"r2",storage_provider:"r2",url:t.src,
+    originalName:t.src,enabled:true,published:true,bytes:null,
+    art_asset_id:null,readonly:true
   }));
-  library=[...cloud,...staticList];
+  library=[...cloud,...staticList,...r2Static];
   shows=showsResult.data||[];
   stationSettings={
     bumper_every:Number(settingsResult.data?.[0]?.bumper_every)||0,
@@ -133,6 +150,7 @@ async function loadDesk(){
   };
   for(const id of [...selected])if(!library.find(t=>t.id===id))selected.delete(id);
   renderArtShelf();renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
+  await refreshR2VaultStatus();
  }catch(err){note("Could not read station: "+err.message);$("auth-status").textContent="Signed in · data unavailable"}
 }
 
@@ -263,7 +281,8 @@ function renderLibrary(){
  const matching=library.filter(t=>{
    if(filter==="songs"&&t.kind!=="song"||filter==="bumpers"&&t.kind!=="bumper"||
      filter==="hidden"&&t.enabled||filter==="cloud"&&t.source!=="cloud"||
-     filter==="static"&&t.source!=="static")return false;
+     filter==="static"&&t.source!=="static"||
+     filter==="r2"&&t.storage_provider!=="r2")return false;
    const hay=[t.id,t.title,t.artist,t.album,t.originalName].join(" ").toLowerCase();
    return !text||hay.includes(text);
  });
@@ -273,6 +292,7 @@ function renderLibrary(){
    const item=el("div",null,"track"+(!track.enabled?" disabled":""));
    const check=el("input");check.type="checkbox";check.checked=selected.has(track.id);
    check.setAttribute("aria-label","Select "+track.title+" "+track.id);
+   check.disabled=track.readonly===true;
    check.addEventListener("change",()=>{
      if(check.checked)selected.add(track.id);else selected.delete(track.id);
      $("selected-count").textContent=selected.size+" selected";
@@ -286,7 +306,7 @@ function renderLibrary(){
    const status=el("div",null,"row");
    for(const label of [track.artist,track.kind==="bumper"?"BUMPER":track.is_single?"SINGLE ✳":"SONG",
        !track.enabled?"OFF AIR":!track.published?"PRIVATE DRAFT":"ON AIR",
-       track.source==="cloud"?"CLOUD":"ORIGINAL"]){
+       track.storage_provider==="r2"?"CLOUDFLARE R2":track.source==="cloud"?"SUPABASE":"WEBSITE"]){
       status.append(el("span",label,"pill"));
    }
    content.append(status);
@@ -296,9 +316,9 @@ function renderLibrary(){
    content.append(el("div",displayCollection+" · "+duration(track.duration),"sub"));
    content.append(el("div",(track.originalName||track.id)+" · ID "+track.id.slice(-12),"track-info"));
    const actions=el("div",null,"track-actions");
-   actions.append(button("EDIT",()=>openEdit(track),"primary"));
+   if(!track.readonly)actions.append(button("EDIT",()=>openEdit(track),"primary"));
    actions.append(button("PREVIEW",()=>preview(track)));
-   actions.append(button(track.enabled?"HIDE":"ENABLE",()=>toggleTrack(track),track.enabled?"secondary":"primary"));
+   if(!track.readonly)actions.append(button(track.enabled?"HIDE":"ENABLE",()=>toggleTrack(track),track.enabled?"secondary":"primary"));
    item.append(check,content,actions);list.append(item);
  }
  $("selected-count").textContent=selected.size+" selected";
@@ -373,6 +393,7 @@ function preview(track){
  player.play().catch(()=>note("Tap play on the preview player to begin."));
 }
 function openEdit(track){
+ if(track.readonly)return note("This verified R2 recording is read-only in the file manifest. R2-backed Supabase catalog tracks are editable.");
  editing=track.id;
  $("edit-title").value=track.title;
  $("edit-artist").value=track.artist;
@@ -384,15 +405,18 @@ function openEdit(track){
  $("edit-enabled").checked=track.enabled;
  renderArtSelect("edit-art",track.art_asset_id||null);
  updateArtPreview("edit");
- $("edit-source").textContent=(track.source==="cloud"?"CLOUD FILE":"ORIGINAL WEBSITE ASSET")+
+ $("edit-source").textContent=(track.storage_provider==="r2"?"CLOUDFLARE R2":track.source==="cloud"?"SUPABASE FILE":"ORIGINAL WEBSITE ASSET")+
   " · "+track.originalName+" · ID "+track.id;
- $("edit-delete").hidden=track.source!=="cloud";
- $("edit-warning").textContent=track.source==="static"
+ $("edit-delete").hidden=track.source!=="cloud"||track.storage_provider==="r2";
+ $("edit-warning").textContent=track.storage_provider==="r2"
+   ?"R2 audio is independently verified. HIDE is reversible; deleting the R2 source is managed separately to avoid orphaning catalog entries."
+   :track.source==="static"
    ?"This legacy recording stays in GitHub Pages. HIDE removes it from the radio without deleting its file."
    :"Deleting cloud audio is permanent. HIDE is reversible and safer.";
  $("edit-dialog").showModal();
 }
 async function persistTrack(track,fields){
+ if(track.readonly)throw Error("The verified R2 manifest is read-only; edit its canonical file to change this recording.");
  await requireOwner();
  // Static legacy tracks use UPSERT. Always preserve the previous art reference
  // during a hide/enable/bulk toggle, even if the caller edits other fields.
@@ -578,6 +602,57 @@ async function deleteShow(program){
    setBusy(false);await loadDesk();note("Deleted schedule "+program.name+". All recordings remain safe.");
  }catch(err){setBusy(false);note("Schedule delete failed: "+err.message)}
 }
+async function refreshR2VaultStatus(){
+ try{
+  r2Status=await r2Bridge(db,"status");
+  const st=r2Status;
+  const configured=st.configured===true;
+  const count=st.migrated_tracks+" / "+st.published_tracks+" Supabase-catalog recordings served from R2";
+  $("r2-status").textContent=(configured?"R2 CREDENTIALS PRESENT · ":"R2 ACCESS KEYS NOT INSTALLED · ")+count+
+   " · "+(st.pending_bytes/1048576).toFixed(1)+" MiB pending transfer"+
+   " · "+(st.reclaimable_bytes/1048576).toFixed(1)+" MiB verified copies reclaimable.";
+  $("r2-migrate").disabled=!configured||st.pending_tracks<1;
+  $("r2-cleanup").disabled=!configured||st.reclaimable_copies<1;
+ }catch(error){
+  r2Status=null;$("r2-status").textContent="R2 bridge status unavailable: "+error.message;
+  $("r2-migrate").disabled=true;$("r2-cleanup").disabled=true;
+ }
+}
+async function moveR2Batch(action){
+ if(busy)return;
+ try{await requireOwner()}catch(error){note(error.message);return}
+ const cleanup=action==="cleanup";
+ const targets=library.filter(t=>t.source==="cloud"&&t.published&&
+  (cleanup?(t.storage_provider==="r2"&&!t.sourceRemoved):(t.storage_provider!=="r2"))).slice(0,20);
+ if(!targets.length){note("No matching recordings need this operation.");return}
+ if(cleanup&&!confirm("Delete "+targets.length+
+  " redundant Supabase audio copies AFTER checking their existing R2 files? This reclaims Supabase Storage, but you lose the separate Supabase backup. R2 remains on air."))return;
+ if(!cleanup&&!confirm("Migrate "+targets.length+
+  " published recordings to Cloudflare R2? Verified originals stay in Supabase until you select RECLAIM."))return;
+ setBusy(true);let success=0,errors=[];
+ try{
+  for(const track of targets){
+   $("r2-progress").textContent=(cleanup?"RECLAIMING ":"MIGRATING ")+
+     (success+errors.length+1)+" / "+targets.length+" · "+track.title;
+   try{
+    const result=await r2Bridge(db,action,track.dbId);
+    if(!result.ok)throw Error("Bridge operation unavailable");
+    success++;
+   }catch(error){
+    errors.push(track.title+": "+error.message);
+    if(error.code==="R2_NOT_CONFIGURED")break;
+   }
+  }
+ }finally{
+  setBusy(false);
+  await loadDesk();
+  $("r2-progress").textContent=(cleanup?"RECLAIMED ":"MIGRATED ")+success+
+   " / "+targets.length+" · "+errors.length+" errors."+
+   (errors.length?" "+errors.slice(0,2).join(" · "):"");
+ }
+}
+$("r2-migrate").addEventListener("click",()=>moveR2Batch("migrate"));
+$("r2-cleanup").addEventListener("click",()=>moveR2Batch("cleanup"));
 $("refresh").addEventListener("click",loadDesk);
 $("art-upload").addEventListener("change",async event=>{
  const file=event.target.files?.[0];event.target.value="";
