@@ -16,6 +16,9 @@ import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.view.Gravity;
 import android.view.View;
+import android.view.MotionEvent;
+import android.view.KeyEvent;
+import android.view.HapticFeedbackConstants;
 import android.widget.Button;
 
 /**
@@ -23,9 +26,10 @@ import android.widget.Button;
  * with invisible hotspots. The original concept is a visual reference;
  * every recording title and cover still comes from the actual Media3 player.
  *
- * The fake FM-style ruler is ornamental. No device RF tuning or broadcast
- * frequency is claimed. The large knob is an accessible alternative to the
- * two actual Same-Time / Road Shuffle buttons. No new permission or service.
+ * Frequencies are virtual HUMKIN channels; they are NOT terrestrial RF.
+ * The large knob now physically rotates a virtual tuner and the mechanical
+ * band switch opens an honest construction gate for unbuilt archive bands.
+ * Real Same-Time and Shuffle buttons remain the source of playback modes.
  */
 final class RebelReceiverSkin {
     static final int NAVY = 0xff102c52;
@@ -118,20 +122,100 @@ final class RebelReceiverSkin {
     /** The atmospheric, but functional, tuning desk. Knob click switches mode. */
     static final class Dial extends View {
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-        private boolean sameTime=true;
+        private boolean sameTime=true,archive=false;
+        private float frequency=VirtualChannels.HUMKIN_FREQUENCY;
+        private float volume=.75f;
+        private String pressedCircuit="DIAL";
+        private boolean handlingTouch;
+        interface OnTuneListener { void onTune(String circuit,float frequency,boolean archive); }
+        private OnTuneListener onTuneListener;
         Dial(Context c) {
             super(c);
             setFocusable(true);
             setClickable(true);
-            setContentDescription("Tuning knob. Tap to change to Road Shuffle. Illustrated scale, not an FM receiver.");
+            updateAccessibility();
         }
+        void setOnTuneListener(OnTuneListener listener){onTuneListener=listener;}
+        boolean isMainStationTuned(){return VirtualChannels.isPlayable(archive,frequency);}
+        boolean isArchive(){return archive;}
+        float frequency(){return frequency;}
+        void setVolume(float value){volume=Math.max(0f,Math.min(1f,value));invalidate();}
         void setSameTime(boolean same) {
             if(sameTime==same)return;
             sameTime=same;
-            setContentDescription("Tuning knob. Tap to change to "
-                    +(same?"Road Shuffle":"Same-Time Radio")
-                    +". Illustrated scale, not an FM receiver.");
             invalidate();
+        }
+        private void updateAccessibility(){
+            setContentDescription((archive?"AM archive band, unbuilt. ":"Virtual FM ")
+                    +String.format(java.util.Locale.US,"%.1f",frequency)
+                    +". Drag the knob or use left and right arrows; center button checks the selected channel.");
+        }
+        private void setFrequency(float f){
+            float normalized=VirtualChannels.normalize(f);
+            if(normalized==frequency)return;
+            frequency=normalized;updateAccessibility();invalidate();
+        }
+        @Override public boolean onTouchEvent(MotionEvent event){
+            if(!isEnabled())return super.onTouchEvent(event);
+            float x=event.getX()*360f/Math.max(1,getWidth());
+            float y=event.getY()*244f/Math.max(1,getHeight());
+            switch(event.getActionMasked()){
+                case MotionEvent.ACTION_DOWN:
+                    handlingTouch=true;pressedCircuit="DIAL";
+                    if(y>=88f&&y<=140f&&x>=243f){
+                        pressedCircuit=x<275?"BAND":x<310?"MONO":"BOOST";
+                    }else if(y>=135f&&x<=105f)pressedCircuit="VOLUME";
+                    else if(y>=145f&&x>=260f)pressedCircuit="SIGNAL";
+                    if("DIAL".equals(pressedCircuit))updateFromPoint(x,y);
+                    else if("VOLUME".equals(pressedCircuit))updateVolumeFromPoint(x,y);
+                    if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    if(handlingTouch&&"DIAL".equals(pressedCircuit))updateFromPoint(x,y);
+                    else if(handlingTouch&&"VOLUME".equals(pressedCircuit))updateVolumeFromPoint(x,y);
+                    return handlingTouch;
+                case MotionEvent.ACTION_UP:
+                    if(!handlingTouch)return super.onTouchEvent(event);
+                    if("DIAL".equals(pressedCircuit))updateFromPoint(x,y);
+                    else if("VOLUME".equals(pressedCircuit))updateVolumeFromPoint(x,y);
+                    if("BAND".equals(pressedCircuit)){archive=!archive;updateAccessibility();invalidate();}
+                    performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                    handlingTouch=false;
+                    if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(false);
+                    performClick();
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    handlingTouch=false;
+                    if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(false);
+                    return true;
+                default:return super.onTouchEvent(event);
+            }
+        }
+        private void updateFromPoint(float x,float y){
+            if(y<=85f){setFrequency(88f+20f*(x-54f)/251f);return;}
+            // 280 degree dial travel, upper semicircle at 98.2.
+            double theta=Math.toDegrees(Math.atan2(x-180f,161f-y));
+            float v=88f+(float)((Math.max(-140,Math.min(140,theta))+140d)/280d)*20f;
+            setFrequency(v);
+        }
+        private void updateVolumeFromPoint(float x,float y){
+            double theta=Math.toDegrees(Math.atan2(x-54f,194f-y));
+            volume=Math.max(0f,Math.min(1f,(float)((theta+130d)/260d)));
+            invalidate();
+        }
+        @Override public boolean onKeyDown(int keyCode,KeyEvent e){
+            if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT||keyCode==KeyEvent.KEYCODE_DPAD_RIGHT){
+                setFrequency(frequency+(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT ? 0.2f : -0.2f));
+                pressedCircuit="DIAL";performClick();return true;
+            }
+            return super.onKeyDown(keyCode,e);
+        }
+        @Override public boolean performClick(){
+            super.performClick();
+            if(onTuneListener!=null)onTuneListener.onTune(pressedCircuit,
+                "VOLUME".equals(pressedCircuit)?volume:frequency,archive);
+            pressedCircuit="DIAL";
+            return true;
         }
         private void fill(int color) {p.setShader(null);p.setColor(color);p.setStyle(Paint.Style.FILL);}
         private void stroke(int color,float width) {
@@ -199,8 +283,8 @@ final class RebelReceiverSkin {
                 label(c,marks[i],58+i*40.6f,36,14,DARK,true);
             label(c,"FM",28,36,13,DARK,true);
             label(c,"MHz",331,36,10,DARK,true);
-            label(c,"ILLUSTRATED STATION DIAL  ·  NO RF TUNING",180,74,7,0xff6b513e,true);
-            float pointer=sameTime?160:247;
+            label(c,archive?"AM ARCHIVE · LOOSE WIRE":"VIRTUAL FM · NO RF TRANSMISSION",180,74,7,0xff6b513e,true);
+            float pointer=54+(frequency-88f)/20f*251f;
             rect(c,pointer-2,38,pointer+2,66,2,0xffeb466a);
             fill(0xfffff1ce);c.drawCircle(pointer,38,2,p);
             screw(c,18,18);screw(c,342,18);screw(c,18,72);screw(c,342,72);
@@ -214,12 +298,16 @@ final class RebelReceiverSkin {
                 stroke(i%4==0?GOLD:BRASS,i%4==0?2:1);
                 c.drawLine(x1,y1,x2,y2,p);
             }
+            c.save();
+            c.rotate((frequency-VirtualChannels.HUMKIN_FREQUENCY)*13f,180,161);
             knob(c,180,161,62,GOLD);
-            label(c,"TUNING  ◀  ▶",180,238,12,WHITE,true);
+            c.restore();
+            label(c,archive?"AM · ARCHIVE":"TUNING  ◀  ▶",180,238,12,WHITE,true);
             label(c,"THE POCKET",16,111,12,WHITE,false);
             label(c,"RECEIVER  ✳",16,128,12,GOLD,false);
             label(c,"VOLUME",18,157,11,WHITE,false);
-            knob(c,54,194,28,PEACH);
+            c.save();c.rotate(-130f+volume*260f,54,194);
+            knob(c,54,194,28,PEACH);c.restore();
             label(c,"−",13,234,13,GOLD,false);label(c,"+",94,234,13,GOLD,false);
             label(c,"SIGNAL",298,157,11,WHITE,true);
             knob(c,305,196,25,MINT);
@@ -228,16 +316,16 @@ final class RebelReceiverSkin {
             for(int i=0;i<3;i++){
                 float x=259+i*33;
                 rect(c,x-10,100,x+10,126,6,0xffd5b276);
-                fill(DARK);c.drawCircle(x,113,6,p);
-                fill(0xfff3debd);c.drawCircle(x+1,109,4,p);
+                float leverY=i==0&&archive?119:113;
+                fill(DARK);c.drawCircle(x,leverY,6,p);
+                fill(0xfff3debd);c.drawCircle(x+1,leverY-4,4,p);
             }
-            label(c,"A",259,96,8,GOLD,true);
-            label(c,"I",292,96,8,GOLD,true);
-            label(c,"R",325,96,8,GOLD,true);
+            label(c,"AM",259,96,8,archive?PEACH:GOLD,true);
+            label(c,"MON",292,96,8,GOLD,true);
+            label(c,"BST",325,96,8,GOLD,true);
             screw(c,8,232);screw(c,352,232);
             c.restore();
         }
-        @Override public boolean performClick(){return super.performClick();}
     }
 
     /** Speaker vents are ornamental; never hide a playback control. */
