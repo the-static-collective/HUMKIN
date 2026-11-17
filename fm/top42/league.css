@@ -41,3 +41,26 @@
 .weather-feelings{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
 .weather-tag{font-size:10px;font-weight:850;letter-spacing:.02em;border:1px solid var(--ink);border-radius:15px;background:var(--yellow);padding:5px 8px;white-space:nowrap}
 @media(max-width:620px){.weather-list{box-shadow:4px 5px 0 var(--mint)}.weather-list>li{align-items:flex-start;flex-direction:column}.weather-feelings{justify-content:flex-start}}
+
+/* Listener Weather is an invitation, not an engagement platform. */
+.weather-reply{border:2px solid var(--ink);background:var(--paper);padding:16px 18px;margin:20px 0;box-shadow:5px 5px 0 var(--pink)}
+.weather-reply>#weather-open{width:100%;font-size:12px;font-weight:850;text-align:left;letter-spacing:.03em}
+#weather-booth{margin-top:18px}
+#weather-booth[hidden]{display:none}
+#weather-booth h3{font-size:22px}
+#weather-booth>label{display:block;font-size:11px;font-weight:850;letter-spacing:.06em;margin-top:17px}
+#weather-search{width:100%;border:2px solid var(--ink);background:var(--cream);padding:12px 14px;margin-top:5px}
+.weather-matches{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.weather-result{padding:8px 11px;font-size:12px;border:2px solid var(--ink);background:var(--cream);border-radius:20px;text-align:left}
+.weather-result[aria-pressed="true"]{background:var(--mint);font-weight:900}
+#weather-selected{font-weight:850}
+.weather-choice{border:0;padding:0;margin:14px 0 10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.weather-choice legend{font-weight:900;font-size:11px;letter-spacing:.06em;margin-bottom:7px}
+.weather-choice label{border:2px solid #d7c4d5;border-radius:9px;padding:10px;font-size:12px;font-weight:750;cursor:pointer;display:flex;align-items:center;gap:6px}
+.weather-choice label:has(input:checked){background:var(--yellow);border-color:var(--ink)}
+#weather-send{display:block;width:100%;margin-top:14px;padding:13px;font-size:13px}
+#weather-reply-status{font-size:12px;margin:8px 0 0;font-weight:750}
+@media(max-width:450px){.weather-choice{grid-template-columns:1fr}}
+
+.weather-sort{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:12px 0 0;font-size:11px;font-weight:900;letter-spacing:.04em}
+.weather-sort select{padding:9px 13px;background:var(--cream);border:2px solid var(--ink);color:var(--ink);font-size:13px;max-width:100%}

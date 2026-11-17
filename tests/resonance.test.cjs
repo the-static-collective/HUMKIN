@@ -20,6 +20,18 @@ test("the chart adds a distinct feelings room without altering qualified-play ra
  assert.match(client,/MADE ME LAUGH/);
  assert.match(client,/MADE ME MOVE/);
  assert.match(client,/STAYED WITH ME/);
+ assert.match(html,/id="weather-send"/);
+ assert.match(html,/id="weather-filter"/);
+ assert.match(client,/function drawWeather\(\)/);
+ assert.match(client,/focus==="all"/);
+ assert.match(html,/name="weather-feeling"/);
+ assert.match(html,/value="hope"/);
+ assert.match(html,/value="tears"/);
+ assert.match(client,/action:"react"/);
+ assert.match(client,/randomListener\(\)/);
+ assert.match(client,/aria-expanded/);
+ assert.match(client,/method:"POST"/);
+ assert.doesNotMatch(client,/action:"vote"/);
  assert.doesNotMatch(client,/action:\s*["']play["']/);
  assert.match(league,/action:"play"/);
  assert.match(read("sw.js"),/fm\/top42\/resonance\.js/);

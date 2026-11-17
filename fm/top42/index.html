@@ -55,7 +55,39 @@
     <p>Not stars. Not likes. A song gave somebody hope, made them cry, or simply stayed with them. One small, honest answer at a time.</p>
   </div><div class="chart-actions"><button type="button" class="outline" id="weather-refresh">↻ CHECK THE WEATHER</button></div></div>
   <p class="small" id="weather-status" role="status">Looking out the station window…</p>
+  <label class="weather-sort" for="weather-filter">TUNE THE ROOM BY FEELING
+  <select id="weather-filter" aria-label="Sort Listener Weather songs by feeling">
+    <option value="all">All human weather</option>
+    <option value="hope">Gave hope</option>
+    <option value="tears">Brought tears</option>
+    <option value="seen">Less alone</option>
+    <option value="laugh">Made somebody laugh</option>
+    <option value="move">Made somebody move</option>
+    <option value="stayed">Stayed with somebody</option>
+  </select></label>
   <ol id="weather-list" class="weather-list" aria-live="polite"><li class="waiting">Waiting for a human signal…</li></ol>
+  <div class="weather-reply">
+    <button class="outline" type="button" id="weather-open" aria-expanded="false" aria-controls="weather-booth">✳ THIS RECORD GOT TO ME · TELL THE STATION ↗</button>
+    <div id="weather-booth" hidden>
+      <h3>THE FEELING DESK</h3>
+      <p class="small">No stars. Just what a real song did to you. Choose a song and one honest answer.</p>
+      <label for="weather-search">FIND A RECORDING</label>
+      <input id="weather-search" type="search" placeholder="Find the title…" autocomplete="off">
+      <div id="weather-matches" class="weather-matches" role="group" aria-label="Songs matching your search"></div>
+      <p class="small" id="weather-selected">CHOOSE A SONG ABOVE</p>
+      <fieldset class="weather-choice"><legend>HOW DID IT LAND?</legend>
+        <label><input type="radio" name="weather-feeling" value="hope"> It gave me hope</label>
+        <label><input type="radio" name="weather-feeling" value="tears"> It made me cry</label>
+        <label><input type="radio" name="weather-feeling" value="seen"> I felt less alone</label>
+        <label><input type="radio" name="weather-feeling" value="laugh"> It made me laugh</label>
+        <label><input type="radio" name="weather-feeling" value="move"> It made me move</label>
+        <label><input type="radio" name="weather-feeling" value="stayed"> It stayed with me</label>
+      </fieldset>
+      <p class="small">When you press Send, this song ID, your answer and a random browser key are sent to HUMKIN. Only anonymous, provisional totals are shown; no name or email is requested. Your answer does not create a chart play or airtime vote.</p>
+      <button type="button" class="primary" id="weather-send" disabled>SEND MY RESPONSE TO THE STATION</button>
+      <p id="weather-reply-status" role="status" aria-live="polite"></p>
+    </div>
+  </div>
   <p class="footnote">Anonymous, opt-in and provisional. One current response per song per random device key per station week. A reaction is not a qualified listen, a verified person, a vote, or guaranteed airtime. It never alters the official Top 42 score.</p>
 </section>
 
