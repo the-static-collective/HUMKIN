@@ -58,7 +58,6 @@ public final class MainActivity extends Activity {
 
     private TextView tagline, albumHeading, playingHeading, playingArtist, featureHeading, featureArtist;
     private ImageView radioArt, featureArt;
-    private LinearLayout firstAlbums, secondAlbums;
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
     private Button tune,sameTime,road,albumNext,outpostButton,reactionButton;
@@ -313,20 +312,19 @@ public final class MainActivity extends Activity {
         updateRecentRecords();
         radioScreen.addView(stationLog, wrap(12));
 
-        Button albums = HumkinVisuals.pill(this, "ALBUMS", Icon.ALBUMS, YELLOW, 29, true);
-        albums.setMinHeight(dp(61));
-        albums.setOnClickListener(v -> showAlbums(true));
-        radioScreen.addView(albums, wrap(12));
-
-        // Early game is *just radio + the Outpost*. The garden and personal
-        // pirate dial are discoveries earned through the native RPG, not
-        // a row of available features spoiled on first launch.
+        // The Outpost is the next step after tuning in; the record shelf
+        // stays one tap away without interrupting that progression.
         outpostButton=pill("✳ THE SIGNAL OUTPOST / LEVEL 1 ↗",null,YELLOW,15);
         outpostButton.setMinHeight(dp(62));
         outpostButton.setContentDescription("Enter the Signal Outpost to collect Signal and discover new radio abilities");
         outpostButton.setOnClickListener(v ->
                 startActivity(new Intent(this,OutpostActivity.class)));
         radioScreen.addView(outpostButton,wrap(12));
+
+        Button albums = HumkinVisuals.pill(this, "ALBUMS", Icon.ALBUMS, YELLOW, 29, true);
+        albums.setMinHeight(dp(61));
+        albums.setOnClickListener(v -> showAlbums(true));
+        radioScreen.addView(albums, wrap(12));
 
         // Unlocked departments are available in Outpost and the ⋯ drawer,
         // without turning a first tune-in into a page of unexplained doors.
@@ -484,25 +482,25 @@ public final class MainActivity extends Activity {
     }
 
     private void buildAlbums() {
-        Button radioNav = pill("RADIO", Icon.RADIO, MINT, 17);
-        Button albumNav = pill("ALBUMS", Icon.ALBUMS, YELLOW, 17);
-        albumNav.setSelected(true);
-        radioNav.setOnClickListener(v -> showAlbums(false));
-        albumNav.setOnClickListener(v -> scroll.smoothScrollTo(0, 0));
-        addPair(albumsScreen, radioNav, albumNav, 0);
-
+        // A single way back; no duplicate Radio / Albums navigation row.
         Button back = pill("BACK TO RADIO", Icon.BACK, YELLOW, 16);
         back.setOnClickListener(v -> showAlbums(false));
         albumsScreen.addView(back, wrap(9));
 
-        firstAlbums = addAlbums(
+        addAlbums(
                 albumCard(AlbumCatalog.MUTANT_POP, R.drawable.album_mutant_pop, "Bright, strange and familiar."),
                 albumCard(AlbumCatalog.EVERYWHERE, R.drawable.album_everywhere_near_you, "Road songs for close and far away."));
-        secondAlbums = addAlbums(
-                shelfCard("Warmth", "Gentle tracks for softer days.", R.drawable.ic_radio,
-                        "ON AIR", Icon.RADIO, () -> changeMode(true)),
-                shelfCard("Singles", "New finds and one-offs.", R.drawable.ic_radio,
-                        "SHUFFLE", Icon.SHUFFLE, () -> changeMode(false)));
+
+        // Warmth was a placeholder for an album not wired into the app.
+        // Show only two playable albums and the existing Singles lane.
+        LinearLayout singles = shelfCard("Singles", "New finds and one-offs.", R.drawable.ic_radio,
+                "SHUFFLE", Icon.SHUFFLE, () -> changeMode(false));
+        // The wider Singles strip keeps its icon square, not stretched.
+        if (wideCards) {
+            singles.getChildAt(0).setLayoutParams(
+                    new LinearLayout.LayoutParams(dp(104), dp(104)));
+        }
+        albumsScreen.addView(singles, wrap(9));
 
         LinearLayout feature = console();
         featureArt = HumkinVisuals.art(this, R.drawable.album_mutant_pop);
@@ -528,12 +526,8 @@ public final class MainActivity extends Activity {
         });
         albumsScreen.addView(albumNext, wrap(8));
 
-        Button radio = pill("SAME-TIME\nRADIO", Icon.RADIO, YELLOW, 16);
-        Button shuffle = pill("ROAD\nSHUFFLE", Icon.SHUFFLE, MINT, 16);
-        radio.setOnClickListener(v -> changeMode(true));
-        shuffle.setOnClickListener(v -> changeMode(false));
-        addPair(albumsScreen, radio, shuffle, 11);
-        addFooter(albumsScreen);
+        // Tuning modes, archive and privacy remain on the Radio screen
+        // and in its ⋯ menu; the record shelf needs no duplicated links.
     }
 
     private void addPair(LinearLayout screen, View left, View right, int top) {
@@ -672,14 +666,6 @@ public final class MainActivity extends Activity {
     private void showMessage(TextView message, String value) {
         message.setText(value);
         message.setVisibility(value.isEmpty() ? View.GONE : View.VISIBLE);
-    }
-
-    private void addFooter(LinearLayout screen) {
-        Button archive = HumkinVisuals.pill(this, "STATION ARCHIVE", Icon.ARCHIVE, CREAM, 12, true);
-        Button privacy = HumkinVisuals.pill(this, "PRIVACY", Icon.PRIVACY, CREAM, 12, true);
-        archive.setOnClickListener(v -> visit("https://humkin.abundent.org/fm/archive/"));
-        privacy.setOnClickListener(v -> visit("https://humkin.abundent.org/privacy.html"));
-        addPair(screen, archive, privacy, 11);
     }
 
     private void showAlbums(boolean yes) {
