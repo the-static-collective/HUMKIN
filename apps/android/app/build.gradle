@@ -69,6 +69,14 @@ android {
             versionNameSuffix '-fit'
             resValue 'string', 'app_name', 'HUMKIN · FIT RADIO'
         }
+        // Dedicated, side-by-side field build for UNIVERSAL JOY 002.
+        // Avoid replacing older receivers: CI uses an ephemeral debug key.
+        universalJoy {
+            initWith debug
+            applicationIdSuffix '.joy002'
+            versionNameSuffix '-joy002'
+            resValue 'string', 'app_name', 'HUMKIN · UNIVERSAL JOY'
+        }
         nightWatch {
             initWith debug
             applicationIdSuffix '.nightwatch'
