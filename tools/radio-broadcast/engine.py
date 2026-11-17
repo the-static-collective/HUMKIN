@@ -258,7 +258,9 @@ def streaming(catalog,args):
                             deferred.insert(0,ahead)
                             ahead=requested
                             ahead_lemon=claimed["id"]
-                            tail_size=overlap_bytes(current,ahead,args.crossfade)
+                            # Tail was already reserved for the original next song.
+                            # Never read more head than that reserved tail.
+                            tail_size=min(tail_size,overlap_bytes(current,ahead,args.crossfade))
                         else:
                             lemon.finish(claimed.get("id"),False)
                 head_process=decode(cache_track(ahead,cache))
