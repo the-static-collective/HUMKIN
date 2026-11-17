@@ -1,0 +1,46 @@
+{
+  "schema": "humkin.skill-tree.slice/v1",
+  "id": "frequency",
+  "mount_at": "outpost.orchard",
+  "nodes": [
+    {
+      "id": "outpost.bootleg",
+      "parent": "outpost.orchard",
+      "title": "Bootleg Frequency",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "level",
+          "gte": 7
+        }
+      ],
+      "capability": "humkin.frequency.open.v1",
+      "description": "Revealed only after Orchard, unlocked at seven."
+    },
+    {
+      "id": "frequency.personal",
+      "parent": "outpost.bootleg",
+      "title": "Your Frequency",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [],
+      "capability": "humkin.frequency.personal.v1",
+      "description": "Existing native personalized station."
+    },
+    {
+      "id": "frequency.relay",
+      "parent": "frequency.personal",
+      "title": "Another Tower",
+      "release": "pilot",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "admission": "humkin.frequency.relay.owner-admit.v1"
+        }
+      ],
+      "capability": "humkin.frequency.relay.v1",
+      "description": "No implicit networking permissions."
+    }
+  ]
+}

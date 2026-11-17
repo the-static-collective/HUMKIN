@@ -1,0 +1,23 @@
+{
+  "schema": "humkin.skill-tree.catalog/v1",
+  "id": "humkin-universal-joy",
+  "root": "radio.receiver",
+  "slices": [
+    "slices/receiver.json",
+    "slices/outpost.json",
+    "slices/orchard.json",
+    "slices/frequency.json",
+    "slices/junction.json"
+  ],
+  "limits": {
+    "max_nodes": 128,
+    "max_depth": 12
+  },
+  "law": [
+    "DISCOVERY != AUTHORIZATION",
+    "RECEIVED != ADMITTED",
+    "HOLD != EXECUTION",
+    "UNBUILT != UNLOCKED",
+    "XP != HUM"
+  ]
+}

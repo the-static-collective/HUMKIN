@@ -1,0 +1,46 @@
+{
+  "schema": "humkin.skill-tree.slice/v1",
+  "id": "orchard",
+  "mount_at": "outpost.orchard",
+  "nodes": [
+    {
+      "id": "orchard.garden",
+      "parent": "outpost.orchard",
+      "title": "The Garden",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [],
+      "capability": "humkin.orchard.garden.v1",
+      "description": "Existing local furnishings and artifacts."
+    },
+    {
+      "id": "orchard.catalog",
+      "parent": "outpost.orchard",
+      "title": "Catalog Workbench",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "fact": "level",
+          "gte": 4
+        }
+      ],
+      "capability": "humkin.orchard.catalog-audit.v1",
+      "description": "Local catalog work, not remote GHoT assignment."
+    },
+    {
+      "id": "orchard.network",
+      "parent": "outpost.orchard",
+      "title": "Living Orchard Network",
+      "release": "pilot",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "admission": "humkin.orchard.network.owner-admit.v1"
+        }
+      ],
+      "capability": "humkin.orchard.network-crossing.v1",
+      "description": "Pilot stays held without owner-local admission."
+    }
+  ]
+}
