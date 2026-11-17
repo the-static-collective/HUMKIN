@@ -77,6 +77,14 @@ android {
         }
     }
 
+    // One canonical set of versioned skill slices for native + web consumers.
+    // Relative to apps/android/app: ../../../ reaches the HUMKIN repo root.
+    sourceSets {
+        main {
+            assets.srcDirs += ['../../../game/skill-tree/v1']
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
