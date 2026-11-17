@@ -1,0 +1,51 @@
+{
+  "schema": "humkin.skill-tree.slice/v1",
+  "id": "junction",
+  "mount_at": "frequency.personal",
+  "nodes": [
+    {
+      "id": "world.junction",
+      "parent": "frequency.personal",
+      "title": "The Junction",
+      "release": "pilot",
+      "reveal": "on-parent",
+      "requires": [
+        {
+          "admission": "relatte.humkin.world.owner-admit.v1"
+        }
+      ],
+      "capability": "humkin.world.junction.v1",
+      "description": "The wider world is experimental and separately governed."
+    },
+    {
+      "id": "world.webz",
+      "parent": "world.junction",
+      "title": "WebZ",
+      "release": "planned",
+      "reveal": "on-parent",
+      "requires": [],
+      "capability": "webz.discovery.v1",
+      "description": "An independent later world."
+    },
+    {
+      "id": "world.workbench",
+      "parent": "world.junction",
+      "title": "Workshop",
+      "release": "planned",
+      "reveal": "on-parent",
+      "requires": [],
+      "capability": "static.workbench.capabilities.v1",
+      "description": "Human-approved tools only."
+    },
+    {
+      "id": "world.jubilee",
+      "parent": "world.junction",
+      "title": "Jubilee",
+      "release": "planned",
+      "reveal": "on-parent",
+      "requires": [],
+      "capability": "jubilee.cooperation.v1",
+      "description": "Later cooperative world, not a local currency."
+    }
+  ]
+}
