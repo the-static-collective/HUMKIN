@@ -22,6 +22,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+# Also works when imported by tests from an unrelated working directory.
+sys.path.insert(0,str(Path(__file__).resolve().parent))
 from scheduler_v2 import StationV2
 from catalog_sources import optional_catalog
 import re
