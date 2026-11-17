@@ -32,7 +32,14 @@ public final class MyRecordsActivity extends Activity {
     private final android.os.Handler updater=new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable refreshUi=new Runnable(){
         @Override public void run(){
-            if(!isFinishing()&&!isDestroyed()){render();updater.postDelayed(this,5000L);}
+            if(!isFinishing()&&!isDestroyed()){
+                HumServerBridge.Snapshot remote=HumServerBridge.snapshot(MyRecordsActivity.this);
+                String caption=(remote.known?"ⓗ "+remote.balance+" HUM":"ⓗ CONNECTING…")+
+                    "   ·   "+remote.records.length()+" RECORDS";
+                // Don't destroy/rebuild the scrollable shelf every few seconds.
+                if(balance!=null&&!caption.contentEquals(balance.getText()))render();
+                updater.postDelayed(this,5000L);
+            }
         }
     };
 
