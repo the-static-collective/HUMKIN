@@ -266,11 +266,18 @@ public final class MainActivity extends Activity {
 
         receiverDial=new RebelReceiverSkin.Dial(this);
         receiverDial.setSameTime(radioMode);
-        // The pictured ruler is decorative. This big accessible knob does
-        // something real: switch between the actual two Media3 radio modes.
-        receiverDial.setOnClickListener(v->{
-            v.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
-            changeMode(!radioMode);
+        // The big dial now selects future virtual stations. Playback modes
+        // remain the separate, working Same-Time / Road Shuffle controls.
+        receiverDial.setOnTuneListener((circuit,frequency,archive)->{
+            if (!receiverDial.isMainStationTuned() && controller!=null && controller.isPlaying())
+                controller.pause();
+            if ("DIAL".equals(circuit) && receiverDial.isMainStationTuned()) {
+                Toast.makeText(this,"HUMKIN RADIO · 98.2 VIRTUAL FM",Toast.LENGTH_SHORT).show();
+            } else if ("BAND".equals(circuit) && !archive && receiverDial.isMainStationTuned()) {
+                Toast.makeText(this,"FM · back to HUMKIN RADIO",Toast.LENGTH_SHORT).show();
+            } else {
+                showUnbuiltReceiverCircuit(circuit,frequency,archive);
+            }
         });
         radioScreen.addView(receiverDial,
                 new LinearLayout.LayoutParams(-1,dp(wideCards?244:218)));
@@ -581,6 +588,17 @@ public final class MainActivity extends Activity {
                     : "Saved here. The station couldn't receive it yet.",Toast.LENGTH_LONG).show();
             });
         });
+    }
+
+    private void showUnbuiltReceiverCircuit(String circuit,float frequency,boolean archive) {
+        String details=VirtualChannels.circuitMessage(circuit,frequency,archive);
+        new AlertDialog.Builder(this)
+            .setTitle("ϟ LOOSE WIRE · WORKSHOP")
+            .setMessage(details+"\n\nNew frequencies are constructed and verified before anyone can broadcast through them.")
+            .setPositiveButton("EXPLORE STATION GUILDS",(dialog,which)->
+                startActivity(new Intent(this,GuildActivity.class)))
+            .setNegativeButton("BACK TO THE DIAL",null)
+            .show();
     }
 
     private void showMoreRadio() {
@@ -1046,6 +1064,10 @@ public final class MainActivity extends Activity {
     @Override public void onDestroy(){worker.shutdownNow();coverWorker.shutdownNow();super.onDestroy();}
 
     private void tuneIn(){
+        if(receiverDial!=null && !receiverDial.isMainStationTuned()){
+            showUnbuiltReceiverCircuit("DIAL",receiverDial.frequency(),receiverDial.isArchive());
+            return;
+        }
         if(controller==null){
             tuneWhenReady = true;
             showMessage(status, "Connecting the receiver…");
