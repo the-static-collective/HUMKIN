@@ -281,7 +281,8 @@ function renderLibrary(){
  const matching=library.filter(t=>{
    if(filter==="songs"&&t.kind!=="song"||filter==="bumpers"&&t.kind!=="bumper"||
      filter==="hidden"&&t.enabled||filter==="cloud"&&t.source!=="cloud"||
-     filter==="static"&&t.source!=="static")return false;
+     filter==="static"&&t.source!=="static"||
+     filter==="r2"&&t.storage_provider!=="r2")return false;
    const hay=[t.id,t.title,t.artist,t.album,t.originalName].join(" ").toLowerCase();
    return !text||hay.includes(text);
  });
@@ -291,6 +292,7 @@ function renderLibrary(){
    const item=el("div",null,"track"+(!track.enabled?" disabled":""));
    const check=el("input");check.type="checkbox";check.checked=selected.has(track.id);
    check.setAttribute("aria-label","Select "+track.title+" "+track.id);
+   check.disabled=track.readonly===true;
    check.addEventListener("change",()=>{
      if(check.checked)selected.add(track.id);else selected.delete(track.id);
      $("selected-count").textContent=selected.size+" selected";
@@ -304,7 +306,7 @@ function renderLibrary(){
    const status=el("div",null,"row");
    for(const label of [track.artist,track.kind==="bumper"?"BUMPER":track.is_single?"SINGLE ✳":"SONG",
        !track.enabled?"OFF AIR":!track.published?"PRIVATE DRAFT":"ON AIR",
-       track.source==="cloud"?"CLOUD":"ORIGINAL"]){
+       track.storage_provider==="r2"?"CLOUDFLARE R2":track.source==="cloud"?"SUPABASE":"WEBSITE"]){
       status.append(el("span",label,"pill"));
    }
    content.append(status);
@@ -314,9 +316,9 @@ function renderLibrary(){
    content.append(el("div",displayCollection+" · "+duration(track.duration),"sub"));
    content.append(el("div",(track.originalName||track.id)+" · ID "+track.id.slice(-12),"track-info"));
    const actions=el("div",null,"track-actions");
-   actions.append(button("EDIT",()=>openEdit(track),"primary"));
+   if(!track.readonly)actions.append(button("EDIT",()=>openEdit(track),"primary"));
    actions.append(button("PREVIEW",()=>preview(track)));
-   actions.append(button(track.enabled?"HIDE":"ENABLE",()=>toggleTrack(track),track.enabled?"secondary":"primary"));
+   if(!track.readonly)actions.append(button(track.enabled?"HIDE":"ENABLE",()=>toggleTrack(track),track.enabled?"secondary":"primary"));
    item.append(check,content,actions);list.append(item);
  }
  $("selected-count").textContent=selected.size+" selected";
@@ -391,6 +393,7 @@ function preview(track){
  player.play().catch(()=>note("Tap play on the preview player to begin."));
 }
 function openEdit(track){
+ if(track.readonly)return note("This verified R2 recording is read-only in the file manifest. R2-backed Supabase catalog tracks are editable.");
  editing=track.id;
  $("edit-title").value=track.title;
  $("edit-artist").value=track.artist;
@@ -402,15 +405,18 @@ function openEdit(track){
  $("edit-enabled").checked=track.enabled;
  renderArtSelect("edit-art",track.art_asset_id||null);
  updateArtPreview("edit");
- $("edit-source").textContent=(track.source==="cloud"?"CLOUD FILE":"ORIGINAL WEBSITE ASSET")+
+ $("edit-source").textContent=(track.storage_provider==="r2"?"CLOUDFLARE R2":track.source==="cloud"?"SUPABASE FILE":"ORIGINAL WEBSITE ASSET")+
   " · "+track.originalName+" · ID "+track.id;
- $("edit-delete").hidden=track.source!=="cloud";
- $("edit-warning").textContent=track.source==="static"
+ $("edit-delete").hidden=track.source!=="cloud"||track.storage_provider==="r2";
+ $("edit-warning").textContent=track.storage_provider==="r2"
+   ?"R2 audio is independently verified. HIDE is reversible; deleting the R2 source is managed separately to avoid orphaning catalog entries."
+   :track.source==="static"
    ?"This legacy recording stays in GitHub Pages. HIDE removes it from the radio without deleting its file."
    :"Deleting cloud audio is permanent. HIDE is reversible and safer.";
  $("edit-dialog").showModal();
 }
 async function persistTrack(track,fields){
+ if(track.readonly)throw Error("The verified R2 manifest is read-only; edit its canonical file to change this recording.");
  await requireOwner();
  // Static legacy tracks use UPSERT. Always preserve the previous art reference
  // during a hide/enable/bulk toggle, even if the caller edits other fields.
@@ -596,6 +602,57 @@ async function deleteShow(program){
    setBusy(false);await loadDesk();note("Deleted schedule "+program.name+". All recordings remain safe.");
  }catch(err){setBusy(false);note("Schedule delete failed: "+err.message)}
 }
+async function refreshR2VaultStatus(){
+ try{
+  r2Status=await r2Bridge(db,"status");
+  const st=r2Status;
+  const configured=st.configured===true;
+  const count=st.migrated_tracks+" / "+st.published_tracks+" Supabase-catalog recordings served from R2";
+  $("r2-status").textContent=(configured?"R2 ACCESS READY · ":"R2 ACCESS KEYS NOT INSTALLED · ")+count+
+   " · "+(st.pending_bytes/1048576).toFixed(1)+" MiB pending transfer"+
+   " · "+(st.reclaimable_bytes/1048576).toFixed(1)+" MiB verified copies reclaimable.";
+  $("r2-migrate").disabled=!configured||st.pending_tracks<1;
+  $("r2-cleanup").disabled=!configured||st.reclaimable_copies<1;
+ }catch(error){
+  r2Status=null;$("r2-status").textContent="R2 bridge status unavailable: "+error.message;
+  $("r2-migrate").disabled=true;$("r2-cleanup").disabled=true;
+ }
+}
+async function moveR2Batch(action){
+ if(busy)return;
+ try{await requireOwner()}catch(error){note(error.message);return}
+ const cleanup=action==="cleanup";
+ const targets=library.filter(t=>t.source==="cloud"&&t.published&&
+  (cleanup?(t.storage_provider==="r2"&&!t.sourceRemoved):(t.storage_provider!=="r2"))).slice(0,20);
+ if(!targets.length){note("No matching recordings need this operation.");return}
+ if(cleanup&&!confirm("Delete "+targets.length+
+  " redundant Supabase audio copies AFTER checking their existing R2 files? This reclaims Supabase Storage, but you lose the separate Supabase backup. R2 remains on air."))return;
+ if(!cleanup&&!confirm("Migrate "+targets.length+
+  " published recordings to Cloudflare R2? Verified originals stay in Supabase until you select RECLAIM."))return;
+ setBusy(true);let success=0,errors=[];
+ try{
+  for(const track of targets){
+   $("r2-progress").textContent=(cleanup?"RECLAIMING ":"MIGRATING ")+
+     (success+errors.length+1)+" / "+targets.length+" · "+track.title;
+   try{
+    const result=await r2Bridge(db,action,track.dbId);
+    if(!result.ok)throw Error("Bridge operation unavailable");
+    success++;
+   }catch(error){
+    errors.push(track.title+": "+error.message);
+    if(error.code==="R2_NOT_CONFIGURED")break;
+   }
+  }
+ }finally{
+  setBusy(false);
+  await loadDesk();
+  $("r2-progress").textContent=(cleanup?"RECLAIMED ":"MIGRATED ")+success+
+   " / "+targets.length+" · "+errors.length+" errors."+
+   (errors.length?" "+errors.slice(0,2).join(" · "):"");
+ }
+}
+$("r2-migrate").addEventListener("click",()=>moveR2Batch("migrate"));
+$("r2-cleanup").addEventListener("click",()=>moveR2Batch("cleanup"));
 $("refresh").addEventListener("click",loadDesk);
 $("art-upload").addEventListener("change",async event=>{
  const file=event.target.files?.[0];event.target.value="";
