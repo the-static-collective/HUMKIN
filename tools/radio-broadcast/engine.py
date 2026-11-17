@@ -60,7 +60,7 @@ def live_catalog():
                            url=urllib.parse.urljoin(RADIO,t["src"])))
     for t in cloud:
         path=t.get("storage_path","")
-        if not isinstance(path,str) or not re.fullmatch(r"[0-9a-f-]{36}/[0-9a-f]{64}\\.mp3",path):continue
+        if not isinstance(path,str) or not re.fullmatch(r"[0-9a-f-]{36}/[0-9a-f]{64}\.mp3",path):continue
         if not t.get("enabled",True):continue
         duration=float(t.get("duration_seconds") or 0)
         if not 0<duration<14400:continue
@@ -74,8 +74,15 @@ def live_catalog():
     extras,chart_ids=optional_catalog(get_json,RADIO,API)
     known={t["id"] for t in tracks}
     for item in extras:
-        if item["id"] not in known:
-            tracks.append(item);known.add(item["id"])
+        if item["id"] in known:continue
+        if item.get("source")=="static":
+            o=overrides.get(item["id"],{})
+            if o.get("enabled") is False:continue
+            item.update(title=o.get("title") or item["title"],
+                        artist=o.get("artist") or item["artist"],
+                        album=o.get("album") or item["album"],
+                        kind=o.get("kind",item["kind"]))
+        tracks.append(item);known.add(item["id"])
     return {"tracks":tracks,"shows":shows,"settings":settings[0] if settings else {"bumper_every":0},
             "rotation":base,"chart_ids":chart_ids,"policy_version":2}
 
