@@ -29,6 +29,12 @@ public final class MyRecordsActivity extends Activity {
     private MediaController controller;
     private ListenableFuture<MediaController> connecting;
     private volatile boolean busy;
+    private final android.os.Handler updater=new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable refreshUi=new Runnable(){
+        @Override public void run(){
+            if(!isFinishing()&&!isDestroyed()){render();updater.postDelayed(this,5000L);}
+        }
+    };
 
     private int dp(float n){return HumkinVisuals.dp(this,n);}
     private TextView label(String value,int size,int color,boolean bold){
@@ -81,6 +87,8 @@ public final class MyRecordsActivity extends Activity {
     @Override public void onStart(){
         super.onStart();
         HumServerBridge.refresh(getApplicationContext());
+        updater.removeCallbacks(refreshUi);
+        updater.postDelayed(refreshUi,1000L);
         SessionToken token=new SessionToken(this,new ComponentName(this,RadioPlaybackService.class));
         connecting=new MediaController.Builder(this,token).buildAsync();
         connecting.addListener(()->{
@@ -90,6 +98,7 @@ public final class MyRecordsActivity extends Activity {
         render();
     }
     @Override public void onStop(){
+        updater.removeCallbacks(refreshUi);
         if(connecting!=null){
             MediaController.releaseFuture(connecting);
             connecting=null;controller=null;
