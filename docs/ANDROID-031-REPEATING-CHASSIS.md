@@ -20,7 +20,7 @@ The inserted artwork is a true **three-column tile**. The left and right 23px ra
 
 ## Behavior and continuity
 
-- This is a new version of **the same** `org.abundent.humkinradio.pocket` app, with version code 32 (Pocket Receiver 0.32.0). Installing over 030 retains that app's existing local data.
+- The source now builds both `org.abundent.humkinradio.pocket` and a **distinct** `org.abundent.humkinradio.flex` application, version code 32. Distribute **Flex** to users coming from Pocket 030. GitHub Actions signs its debug APKs with ephemeral keys, and a 031 debug APK with a different signing certificate cannot update an already-installed Pocket 030 even when the package name matches. Flex installs alongside Pocket 030 and does **not** share its private storage or HUM receipts. Do not uninstall Pocket 030 merely to test the new screen. A stable release-signing key is needed for future proper in-place upgrades.
 - The underlying Media3 audio engine, album metadata, HUM wallet, same-time scheduling, shuffle, outpost and server bindings are unchanged.
 - In portrait, the receiver measures the actual Android `ScrollView` viewport and fills it. On narrow/tall displays, new blue body texture appears **between** modules, not exclusively at the bottom.
 - On short/landscape viewports, the receiver retains its original physical aspect and scrolls rather than squashing hardware.
