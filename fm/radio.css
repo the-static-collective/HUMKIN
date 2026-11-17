@@ -41,3 +41,22 @@
 .orchard-message .button{display:inline-block;margin:12px 0 13px;background:#bcdcc3}
 .orchard-message small{display:block;font-size:9px;letter-spacing:.08em;font-weight:850}
 @media(max-width:700px){.orchard-passage{grid-template-columns:1fr;padding:38px 5% 65px}.orchard-emblem{max-width:380px;width:100%;height:200px}}
+
+
+/* NIGHT WATCH 001: a small optional receipt, not another dashboard. */
+.night-watch-ticket{margin-top:18px;padding:16px 18px;border:2px solid #35283d;border-radius:14px;background:#fff4d9;color:#31223b;box-shadow:4px 4px 0 #35283d}
+.night-watch-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.night-watch-head h3{margin:4px 0 0;font:900 clamp(17px,2.4vw,23px)/1.1 Georgia,serif}
+.night-watch-eyebrow,.night-watch-date{font-size:10px;letter-spacing:.12em;font-weight:900}
+.night-watch-toggle{font:800 11px/1.25 system-ui,sans-serif;letter-spacing:.05em;border:2px solid #35283d;border-radius:8px;background:#d5ebd8;color:#31223b;padding:10px 12px;cursor:pointer}
+.night-watch-toggle:disabled{opacity:.6;cursor:default}
+.night-watch-hint{font:500 12px/1.5 system-ui,sans-serif;margin:10px 0 0}
+.night-watch-report{border-top:1px dashed #735e7a;margin-top:13px;padding-top:11px}
+.night-watch-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:9px 0 12px}
+.night-watch-counts>div{border:1px solid #a99ca8;border-radius:7px;padding:8px 5px;text-align:center;min-width:0}
+.night-watch-counts strong{display:block;font:900 24px/1.2 Georgia,serif}
+.night-watch-counts small{display:block;font:800 9px/1.3 system-ui,sans-serif;letter-spacing:.03em}
+.night-watch-detail{font:600 13px/1.45 system-ui,sans-serif;margin:6px 0}
+.night-watch-note{font:500 10px/1.4 system-ui,sans-serif;display:block;margin-top:10px;opacity:.8}
+.night-watch-ticket [hidden]{display:none!important}
+@media(max-width:430px){.night-watch-ticket{padding:13px}.night-watch-counts strong{font-size:20px}.night-watch-counts small{font-size:8px}}

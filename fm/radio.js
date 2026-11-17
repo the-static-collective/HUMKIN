@@ -856,6 +856,7 @@ window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
     programs:programs.length,bumperEvery:stationSettings.bumper_every,
     hourWindowMs:shufflePolicy?.WINDOW_MS||3600000,warmSignal:warmSignal.status(),
     clockOffsetMs,clockCalibrated,playbackRate:Number(audio.playbackRate)||1,
-    bumperCount:bumperIndices().length,stream:remoteStream}}});
+    bumperCount:bumperIndices().length,stream:remoteStream,
+    currentTrack:remoteStream?null:(tracks[index]?{id:tracks[index].id,title:tracks[index].title,kind:tracks[index].kind}:null)}}});
 boot();
 })();

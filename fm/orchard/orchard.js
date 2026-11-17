@@ -4,7 +4,7 @@
  */
 (function(){
 "use strict";
-const M=window.HumkinOrchard;
+const M=window.HumkinOrchard,N=window.HumkinNightWatch;
 if(!M)return;
 const $=function(id){return document.getElementById(id)};
 const store=(()=>{try{return localStorage}catch{return {getItem:()=>null,setItem:()=>{}}}})();
@@ -137,6 +137,14 @@ function unlocks(){
 }
 function render(){
  summary();quest();scene();shop();inventory();unlocks();
+ const lv=M.level(state.xp);
+ [["door-signal",3],["door-guild",3],["door-network",5]].forEach(function(pair){
+   const node=$(pair[0]);if(node)node.hidden=lv<pair[1];
+ });
+ $("guild-portal").hidden=lv<3;
+ $("network-banner").hidden=lv<5;
+ $("next-door").textContent=lv<3?"NEXT DOOR · PERSONAL SIGNAL AT LEVEL 3":
+   lv<5?"NEXT DOOR · LIVING ORCHARD AT LEVEL 5":"THE BACKROOM FREQUENCY IS STILL BEING BUILT.";
 }
 function openTab(which){
  ["shop","inventory","workshop","future"].forEach(function(k){
@@ -234,7 +242,9 @@ audio.addEventListener("timeupdate",function(){
  const elapsed=now-lastTime;lastTime=now;
  if(elapsed<=0||elapsed>5)return;
  const oldLevel=M.level(state.xp);
- const r=M.listen(state,elapsed,Date.now());
+ const at=Date.now(),r=M.listen(state,elapsed,at);
+ if(N)N.note(store,{at,seconds:elapsed,trackId:current.id,title:current.title,kind:"song",
+   previousLevel:oldLevel,level:M.level(state.xp),find:r.discover?(M.item(r.discover.type)?.name||""):""});
  if(r.discover){
   const thing=M.item(r.discover.type);
   toast("A STRANGE FIND! "+(thing?thing.name:"Something unusual")+" appeared in your cabinet.");
