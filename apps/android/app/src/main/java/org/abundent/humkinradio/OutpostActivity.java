@@ -272,10 +272,10 @@ public final class OutpostActivity extends Activity {
         });
         vault.addView(claimCache,full(13));
 
-        eyebrow(body,"03 / KEEP THE LITTLE STATION ALIVE",27,HumkinVisuals.PLUM);
+        eyebrow(body,"02 / MAKE THE TOWER BETTER",23,HumkinVisuals.PLUM);
         add(body,"THE WORKSHOP",28,HumkinVisuals.INK,true,6);
-        add(body,"Every upgrade makes your station more productive. Certain tiers also open "+
-            "entirely new ways to participate, with no purchased chart points.",12,HumkinVisuals.PLUM,false,5);
+        add(body,"Each upgrade improves what the station earns from real listening. "+
+            "New activities will arrive when there is something real to do.",12,HumkinVisuals.PLUM,false,5);
         String[] moduleNames={"THE ANTENNA","THE TAPE ARCHIVE","THE NIGHT CREW"};
         String[] moduleDesc={
             "Stronger signal from each half-minute of actual music.",
@@ -352,7 +352,7 @@ public final class OutpostActivity extends Activity {
         }
         }
 
-        eyebrow(body,"05 / THE ROAD BEYOND",28,HumkinVisuals.PLUM);
+        eyebrow(body,"03 / REAL LISTENING CHALLENGES",23,HumkinVisuals.PLUM);
         add(body,"FIELD MISSIONS",29,HumkinVisuals.INK,true,7);
         add(body,"Pick a listening challenge. Progress counts only while actual music plays.",12,HumkinVisuals.PLUM,false,6);
         LinearLayout expeditions=card(body,0xffeee0ec,12);
@@ -384,7 +384,7 @@ public final class OutpostActivity extends Activity {
         missionActive.addView(missionClaim,full(13));
         expeditions.addView(missionActive,full(0));
 
-        eyebrow(body,"06 / OPEN EVERY DAY, NO PENALTY FOR MISSING ONE",28,HumkinVisuals.PLUM);
+        eyebrow(body,"04 / TODAY ON THE RADIO",23,HumkinVisuals.PLUM);
         add(body,"TODAY'S ORDERS",29,HumkinVisuals.INK,true,5);
         LinearLayout orders=card(body,0xfffffdf6,11);
         String[] assignments={"TAKE A FOUR-MINUTE SHIFT","HEAR THREE DIFFERENT SONGS","SCOUT THE TOP 42 BOARD"};
