@@ -359,9 +359,11 @@ public final class OutpostActivity extends Activity {
             panel.addView(info,full(3));
         }
 
-        // A visible capability tree with actual interaction screens, not
-        // cosmetic level-up text. Unimplemented doors remain honest previews.
-        if(SHOW_EXPERIMENTAL_PANELS){
+        // Earned specialist desks are REAL capabilities. Keep their skill
+        // board inside the optional drawer rather than disabling access to
+        // working Chart Radar / Crate / Little Press / Beacon / Night Editor.
+        // The board still reveals only one prospective tier per specialty.
+        {
         eyebrow(stationDrawers,"04 / REPAIR THE STATION, CHANGE WHAT YOU CAN DO",30,HumkinVisuals.PLUM);
         add(stationDrawers,"THE UNLOCK BOARD",30,HumkinVisuals.INK,true,6);
         add(stationDrawers,"The board unfolds as each workshop department improves. "+
