@@ -11,6 +11,7 @@ const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
+let albumQueue=[],albumCursor=0; // Optional iOS14 receiver album mode; no extra audio element.
 let remoteStream=null,hostedNowPlayingUrl=null,hostedPollTimer=null;
 let programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 let cloudCatalogHealthy=false;
@@ -36,7 +37,12 @@ function listenerKey(){
  try{
   const old=localStorage.getItem("humkin-league-listener-v1")||"";
   if(/^[0-9a-f-]{36}$/i.test(old))return old;
-  const key=crypto.randomUUID();localStorage.setItem("humkin-league-listener-v1",key);
+  const key=typeof crypto.randomUUID==="function"?crypto.randomUUID():
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{
+      const bytes=new Uint8Array(1);crypto.getRandomValues(bytes);
+      const n=bytes[0]&15;return (c==="x"?n:(n&3|8)).toString(16);
+    });
+  localStorage.setItem("humkin-league-listener-v1",key);
   return key;
  }catch{return null}
 }
@@ -329,8 +335,10 @@ function updateModeUI(){
   $("mode-clock").setAttribute("aria-pressed",String(mode==="clock"));
   $("mode-shuffle").setAttribute("aria-pressed",String(mode==="shuffle"));
   $("catch-up").hidden=mode!=="clock"||Boolean(remoteStream);
-  $("next-song").hidden=mode!=="shuffle";
-  modeHelp.textContent=mode==="shuffle"
+  $("next-song").hidden=mode!=="shuffle"&&mode!=="album";
+  modeHelp.textContent=mode==="album"
+   ?"Playing a complete published album in its recorded order. Tap SAME-TIME or ROAD SHUFFLE to return to radio."
+   :mode==="shuffle"
    ?"Your own shuffle blends old and new. Released album cuts and designated singles get roughly twice the airtime; each song keeps a one-hour repeat memory."
    :remoteStream
    ?"Tuning an independent continuous broadcast stream. Everyone connected to that stream receives the same live program."
@@ -352,7 +360,11 @@ function updateOnDeck(){
   const target=$("on-deck");
   if(!target)return;
   const names=[];
-  if(mode==="shuffle"&&order.length){
+  if(mode==="album"&&albumQueue.length){
+    for(let n=albumCursor+1;n<Math.min(albumQueue.length,albumCursor+4);n++){
+      if(tracks[albumQueue[n]])names.push(tracks[albumQueue[n]].title);
+    }
+  }else if(mode==="shuffle"&&order.length){
     for(let n=1;n<=3;n++){
       const next=n===1?chooseShuffleCandidate():order[(cursor+n)%order.length];
       if(tracks[next])names.push(tracks[next].title);
@@ -466,7 +478,8 @@ function showTrack(i,position=0){
   $("current-art").alt=(currentShow?.art_asset_id&&artAssets.has(currentShow.art_asset_id)?
       currentShow.name+" program cover":t.title+" cover")+" — HUMKIN RADIO";
   setMediaInfo({...t,artwork:cover});
-  counter.textContent=mode==="clock"?(remoteStream?"LIVE STREAM":"ON THE SHARED CLOCK"):(pad(cursor+1)+" / "+pad(order.length));
+  counter.textContent=mode==="album"?("ALBUM "+pad(albumCursor+1)+" / "+pad(albumQueue.length)):
+    mode==="clock"?(remoteStream?"LIVE STREAM":"ON THE SHARED CLOCK"):(pad(cursor+1)+" / "+pad(order.length));
   updateOnDeck();
 }
 // An explicit playing state keeps Android's media notification attached while
@@ -608,6 +621,37 @@ function nextShuffle(shouldPlay){
   showTrack(order[cursor]);
   setTrackSource(order[cursor],0,shouldPlay);
 }
+// Optional in-page album library for the iOS14 PWA. The canonical radio player
+// and one <audio> element remain in charge; starting the radio returns to its dial.
+function albumCatalog(){
+  return tracks.filter(t=>t.kind!=="bumper").map(t=>({
+    id:t.id,title:t.title,artist:t.artist,album:t.album||"HUMKIN RADIO",
+    artwork:t.artwork||fileUrl("cover.jpg",root)
+  }));
+}
+function playAlbum(name,firstId){
+  if(typeof name!=="string"||!name)return false;
+  const options=tracks.map((t,i)=>t.kind!=="bumper"&&t.album===name?i:-1).filter(i=>i>=0);
+  if(!options.length)return false;
+  mode="album";order=[];pendingClockJoin=null;resetRate();warmSignal.setPlayback(false);
+  albumQueue=options;
+  const requested=firstId?options.findIndex(i=>tracks[i].id===firstId):0;
+  albumCursor=Math.max(0,requested);
+  updateModeUI();
+  showTrack(albumQueue[albumCursor]);
+  setTrackSource(albumQueue[albumCursor],0,true);
+  setMessage("ALBUM · "+name+" · "+(albumCursor+1)+" / "+albumQueue.length);
+  return true;
+}
+function nextAlbum(shouldPlay){
+  if(albumCursor+1>=albumQueue.length){
+    pause();setMessage("Album finished. Choose RADIO to tune in.");return;
+  }
+  albumCursor++;
+  showTrack(albumQueue[albumCursor]);
+  setTrackSource(albumQueue[albumCursor],0,shouldPlay);
+  setMessage("ALBUM · "+(albumCursor+1)+" / "+albumQueue.length);
+}
 function spotlight(id){
   const chosen=tracks.findIndex(t=>t.id===id);
   if(chosen<0)return;
@@ -686,7 +730,7 @@ async function share(){
 $("listen").addEventListener("click",startRadio);
 $("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
 $("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
-$("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused)});
+$("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused);else if(mode==="album")nextAlbum(!audio.paused)});
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
@@ -713,6 +757,7 @@ audio.addEventListener("pause",()=>{
 audio.addEventListener("ended",()=>{
   if(!tracks.length)return;
   if(mode==="shuffle")nextShuffle(true);
+  else if(mode==="album")nextAlbum(true);
   else if(remoteStream){setMessage("Stream ended. Tune in again to reconnect.");pause();}
   else nextClock(true);
 });
@@ -722,6 +767,7 @@ audio.addEventListener("error",()=>{
   if(failureCount>2){pause();setMessage("The station lost the audio feed. Check your connection and tune in again.");return}
   setMessage("Couldn't load that recording. Trying to continue…");
   if(mode==="shuffle")nextShuffle(true);
+  else if(mode==="album")nextAlbum(true);
   else if(!remoteStream)setTimeout(()=>nextClock(true),1300);
 });
 document.addEventListener("visibilitychange",()=>{
@@ -852,6 +898,7 @@ async function boot(){
   }
 }
 window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
+  playAlbum,albumCatalog,
   get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
     programs:programs.length,bumperEvery:stationSettings.bumper_every,
     hourWindowMs:shufflePolicy?.WINDOW_MS||3600000,warmSignal:warmSignal.status(),
