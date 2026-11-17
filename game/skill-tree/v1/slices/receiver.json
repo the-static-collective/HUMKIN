@@ -1,0 +1,37 @@
+{
+  "schema": "humkin.skill-tree.slice/v1",
+  "id": "receiver",
+  "mount_at": null,
+  "nodes": [
+    {
+      "id": "radio.receiver",
+      "parent": null,
+      "title": "The Receiver",
+      "release": "live",
+      "reveal": "always",
+      "requires": [],
+      "capability": "humkin.radio.listen.v1",
+      "description": "The real radio is always available."
+    },
+    {
+      "id": "radio.outpost",
+      "parent": "radio.receiver",
+      "title": "Signal Outpost",
+      "release": "live",
+      "reveal": "on-parent",
+      "requires": [],
+      "capability": "humkin.outpost.open.v1",
+      "description": "The listening-built home base."
+    },
+    {
+      "id": "radio.weather",
+      "parent": "radio.receiver",
+      "title": "Listener Weather",
+      "release": "pilot",
+      "reveal": "on-parent",
+      "requires": [],
+      "capability": "humkin.radio.weather.v1",
+      "description": "Held until Android reaction crash is field-verified."
+    }
+  ]
+}
