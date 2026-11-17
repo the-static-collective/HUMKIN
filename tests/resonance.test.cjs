@@ -52,4 +52,5 @@ test("server keeps human responses out of official listens and restricts private
  assert.doesNotMatch(edge,/raw_ip|user_email|full_name/i);
  assert.match(edge,/onConflict:"station_week,track_id,actor_hash"/);
  assert.match(edge,/provisional:true/);
+ assert.match(edge,/\.slice\(0,500\)/);
 });
