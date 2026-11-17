@@ -54,6 +54,22 @@ function hash(text){
  for(let i=0;i<text.length;i++){x^=text.charCodeAt(i);x=Math.imul(x,16777619)}
  return x>>>0;
 }
+// Each distinct, published/enabled and routine-eligible bumper gets one
+// turn per shuffled bag, regardless of FIELD / PREVIEW / INBOX filing label,
+// length, fictional voice, or editorial role. Only explicit safety/program
+// holds affect eligibility. The plan remains deterministic across receivers.
+function bagOf(eligible,round,lastId){
+ const bag=eligible.slice().sort((a,b)=>a.id.localeCompare(b.id));
+ let state=hash("HUMKIN-BUMPER-BAG-"+round)||1;
+ const random=()=>{state=(state+0x6d2b79f5)>>>0;let x=state;
+   x=Math.imul(x^(x>>>15),x|1);x^=x+Math.imul(x^(x>>>7),x|61);
+   return ((x^(x>>>14))>>>0)/4294967296};
+ for(let i=bag.length-1;i>0;i--){
+  const j=Math.floor(random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];
+ }
+ if(bag.length>1&&bag[0].id===lastId)[bag[0],bag[1]]=[bag[1],bag[0]];
+ return bag;
+}
 function plan(songs,bumpers,every,tracks,policy={}){
  const base=Array.isArray(songs)?songs.slice():[];
  if(!Array.isArray(bumpers)||!Array.isArray(tracks)||!Number.isInteger(Number(every)))
@@ -62,32 +78,16 @@ function plan(songs,bumpers,every,tracks,policy={}){
    .map(i=>({...classify(tracks[i],policy),index:i}));
  const held=inventory.filter(x=>x.hold);
  const eligible=inventory.filter(x=>!x.hold);
- const breaks=[],sequence=[],used=new Map(),recentFamilies=[];
+ const breaks=[],sequence=[];
  const positions=cadenceBreaks(base.length,every,policy);
- let breakIndex=0,next=positions[0]||Infinity;
- const roleCycle=["station_id","musical","station_id","character","station_id",
-   "musical","station_id","comedy","station_id"];
+ let breakIndex=0,next=positions[0]||Infinity,round=0,bag=[],lastId=null;
  for(let i=0;i<base.length;i++){
    sequence.push(base[i]);
    if(i+1!==next||!eligible.length)continue;
-   const rare=breakIndex>0&&breakIndex%5===4;
-   let pool=eligible.filter(x=>rare||x.seconds<=28);
-   if(!pool.length)pool=eligible;
-   const desired=roleCycle[breakIndex%roleCycle.length];
-   const familyAvoid=new Set(recentFamilies.slice(-4));
-   // Prefer fresh families, then unseen recordings, then the intended
-   // editorial role; stable hash breaks ties without any Math.random().
-   const scored=pool.map(x=>({
-     x,score:(familyAvoid.has(x.family)?10000:0)+
-       (used.get(x.id)||0)*100+
-       (x.role===desired?0:9)+
-       (!rare&&x.seconds>28?35:0)+
-       hash(x.id+"|"+breakIndex)%100/100
-   })).sort((a,b)=>a.score-b.score);
-   const chosen=scored[0].x;
+   if(!bag.length)bag=bagOf(eligible,round++,lastId);
+   const chosen=bag.shift();
    sequence.push(chosen.index);
-   used.set(chosen.id,(used.get(chosen.id)||0)+1);
-   recentFamilies.push(chosen.family);
+   lastId=chosen.id;
    breaks.push({number:breakIndex+1,afterSong:i+1,index:chosen.index,
      id:chosen.id,title:chosen.title,role:chosen.role,family:chosen.family,
      seconds:chosen.seconds,rare:chosen.seconds>28});

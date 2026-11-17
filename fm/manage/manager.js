@@ -290,7 +290,10 @@ function renderLibrary(){
       status.append(el("span",label,"pill"));
    }
    content.append(status);
-   content.append(el("div",track.album+" · "+duration(track.duration),"sub"));
+   // These are storage/ingestion labels, not programming categories.
+   // Preserve the underlying value for editing and source audit only.
+   const displayCollection=track.kind==="bumper"?"HUMKIN RADIO · STATION BUMPERS":track.album;
+   content.append(el("div",displayCollection+" · "+duration(track.duration),"sub"));
    content.append(el("div",(track.originalName||track.id)+" · ID "+track.id.slice(-12),"track-info"));
    const actions=el("div",null,"track-actions");
    actions.append(button("EDIT",()=>openEdit(track),"primary"));
@@ -315,7 +318,7 @@ function renderBumperPreview(){
  const draft=engine.plan(songs,bumpers,stationSettings.bumper_every,library,policy);
  const held=draft.held.map(t=>t.title);
  $("bumper-held").textContent=draft.eligible+" routine-ready · "+
-   draft.held.length+" held for deliberate shows/programs. "+
+   draft.held.length+" on program hold (not in routine rotation). "+
    (held.length?"Held: "+held.slice(0,8).join(" · ")+(held.length>8?" …":""):"");
  if(!draft.breaks.length){
   list.append(el("li","No routine breaks at this cadence or with this inventory."));

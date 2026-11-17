@@ -44,11 +44,26 @@ assert.equal(result.sequence.length,songs.length+result.breaks.length);
 const gaps=result.breaks.map((b,i)=>b.afterSong-(result.breaks[i-1]?.afterSong||0));
 assert(gaps.includes(3)&&gaps.includes(4)&&gaps.includes(5)&&gaps.includes(6),
  "Vary 3–6 song breaks while maintaining the same plan length");
-for(let i=0;i<result.breaks.length;i++){
- const previous=result.breaks.slice(Math.max(0,i-4),i);
- if(entries.length>5)assert(!previous.some(x=>x.family===result.breaks[i].family),
-  "Family should not recur within four breaks: "+result.breaks[i].family);
-}
+// Every eligible bumper gets an equal turn, independent of the source
+// label, role, duration or family. A fresh bag begins only after every
+// routine-ready recording has been selected once.
+const routine=entries.filter(x=>!brain.classify(x,options).hold);
+assert.equal(result.eligible,routine.length);
+const spins=new Map();
+for(const b of result.breaks)spins.set(b.id,(spins.get(b.id)||0)+1);
+const totals=routine.map(t=>spins.get(t.id)||0);
+assert(Math.max(...totals)-Math.min(...totals)<=1,
+ "No routine bumper may get more than one extra spin over another");
+assert.deepEqual(new Set(result.breaks.slice(0,routine.length).map(b=>b.id)),
+ new Set(routine.map(t=>t.id)),"Each eligible bumper must air before a repeat");
+// Deliberately give equal peers contrasting technical intake names.
+const shelfNames=["HUMKIN RADIO · FIELD CARTS",
+ "HUMKIN RADIO · PREVIEW CARTS","HUMKIN RADIO · INBOX"];
+const mixedTracks=tracks.map((t,i)=>t.kind==="bumper"?
+ {...t,album:shelfNames[(i-songs.length)%3]}:t);
+const mixed=brain.plan(songs,bumpers,4,mixedTracks,options);
+assert.deepEqual(mixed.breaks,result.breaks,
+ "Storage shelf labels must not affect airtime, priority or break selection");
 const altered=brain.plan([...songs].reverse(),bumpers,4,tracks,options);
 assert.deepEqual(altered.breaks,result.breaks,"Same-time recipients get an identical bumper order regardless of shuffled songs");
 assert.equal(altered.sequence.length,result.sequence.length,"Shared-clock cycle length stays stable");
@@ -73,4 +88,4 @@ assert(workflow.includes("workflow_dispatch:")&&workflow.includes("upload-artifa
  "Robot machine should generate review-only packs");
 assert(!workflow.includes("git push")&&!workflow.includes("service_role")&&!workflow.includes("curl -X POST"),
  "Scheduled action must never publish or send recordings to the air");
-console.log("Bumper Brain: "+result.breaks.length+" deterministic, family-spaced breaks; "+result.held.length+" show-only holds; machine is human-review-only.");
+console.log("Bumper Brain: "+result.breaks.length+" deterministic, equally weighted breaks; "+result.held.length+" show-only holds; machine is human-review-only.");

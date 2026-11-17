@@ -186,7 +186,7 @@ async function getOnAirFieldCarts(){
    const title=String(cart.title||"").trim().slice(0,180);
    if(!title)return null;
    return {id:"air-"+cart.id,title,artist:"HUMKIN",
-     album:"HUMKIN RADIO · FIELD CARTS",kind:"bumper",duration,src,
+     album:"HUMKIN RADIO · STATION BUMPERS",kind:"bumper",duration,src,
      artwork:fileUrl("../cover.jpg",here)};
   }).filter(Boolean);
  }catch(error){
@@ -216,7 +216,8 @@ async function getPublishedCrate(){
       const duration=Number(row.duration_seconds);
       if(!(duration>0&&duration<14400))return null;
       return {id:"crate-"+row.id,title:String(row.title||"").slice(0,240),
-        artist:String(row.artist||"HUMKIN"),album:String(row.album||"HUMKIN RADIO"),
+        artist:String(row.artist||"HUMKIN"),
+        album:row.kind==="bumper"?"HUMKIN RADIO · STATION BUMPERS":String(row.album||"HUMKIN RADIO"),
         duration,src,kind:row.kind==="bumper"?"bumper":"song",
         is_single:row.kind!=="bumper"&&row.is_single===true,
         source:"cloud",art_asset_id:row.art_asset_id||null,artwork:fileUrl("cover.jpg",root)};
