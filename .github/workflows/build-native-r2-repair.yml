@@ -1,0 +1,43 @@
+name: Build HUMKIN R2 native recovery APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/build-native-r2-repair.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-recovery:
+    runs-on: ubuntu-latest
+    steps:
+      # The Android code has its own active source line (PR #120).
+      # Checkout that line rather than overwriting the web radio branch.
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/android-r2-native-playback-035
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Install SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile native R2 receiver and run unit tests
+        run: gradle -p apps/android --no-daemon :app:assembleRadioR2 :app:testRadioR2UnitTest
+      - name: Verify installable APK identity
+        run: |
+          APK=apps/android/app/build/outputs/apk/radioR2/app-radioR2.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -5
+          sha256sum "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HUMKIN-R2-RECEIVER-v035-APK
+          path: apps/android/app/build/outputs/apk/radioR2/app-radioR2.apk
+          if-no-files-found: error
+          retention-days: 30
