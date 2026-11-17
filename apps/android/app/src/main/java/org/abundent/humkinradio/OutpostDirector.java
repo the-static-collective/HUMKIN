@@ -38,6 +38,12 @@ final class OutpostDirector {
     private OutpostDirector(){}
 
     static Step choose(Facts s) {
+        // First-ever visit starts with ONE real song, not a fabricated quest.
+        if(s.playbackMs==0 && !s.missionActive)
+            return new Step(Verb.RADIO,"FIRST CONTACT / JUST THE RADIO",
+                    "Start with one real record.",
+                    "The first change isn't a skill point. It's something you actually hear.",
+                    "TUNE IN TO HUMKIN","After actual audible playback, the Outpost can remember what happened.");
         if(s.missionReady)
             return new Step(Verb.CLAIM_MISSION,"A REAL RESULT HAS ARRIVED",
                     "Your expedition returned.",
