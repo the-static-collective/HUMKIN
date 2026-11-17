@@ -36,7 +36,7 @@ jobs:
             echo "Unsupported Android 11 Java I/O method call"; exit 1
           fi
       - name: Build debug receiver
-        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:assembleRadioPocket :app:assembleRadioFlex :app:assembleRadioFit :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest :app:testRadioPocketUnitTest :app:testRadioFlexUnitTest :app:testRadioFitUnitTest
+        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:assembleRadioPocket :app:assembleRadioFlex :app:assembleRadioFit :app:assembleRadioClassic :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest :app:testRadioPocketUnitTest :app:testRadioFlexUnitTest :app:testRadioFitUnitTest :app:testRadioClassicUnitTest
       - uses: actions/upload-artifact@v4
         with:
           name: humkin-radio-android-debug
@@ -81,6 +81,12 @@ jobs:
         with:
           name: humkin-fit-radio-032
           path: apps/android/app/build/outputs/apk/radioFit/app-radioFit.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-classic-radio-034
+          path: apps/android/app/build/outputs/apk/radioClassic/app-radioClassic.apk
           if-no-files-found: error
 
       # Explicit one-shot smoke check. Never create disposable test accounts

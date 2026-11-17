@@ -83,6 +83,7 @@ public final class MainActivity extends Activity {
     };
     private RebelReceiverSkin.Dial receiverDial;
     private LivingReceiverFace livingFace;
+    private boolean isClassicBuild(){return getPackageName().endsWith(".classic");}
     private boolean isLivingFaceBuild(){
         return getPackageName().endsWith(".pocket")
                 ||getPackageName().endsWith(".flex")
@@ -135,9 +136,16 @@ public final class MainActivity extends Activity {
             });
             scroll.requestApplyInsets();
         } else {
-            getWindow().setStatusBarColor(RebelReceiverSkin.NAVY);
-            getWindow().setNavigationBarColor(RebelReceiverSkin.NAVY);
-            getWindow().getDecorView().setSystemUiVisibility(0);
+            if(isClassicBuild()){
+                getWindow().setStatusBarColor(CREAM);
+                getWindow().setNavigationBarColor(CREAM);
+                getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+            }else{
+                getWindow().setStatusBarColor(RebelReceiverSkin.NAVY);
+                getWindow().setNavigationBarColor(RebelReceiverSkin.NAVY);
+                getWindow().getDecorView().setSystemUiVisibility(0);
+            }
         }
     }
     @Override public void onSaveInstanceState(Bundle out) {
@@ -163,6 +171,7 @@ public final class MainActivity extends Activity {
     private LinearLayout.LayoutParams flex(int left) { return HumkinVisuals.flex(this, left); }
 
     private void buildScreen() {
+        if(isClassicBuild()){buildClassicScreen();return;}
         int width = getResources().getConfiguration().screenWidthDp;
         float fontScale = getResources().getConfiguration().fontScale;
         wideCards = width >= 370 && fontScale <= 1.15f;
@@ -255,6 +264,242 @@ public final class MainActivity extends Activity {
         showAlbums(onAlbums);
         setContentView(scroll);
     }
+
+    private void buildClassicScreen() {
+        int width = getResources().getConfiguration().screenWidthDp;
+        float fontScale = getResources().getConfiguration().fontScale;
+        wideCards = width >= 370 && fontScale <= 1.15f;
+        int inset = width < 350 ? 11 : 15;
+
+        scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(CREAM);
+        scroll.setVerticalScrollBarEnabled(false);
+        FrameLayout page = new FrameLayout(this);
+        scroll.addView(page);
+        LinearLayout outer = column();
+        outer.setPadding(0, 0, 0, 0);
+        page.addView(outer, new FrameLayout.LayoutParams(dp(Math.min(520, width)), -2,
+                Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+        addClassicHero(outer,width);
+
+        albumHeading = text("ALBUMS / THE RECORD SHELF", 24, INK, true);
+        albumHeading.setPadding(dp(inset),dp(12),dp(inset),0);
+        albumHeading.setGravity(Gravity.START);
+        if (Build.VERSION.SDK_INT >= 28) albumHeading.setAccessibilityHeading(true);
+        outer.addView(albumHeading, wrap(0));
+        tagline = text("", 16, INK, false);
+        HumkinVisuals.italic(tagline);
+        tagline.setPadding(dp(inset),dp(8),dp(inset),0);
+        tagline.setGravity(Gravity.START);
+        outer.addView(tagline, wrap(0));
+        // The paper collage was a reference mockup, not canonical album art.
+        // Use a native color rule instead of packaging that concept art.
+        View rule = new View(this);
+        rule.setBackground(HumkinVisuals.shape(this, PINK, 2));
+        LinearLayout.LayoutParams mark = new LinearLayout.LayoutParams(dp(205), dp(3));
+        mark.topMargin = dp(12);
+        mark.leftMargin = dp(inset);
+        outer.addView(rule, mark);
+
+        radioScreen = column();
+        albumsScreen = column();
+        radioScreen.setPadding(dp(inset), 0, dp(inset), 0);
+        albumsScreen.setPadding(dp(inset), 0, dp(inset), 0);
+        outer.addView(radioScreen, wrap(12));
+        outer.addView(albumsScreen, wrap(12));
+        buildClassicRadio();
+        buildAlbums();
+        // No concept-art skyline: only published music/album artwork is canon.
+        showAlbums(onAlbums);
+        setContentView(scroll);
+    }
+
+    private void addClassicHero(LinearLayout outer, int width) {
+        LinearLayout hero=column();
+        hero.setGravity(Gravity.START);
+        hero.setPadding(dp(19),dp(26),dp(19),dp(24));
+        hero.setBackground(HumkinVisuals.panel(this,0xff211b3a,0xff35365b,0));
+        TextView eyebrow=text("✳  THE LITTLE STATION AT THE END OF THE DIAL",10,YELLOW,true);
+        eyebrow.setGravity(Gravity.START);
+        eyebrow.setLetterSpacing(.09f);
+        hero.addView(eyebrow,wrap(0));
+
+        TextView masthead=text("HUMKIN",width<350?55:70,WHITE,true);
+        masthead.setGravity(Gravity.START);
+        masthead.setSingleLine(true);
+        masthead.setLetterSpacing(-.075f);
+        if (Build.VERSION.SDK_INT >= 28) masthead.setAccessibilityHeading(true);
+        hero.addView(masthead,wrap(13));
+
+        TextView radio=text("R A D I O",width<350?22:27,YELLOW,true);
+        radio.setGravity(Gravity.START);
+        radio.setLetterSpacing(.035f);
+        hero.addView(radio,wrap(0));
+        TextView line=text("MUSIC FOR THE LONG WAY HOME.",12,WHITE,true);
+        line.setGravity(Gravity.START);
+        line.setLetterSpacing(.075f);
+        hero.addView(line,wrap(16));
+        outer.addView(hero,wrap(0));
+
+        TextView strip=text("✳   SONGS • STORIES • A LITTLE STATIC   ✳",10,INK,true);
+        strip.setBackgroundColor(YELLOW);
+        strip.setMinHeight(dp(34));
+        strip.setLetterSpacing(.045f);
+        outer.addView(strip,wrap(0));
+    }
+
+    private void buildClassicRadio() {
+        LinearLayout heading = row();
+        TextView dial=text("THE HUMKIN DIAL",23,INK,true);
+        dial.setGravity(Gravity.START);
+        dial.setLetterSpacing(-.035f);
+        if (Build.VERSION.SDK_INT >= 28) dial.setAccessibilityHeading(true);
+        heading.addView(dial, new LinearLayout.LayoutParams(0, -2, 1f));
+        // One discreet overflow keeps specialist controls without clutter.
+        Button more = pill("⋯", null, CREAM, 22);
+        more.setContentDescription("More radio controls, signal settings and history");
+        more.setMinHeight(dp(43));
+        more.setOnClickListener(v -> showMoreRadio());
+        heading.addView(more, new LinearLayout.LayoutParams(dp(53),dp(44)));
+        radioScreen.addView(heading,wrap(0));
+        TextView kicker=text("AN IMPERFECT SIGNAL. A REAL GOOD SONG.",10,PLUM,true);
+        kicker.setGravity(Gravity.START);
+        kicker.setLetterSpacing(.06f);
+        radioScreen.addView(kicker,wrap(4));
+        // Preserve the modern server-owned HUM wallet discreetly instead of
+        // losing the records economy when we restore the original appearance.
+        LinearLayout classicWalletBar=row();
+        humChip=labelHumChip();
+        classicWalletBar.addView(humChip,new LinearLayout.LayoutParams(-2,dp(39)));
+        radioScreen.addView(classicWalletBar,wrap(6));
+        FrameLayout quietCoin=new FrameLayout(this);
+        quietCoin.setClipChildren(false);
+        quietCoin.setClipToPadding(false);
+        coinBurst=text("ⓗ +3 HUM",22,YELLOW,true);
+        coinBurst.setElevation(dp(10));
+        coinBurst.setVisibility(View.INVISIBLE);
+        FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.END);
+        quietCoin.addView(coinBurst,cp);
+        radioScreen.addView(quietCoin,new LinearLayout.LayoutParams(-1,dp(0)));
+
+        // Let the music be the first thing on the dial. The living world
+        // follows the actual receiver instead of pushing it below the fold.
+        sameTime = pill("SAME-TIME\nRADIO", Icon.RADIO, YELLOW, 18);
+        road = pill("ROAD\nSHUFFLE", Icon.SHUFFLE, MINT, 18);
+        sameTime.setMinHeight(dp(66));
+        road.setMinHeight(dp(66));
+        addPair(radioScreen, sameTime, road, 0);
+        sameTime.setOnClickListener(v -> changeMode(true));
+        road.setOnClickListener(v -> changeMode(false));
+
+        // Secondary reception settings are in the ⋯ overflow, not the dial.
+
+        LinearLayout player = console();
+        radioArt = HumkinVisuals.art(this, R.drawable.ic_radio);
+        LinearLayout labels = consoleLabels(player, radioArt, wideCards ? 109 : 80);
+        playingHeading = consoleHeading(labels, "NOW PLAYING");
+        nowPlaying = consoleTitle(labels, "Ready to tune in", wideCards ? 26 : 21);
+        playingArtist = consoleSubtitle(labels);
+        radioWaveform = addWaveform(labels);
+        radioScreen.addView(player, wrap(12));
+
+        // Tiny and human: an invitation about how this record landed, not
+        // another vote or gamified heart count.
+        reactionButton=pill("✳  THIS ONE DID SOMETHING  ↗",null,CREAM,13);
+        reactionButton.setMinHeight(dp(47));
+        reactionButton.setContentDescription("Tell HUMKIN how this song made you feel");
+        reactionButton.setOnClickListener(v->reactToSong());
+        reactionButton.setVisibility(View.GONE);
+        radioScreen.addView(reactionButton,wrap(7));
+        keepRecordButton=pill("ⓗ KEEP THIS RECORD",null,YELLOW,13);
+        keepRecordButton.setMinHeight(dp(45));
+        keepRecordButton.setVisibility(View.GONE);
+        keepRecordButton.setOnClickListener(v->keepNowPlaying());
+        radioScreen.addView(keepRecordButton,wrap(6));
+
+        tune = pill("TUNE IN", Icon.PLAY, YELLOW, 26);
+        tune.setMinHeight(dp(58));
+        tune.setOnClickListener(v -> tuneIn());
+        radioScreen.addView(tune, wrap(13));
+
+        status = message(INK);
+        radioScreen.addView(status, wrap(5));
+
+        // A compact two-row station log, rather than the old explanation,
+        // full technical card and five-line history panel.
+        LinearLayout stationLog = column();
+        stationLog.setGravity(Gravity.START);
+        stationLog.setPadding(dp(13), dp(11), dp(13), dp(11));
+        android.graphics.drawable.GradientDrawable logPaper =
+                HumkinVisuals.shape(this, 0xfffffdf6, 9);
+        logPaper.setStroke(dp(2), INK);
+        stationLog.setBackground(logPaper);
+
+        TextView nextLabel = text("COMING UP", 10, PLUM, true);
+        nextLabel.setGravity(Gravity.START);
+        nextLabel.setLetterSpacing(.09f);
+        stationLog.addView(nextLabel, wrap(0));
+        onDeck = text("—", 14, INK, true);
+        onDeck.setGravity(Gravity.START);
+        onDeck.setSingleLine(true);
+        onDeck.setEllipsize(TextUtils.TruncateAt.END);
+        stationLog.addView(onDeck, wrap(3));
+
+        View divider = new View(this);
+        divider.setBackgroundColor(0xffead5dc);
+        LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(-1, dp(1));
+        dividerSize.topMargin = dp(9);
+        dividerSize.bottomMargin = dp(8);
+        stationLog.addView(divider, dividerSize);
+
+        TextView heardLabel = text("JUST PLAYED", 10, PLUM, true);
+        heardLabel.setGravity(Gravity.START);
+        heardLabel.setLetterSpacing(.09f);
+        stationLog.addView(heardLabel, wrap(0));
+        recentlyHeard = text("—", 13, INK, false);
+        recentlyHeard.setGravity(Gravity.START);
+        recentlyHeard.setMaxLines(2);
+        recentlyHeard.setEllipsize(TextUtils.TruncateAt.END);
+        stationLog.addView(recentlyHeard, wrap(3));
+        updateRecentRecords();
+        radioScreen.addView(stationLog, wrap(12));
+
+        // The Outpost is the next step after tuning in; the record shelf
+        // stays one tap away without interrupting that progression.
+        outpostButton=pill("✳ THE SIGNAL OUTPOST / LEVEL 1 ↗",null,YELLOW,15);
+        outpostButton.setMinHeight(dp(62));
+        outpostButton.setContentDescription("Enter the Signal Outpost to collect Signal and discover new radio abilities");
+        outpostButton.setOnClickListener(v ->
+                startActivity(new Intent(this,OutpostActivity.class)));
+        radioScreen.addView(outpostButton,wrap(12));
+
+        Button albums = HumkinVisuals.pill(this, "ALBUMS", Icon.ALBUMS, YELLOW, 29, true);
+        albums.setMinHeight(dp(61));
+        albums.setOnClickListener(v -> showAlbums(true));
+        radioScreen.addView(albums, wrap(12));
+
+        // Unlocked departments are available in Outpost and the ⋯ drawer,
+        // without turning a first tune-in into a page of unexplained doors.
+
+        Button share = pill("SHARE THE DIAL", null, MINT, 13);
+        share.setOnClickListener(v -> {
+            Intent sending = new Intent(Intent.ACTION_SEND);
+            sending.setType("text/plain");
+            sending.putExtra(Intent.EXTRA_TEXT,
+                    "You found us. HUMKIN RADIO — music for the long way home. "
+                            + "https://humkin.abundent.org/fm/");
+            startActivity(Intent.createChooser(sending, "Share HUMKIN RADIO"));
+        });
+        Button request = pill("REQUEST LINE ↗", null, PINK, 13);
+        request.setOnClickListener(v ->
+                visit("https://humkin.abundent.org/fm/line/"));
+        addPair(radioScreen, share, request, 11);
+        // The shelf is one tap away via ALBUMS; no duplicated shortcut row.
+        // Archive, privacy, listening history, and tuning options live in ⋯.
+    }
+
+
 
     private void addWebHero(LinearLayout outer, int width) {
         TextView ribbon=text("✳  FREE SOUNDS FROM ANOTHER DIRECTION  ✳",10,RebelReceiverSkin.DARK,true);
@@ -1319,6 +1564,10 @@ public final class MainActivity extends Activity {
             int level=SignalRpg.snapshot(this).level;
             outpostButton.setContentDescription("Signal Outpost level "+level
                     +". Enter your growing radio world.");
+            if(isClassicBuild()){
+                String name="✳ THE SIGNAL OUTPOST / LEVEL "+level+" ↗";
+                if(!name.contentEquals(outpostButton.getText()))outpostButton.setText(name);
+            }
         }
         boolean pirateLive="pirate".equals(source)&&RadioPlaybackService.isPirateArmed();
         boolean sameSelected=!pirateLive&&radioMode;
@@ -1326,8 +1575,13 @@ public final class MainActivity extends Activity {
         if(!modeStyled || sameTime.isSelected()!=sameSelected
                 || road.isSelected()!=shuffleSelected) {
             // Bootleg Frequency is its own dial. Never label it "Same-Time".
-            RebelReceiverSkin.mode(sameTime,sameSelected);
-            RebelReceiverSkin.mode(road,shuffleSelected);
+            if(isClassicBuild()){
+                HumkinVisuals.setPillFill(sameTime,sameSelected?YELLOW:MINT,false);
+                HumkinVisuals.setPillFill(road,shuffleSelected?YELLOW:MINT,false);
+            }else{
+                RebelReceiverSkin.mode(sameTime,sameSelected);
+                RebelReceiverSkin.mode(road,shuffleSelected);
+            }
             if(receiverDial!=null)receiverDial.setSameTime(radioMode);
             sameTime.setSelected(sameSelected);
             road.setSelected(shuffleSelected);
