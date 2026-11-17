@@ -25,6 +25,7 @@ create table if not exists public.humkin_orchard_artifacts (
   id uuid primary key default gen_random_uuid(),
   serial bigint generated always as identity unique,
   owner_id text not null references public.humkin_orchard_nodes(id) on delete restrict,
+  issued_to text not null references public.humkin_orchard_nodes(id),
   kind text not null check (kind ~ '^[a-z0-9-]{3,50}$'),
   origin text not null check (origin in ('welcome:cup','welcome:seed','catalog:verified')),
   origin_ref uuid,
@@ -32,6 +33,7 @@ create table if not exists public.humkin_orchard_artifacts (
   unique(owner_id, origin, origin_ref)
 );
 comment on table public.humkin_orchard_artifacts is 'Server-issued provenance collectibles, not monetary tokens. Ordinary kinds are not scarce; serial is a unique historical identifier only.';
+create unique index if not exists humkin_orchard_unique_welcome_issuance on public.humkin_orchard_artifacts(issued_to,origin) where origin in ('welcome:cup','welcome:seed');
 create index if not exists humkin_orchard_owner on public.humkin_orchard_artifacts(owner_id,created_at);
 create table if not exists public.humkin_orchard_offers (
   id uuid primary key default gen_random_uuid(),
@@ -151,8 +153,8 @@ begin
    values(p_node,p_challenge,v_day,v.capability,p_digest,v.track_count)
    returning id into v_receipt;
  update public.humkin_orchard_challenges set completed_at=now() where id=p_challenge;
- insert into public.humkin_orchard_artifacts(owner_id,kind,origin,origin_ref)
-   values(p_node,'relay-leaf','catalog:verified',v_receipt) returning id into v_art;
+ insert into public.humkin_orchard_artifacts(owner_id,issued_to,kind,origin,origin_ref)
+   values(p_node,p_node,'relay-leaf','catalog:verified',v_receipt) returning id into v_art;
  return jsonb_build_object('receipt_id',v_receipt,'artifact_id',v_art,'catalog_count',v.track_count,'digest',p_digest);
 end $$;
 revoke all on function public.humkin_orchard_offer_open(text,text,uuid),
