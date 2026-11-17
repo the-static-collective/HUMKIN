@@ -1,0 +1,5 @@
+{
+  "schema": "humkin.radio.r2/v1",
+  "description": "Only owner-approved public R2 recordings. Uploaded objects are not automatically broadcast.",
+  "tracks": []
+}
