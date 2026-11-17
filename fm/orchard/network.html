@@ -16,7 +16,7 @@
 <section class="hero">
  <p class="overline">HUMKIN RADIO · ORCHARD NETWORK 004</p>
  <h1>A GARDEN<br><em>OF LITTLE SIGNALS.</em></h1>
- <p>Music, growing places, curious objects, and real people helping the station. A small room can become a public porch. A gift can travel between two listeners. A signed machine can volunteer a little work.</p>
+ <p>Music, growing places, curious objects, and real people helping the station. A small room can become a public porch. A gift can travel between two listeners. A signed machine can volunteer a little work or answer a neighbor’s live room request.</p>
  <div class="facts"><span>FREE TO ENTER</span><span>NO BLOCKCHAIN / NO CASH VALUE</span><span>PUBLIC ONLY BY CHOICE</span></div>
 </section>
 <section class="ticker" aria-label="Station links">
@@ -45,8 +45,8 @@
   <label class="checkbox"><input id="publish-optin" type="checkbox"><span>YES, let other listeners see this sanitized room name and decoration summary.</span></label>
   <div class="buttons"><button type="button" id="publish" class="action">✳ SAVE / UPDATE MY NETWORK HOME</button><button type="button" id="refresh-own" class="sub">REFRESH MY NETWORK STATE</button></div>
   <p id="publish-message" role="status">Your room remains private until you opt in.</p>
-  <div class="buttons"><label class="checkbox"><input type="checkbox" id="presence-optin"><span>Show me as PRESENT while this page is open.</span></label><button type="button" id="presence-now" class="sub">SIGN A PRESENCE HEARTBEAT</button></div>
-  <p class="tiny">Presence is a signed message to the network. It expires after two minutes. Your phone is not acting as a public web server. No HUM is earned just for staying online.</p>
+  <div class="buttons"><label class="checkbox"><input type="checkbox" id="presence-optin"><span>Show me as PRESENT while this page is open.</span></label><button type="button" id="presence-now" class="sub">SIGN A PRESENCE HEARTBEAT</button><label class="checkbox"><input type="checkbox" id="serve-optin"><span>ALSO SERVE fresh snapshots to other listeners who ask while this page is OPEN.</span></label></div>
+  <p class="tiny">Presence expires after two minutes. The optional live service answers a specific neighbor's request with a sanitized current room snapshot, relayed through the station, while this page is visible. No background battery use or idle HUM rewards.</p><p id="serve-status" role="status" class="tiny">LIVE SERVICE OFF · NOTHING IS SERVED WITHOUT AN OPT-IN.</p>
  </div>
 </article>
 <article class="section" id="homes-section">
@@ -58,13 +58,13 @@
    <p id="visitor-meta"></p>
    <div class="visitor-scene" id="visitor-scene"></div>
    <p id="visitor-artifacts"></p>
-   <button type="button" class="sub" id="choose-recipient">OFFER THIS LISTENER A NETWORK COLLECTIBLE</button>
+   <button type="button" class="sub" id="choose-recipient">OFFER THIS LISTENER A NETWORK COLLECTIBLE</button> <button type="button" class="action" id="request-live">✳ ASK FOR A FRESH LIVE SNAPSHOT</button><p id="request-status" role="status" class="tiny">A fresh snapshot is only possible when their page is open and actively serving.</p>
  </div>
 </article>
 <article class="section" id="trade-section">
  <p class="overline">03 / THE OLD TRADING POST</p>
  <h2>THE <em>CURIOSITY EXCHANGE.</em></h2>
- <p>These are <strong>actual server-issued artifact IDs</strong> with ownership recorded by the network. They can be transferred once through a signed, recipient-accepted transaction. They are not NFTs, money, or limited-edition investment instruments.</p>
+ <p>There are server-issued starter curiosities, catalog Relay Leaves, and a Porch Bell earned by answering a real neighbor's fresh snapshot request. These are <strong>actual server-issued artifact IDs</strong> with ownership recorded by the network. They can be transferred once through a signed, recipient-accepted transaction. They are not NFTs, money, or limited-edition investment instruments.</p>
  <div id="cabinet"><div class="empty">Establish your receiver key to open the network cabinet.</div></div>
  <div class="offer-form" id="offer-controls" hidden>
   <label class="field">RECIPIENT'S PUBLIC RECEIVER ID<input id="recipient-id" maxlength="64" placeholder="64-character public key fingerprint" autocapitalize="off"></label>
