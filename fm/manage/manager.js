@@ -339,7 +339,7 @@ function renderAutoDj(){
  const active=library.filter(t=>t.kind==="bumper"&&trackAvailable(t));
  const cadence=stationSettings.bumper_every;
  $("auto-status").textContent=active.length+" published recorded bumper(s) enabled. "+
-   (cadence&&active.length?"φ-short drops between songs; ~11-minute medium and ~22-minute long features at standard density (4).":
+   (cadence&&active.length?"φ-short drops; a feature break ~11–12 minutes, alternating medium and long (~22 minutes for long) at standard density (4).":
    cadence?"Cadence set, but nothing will play until you enable a bumper in the library.":
    "Automatic station IDs are currently OFF. The station plays music as before.");
  renderBumperPreview();
