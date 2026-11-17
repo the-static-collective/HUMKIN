@@ -36,17 +36,21 @@ final class RadioCatalog {
     private static final class Track {
         final String id,title,artist,album,url;
         final long durationMs;
-        final boolean bumper,released;
+        final boolean bumper,released,currentSingle;
         Track(String id,String title,String artist,String album,String url,
               long durationMs,boolean bumper,boolean released) {
+            this(id,title,artist,album,url,durationMs,bumper,released,false);
+        }
+        Track(String id,String title,String artist,String album,String url,
+              long durationMs,boolean bumper,boolean released,boolean currentSingle) {
             this.id=id;this.title=title;this.artist=artist;this.album=album;
             this.url=url;this.durationMs=durationMs;this.bumper=bumper;
-            this.released=released;
+            this.released=released;this.currentSingle=currentSingle;
         }
         Track override(JSONObject row) {
             return new Track(id,row.optString("title",title),row.optString("artist",artist),
                     row.optString("album",album),url,durationMs,
-                    "bumper".equals(row.optString("kind",bumper?"bumper":"song")),released);
+                    "bumper".equals(row.optString("kind",bumper?"bumper":"song")),released,currentSingle);
         }
         MediaItem mediaItem() {
             MediaMetadata.Builder builder=new MediaMetadata.Builder()
@@ -59,6 +63,9 @@ final class RadioCatalog {
                 builder.setArtworkUri(Uri.parse(AlbumCatalog.EVERYWHERE.coverUrl));
             }
             // No fabricated album cover for station-only cuts/bumpers.
+            android.os.Bundle humFlags=new android.os.Bundle();
+            humFlags.putBoolean("humkin_current_single",currentSingle);
+            builder.setExtras(humFlags);
             return new MediaItem.Builder().setMediaId(id).setUri(url)
                     .setMediaMetadata(builder.build()).build();
         }
@@ -214,7 +221,8 @@ final class RadioCatalog {
                     row.optString("artist","HUMKIN"),row.optString("album","HUMKIN RADIO"),
                     url.toString(),durationMs(row.optDouble("duration",0)),false,
                     includes(releasedSingles,row.optString("id",""))
-                    || includes(releasedAlbums,row.optString("album","")));
+                    || includes(releasedAlbums,row.optString("album","")),
+                    includes(releasedSingles,row.optString("id","")));
             if(t.durationMs>0)staticTracks.add(t);
         }
         if(staticTracks.isEmpty())throw new IOException("No static station records");
@@ -275,7 +283,7 @@ final class RadioCatalog {
                         t.optString("album","HUMKIN RADIO"),
                         API+"/storage/v1/object/public/humkin-radio-live/"+path,
                         duration,"bumper".equals(t.optString("kind")),
-                        t.optBoolean("is_single",false)));
+                        t.optBoolean("is_single",false),t.optBoolean("is_single",false)));
             }
         }catch(Exception e){complete=false;}
 
