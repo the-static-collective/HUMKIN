@@ -25,12 +25,18 @@ function classify(track,policy={}){
    seconds<=28?"station_id":"comedy"
  );
  const safetyHold=/\b(top of the hour|bottom of the hour|requests we re taking|we re taking requests)\b/.test(title);
- const hardMax=Number(policy.maximum_break_seconds)||49;
- const hold=raw.hold===true||role==="show_opener"||role==="feature"||
+ const hardMax=Number(policy.maximum_break_seconds)||180;
+ const shortMax=Number(policy.short_max_seconds)||19;
+ const mediumMax=Number(policy.medium_max_seconds)||60;
+ const lane=seconds<=shortMax?"short":seconds<mediumMax?"medium":"long";
+ // Length alone is no longer an editorial hold: longer approved features
+ // now have their own appropriately spaced airtime. Explicit owner holds,
+ // scheduled openers and misleading time/request claims remain held.
+ const hold=raw.hold===true||role==="show_opener"||
    seconds>hardMax||seconds<=0||safetyHold;
- return {id,title:track?.title||id,seconds,role,family,hold,
+ return {id,title:track?.title||id,seconds,role,family,lane,hold,
   reason:raw.hold?"OWNER PROFILE HOLD":role==="show_opener"?"SHOW OPENER — scheduled only":
-   role==="feature"||seconds>hardMax?"FEATURE — requires a show slot":
+   seconds>hardMax?"OVERSIZE — requires a show slot":
    safetyHold?"TIME/REQUEST CLAIM — requires manual program slot":""};
 }
 function cadenceBreaks(songCount,every,policy={}){
@@ -70,32 +76,95 @@ function bagOf(eligible,round,lastId){
  if(bag.length>1&&bag[0].id===lastId)[bag[0],bag[1]]=[bag[1],bag[0]];
  return bag;
 }
+// Every length group has its own equally weighted shuffled bag. Short
+// IDs have more *opportunities*, not higher priority within any one slot.
+// The golden-ratio phase adds an irregular 1–4-song pulse. Medium and long
+// features follow approximate airtime targets; everything waits for the
+// end of a whole song. Never stack multiple carts at the same boundary.
+const PHI=(1+Math.sqrt(5))/2;
+function phiGap(pulse,scale){
+ const phase=((pulse+1)*PHI)%1;
+ return Math.max(1,Math.round((1+Math.floor(phase*4))*scale));
+}
 function plan(songs,bumpers,every,tracks,policy={}){
  const base=Array.isArray(songs)?songs.slice():[];
- if(!Array.isArray(bumpers)||!Array.isArray(tracks)||!Number.isInteger(Number(every)))
+ const frequency=Number(every);
+ if(!Array.isArray(bumpers)||!Array.isArray(tracks)||!Number.isInteger(frequency))
   return {sequence:base,breaks:[],held:[],eligible:0};
  const inventory=bumpers.filter(i=>Number.isInteger(i)&&tracks[i])
    .map(i=>({...classify(tracks[i],policy),index:i}));
  const held=inventory.filter(x=>x.hold);
  const eligible=inventory.filter(x=>!x.hold);
+ if(frequency<1||frequency>20||!base.length||!eligible.length)
+  return {sequence:base,breaks:[],held,eligible:eligible.length};
+ const groups={
+   short:eligible.filter(x=>x.lane==="short"),
+   medium:eligible.filter(x=>x.lane==="medium"),
+   long:eligible.filter(x=>x.lane==="long")
+ };
+ const bags={short:[],medium:[],long:[]};
+ const rounds={short:0,medium:0,long:0};
+ const last={short:null,medium:null,long:null};
+ const pick=lane=>{
+   if(!groups[lane].length)return null;
+   if(!bags[lane].length)
+     bags[lane]=bagOf(groups[lane],rounds[lane]++,last[lane]);
+   const chosen=bags[lane].shift();
+   last[lane]=chosen.id;
+   return chosen;
+ };
+ // The mean song duration is invariant under the era/featured shuffle.
+ // Therefore our slot locations and the exact bumper inventory are identical
+ // for every Same-Time cycle, even though the songs themselves move around.
+ const average=base.reduce((sum,i)=>sum+Math.max(0,Number(tracks[i]?.duration||0)),0)/base.length;
+ if(!(average>0))return {sequence:base,breaks:[],held,eligible:eligible.length};
+ // The existing manager dial remains a density control. Its current "4"
+ // gives the intended ~11/22-minute pattern; other settings scale all
+ // three lanes together without changing any released audio or DB flags.
+ const scale=frequency/4;
+ const midEvery=(Number(policy.medium_target_seconds)||690)*scale;
+ const longEvery=(Number(policy.long_target_seconds)||1350)*scale;
+ // If long features exist, anchor mediums between long features instead
+ // of independently scheduling a second feature 30 seconds after one.
+ const midPeriod=groups.long.length?longEvery:midEvery;
+ let nextMid=midEvery,nextLong=longEvery,shortPulse=0;
+ let nextShort=phiGap(shortPulse++,scale),nominalSeconds=0;
+ let lastAnchorAt=-Infinity;
  const breaks=[],sequence=[];
- const positions=cadenceBreaks(base.length,every,policy);
- let breakIndex=0,next=positions[0]||Infinity,round=0,bag=[],lastId=null;
  for(let i=0;i<base.length;i++){
    sequence.push(base[i]);
-   if(i+1!==next||!eligible.length)continue;
-   if(!bag.length)bag=bagOf(eligible,round++,lastId);
-   const chosen=bag.shift();
+   nominalSeconds+=average;
+   const shortDue=i+1>=nextShort;
+   if(shortDue)nextShort+=phiGap(shortPulse++,scale);
+   let chosen=null;
+   if(groups.long.length&&nominalSeconds>=nextLong){
+     chosen=pick("long");
+     // When the long-form feature occupies a ~22-minute anchor,
+     // consume the overlapping ~11-minute medium opportunity.
+     while(nextLong<=nominalSeconds)nextLong+=longEvery;
+     while(nextMid<=nominalSeconds)nextMid+=midPeriod;
+   }else if(groups.medium.length&&nominalSeconds>=nextMid){
+     // Do not cram a medium feature immediately after a long one merely
+     // because two independent 11/22-minute targets nearly coincided.
+     const longSoon=groups.long.length&&nextLong-nominalSeconds<=midEvery*0.55;
+     if(!longSoon&&nominalSeconds-lastAnchorAt>=midEvery*0.55)
+       chosen=pick("medium");
+     while(nextMid<=nominalSeconds)nextMid+=midPeriod;
+   }else if(shortDue){
+     chosen=pick("short");
+   }
+   if(!chosen)continue;
+   if(chosen.lane!=="short")lastAnchorAt=nominalSeconds;
    sequence.push(chosen.index);
-   lastId=chosen.id;
-   breaks.push({number:breakIndex+1,afterSong:i+1,index:chosen.index,
+   nominalSeconds+=chosen.seconds;
+   breaks.push({number:breaks.length+1,afterSong:i+1,index:chosen.index,
      id:chosen.id,title:chosen.title,role:chosen.role,family:chosen.family,
-     seconds:chosen.seconds,rare:chosen.seconds>28});
-   breakIndex++;
-   next=positions[breakIndex]||Infinity;
+     lane:chosen.lane,seconds:chosen.seconds,rare:chosen.lane==="long",
+     estimatedMinute:Math.round(nominalSeconds/60*10)/10});
  }
  return {sequence,breaks,held,eligible:eligible.length};
 }
+
 const api=Object.freeze({normalize,classify,cadenceBreaks,plan});
 if(typeof module!=="undefined"&&module.exports)module.exports=api;
 root.HUMKIN_BUMPER_BRAIN=api;

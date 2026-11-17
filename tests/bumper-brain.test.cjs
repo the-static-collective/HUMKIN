@@ -17,6 +17,9 @@ const entries=[
  {id:"crate-warm",title:"Lantern Bells Station ID",duration:14},
  {id:"crate-goat",title:"Farm desk",duration:18},
  {id:"crate-other",title:"Very Good Things",duration:12},
+ {id:"crate-long-a",title:"The full longer feature",duration:68},
+ {id:"crate-long-b",title:"Longer story about us",duration:83},
+ {id:"crate-long-c",title:"Funny long recording",duration:94},
 ];
 const bumpers=entries.map((_,i)=>songs.length+i),tracks=[
  ...songs.map((i)=>({id:"song-"+i,kind:"song",duration:180,title:"Song "+i})),
@@ -37,40 +40,62 @@ assert(result.held.some(b=>b.title==="Taken Minute Opener"),"Show opener must be
 assert(result.held.some(b=>b.seconds>100),"Full-length music feature held");
 assert(result.held.some(b=>b.title==="Top of the Hour"),"Clock claims held");
 assert(!result.breaks.some(b=>/opener|top of the hour/i.test(b.title)));
-assert(result.breaks.every(b=>b.seconds<=49));
+assert(result.breaks.every(b=>b.seconds<=180),"No oversized, unapproved cart can air");
+assert(result.breaks.some(b=>b.lane==="long"),"Approved long features must get ~22-minute slots");
+assert(result.breaks.some(b=>b.lane==="medium"),"Medium segments must get ~11-minute slots");
+assert(result.breaks.some(b=>b.lane==="short"),"Short φ drops must get frequent slots");
 assert(new Set(result.breaks.map(b=>b.afterSong)).size===result.breaks.length);
 assert.deepEqual(result.sequence.filter(i=>i<songs.length),songs,"Songs stay complete and in order");
 assert.equal(result.sequence.length,songs.length+result.breaks.length);
-const gaps=result.breaks.map((b,i)=>b.afterSong-(result.breaks[i-1]?.afterSong||0));
-assert(gaps.includes(3)&&gaps.includes(4)&&gaps.includes(5)&&gaps.includes(6),
- "Vary 3–6 song breaks while maintaining the same plan length");
-// Every eligible bumper gets an equal turn, independent of the source
-// label, role, duration or family. A fresh bag begins only after every
-// routine-ready recording has been selected once.
+// φ should make short IDs feel spontaneous, not follow every Nth song.
+const shortGaps=result.breaks.filter(b=>b.lane==="short").map((b,i,a)=>
+ i?b.afterSong-a[i-1].afterSong:null).filter(x=>x!==null);
+assert(new Set(shortGaps).size>=3,"Short drops require nonuniform golden-ratio gaps");
+const longEvents=result.breaks.filter(b=>b.lane==="long");
+assert(longEvents.length>=5);
+for(let i=1;i<longEvents.length;i++){
+ const delta=longEvents[i].estimatedMinute-longEvents[i-1].estimatedMinute;
+ assert(delta>=17&&delta<=28,"Long feature anchors should be ~22 minutes, got "+delta);
+}
+const anchored=result.breaks.filter(b=>b.lane!=="short");
+assert(anchored.length>=20);
+for(let i=1;i<anchored.length;i++){
+ const delta=anchored[i].estimatedMinute-anchored[i-1].estimatedMinute;
+ assert(delta>=6&&delta<=17,"A medium-or-long interlude should recur ~11–12 minutes: "+delta);
+}
+// The source label never affects lane or its bag. Each tier is separately
+// equal-weight: more SHORT SLOTS does not mean we pick particular short carts.
 const routine=entries.filter(x=>!brain.classify(x,options).hold);
-assert.equal(result.eligible,routine.length);
 const spins=new Map();
 for(const b of result.breaks)spins.set(b.id,(spins.get(b.id)||0)+1);
-const totals=routine.map(t=>spins.get(t.id)||0);
-assert(Math.max(...totals)-Math.min(...totals)<=1,
- "No routine bumper may get more than one extra spin over another");
-assert.deepEqual(new Set(result.breaks.slice(0,routine.length).map(b=>b.id)),
- new Set(routine.map(t=>t.id)),"Each eligible bumper must air before a repeat");
-// Deliberately give equal peers contrasting technical intake names.
+for(const lane of ["short","medium","long"]){
+ const peers=routine.filter(t=>brain.classify(t,options).lane===lane);
+ assert(peers.length>=2,"Fixture needs two recordings per length lane: "+lane);
+ const totals=peers.map(t=>spins.get(t.id)||0);
+ assert(Math.max(...totals)-Math.min(...totals)<=1,
+   "Each "+lane+" recording should have one turn per lane bag");
+ const initial=result.breaks.filter(b=>b.lane===lane).slice(0,peers.length);
+ assert.deepEqual(new Set(initial.map(b=>b.id)),new Set(peers.map(t=>t.id)),
+   "No "+lane+" bumper repeats before its lane bag is exhausted");
+}
 const shelfNames=["HUMKIN RADIO · FIELD CARTS",
  "HUMKIN RADIO · PREVIEW CARTS","HUMKIN RADIO · INBOX"];
 const mixedTracks=tracks.map((t,i)=>t.kind==="bumper"?
  {...t,album:shelfNames[(i-songs.length)%3]}:t);
 const mixed=brain.plan(songs,bumpers,4,mixedTracks,options);
 assert.deepEqual(mixed.breaks,result.breaks,
- "Storage shelf labels must not affect airtime, priority or break selection");
+ "Storage shelf labels must not affect airtime, cadence or priority");
+const manuallyHeld=entries.find(e=>e.id==="crate-feature");
+assert(result.held.some(b=>b.id===manuallyHeld.id),
+ "An expressly held long feature must stay held");
 const altered=brain.plan([...songs].reverse(),bumpers,4,tracks,options);
 assert.deepEqual(altered.breaks,result.breaks,"Same-time recipients get an identical bumper order regardless of shuffled songs");
 assert.equal(altered.sequence.length,result.sequence.length,"Shared-clock cycle length stays stable");
 assert.deepEqual(brain.plan(songs,bumpers,4,tracks,options),result,"Deterministic for every receiver");
 const legacy=brain.plan(songs.slice(0,21),bumpers.slice(0,1),3,tracks,options);
-assert.deepEqual(legacy.breaks.map(b=>b.afterSong),[3,6,9,12,15,18,21],
- "Cadence 3 stays exact for short collections");
+assert(legacy.breaks.length>=5&&legacy.breaks.length<=8,
+ "A smaller density setting should shorten the medium lane without forcing a rigid count");
+assert(legacy.breaks.every(b=>b.lane==="medium"));
 assert.deepEqual(brain.plan(songs,bumpers,0,tracks,options).sequence,songs);
 const radio=fs.readFileSync("fm/radio.js","utf8"),html=fs.readFileSync("fm/index.html","utf8");
 const manager=fs.readFileSync("fm/manage/manager.js","utf8");
@@ -88,4 +113,4 @@ assert(workflow.includes("workflow_dispatch:")&&workflow.includes("upload-artifa
  "Robot machine should generate review-only packs");
 assert(!workflow.includes("git push")&&!workflow.includes("service_role")&&!workflow.includes("curl -X POST"),
  "Scheduled action must never publish or send recordings to the air");
-console.log("Bumper Brain: "+result.breaks.length+" deterministic, equally weighted breaks; "+result.held.length+" show-only holds; machine is human-review-only.");
+console.log("Bumper Brain: "+result.breaks.length+" φ-short / ~11-minute medium / ~22-minute long breaks; "+result.held.length+" editorial holds; deterministic and tier-fair.");

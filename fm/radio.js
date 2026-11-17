@@ -836,8 +836,8 @@ async function boot(){
       :"LIMITED DIAL · "+songCount+" local songs available. Cloud songs did not load; refresh when your connection improves.";
     $("playlist-note").textContent=catalogLabel+" "+
       (stationIds&&stationSettings.bumper_every?
-        (config?.bumper_brain?.variable_cadence&&stationSettings.bumper_every>=4?
-          "BUMPERS ABOUT EVERY "+stationSettings.bumper_every+" SONGS.":
+        (config?.bumper_brain?.medium_target_seconds?
+          "φ SHORT DROPS · LONGER BREAKS ~11 / ~22 MIN.":
           "STATION IDs EVERY "+stationSettings.bumper_every+" SONGS."):"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);

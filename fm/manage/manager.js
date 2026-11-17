@@ -326,8 +326,8 @@ function renderBumperPreview(){
  }
  for(const step of draft.breaks.slice(0,10)){
    list.append(el("li","After song "+step.afterSong+" · "+
-     step.title+" · "+step.role.replaceAll("_"," ").toUpperCase()+" · "+
-     Math.round(step.seconds)+" seconds"+(step.rare?" · LONG CUT":"")));
+     step.title+" · "+step.lane.toUpperCase()+" · "+
+     Math.round(step.seconds)+" seconds · ~"+step.estimatedMinute+"m"));
  }
 }
 
@@ -339,7 +339,7 @@ function renderAutoDj(){
  const active=library.filter(t=>t.kind==="bumper"&&trackAvailable(t));
  const cadence=stationSettings.bumper_every;
  $("auto-status").textContent=active.length+" published recorded bumper(s) enabled. "+
-   (cadence&&active.length?"The Bumper Brain proposes a varied break every roughly "+cadence+" songs.":
+   (cadence&&active.length?"φ-short drops; a feature break ~11–12 minutes, alternating medium and long (~22 minutes for long) at standard density (4).":
    cadence?"Cadence set, but nothing will play until you enable a bumper in the library.":
    "Automatic station IDs are currently OFF. The station plays music as before.");
  renderBumperPreview();
