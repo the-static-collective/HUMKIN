@@ -551,11 +551,11 @@ public final class MainActivity extends Activity {
         // A release publication grows the real shelf; no empty promises.
         for(int i=0;i<shelfAlbums.size();i+=2){
             AlbumCatalog.Album leftAlbum=shelfAlbums.get(i);
-            LinearLayout left=albumCard(leftAlbum,AlbumArtwork.forAlbum(leftAlbum.title),leftAlbum.detail);
+            LinearLayout left=albumCard(leftAlbum,AlbumArtwork.forAlbum(leftAlbum.id),leftAlbum.detail);
             LinearLayout group=wideCards?row():column();
             if(i+1<shelfAlbums.size()){
                 AlbumCatalog.Album rightAlbum=shelfAlbums.get(i+1);
-                LinearLayout right=albumCard(rightAlbum,AlbumArtwork.forAlbum(rightAlbum.title),rightAlbum.detail);
+                LinearLayout right=albumCard(rightAlbum,AlbumArtwork.forAlbum(rightAlbum.id),rightAlbum.detail);
                 group.addView(left,wideCards?flex(0):wrap(0));
                 group.addView(right,wideCards?flex(8):wrap(8));
             }else{
@@ -601,7 +601,7 @@ public final class MainActivity extends Activity {
 
     private void showAlbumCover(ImageView image,AlbumCatalog.Album album) {
         image.setTag(album.id);
-        int bundled=AlbumArtwork.forAlbum(album.title);
+        int bundled=AlbumArtwork.forAlbum(album.id);
         if(bundled!=R.drawable.ic_radio) {
             image.setImageResource(bundled);
             return;
