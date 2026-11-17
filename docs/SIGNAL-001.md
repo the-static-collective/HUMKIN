@@ -47,3 +47,25 @@ The main validate-site workflow includes the new test. After merge/deployment, m
 No new top-level app tab, no pretend combat interface, no audience leaderboard, no auto-generated announcer voice, no public station directory listing, no physical FM broadcast, no automatic publishing, no Google account, and no duplicate ownership ledger.
 
 **Principle:** A listener should be able to make a genuine little piece of culture in under a minute, then return to the radio. More capability can grow behind this invitation without adding another dashboard.
+
+## Station Seed 002 — retain what the listener chose first
+
+**The three published songs, their order, programming rule, optional station name and text introduction now form a durable founding seed.** Creation happens on the first explicit **Start My Station** or **Send the Signal** action, or when a visitor chooses **Make This One Mine**. Mere previewing or opening another person's link does not overwrite the listener's local seed.
+
+A separate `humkin-station-seed-v1` entry contains a versioned `humkin.station.seed/v1` record:
+- random locally generated station identifier (NOT a login, digital signature, verified identity or globally registered channel);
+- creation timestamp;
+- recorded `fm/rotation.json` source label;
+- three founding published track IDs **and their then-current public titles, albums and artists**, preserving historical context even if catalog display data changes;
+- first programming rule, name and intro;
+- if imported from a shared signal, its claimed origin selections are kept separately as **unverified** creative ancestry.
+
+The original founding seed is never silently re-created or rewritten when a listener changes the live three-song program. Those later selections remain a separate mutable draft (`humkin-signal-draft-v1`). No gameplay XP, station reach, network collectible or Top 42 vote is conferred by a seed.
+
+**Small UI:** existing Play becomes **Start My Station** before the origin exists; thereafter **Hear My Signal**. One collapsed **My Station Seed** drawer provides backup and explicit restore without adding a new navigation destination.
+
+**Durable ownership is a future project, not a present claim:** the seed remains in the browser's localStorage. A JSON backup includes both immutable origin and current arrangement. The restore action requires user confirmation before replacing another station. Clearing browser storage or using a different native Android package will still lose an unbacked-up local seed. The exported origin is neither signed nor a server-recognized entitlement.
+
+Other machines (Autodisco, SIA, a future Materia/Gambit programmer, the native Android studio or listener-generated stations) can consume these exact first preferences as a proposal. They must not reinterpret the seed as a commercial broadcast right or a verified participant identity. Future schema changes must migrate this exact origin, not reset it.
+
+Test: `node --test tests/signal-seed.test.cjs` as part of normal website CI.
