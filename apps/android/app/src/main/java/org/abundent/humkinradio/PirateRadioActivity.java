@@ -19,6 +19,8 @@ import androidx.media3.session.SessionToken;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,7 +42,7 @@ public final class PirateRadioActivity extends Activity {
     private PirateFrequency.Dial current;
     private List<MediaItem> preview=new ArrayList<>();
     private long entropy=System.currentTimeMillis();
-    private String anchor="";
+    private String anchor="",incomingAnchor="";
     private Button moodButton,balanceButton,anchorButton,tuneButton,shuffleButton;
     private TextView situation,example,explain,weatherCount;
 
@@ -75,6 +77,7 @@ public final class PirateRadioActivity extends Activity {
         getWindow().setNavigationBarColor(HumkinVisuals.CREAM);
         current=PirateFrequency.last(this);
         String incoming=SongReactionId.canonical(getIntent().getStringExtra(EXTRA_ANCHOR));
+        incomingAnchor=incoming==null?"":incoming;
         anchor=incoming==null?(current.anchor==null?"":current.anchor):incoming;
         current=new PirateFrequency.Dial(current.mood,current.balance,anchor);
         build();
@@ -132,13 +135,9 @@ public final class PirateRadioActivity extends Activity {
 
         label(stack,"03 / THE FIRST RECORD",11,HumkinVisuals.PLUM,true,16);
         anchorButton=button("",HumkinVisuals.CREAM,13);
-        anchorButton.setOnClickListener(v->{
-            anchor="";
-            current=new PirateFrequency.Dial(current.mood,current.balance,anchor);
-            refreshControls();drawPreview();
-        });
+        anchorButton.setOnClickListener(v->chooseAnchor());
         stack.addView(anchorButton,margin(4));
-        label(stack,"An available founding song starts first. Tap to let the dial choose instead.",11,HumkinVisuals.PLUM,false,4);
+        label(stack,"Pick a first record from the dial or one of your own remembered songs.",11,HumkinVisuals.PLUM,false,4);
 
         situation=label(stack,"FINDING THE PUBLISHED RECORDS…",13,HumkinVisuals.INK,true,18);
         weatherCount=label(stack,"",11,HumkinVisuals.PLUM,false,4);
@@ -172,9 +171,45 @@ public final class PirateRadioActivity extends Activity {
                 :current.balance==PirateSelector.EVERYBODY
                 ?"The whole listener room whispers its feelings into this mix. Even unheard songs get a chance."
                 :"Your feelings meet the room's. Nobody gets to own the dial.");
-        anchorButton.setText(anchor.isEmpty()?"THE DIAL PICKS THE FIRST RECORD  ↗"
-                :"ANCHOR THE CURRENT SONG  ✓   (tap to clear)");
-        anchorButton.setEnabled(!anchor.isEmpty());
+        String name=anchor;
+        if(station!=null&&!anchor.isEmpty()){
+            for(PirateSelector.Song song:station.pirateCatalog())
+                if(song.id.equals(anchor)){name=song.title;break;}
+        }
+        anchorButton.setText(anchor.isEmpty()
+                ?"FIRST RECORD · LET THE DIAL CHOOSE  ▾"
+                :"FIRST RECORD · "+name+"  ▾");
+    }
+    private void chooseAnchor(){
+        List<String> options=new ArrayList<>();
+        List<String> ids=new ArrayList<>();
+        options.add("◉  Let the dial choose");
+        ids.add("");
+        if(!incomingAnchor.isEmpty()){
+            options.add("♫  Current radio song");
+            ids.add(incomingAnchor);
+        }
+        if(station!=null){
+            Map<String,String> mine=SongReactions.snapshot(this);
+            Map<String,PirateSelector.Song> byId=new HashMap<>();
+            for(PirateSelector.Song song:station.pirateCatalog())
+                byId.put(song.id,song);
+            int count=0;
+            for(Map.Entry<String,String> entry:mine.entrySet()){
+                PirateSelector.Song song=byId.get(entry.getKey());
+                if(song==null||song.id.equals(incomingAnchor))continue;
+                options.add("✳  "+song.title+" · "+SongReactions.phrase(entry.getValue()));
+                ids.add(song.id);
+                if(++count>=25)break;
+            }
+        }
+        new AlertDialog.Builder(this).setTitle("CHOOSE THE FIRST RECORD")
+            .setItems(options.toArray(new String[0]),(dialog,chosen)->{
+                anchor=ids.get(chosen);
+                current=new PirateFrequency.Dial(current.mood,current.balance,anchor);
+                entropy=System.nanoTime();
+                refreshControls();drawPreview();
+            }).setNegativeButton("Never mind",null).show();
     }
     private void load(){
         if(fetching)return;
@@ -203,6 +238,7 @@ public final class PirateRadioActivity extends Activity {
                     return;
                 }
                 situation.setText(ready.pirateCatalog().size()+" PUBLISHED SONGS · YOUR OWN FREQUENCY");
+                refreshControls();
                 weatherCount.setText(signal.total==0
                     ?"NO COMMUNITY RESPONSES YET · YOUR EARS LEAD THE WAY"
                     :signal.total+" OPT-IN FEELINGS SHARED THIS WEEK · "
