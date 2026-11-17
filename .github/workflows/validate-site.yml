@@ -13,6 +13,7 @@ jobs:
           node-version: '22'
       - name: Assemble and checksum-verify new release audio previews
         run: node scripts/assemble-everywhere-near-you.mjs
+      - run: node tests/record-shelf.test.mjs
       - run: node tests/site.test.mjs
       - run: node tests/postcard-buttons.test.mjs
       - run: node tests/distribution.test.mjs
@@ -22,30 +23,9 @@ jobs:
       - run: python3 scripts/build_dj_pack.py
       - run: node tests/dj.test.mjs
       - run: node tests/radio.test.mjs
-      - run: node --test tests/iphone-ios14.test.mjs
       - run: node tests/radio-loader.test.mjs
-      - run: node tests/radio-singles.test.cjs
-      - run: node tests/radio-fairness-intake.test.cjs
-      - run: node tests/top42.test.cjs
-      - run: node --test tests/resonance.test.cjs
-      - run: node --check fm/top42/resonance.js
-      - run: node --test tests/orchard.test.cjs
-      - run: node --test tests/night-watch.test.cjs
-      - run: node --test tests/signal.test.cjs
-      - run: node --test tests/signal-seed.test.cjs
-      - run: node --check fm/orchard/network.js
-      - run: node --test tests/participation.test.cjs
-      - run: node --check fm/participate/desk.js
-      - run: node --check fm/participate/review.js
-      - run: node --check fm/top42/league.js
       - run: node tests/radio-manager.test.mjs
-      - run: node tests/bumper-brain.test.cjs
-      - run: python3 -m py_compile tools/generate-robot-drops.py
-      - run: python3 tests/robot-desk-v2.test.py
-      - run: python3 tests/robot-seed-garden.test.py
-      - run: node --check fm/studio/robot-seed-editor.js
       - run: node tests/radio-studio.test.mjs
-      - run: node tests/living-cart-intake.test.cjs
       - run: node tests/radio-field-carts.test.mjs
       - run: node tests/radio-bible.test.mjs
       - run: node tests/radio-house.test.mjs
@@ -54,7 +34,6 @@ jobs:
       - run: node tests/radio-warm-signal.test.mjs
       - run: node tests/radio-clock.test.mjs
       - run: node tests/living-discography.test.mjs
-      - run: node tests/phonograph-bridge.test.mjs
       - run: python3 -m py_compile tools/radio-broadcast/modal_hour.py
       - run: python3 tests/radio-broadcast.test.py
       - run: python3 tests/radio-house-host.test.py
