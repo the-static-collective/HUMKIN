@@ -217,7 +217,7 @@
   "bumper_brain": {
     "schema": "humkin.radio.bumper-brain/v1",
     "variable_cadence": true,
-    "maximum_break_seconds": 49,
+    "maximum_break_seconds": 180,
     "cooldown_breaks": 4,
     "rare_long_break_every": 5,
     "profiles": {
@@ -288,8 +288,17 @@
       "air-field-fm-013": {
         "role": "station_id",
         "family": "thank-you"
+      },
+      "crate-65afe228-23ff-48cf-9d5a-086305758ae5": {
+        "role": "feature",
+        "family": "fellowship-dated",
+        "hold": true
       }
     },
-    "description": "Deterministic station personality. Real audio only. Long features/openers and time-sensitive claims are excluded from incidental bumpers but remain available for intentional show programming."
+    "description": "One unified eligible bumper library: φ-spaced frequent short IDs; medium features approximately every 11–12 minutes; longer features approximately every 22–23 minutes, always after full songs. Owner holds and factual time/request holds remain. The current manager cadence value 4 is the baseline density.",
+    "short_max_seconds": 19,
+    "medium_max_seconds": 60,
+    "medium_target_seconds": 690,
+    "long_target_seconds": 1350
   }
 }
