@@ -20,6 +20,7 @@ import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from zoneinfo import ZoneInfo
 # Also works when imported by tests from an unrelated working directory.
@@ -260,17 +261,20 @@ def streaming(catalog,args):
             if encoder.poll() is not None:raise RuntimeError("Encoder/Icecast source disconnected; see FFmpeg errors")
             encoder.stdin.write(chunk);written+=len(chunk)
         if maximum is not None and written>=maximum:raise StopIteration()
+    # Download the NEXT public audio copy while the current recording plays.
+    # This avoids blocking the encoder after a crossfade on ordinary cache misses.
+    fetch_pool=ThreadPoolExecutor(max_workers=1)
     try:
         current=station.next()
         ahead=station.next()
         decode_current=decode(cache_track(current,cache))
-        cache_track(ahead,cache)
+        ahead_future=fetch_pool.submit(cache_track,ahead,cache)
         while True:
             print("ON AIR:",current["artist"],"—",current["title"],flush=True)
             tail_size=overlap_bytes(current,ahead,args.crossfade)
             try:
                 tail=pump_with_tail(decode_current,write,tail_size)
-                head_process=decode(cache_track(ahead,cache))
+                head_process=decode(ahead_future.result(timeout=45))
                 head=read_exact(head_process.stdout,tail_size)
                 n=min(len(head),len(tail))//FRAME_BYTES*FRAME_BYTES
                 if n:
@@ -280,7 +284,7 @@ def streaming(catalog,args):
                 # If decoder reads less than requested, no source data is dropped.
                 current=ahead
                 ahead=station.next()
-                cache_track(ahead,cache)
+                ahead_future=fetch_pool.submit(cache_track,ahead,cache)
                 decode_current=head_process
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
                 print("Audio source problem; moving on:",exc,file=sys.stderr)
@@ -294,6 +298,7 @@ def streaming(catalog,args):
     except StopIteration:
         print("Local timed broadcast sample complete.",flush=True)
     finally:
+        fetch_pool.shutdown(wait=False,cancel_futures=True)
         # An interrupted preview must not leave decoder processes holding pipes.
         for proc in [locals().get("decode_current"),locals().get("head_process")]:
             if proc is not None and proc.poll() is None:
