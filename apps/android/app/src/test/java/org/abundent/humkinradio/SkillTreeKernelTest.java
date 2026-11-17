@@ -63,6 +63,7 @@ public final class SkillTreeKernelTest {
             SkillTreeKernel.Projection p=evaluate(level,0,0,0);
             assertEquals(OutpostMilestones.unlocked(OutpostMilestones.ORCHARD,level),
                     "AVAILABLE".equals(p.get("outpost.orchard").status));
+            assertEquals(level>=4, "AVAILABLE".equals(p.get("orchard.graft").status));
             assertEquals(OutpostMilestones.unlocked(OutpostMilestones.BOOTLEG,level),
                     "AVAILABLE".equals(p.get("outpost.bootleg").status));
         }
