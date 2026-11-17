@@ -12,10 +12,18 @@ const staged=empty.tracks[0];
 assert.equal(staged.id,"blue-at-the-tip");
 assert.equal(staged.object_key,"tracks/Blue At The Tip.mp3");
 assert.equal(staged.seasonal,true,"Owner specified seasonal 3x intent");
-assert.equal(staged.approved,false,"Do not air a file before live URL and duration are confirmed");
+assert.equal(staged.approved,true,"Public R2 MP3 successfully verified and approved");
+assert.equal(staged.duration_seconds,193.96,"ffprobe measured exact duration");
+assert.equal(staged.sha256,
+ "2958309e915c076bed880349fbb61c0c8d8b9dcd97f4e619a5f6c5661a23cd16",
+ "Public R2 bytes integrity fingerprint");
 assert.equal(r2.objectUrl(staged.object_key),
   "https://media.abundent.org/tracks/Blue%20At%20The%20Tip.mp3");
-assert.equal(r2.parse(empty,"cover.jpg").length,0);
+const verified=r2.parse(empty,"cover.jpg");
+assert.equal(verified.length,1,"Approved R2 MP3 must join radio");
+assert.equal(verified[0].id,"r2-blue-at-the-tip");
+assert.equal(verified[0].duration,193.96);
+assert.equal(verified[0].seasonal,true);
 assert.equal(r2.objectUrl("tracks/Fall Anthem.mp3"),
  "https://media.abundent.org/tracks/Fall%20Anthem.mp3");
 for(const bad of ["../private.mp3","private//bad.mp3","secret.wav",
