@@ -457,15 +457,8 @@ public final class MainActivity extends Activity {
         }
         titles.add("Other station departments · Top 42 and Guilds");
         actions.add(this::showWorldMenu);
-        titles.add("The old three-song studio · sketchbook");
-        actions.add(() -> {
-            MediaItem selected=controller==null?null:controller.getCurrentMediaItem();
-            String seed=selected==null?"":selected.mediaId;
-            if(controller!=null&&controller.isPlaying())controller.pause();
-            Intent sketch=new Intent(this,SignalStudioActivity.class);
-            sketch.putExtra(SignalStudioActivity.EXTRA_SEED_TRACK,seed);
-            startActivity(sketch);
-        });
+        // The earlier three-record sketchbook no longer appears as a
+        // first-level shortcut around the earned LV7 pirate radio door.
         titles.add("Listener Weather · how the songs landed");
         actions.add(() -> visit("https://humkin.abundent.org/fm/top42/#listener-weather"));
         titles.add(SongReactions.sharing(this)==1
