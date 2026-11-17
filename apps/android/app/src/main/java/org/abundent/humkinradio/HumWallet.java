@@ -85,8 +85,8 @@ final class HumWallet {
         JSONObject state=load(c);
         String oldDay=state.optString("day","");
         int was=radio.day.equals(oldDay)?state.optInt("milestones",0):0;
-        int now=HumEconomy.newMask(was,radio.todayMs);
-        int amount=HumEconomy.newAwards(was,radio.todayMs);
+        int now=HumEconomy.newMask(was,radio.humTodayMs);
+        int amount=HumEconomy.newAwards(was,radio.humTodayMs);
         if(amount==0 && radio.day.equals(oldDay))return 0;
         try{
             state.put("day",radio.day).put("milestones",now);
