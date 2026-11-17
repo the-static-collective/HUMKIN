@@ -37,6 +37,11 @@ jobs:
           fi
       - name: Build debug receiver
         run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:assembleRadioPocket :app:assembleRadioFlex :app:assembleRadioFit :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest :app:testRadioPocketUnitTest :app:testRadioFlexUnitTest :app:testRadioFitUnitTest
+      - name: Verify the actual APK contains the shared live skill-tree slices
+        run: |
+          unzip -Z1 apps/android/app/build/outputs/apk/debug/app-debug.apk | grep -Fxq 'assets/catalog.json'
+          unzip -Z1 apps/android/app/build/outputs/apk/debug/app-debug.apk | grep -Fxq 'assets/slices/orchard.json'
+          unzip -Z1 apps/android/app/build/outputs/apk/debug/app-debug.apk | grep -Fxq 'assets/slices/frequency.json'
       - uses: actions/upload-artifact@v4
         with:
           name: humkin-radio-android-debug
