@@ -266,9 +266,18 @@ public final class MainActivity extends Activity {
 
         receiverDial=new RebelReceiverSkin.Dial(this);
         receiverDial.setSameTime(radioMode);
+        receiverDial.setVolume(getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                .getFloat("receiver-volume",.75f));
         // The big dial now selects future virtual stations. Playback modes
         // remain the separate, working Same-Time / Road Shuffle controls.
         receiverDial.setOnTuneListener((circuit,frequency,archive)->{
+            if ("VOLUME".equals(circuit)) {
+                float level=Math.max(0f,Math.min(1f,frequency));
+                getSharedPreferences("humkin-radio",MODE_PRIVATE).edit()
+                    .putFloat("receiver-volume",level).apply();
+                if (controller!=null) controller.setVolume(level);
+                return;
+            }
             if (!receiverDial.isMainStationTuned() && controller!=null && controller.isPlaying())
                 controller.pause();
             if ("DIAL".equals(circuit) && receiverDial.isMainStationTuned()) {
@@ -1027,6 +1036,8 @@ public final class MainActivity extends Activity {
             try{
                 controller=controllerFuture.get();
                 controller.addListener(listener);
+                controller.setVolume(getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                    .getFloat("receiver-volume",.75f));
                 if(RadioPlaybackService.isPirateArmed() && controller.getMediaItemCount()>0){
                     source="pirate";
                     modeStyled=false;
