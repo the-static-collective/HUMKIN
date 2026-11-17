@@ -10,6 +10,11 @@ There is no longer a full-size Bootleg Frequency or Orchard button on the main
 radio. The world/Top 42/Guilds shortcut is tucked into the radio's ⋯ menu;
 record league and Guilds remain available through the Outpost.
 
+The earlier three-song browser sketchbook is deliberately not linked in the
+radio overflow: it must not become a shortcut around the Level 7 personal
+station reveal. Its implementation remains in the repo, not active on the
+new first-run radio face.
+
 The Outpost now owns two **earned, persistently unlocked listening worlds**:
 
 - **Level 4 — THE LISTENING ORCHARD.** Its first gateway is initially
