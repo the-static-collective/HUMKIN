@@ -3,17 +3,37 @@
  */
 (function(){
 "use strict";
-const M=window.HumkinSignal,$=id=>document.getElementById(id);
-if(!M)return;
+const M=window.HumkinSignal,S=window.HumkinStationSeed,$=id=>document.getElementById(id);
+if(!M||!S)return;
 const audio=$("signal-audio");
 const manifestURL=new URL("../rotation.json",document.baseURI);
 const store=(()=>{try{return localStorage}catch{return null}})();
-let tracks=[],draft=null,guest=false,position=0;
+let tracks=[],draft=null,guest=false,position=0,rootSeed=null,receivedOrigin=null;
 function node(tag,text,cls){
   const e=document.createElement(tag);if(text!==undefined)e.textContent=String(text);
   if(cls)e.className=cls;return e;
 }
 function notice(text){$("message").textContent=text}
+function seedDisplay(){
+  const existing=!!rootSeed;
+  $("play").textContent=guest?"▶ HEAR THIS SIGNAL":existing?"▶ HEAR MY SIGNAL":"▶ START MY STATION";
+  $("backup-seed").disabled=!existing;
+  $("seed-summary").textContent=existing?"MY STATION SEED · SAVED":"MY STATION SEED · NOT YET PLANTED";
+  $("seed-status").textContent=guest?"This is a visiting signal. Make it yours to save a founding seed locally.":existing?
+    "Founded with "+rootSeed.founding.tracks.map(t=>t.title||t.id).join(" · ")+". These first choices stay remembered while your station evolves.":
+    "Your first three songs, their order and your programming rule become the origin of your station when you start. Later changes won't erase it.";
+}
+function establishSeed(){
+  if(guest)return false;
+  if(rootSeed)return true;
+  try{
+    const candidate=S.make(draft,tracks,{parent:receivedOrigin});
+    if(!S.plant(store,candidate))throw Error("Seed storage unavailable or already contains a station. Use Restore rather than overwriting it.");
+    rootSeed=S.read(store);
+    if(!rootSeed)throw Error("Could not verify the saved station.");
+    seedDisplay();return true;
+  }catch(e){notice("Couldn't preserve your station seed: "+e.message);return false;}
+}
 function safeCatalog(rows){
   return M.catalog(rows).map(t=>{
     try{
@@ -79,7 +99,7 @@ function render(){
   $("receive").hidden=!guest;
   $("play").disabled=draft.tracks.length!==3;
   $("share").disabled=draft.tracks.length!==3;
-  renderChoices();showTrack();
+  renderChoices();showTrack();seedDisplay();
 }
 async function startSong(index){
   const song=tracks.find(t=>t.id===draft.tracks[index]);
@@ -88,7 +108,11 @@ async function startSong(index){
   try{await audio.play();notice("You're hearing "+song.title+" · song "+(index+1)+" of three.");}
   catch{notice("Playback needs a tap. Use the play button in the player.");}
 }
-$("play").addEventListener("click",()=>startSong(0));
+$("play").addEventListener("click",()=>{
+  readInputs();
+  if(!guest&&!establishSeed())return;
+  startSong(0);
+});
 audio.addEventListener("ended",()=>{
   if(position<2){startSong(position+1);}
   else notice("Your three-song signal has finished. A good place for a little silence.");
@@ -105,6 +129,7 @@ for(const key of ["station-name","station-intro","station-mode"]){
 }
 $("inherit").addEventListener("click",()=>{
   guest=false;
+  if(!establishSeed()){guest=true;return;}
   const url=new URL(location.href);url.search="";url.hash="";
   history.replaceState(null,"",url.href);
   storeDraft();render();
@@ -112,6 +137,7 @@ $("inherit").addEventListener("click",()=>{
 });
 $("share").addEventListener("click",async()=>{
   readInputs();
+  if(!guest&&!establishSeed())return;
   let url;
   try{url=M.toUrl(location.href,draft,tracks)}catch(e){notice(e.message);return;}
   $("fallback").hidden=true;$("share-url").value=url;
@@ -128,6 +154,41 @@ $("share").addEventListener("click",async()=>{
   $("fallback").hidden=false;$("share-url").focus();$("share-url").select();
   notice("Copy the link shown below. Nothing has been posted automatically.");
 });
+$("backup-seed").addEventListener("click",()=>{
+  if(!rootSeed)return;
+  try{
+    const data=S.backup(rootSeed,draft,tracks);
+    const bytes=JSON.stringify(data,null,2);
+    const blob=new Blob([bytes],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="humkin-station-seed-backup.json";a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    notice("Your station seed and current draft were backed up. Keep the file somewhere safe.");
+  }catch(e){notice("Backup failed: "+e.message);}
+});
+$("restore-seed").addEventListener("change",async event=>{
+  const file=event.target.files?.[0];event.target.value="";
+  if(!file)return;
+  if(file.size>30000){notice("That station backup is unexpectedly large.");return;}
+  try{
+    const result=S.restore(JSON.parse(await file.text()),tracks);
+    const changing=rootSeed?.stationId!==result.station.stationId;
+    if(changing&&!confirm(rootSeed?
+      "Restore another station? This REPLACES your current local station seed and draft. Back up the existing one first.":
+      "Restore this saved station and replace your current draft on this device?"))return;
+    if(!store)throw Error("Local save storage is unavailable.");
+    // Keep both store writes explicit; this never touches the Orchard or Network keys.
+    store.setItem(S.KEY,JSON.stringify(result.station));
+    store.setItem(M.KEY,JSON.stringify(result.current));
+    rootSeed=S.read(store);draft=M.normalize(result.current,tracks);
+    guest=false;receivedOrigin=null;
+    const url=new URL(location.href);url.search="";url.hash="";
+    history.replaceState(null,"",url.href);
+    clearPlayback();render();
+    notice("Your original station seed and current arrangement were restored.");
+  }catch(e){notice("Restore failed: "+e.message);}
+});
 async function boot(){
   try{
     const response=await fetch(manifestURL.href,{cache:"no-store"});
@@ -136,7 +197,9 @@ async function boot(){
     tracks=safeCatalog(data.tracks);
     if(tracks.length<3)throw Error("too few playable recordings");
     const shared=M.fromUrl(location.search,tracks);
+    receivedOrigin=shared?{...shared,tracks:shared.tracks.slice()}:null;
     guest=!!shared;
+    rootSeed=S.read(store);
     const stored=storedDraft();
     draft=shared||M.normalize(stored,tracks);
     if(!shared&&!stored){
@@ -144,7 +207,8 @@ async function boot(){
       storeDraft();
     }
     render();
-    notice(guest?"Someone sent you three real songs. Play them, or make a copy.":"Your little station is ready. Its draft is saved locally.");
+    notice(guest?"Someone sent you three real songs. Play them, or make a copy.":
+      rootSeed?"Your station remembers its beginning. The current arrangement can keep evolving.":"Your selections will become your station's permanent starting seed when you begin.");
   }catch(e){
     $("track-choices").textContent="The published music list is unavailable. Try again when you're connected.";
     notice("The station catalog could not load. No saved progress was changed.");
