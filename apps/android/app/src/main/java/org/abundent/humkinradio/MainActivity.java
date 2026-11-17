@@ -83,7 +83,7 @@ public final class MainActivity extends Activity {
     };
     private RebelReceiverSkin.Dial receiverDial;
     private LivingReceiverFace livingFace;
-    private boolean isClassicBuild(){return getPackageName().endsWith(".classic");}
+    private boolean isClassicBuild(){return getPackageName().endsWith(".classic") || getPackageName().endsWith(".r2repair");}
     private boolean isLivingFaceBuild(){
         return getPackageName().endsWith(".pocket")
                 ||getPackageName().endsWith(".flex")
