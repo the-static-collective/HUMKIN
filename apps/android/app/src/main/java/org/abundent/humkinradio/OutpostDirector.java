@@ -43,7 +43,7 @@ final class OutpostDirector {
             return new Step(Verb.RADIO,"FIRST CONTACT / JUST THE RADIO",
                     "Start with one real record.",
                     "The first change isn't a skill point. It's something you actually hear.",
-                    "TUNE IN TO HUMKIN","After actual audible playback, the Outpost can remember what happened.");
+                    "OPEN RADIO CONTROLS","Use TUNE IN on the radio. Only real playback can create progress.");
         if(s.missionReady)
             return new Step(Verb.CLAIM_MISSION,"A REAL RESULT HAS ARRIVED",
                     "Your expedition returned.",
