@@ -219,3 +219,25 @@ To feature future album cuts, add the actual released album name to
 `featured_rotation.albums`; to feature a single, add its unique track ID
 to `featured_rotation.singles`. Never auto-feature every cloud upload,
 invent official release status, or double the separate station IDs.
+
+## November 16: Equal bumper rotation regardless of intake shelf
+
+The terms **Field Carts**, **Preview Carts**, and **Inbox** describe where
+a recorded bumper entered the system. They do not establish airtime,
+weight, priority, or a different station voice. The listener and main
+manager catalog now show the same umbrella label, **STATION BUMPERS**.
+Original storage/album metadata is preserved for editing and provenance.
+
+The Bumper Brain now draws from one deterministic shuffled bag of
+published, enabled, routine-ready bumper recordings, taking every eligible
+recording once before repeating. It no longer favors short recordings,
+station_id role, character type, or any ingestion category. The same-time
+clock still has a reproducible plan; requested cadence remains the
+owner's Supabase setting (currently four songs, varied slightly).
+
+Eligibility still precedes weighting: owner-disabled recordings, unpublished
+drafts, long show features/openers, explicit profile holds, and risky clock/
+request announcements stay out of *automatic incidental breaks*. An eligible
+recording is weighted exactly the same as any other eligible recording.
+Items on hold can be deliberately scheduled after a specific owner review.
+This does not change the underlying MP3s, permissions or live DB flags.
