@@ -93,7 +93,11 @@ function Run-Tests {
     $python = Test-Dependencies
     if ($null -eq $python) { return }
     Push-Location $RepoRoot
-    try { Invoke-Python -Python $python -PythonArgs @($TestScript) }
+    try {
+        Invoke-Python -Python $python -PythonArgs @($TestScript)
+        $V2Tests = Join-Path $RepoRoot 'tests\station-one-v2.test.py'
+        Invoke-Python -Python $python -PythonArgs @($V2Tests)
+    }
     finally { Pop-Location }
 }
 
@@ -103,7 +107,10 @@ function Start-Broadcast {
     if ($null -eq $python) { return }
     Write-Host 'Requires YOUR existing Icecast-compatible source account and radio-use permission.'
     Write-Host 'No public stream host is automatically created or paid for.'
-    Write-Host 'This initial prototype does not yet reproduce all web-radio phi/chart/Blue Lemon policies.'
+    Write-Host 'Python v2 includes release/seasonal weights, phi breaks and optional Top 42.'
+    Write-Host 'Blue Lemon priority queue and exact browser clock matching are NOT connected.'
+    Write-Host 'An Icecast SOURCE host supporting TLS ingest is required; default port 8000 may not support it.'
+    Write-Host 'Warning: FFmpeg exposes the source URL to other local administrators in its process arguments.'
     $answer = Read-Host 'Do you have an authorized live source endpoint and want to transmit now? Type ON AIR'
     if ($answer -cne 'ON AIR') { Write-Host 'Broadcast cancelled.'; return }
     $hostname = (Read-Host 'Icecast source hostname only (e.g. example.org)').Trim()
@@ -134,7 +141,7 @@ function Start-Broadcast {
         $plain = $null
     }
     try {
-        Write-Host 'Connecting source. Press Ctrl+C to stop. NEVER paste unredacted source error logs online.' -ForegroundColor Yellow
+        Write-Host 'Connecting over TLS only. Press Ctrl+C to stop. Do not share machine process listings.' -ForegroundColor Yellow
         Invoke-Python -Python $python -PythonArgs @($Engine, '--cache', $CacheDir)
     }
     finally { Remove-Item Env:\HUMKIN_ICECAST_URL -ErrorAction SilentlyContinue }

@@ -20,8 +20,14 @@ import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from zoneinfo import ZoneInfo
+# Also works when imported by tests from an unrelated working directory.
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from scheduler_v2 import StationV2
+from catalog_sources import optional_catalog
+import re
 
 API="https://kbhqacsdvjsstzyplqij.supabase.co"
 KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"
@@ -41,7 +47,7 @@ def get_json(url,api=False):
 def live_catalog():
     base=get_json(RADIO+"rotation.json")
     static_overrides=get_json(API+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled&limit=1000",True)
-    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&limit=1000",True)
+    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",True)
     shows=get_json(API+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,track_ids,is_active,priority&is_active=eq.true&limit=100",True)
     settings=get_json(API+"/rest/v1/humkin_radio_settings?select=bumper_every,station_label&id=eq.main&limit=1",True)
     overrides={o["track_id"]:o for o in static_overrides}
@@ -51,18 +57,37 @@ def live_catalog():
         if o.get("enabled") is False:continue
         tracks.append(dict(id=t["id"],title=o.get("title") or t["title"],
                            artist=o.get("artist") or t.get("artist","HUMKIN"),
-                           kind=o.get("kind","song"),
+                           kind=o.get("kind",t.get("kind","song")),
+                           album=o.get("album") or t.get("album",""),source="static",
                            duration=float(t["duration"]),
                            url=urllib.parse.urljoin(RADIO,t["src"])))
     for t in cloud:
         path=t.get("storage_path","")
-        if not (isinstance(path,str) and len(path.split("/"))==2 and path.endswith(".mp3")):continue
+        if not isinstance(path,str) or not re.fullmatch(r"[0-9a-f-]{36}/[0-9a-f]{64}\.mp3",path):continue
         if not t.get("enabled",True):continue
+        duration=float(t.get("duration_seconds") or 0)
+        if not 0<duration<14400:continue
+        kind="bumper" if t.get("kind")=="bumper" else "song"
         tracks.append(dict(id="crate-"+t["id"],title=t.get("title","Untitled"),
-                           artist=t.get("artist","HUMKIN"),kind=t.get("kind","song"),
-                           duration=float(t["duration_seconds"]),
+                           artist=t.get("artist","HUMKIN"),kind=kind,
+                           album=t.get("album") or "HUMKIN RADIO",
+                           source="cloud",is_single=t.get("is_single") is True,
+                           duration=duration,
                            url=API+"/storage/v1/object/public/humkin-radio-live/"+path))
-    return {"tracks":tracks,"shows":shows,"settings":settings[0] if settings else {"bumper_every":0}}
+    extras,chart_ids=optional_catalog(get_json,RADIO,API)
+    known={t["id"] for t in tracks}
+    for item in extras:
+        if item["id"] in known:continue
+        if item.get("source")=="static":
+            o=overrides.get(item["id"],{})
+            if o.get("enabled") is False:continue
+            item.update(title=o.get("title") or item["title"],
+                        artist=o.get("artist") or item["artist"],
+                        album=o.get("album") or item["album"],
+                        kind=o.get("kind",item["kind"]))
+        tracks.append(item);known.add(item["id"])
+    return {"tracks":tracks,"shows":shows,"settings":settings[0] if settings else {"bumper_every":0},
+            "rotation":base,"chart_ids":chart_ids,"policy_version":2}
 
 class Station:
     def __init__(self,catalog,seed=2026):
@@ -116,7 +141,7 @@ class Station:
 def cache_track(item,cache):
     cache.mkdir(parents=True,exist_ok=True)
     url=str(item["url"])
-    if not url.startswith(("https://humkin.abundent.org/","https://kbhqacsdvjsstzyplqij.supabase.co/storage/v1/object/public/humkin-radio-live/")):
+    if not url.startswith(("https://humkin.abundent.org/","https://kbhqacsdvjsstzyplqij.supabase.co/storage/v1/object/public/humkin-radio-live/","https://media.abundent.org/")):
         raise ValueError("Track URL is outside approved audio origins")
     name=hashlib.sha256(url.encode()).hexdigest()+".mp3"
     final=cache/name
@@ -205,8 +230,13 @@ def output_process(destination,bitrate,realtime=True):
       *inputs,
       "-af","dynaudnorm=f=250:g=15:p=0.9",
       "-codec:a","libmp3lame","-b:a",str(bitrate)+"k",
-      "-content_type","audio/mpeg","-f","mp3",destination
-    ],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL)
+      "-content_type","audio/mpeg",
+      # Use FFmpeg's encrypted Icecast source connection; fail closed if TLS
+      # is not supported by the host. Source URL is visible to local admins
+      # through FFmpeg argv, so restrict workstation access.
+      *(["-tls","1","-ice_name","HUMKIN RADIO"] if destination.startswith("icecast://") else []),
+      "-f","mp3",destination
+    ],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
 def streaming(catalog,args):
     if not shutil.which("ffmpeg"):raise RuntimeError("FFmpeg must be installed")
@@ -216,7 +246,7 @@ def streaming(catalog,args):
     output=str(args.file_output) if args.file_output else url
     if not args.file_output and not output.startswith("icecast://"):
         raise RuntimeError("HUMKIN_ICECAST_URL must start with icecast://")
-    station=Station(catalog)
+    station=StationV2(catalog,seed=args.seed if args.seed is not None else int(time.time())) if catalog.get("policy_version")==2 else Station(catalog)
     cache=Path(args.cache).expanduser().resolve()
     encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output))
     written=0
@@ -231,16 +261,20 @@ def streaming(catalog,args):
             if encoder.poll() is not None:raise RuntimeError("Encoder/Icecast source disconnected; see FFmpeg errors")
             encoder.stdin.write(chunk);written+=len(chunk)
         if maximum is not None and written>=maximum:raise StopIteration()
+    # Download the NEXT public audio copy while the current recording plays.
+    # This avoids blocking the encoder after a crossfade on ordinary cache misses.
+    fetch_pool=ThreadPoolExecutor(max_workers=1)
     try:
         current=station.next()
         ahead=station.next()
         decode_current=decode(cache_track(current,cache))
+        ahead_future=fetch_pool.submit(cache_track,ahead,cache)
         while True:
             print("ON AIR:",current["artist"],"—",current["title"],flush=True)
             tail_size=overlap_bytes(current,ahead,args.crossfade)
             try:
                 tail=pump_with_tail(decode_current,write,tail_size)
-                head_process=decode(cache_track(ahead,cache))
+                head_process=decode(ahead_future.result(timeout=45))
                 head=read_exact(head_process.stdout,tail_size)
                 n=min(len(head),len(tail))//FRAME_BYTES*FRAME_BYTES
                 if n:
@@ -250,6 +284,7 @@ def streaming(catalog,args):
                 # If decoder reads less than requested, no source data is dropped.
                 current=ahead
                 ahead=station.next()
+                ahead_future=fetch_pool.submit(cache_track,ahead,cache)
                 decode_current=head_process
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
                 print("Audio source problem; moving on:",exc,file=sys.stderr)
@@ -263,6 +298,7 @@ def streaming(catalog,args):
     except StopIteration:
         print("Local timed broadcast sample complete.",flush=True)
     finally:
+        fetch_pool.shutdown(wait=False,cancel_futures=True)
         # An interrupted preview must not leave decoder processes holding pipes.
         for proc in [locals().get("decode_current"),locals().get("head_process")]:
             if proc is not None and proc.poll() is None:
@@ -278,6 +314,8 @@ def streaming(catalog,args):
 def main():
     p=argparse.ArgumentParser(description="HUMKIN always-on audio source; physical server setup required")
     p.add_argument("--dry-run",action="store_true",help="show the next 20 selections; no downloads or publishing")
+    p.add_argument("--seed",type=int,help="deterministic program selection for offline tests")
+    p.add_argument("--retry-count",type=int,default=5,help="bounded retries after Icecast disconnect")
     p.add_argument("--fixture",type=Path,help="test with a local exported catalog JSON")
     p.add_argument("--at",help="dry-run timestamp (e.g. 2026-11-13T13:30:00+00:00)")
     p.add_argument("--cache",default="./radio-cache",help="local MP3 cache folder")
@@ -288,16 +326,26 @@ def main():
     p.add_argument("--crossfade",type=float,default=1.5,help="equal-power crossfade seconds, 0–5")
     args=p.parse_args()
     if not 0<=args.crossfade<=5:p.error("--crossfade must be between 0 and 5")
+    if not 0<=args.retry_count<=100:p.error("--retry-count must be between 0 and 100")
     if args.fixture:catalog=json.loads(args.fixture.read_text(encoding="utf-8"))
     else:catalog=live_catalog()
     if args.dry_run:
-        station=Station(catalog)
+        station=StationV2(catalog,seed=args.seed if args.seed is not None else 2026) if catalog.get("policy_version")==2 else Station(catalog)
         at=datetime.fromisoformat(args.at.replace("Z","+00:00")) if args.at else datetime.now(timezone.utc)
         print("SIMULATED show:",(station.program(at) or {}).get("name","all-music"),"at",at.astimezone(ZONE))
         for n in range(20):
             track=station.next(at)
             print(f"{n+1:02d} {track['kind']:7} {track.get('artist','HUMKIN')} — {track['title']}")
         return
-    streaming(catalog,args)
+    for attempt in range(args.retry_count+1):
+        try:
+            streaming(catalog,args)
+            return
+        except (OSError,RuntimeError,subprocess.SubprocessError):
+            if args.file_output or attempt>=args.retry_count:raise
+            delay=min(60,2**attempt)
+            print("Broadcast disconnected; reconnecting after "+str(delay)+"s.",file=sys.stderr)
+            time.sleep(delay)
+            if not args.fixture:catalog=live_catalog()
 if __name__=="__main__":
     main()

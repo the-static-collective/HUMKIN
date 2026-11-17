@@ -1,0 +1,38 @@
+name: HUMKIN Station One v2 broadcast policy
+on:
+  pull_request:
+    paths:
+      - 'tools/radio-broadcast/**'
+      - 'tests/station-one-v2.test.py'
+      - 'tests/radio-broadcast.test.py'
+      - '.github/workflows/station-one-v2.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/radio-broadcast/**'
+      - 'tests/station-one-v2.test.py'
+      - '.github/workflows/station-one-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  policy-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Windows time zone compatibility
+        run: python -m pip install tzdata
+      - name: Compile Station One sources
+        run: python -m compileall -q tools/radio-broadcast
+      - name: Current v2 policy, rights gates and station programs
+        run: python tests/station-one-v2.test.py
+      - name: Original continuous-source acceptance
+        run: python tests/radio-broadcast.test.py
