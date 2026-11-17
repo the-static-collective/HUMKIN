@@ -1,0 +1,45 @@
+name: Import approved HUMKIN face artwork into app assets
+on:
+  push:
+    branches: ['fix/android-030-api30-wallet-and-living-face']
+    paths:
+      - '.github/workflows/import-receiver-art.yml'
+  workflow_dispatch:
+jobs:
+  bundle-art:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download approved concept art from Canva design
+        run: |
+          curl --fail --location --retry 3 --connect-timeout 10 --max-time 120 \
+            'https://media.canva.com/v2/document-image/hash:983785515/height:1536/id:DAHbL6zpxIc/type:B/width:864?brand=BAHRX61Rv5g&csig=AAAAAAAAAAAAAAAAAAAAABIOsuuNloItWuqiLAkzGJqo4kA724_5oLi_DYlIPJXZ&exp=1794940545&fallback=https%3A%2F%2Fs3.amazonaws.com%2Fdocument-export.canva.com%2FzpxIc%2FDAHbL6zpxIc%2F1%2Fthumbnail%2F0001.png%3FX-Amz-Algorithm%3DAWS4-HMAC-SHA256%26X-Amz-Credential%3DAKIAQYCGKMUHW27RK5IK%252F20261117%252Fus-east-1%252Fs3%252Faws4_request%26X-Amz-Date%3D20261117T012310Z%26X-Amz-Expires%3D61507%26X-Amz-Signature%3Dc7708db437b543ba284beb87b329587faddd1d736a4e64818a63041a256b3a68%26X-Amz-SignedHeaders%3Dhost%26response-expires%3DTue%252C%252017%2520Nov%25202026%252018%253A28%253A17%2520GMT&osig=AAAAAAAAAAAAAAAAAAAAAJMfAArlaQrDS9y_n9RvUDP945sETCI1JcX_ia5fLUf7&page=1&signed=brand%2Cfallback%2Cpage%2Cversion&signer=document-rpc&version=1' -o /tmp/living_receiver_source
+          file /tmp/living_receiver_source
+          python -m pip -q install pillow
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          src=Image.open('/tmp/living_receiver_source')
+          if src.width<300 or src.height<500:
+              raise RuntimeError(f'Canva returned unsuitable resolution: {src.size}')
+          if abs(src.width / src.height - 864/1536)>.02:
+              raise RuntimeError(f'Canva image has incorrect aspect ratio: {src.size}')
+          out=Path('apps/android/app/src/main/res/drawable-nodpi/living_receiver_face.png')
+          out.parent.mkdir(parents=True,exist_ok=True)
+          src.convert('RGB').resize((864,1536),Image.Resampling.LANCZOS).save(out,optimize=True)
+          print(f'BUNDLED {src.size} -> {out.name}: {out.stat().st_size} bytes')
+          PY
+      - name: Commit radio face as permanent versioned app asset
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/android/app/src/main/res/drawable-nodpi/living_receiver_face.png
+          if git diff --cached --quiet; then echo 'Artwork already bundled'; else
+            git commit -m 'ASSET: bundle approved HUMKIN radio receiver artwork for Android'
+            git push origin HEAD:fix/android-030-api30-wallet-and-living-face
+          fi
