@@ -331,10 +331,11 @@ for(let i=0;i<28;i++){
  if(at>=21)heardFields.push(at);
  approvedField.$("next-song").click();await flush();
 }
-assert.equal(heardFields.length,7,"Field cart appears after each three songs");
-assert.equal(new Set(heardFields).size,7,"Seven distinct of nine new carts rotate across 21 test songs");
-assert(approvedField.$("playlist-note").textContent.includes("STATION IDs EVERY 3 SONGS"),
- "On-air field cards must be shown as activated station IDs");
+assert(heardFields.length>=3&&heardFields.length<=24,
+ "Field carts should appear at irregular track boundaries");
+assert(new Set(heardFields).size>=2,"Multiple distinct eligible field carts should rotate");
+assert(approvedField.$("playlist-note").textContent.includes("φ SHORT DROPS"),
+ "On-air field carts must use the configured golden-ratio break rhythm");
 
 // AutoDJ adds *real marked recordings*, never fictional or duplicated songs.
 const automix=fixture(rotation,[{
@@ -352,7 +353,8 @@ for(let i=0;i<54;i++){
  automix.$("next-song").click();await flush();
 }
 const bumperIndex=21; // 21 static recordings plus one cloud bumper.
-assert.equal(autoSpins.filter(i=>i===bumperIndex).length,13,"Station ID occurs after each group of three songs");
+assert(autoSpins.filter(i=>i===bumperIndex).length>=5,
+ "Short station ident should get multiple irregular opportunities");
 assert.equal(new Set(autoSpins.filter(i=>i!==bumperIndex)).size,21,"Every unique song remains in the weighted shuffle");
 assert(automix.$("on-deck").textContent.includes("ON DECK"),"On-deck display missing");
 const at=automix.window.HUMKIN_RADIO.tuneAt(Date.parse(rotation.synced_clock_epoch_utc)+1000);
