@@ -77,6 +77,42 @@
    if(!response.ok)throw Error("Listener Weather offline");
    return response.json();
  }
+ let lastBoard=null;
+ function drawWeather(){
+   const list=$("weather-list");
+   if(!lastBoard||!list)return;
+   const names=new Map(catalog.map(t=>[t.id,String(t.title||t.id)]));
+   const choice=$("weather-filter")?.value||"all";
+   const focus=Object.prototype.hasOwnProperty.call(PHRASES,choice)?choice:"all";
+   const rows=lastBoard.tracks.filter(t=>names.has(t.id)&&t.total>0&&
+       (focus==="all"||Number(t.feelings?.[focus]||0)>0))
+     .sort((a,b)=>focus==="all"
+       ?b.total-a.total||a.id.localeCompare(b.id)
+       :Number(b.feelings?.[focus]||0)-Number(a.feelings?.[focus]||0)
+         ||b.total-a.total||a.id.localeCompare(b.id)).slice(0,12);
+   list.replaceChildren();
+   if(!rows.length){
+     list.append(text("li",focus==="all"
+       ?"Nobody has sent a song's feeling yet. The room is listening."
+       :"Nobody has shared that feeling for a song yet.","waiting"));
+     return;
+   }
+   for(const song of rows){
+     const row=text("li","","weather-song");
+     const name=text("div","","weather-name");
+     name.append(text("strong",names.get(song.id)),text("small",song.total+
+           (song.total===1?" RESPONSE":" RESPONSES")));
+     const reactions=text("div","","weather-feelings");
+     const top=Object.entries(song.feelings||{})
+       .sort((a,b)=>(a[0]===focus?-1000000:0)-(b[0]===focus?-1000000:0)
+        ||Number(b[1])-Number(a[1])).slice(0,3);
+     for(const [code,count] of top){
+       if(!Object.prototype.hasOwnProperty.call(PHRASES,code)||!(Number(count)>0))continue;
+       reactions.append(text("span",PHRASES[code]+" · "+count,"weather-tag"));
+     }
+     row.append(name,reactions);list.append(row);
+   }
+ }
  async function load(){
   const status=$("weather-status"),list=$("weather-list");
   if(!status||!list)return;
@@ -87,23 +123,8 @@
     catalog=league.catalog.filter(t=>t&&typeof t.id==="string"&&
        /^[a-z0-9-]{3,90}$/i.test(t.id)).slice(0,1000);
     findSongs();
-    const names=new Map(catalog.map(t=>[t.id,String(t.title||t.id)]));
-    list.replaceChildren();
-    const rows=board.tracks.filter(t=>names.has(t.id)&&t.total>0).slice(0,12);
-    if(rows.length===0){
-       list.append(text("li","Nobody has sent a song's feeling yet. The room is listening.","waiting"));
-    }else for(const song of rows){
-      const row=text("li","","weather-song");
-      const name=text("div","","weather-name");
-      name.append(text("strong",names.get(song.id)),text("small",song.total+
-           (song.total===1?" RESPONSE":" RESPONSES")));
-      const reactions=text("div","","weather-feelings");
-      for(const [code,count] of Object.entries(song.feelings||{}).sort((a,b)=>b[1]-a[1]).slice(0,3)){
-       if(!Object.prototype.hasOwnProperty.call(PHRASES,code)||!(Number(count)>0))continue;
-       reactions.append(text("span",PHRASES[code]+" · "+count,"weather-tag"));
-      }
-      row.append(name,reactions);list.append(row);
-    }
+    lastBoard=board;
+    drawWeather();
     status.textContent=(board.week_start||"THIS WEEK")+
        " / ANONYMOUS SONG RESPONSES / SELF-REPORTED, PROVISIONAL"+
        (board.truncated?" / DISPLAY MAY BE INCOMPLETE":"");
@@ -113,6 +134,7 @@
   }
  }
  $("weather-refresh")?.addEventListener("click",load);
+ $("weather-filter")?.addEventListener("change",drawWeather);
  $("weather-open")?.addEventListener("click",()=>{
    const booth=$("weather-booth"),trigger=$("weather-open");
    const opening=booth.hidden;
