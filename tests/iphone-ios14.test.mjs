@@ -42,7 +42,7 @@ test("the entire album shelf uses one radio-owned player",()=>{
 
 test("iOS14 compatibility and network-safe offline shell",()=>{
   assert.match(compat,/HUMKIN_WARM_SIGNAL=/);
-  assert.doesNotMatch(compat,/new\\s+(?:window\\.)?(?:AudioContext|webkitAudioContext)\\s*\\(/);
+  assert.doesNotMatch(compat,/new\s+(?:window\.)?(?:AudioContext|webkitAudioContext)\s*\(/);
   assert.doesNotMatch(css,/aspect-ratio\s*:/);
   assert.doesNotMatch(css,/\bgap\s*:/);
   assert.match(css,/safe-area-inset-bottom/);
