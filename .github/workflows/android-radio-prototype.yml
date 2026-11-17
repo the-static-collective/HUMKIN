@@ -31,7 +31,7 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Build debug receiver
-        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest
+        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest
       - uses: actions/upload-artifact@v4
         with:
           name: humkin-radio-android-debug
@@ -46,4 +46,10 @@ jobs:
         with:
           name: humkin-radio-android-night-watch
           path: apps/android/app/build/outputs/apk/nightWatch/app-nightWatch.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-rebel-027
+          path: apps/android/app/build/outputs/apk/radioRebel/app-radioRebel.apk
           if-no-files-found: error
