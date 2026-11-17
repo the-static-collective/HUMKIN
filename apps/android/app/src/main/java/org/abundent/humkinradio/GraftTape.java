@@ -67,7 +67,7 @@ final class GraftTape {
         for(PirateSelector.Song song:unique) {
             if(song.id.equals(first.id))continue;
             int score=(song.released!=first.released?3:0)+
-                    (!song.album.equals(first.album)?2:0)+
+                    (!java.util.Objects.equals(song.album,first.album)?2:0)+
                     (song.newEra!=first.newEra?1:0);
             if(score>best){best=score;alternates.clear();}
             if(score==best)alternates.add(song);
