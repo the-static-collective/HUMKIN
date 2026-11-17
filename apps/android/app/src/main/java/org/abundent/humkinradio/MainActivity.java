@@ -230,6 +230,24 @@ public final class MainActivity extends Activity {
                 }
             });
             outer.addView(livingFace,0,new LinearLayout.LayoutParams(-1,-2));
+
+            // The ScrollView knows the REAL usable phone window height.
+            // Set it directly instead of asking a deeply nested radio view
+            // to discover its ancestor during an unreliable attach callback.
+            // Height, overlays, hardware hitboxes and blue fill all use the
+            // same measured native View size.
+            scroll.addOnLayoutChangeListener((view,left,top,right,bottom,
+                    oldLeft,oldTop,oldRight,oldBottom)->{
+                if(livingFace==null)return;
+                int visible=bottom-top-scroll.getPaddingTop()-scroll.getPaddingBottom();
+                if(visible>0)livingFace.setViewportHeight(visible);
+            });
+            scroll.post(()->{
+                if(livingFace!=null){
+                    int visible=scroll.getHeight()-scroll.getPaddingTop()-scroll.getPaddingBottom();
+                    if(visible>0)livingFace.setViewportHeight(visible);
+                }
+            });
         }
         // No concept-art skyline: only published music/album artwork is canon.
         showAlbums(onAlbums);
