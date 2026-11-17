@@ -30,6 +30,9 @@ import androidx.media3.session.MediaSessionService;
 public final class RadioPlaybackService extends MediaSessionService {
     private static RadioCatalog.Station sameTimeStation;
     private static RadioCatalog.Station roadShuffleStation;
+    private static RadioCatalog.Station pirateStation;
+    private static PirateFrequency.Dial pirateDial;
+    private static PirateWeather.Board pirateWeather;
     private static volatile boolean staticEnabled = true;
     private static RadioPlaybackService activeService;
     private static long upcomingCycle;
@@ -79,7 +82,7 @@ public final class RadioPlaybackService extends MediaSessionService {
             }
             boolean playing=player!=null && player.isPlaying() &&
                     player.getPlaybackState()==Player.STATE_READY &&
-                    (sameTimeStation!=null || roadShuffleStation!=null) &&
+                    (sameTimeStation!=null || roadShuffleStation!=null || pirateStation!=null) &&
                     !id.isEmpty()&&!id.startsWith("album:");
             long delta=leagueLastTick>0L?Math.min(2500L,Math.max(0L,now-leagueLastTick)):0L;
             leagueLastTick=now;
@@ -118,20 +121,31 @@ public final class RadioPlaybackService extends MediaSessionService {
     };
 
     static void armSameTime(RadioCatalog.Station station,long firstUnqueuedCycle) {
+        pirateStation=null;pirateDial=null;pirateWeather=null;
         roadShuffleStation=null;
         sameTimeStation=station;
         upcomingCycle=firstUnqueuedCycle;
         if (activeService != null) activeService.syncWarmStatic();
     }
     static void armRoadShuffle(RadioCatalog.Station station) {
+        pirateStation=null;pirateDial=null;pirateWeather=null;
         sameTimeStation=null;
         roadShuffleStation=station;
         if (activeService != null) activeService.syncWarmStatic();
     }
+    static void armPirateStation(RadioCatalog.Station station,
+            PirateFrequency.Dial dial,PirateWeather.Board weather) {
+        // Only one program can own the native media service at once.
+        sameTimeStation=null;roadShuffleStation=null;
+        pirateStation=station;pirateDial=dial;pirateWeather=weather;
+        if(activeService!=null)activeService.syncWarmStatic();
+    }
+    static boolean isPirateArmed(){return pirateStation!=null;}
     static void clearSameTime() {
         // Album playback is neither a broadcast nor a roaming shuffle.
         sameTimeStation=null;
         roadShuffleStation=null;
+        pirateStation=null;pirateDial=null;pirateWeather=null;
         if (activeService != null) activeService.syncWarmStatic();
     }
     static void setWarmStaticEnabled(boolean enabled) {
@@ -247,6 +261,7 @@ public final class RadioPlaybackService extends MediaSessionService {
             int current = player.getCurrentMediaItemIndex();
             if (item == null || current < 0) return;
             String mode = sameTimeStation != null ? "radio"
+                    : pirateStation != null ? "pirate"
                     : item.mediaId.startsWith("album:") ? "album" : "shuffle";
             List<String> remaining = new ArrayList<>();
             int limit = Math.min(player.getMediaItemCount(),
@@ -283,6 +298,12 @@ public final class RadioPlaybackService extends MediaSessionService {
         if (sameTimeStation!=null && remaining<=4) {
             // Browser-style shared clock: remain on the published schedule.
             player.addMediaItems(sameTimeStation.itemsForCycle(upcomingCycle++));
+        } else if (pirateStation!=null && pirateDial!=null && remaining<=4) {
+            // Keep the personally tuned station rolling while screen is locked.
+            // No network work is done in the media session or transition path.
+            List<MediaItem> next=PirateFrequency.mix(getApplicationContext(),
+                    pirateStation,pirateDial,pirateWeather,false,System.nanoTime());
+            if(!next.isEmpty())player.addMediaItems(next);
         } else if (roadShuffleStation!=null && remaining<=4) {
             // Overnight Road Shuffle must not wrap back to the *same* queue.
             // Rebuild ahead of time with local recent-play history.
@@ -373,6 +394,7 @@ public final class RadioPlaybackService extends MediaSessionService {
         checkpointScheduled = false;
         sameTimeStation=null;
         roadShuffleStation=null;
+        pirateStation=null;pirateDial=null;pirateWeather=null;
         stopWeather();
         if (warmStatic != null) {
             warmStatic.close();

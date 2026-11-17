@@ -36,16 +36,17 @@ final class RadioCatalog {
     private static final class Track {
         final String id,title,artist,album,url;
         final long durationMs;
-        final boolean bumper;
+        final boolean bumper,released;
         Track(String id,String title,String artist,String album,String url,
-              long durationMs,boolean bumper) {
+              long durationMs,boolean bumper,boolean released) {
             this.id=id;this.title=title;this.artist=artist;this.album=album;
             this.url=url;this.durationMs=durationMs;this.bumper=bumper;
+            this.released=released;
         }
         Track override(JSONObject row) {
             return new Track(id,row.optString("title",title),row.optString("artist",artist),
                     row.optString("album",album),url,durationMs,
-                    "bumper".equals(row.optString("kind",bumper?"bumper":"song")));
+                    "bumper".equals(row.optString("kind",bumper?"bumper":"song")),released);
         }
         MediaItem mediaItem() {
             MediaMetadata.Builder builder=new MediaMetadata.Builder()
@@ -131,6 +132,28 @@ final class RadioCatalog {
             return result;
         }
 
+        /** Insert only owner-approved radio carts, at the station's published
+         * bumper cadence. This is an actual radio feel, not browser static.
+         * A zero cadence stays off exactly as the station operator intended.
+         */
+        List<MediaItem> pirateQueueFromIds(List<String> ids,long entropy) {
+            List<MediaItem> songs=queueFromIds(ids);
+            if(cadence<1)return songs;
+            List<MediaItem> carts=new ArrayList<>();
+            for(Track track:tracks)if(track.bumper)carts.add(track.mediaItem());
+            if(carts.isEmpty())return songs;
+            java.util.Random random=new java.util.Random(entropy);
+            List<MediaItem> playlist=new ArrayList<>(songs.size()+songs.size()/cadence+1);
+            int cartOffset=random.nextInt(carts.size());
+            for(int i=0;i<songs.size();i++){
+                playlist.add(songs.get(i));
+                if((i+1)%cadence==0){
+                    playlist.add(carts.get((cartOffset++)%carts.size()));
+                }
+            }
+            return playlist;
+        }
+
         long resumePositionMs(String trackId, long requestedMs) {
             for (Track track : tracks) {
                 if (track.id.equals(trackId))
@@ -162,6 +185,16 @@ final class RadioCatalog {
         int songsCount() {
             int n=0;for(Track t:tracks)if(!t.bumper)n++;return n;
         }
+        /** Canonical published audio only; no cloud drafts, carts or bumpers. */
+        List<PirateSelector.Song> pirateCatalog() {
+            List<PirateSelector.Song> approved=new ArrayList<>();
+            for(Track track:tracks){
+                if(track.bumper||SongReactionId.canonical(track.id)==null)continue;
+                approved.add(new PirateSelector.Song(track.id,track.title,track.album,
+                        track.released,track.id.startsWith("crate-")));
+            }
+            return approved;
+        }
     }
 
     static Station loadStation() throws Exception {
@@ -169,6 +202,9 @@ final class RadioCatalog {
         if(!"track_list".equals(rotation.optString("source_type")))
             throw new IOException("Unsupported station playlist");
         JSONArray staticRows=rotation.getJSONArray("tracks");
+        JSONObject featured=rotation.optJSONObject("featured_rotation");
+        JSONArray releasedAlbums=featured==null?null:featured.optJSONArray("albums");
+        JSONArray releasedSingles=featured==null?null:featured.optJSONArray("singles");
         List<Track> staticTracks=new ArrayList<>();
         for(int i=0;i<staticRows.length();i++){
             JSONObject row=staticRows.getJSONObject(i);
@@ -176,7 +212,9 @@ final class RadioCatalog {
             if(!safeStaticUrl(url))continue;
             Track t=new Track(row.optString("id","static-"+i),row.optString("title","HUMKIN"),
                     row.optString("artist","HUMKIN"),row.optString("album","HUMKIN RADIO"),
-                    url.toString(),durationMs(row.optDouble("duration",0)),false);
+                    url.toString(),durationMs(row.optDouble("duration",0)),false,
+                    includes(releasedSingles,row.optString("id",""))
+                    || includes(releasedAlbums,row.optString("album","")));
             if(t.durationMs>0)staticTracks.add(t);
         }
         if(staticTracks.isEmpty())throw new IOException("No static station records");
@@ -201,7 +239,7 @@ final class RadioCatalog {
                 long duration=durationMs(t.optDouble("duration_seconds",0));
                 if(duration<1000||duration>120000)continue;
                 staticTracks.add(new Track("air-"+id,t.optString("title","HUMKIN ID"),
-                       "HUMKIN","HUMKIN RADIO · FIELD CARTS",url.toString(),duration,true));
+                       "HUMKIN","HUMKIN RADIO · FIELD CARTS",url.toString(),duration,true,false));
             }
         }catch(Exception e){complete=false;}
 
@@ -224,7 +262,7 @@ final class RadioCatalog {
 
         try{
             JSONArray rows=new JSONArray(fetch(API+"/rest/v1/humkin_radio_tracks"
-                    +"?select=id,title,artist,album,kind,storage_path,duration_seconds"
+                    +"?select=id,title,artist,album,kind,is_single,storage_path,duration_seconds"
                     +"&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",true));
             for(int i=0;i<rows.length();i++){
                 JSONObject t=rows.getJSONObject(i);
@@ -236,7 +274,8 @@ final class RadioCatalog {
                         t.optString("title","HUMKIN"),t.optString("artist","HUMKIN"),
                         t.optString("album","HUMKIN RADIO"),
                         API+"/storage/v1/object/public/humkin-radio-live/"+path,
-                        duration,"bumper".equals(t.optString("kind"))));
+                        duration,"bumper".equals(t.optString("kind")),
+                        t.optBoolean("is_single",false)));
             }
         }catch(Exception e){complete=false;}
 
@@ -296,6 +335,11 @@ final class RadioCatalog {
         return station;
     }
 
+    private static boolean includes(JSONArray rows,String needle){
+        if(rows==null||needle==null||needle.isEmpty())return false;
+        for(int i=0;i<rows.length();i++)if(needle.equals(rows.optString(i)))return true;
+        return false;
+    }
     private static boolean safeStaticUrl(URL url) {
         return url.getProtocol().equals("https")&&
                 url.getHost().equals("humkin.abundent.org")&&

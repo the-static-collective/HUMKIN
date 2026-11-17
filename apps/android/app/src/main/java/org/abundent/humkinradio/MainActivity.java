@@ -318,19 +318,16 @@ public final class MainActivity extends Activity {
         albums.setOnClickListener(v -> showAlbums(true));
         radioScreen.addView(albums, wrap(12));
 
-        // One beautiful listening -> making step. A published record can seed
-        // the little station; the web studio verifies the catalog ID before use.
-        Button makeSignal=pill("✳  MAKE YOUR LITTLE STATION",null,PINK,17);
-        makeSignal.setMinHeight(dp(57));
-        makeSignal.setContentDescription("Build a three-song station from the song currently on the radio");
+        // Make the selected record the first record of a *native* pirate dial.
+        // No WebView, secondary player or automatic radio interruption here.
+        Button makeSignal=pill("✳  BOOTLEG FREQUENCY  ↗",null,PINK,18);
+        makeSignal.setMinHeight(dp(58));
+        makeSignal.setContentDescription("Build your own native station from song feelings and the listener community");
         makeSignal.setOnClickListener(v -> {
             MediaItem selected=controller==null?null:controller.getCurrentMediaItem();
             String seed=selected==null?"":selected.mediaId;
-            // The Studio has its own user-initiated browser audio. Never mix it
-            // with native Media3 playback or silently award native listening HUM.
-            if(controller!=null && controller.isPlaying())controller.pause();
-            Intent intent=new Intent(this,SignalStudioActivity.class);
-            intent.putExtra(SignalStudioActivity.EXTRA_SEED_TRACK,seed);
+            Intent intent=new Intent(this,PirateRadioActivity.class);
+            intent.putExtra(PirateRadioActivity.EXTRA_ANCHOR,seed);
             startActivity(intent);
         });
         radioScreen.addView(makeSignal,wrap(11));
@@ -482,6 +479,15 @@ public final class MainActivity extends Activity {
             titles.add("Reshuffle");
             actions.add(() -> fetchRadio(true, false));
         }
+        titles.add("The old three-song studio · sketchbook");
+        actions.add(() -> {
+            MediaItem selected=controller==null?null:controller.getCurrentMediaItem();
+            String seed=selected==null?"":selected.mediaId;
+            if(controller!=null&&controller.isPlaying())controller.pause();
+            Intent sketch=new Intent(this,SignalStudioActivity.class);
+            sketch.putExtra(SignalStudioActivity.EXTRA_SEED_TRACK,seed);
+            startActivity(sketch);
+        });
         titles.add("Listener Weather · how the songs landed");
         actions.add(() -> visit("https://humkin.abundent.org/fm/top42/#listener-weather"));
         titles.add(SongReactions.sharing(this)==1
@@ -775,6 +781,10 @@ public final class MainActivity extends Activity {
             try{
                 controller=controllerFuture.get();
                 controller.addListener(listener);
+                if(RadioPlaybackService.isPirateArmed() && controller.getMediaItemCount()>0){
+                    source="pirate";
+                    modeStyled=false;
+                }
                 if("none".equals(source) && controller.getMediaItemCount()>0){
                     MediaItem item=controller.getCurrentMediaItem();
                     String id=item==null?"":item.mediaId;
@@ -810,6 +820,11 @@ public final class MainActivity extends Activity {
         if(controller==null){
             tuneWhenReady = true;
             showMessage(status, "Connecting the receiver…");
+            return;
+        }
+        if("pirate".equals(source)&&RadioPlaybackService.isPirateArmed()
+                &&controller.getMediaItemCount()>0){
+            if(controller.isPlaying())controller.pause();else controller.play();
             return;
         }
         String expected=radioMode?"radio":"shuffle";
@@ -975,16 +990,22 @@ public final class MainActivity extends Activity {
             String name="✳ OUTPOST / LEVEL "+level;
             if(!name.contentEquals(outpostButton.getText()))outpostButton.setText(name);
         }
-        if (!modeStyled || sameTime.isSelected() != radioMode) {
-            HumkinVisuals.setPillFill(sameTime, radioMode ? YELLOW : MINT, false);
-            HumkinVisuals.setPillFill(road, radioMode ? MINT : YELLOW, false);
-            sameTime.setSelected(radioMode);
-            road.setSelected(!radioMode);
-            modeStyled = true;
+        boolean pirateLive="pirate".equals(source)&&RadioPlaybackService.isPirateArmed();
+        boolean sameSelected=!pirateLive&&radioMode;
+        boolean shuffleSelected=!pirateLive&&!radioMode;
+        if(!modeStyled || sameTime.isSelected()!=sameSelected
+                || road.isSelected()!=shuffleSelected) {
+            // Bootleg Frequency is its own dial. Never label it "Same-Time".
+            HumkinVisuals.setPillFill(sameTime,sameSelected?YELLOW:MINT,false);
+            HumkinVisuals.setPillFill(road,shuffleSelected?YELLOW:MINT,false);
+            sameTime.setSelected(sameSelected);
+            road.setSelected(shuffleSelected);
+            modeStyled=true;
         }
         boolean ready = controller != null && controller.getMediaItemCount() > 0;
         boolean stationPlaying = ready && controller.isPlaying()
-                && (radioMode ? "radio" : "shuffle").equals(source);
+                && ("pirate".equals(source)
+                    ||(radioMode ? "radio" : "shuffle").equals(source));
         if (stationPlaying != "PAUSE".contentEquals(tune.getText())) {
             tune.setText(stationPlaying ? "PAUSE" : "TUNE IN");
             HumkinVisuals.setIcon(tune, stationPlaying ? Icon.PAUSE : Icon.PLAY, 31);
@@ -1037,6 +1058,7 @@ public final class MainActivity extends Activity {
         // records get the honest HUMKIN receiver icon, never mock album art.
         int artwork = AlbumArtwork.forItem(item);
         playingHeading.setText(item == null ? "THE HUMKIN DIAL"
+                : "pirate".equals(source) ? "BOOTLEG FREQUENCY · YOUR MIX"
                 : playing ? "NOW PLAYING" : loadingTrack ? "TUNING IN" : "ON THE DIAL");
         nowPlaying.setText(item == null ? "Ready to tune in" : name);
         playingArtist.setVisibility(item == null ? View.GONE : View.VISIBLE);
