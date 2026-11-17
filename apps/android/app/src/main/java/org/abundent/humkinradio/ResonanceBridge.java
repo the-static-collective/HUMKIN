@@ -32,7 +32,7 @@ final class ResonanceBridge {
             int status=connection.getResponseCode();
             if(status<200||status>=300)return false;
             try(InputStream stream=connection.getInputStream()){
-                String reply=new String(stream.readNBytes(4096),StandardCharsets.UTF_8);
+                String reply=new String(ApiCompatStreams.readAtMost(stream,4096),StandardCharsets.UTF_8);
                 return new JSONObject(reply).optBoolean("accepted");
             }
         }finally {connection.disconnect();}
