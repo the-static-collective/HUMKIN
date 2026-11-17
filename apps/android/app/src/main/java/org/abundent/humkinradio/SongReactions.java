@@ -45,6 +45,7 @@ final class SongReactions {
         }catch(Exception ignored){}
         return map;
     }
+    static Map<String,String> snapshot(Context c){return read(c);}
     static String get(Context c,String mediaId){
         String id=SongReactionId.canonical(mediaId);
         if(id==null)return null;
