@@ -608,7 +608,7 @@ async function refreshR2VaultStatus(){
   const st=r2Status;
   const configured=st.configured===true;
   const count=st.migrated_tracks+" / "+st.published_tracks+" Supabase-catalog recordings served from R2";
-  $("r2-status").textContent=(configured?"R2 ACCESS READY · ":"R2 ACCESS KEYS NOT INSTALLED · ")+count+
+  $("r2-status").textContent=(configured?"R2 CREDENTIALS PRESENT · ":"R2 ACCESS KEYS NOT INSTALLED · ")+count+
    " · "+(st.pending_bytes/1048576).toFixed(1)+" MiB pending transfer"+
    " · "+(st.reclaimable_bytes/1048576).toFixed(1)+" MiB verified copies reclaimable.";
   $("r2-migrate").disabled=!configured||st.pending_tracks<1;
