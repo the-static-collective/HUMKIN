@@ -61,7 +61,7 @@ Deno.serve(async(request:Request)=>{
 
  if(action==="status"){
   const {data,error}=await db.from("humkin_radio_tracks")
-   .select("storage_provider,published_at,bytes").limit(2000);
+   .select("storage_provider,published_at,bytes,supabase_source_removed_at").limit(2000);
   if(error)return failure("CATALOG_UNAVAILABLE",503,origin);
   const all=data||[];
   const published=all.filter(r=>r.published_at);
@@ -72,17 +72,51 @@ Deno.serve(async(request:Request)=>{
    migrated_tracks:r2.length,pending_tracks:pending.length,
    pending_bytes:pending.reduce((s,r)=>s+Number(r.bytes||0),0),
    r2_bytes:r2.reduce((s,r)=>s+Number(r.bytes||0),0),
-   private_drafts:all.length-published.length},200,origin);
+   private_drafts:all.length-published.length,
+   supabase_copies_remaining:all.filter(r=>!r.supabase_source_removed_at).length,
+   supabase_storage_estimate_bytes:all.filter(r=>!r.supabase_source_removed_at)
+      .reduce((n,r)=>n+Number(r.bytes||0),0),
+   reclaimable_copies:r2.filter(r=>!r.supabase_source_removed_at).length,
+   reclaimable_bytes:r2.filter(r=>!r.supabase_source_removed_at)
+      .reduce((n,r)=>n+Number(r.bytes||0),0)},200,origin);
  }
- if(action!=="publish"&&action!=="migrate")return failure("UNKNOWN_ACTION",400,origin);
+ if(!["publish","migrate","cleanup"].includes(action))return failure("UNKNOWN_ACTION",400,origin);
  if(!configured)return failure("R2_NOT_CONFIGURED",503,origin);
  const id=String(requestBody.track_id||"");
  if(!UUID.test(id))return failure("INVALID_TRACK_ID",400,origin);
  const {data:row,error:lookupError}=await db.from("humkin_radio_tracks")
-  .select("id,uploaded_by,sha256,bytes,storage_path,published_at,storage_provider,r2_object_key")
+  .select("id,uploaded_by,sha256,bytes,storage_path,published_at,storage_provider,r2_object_key,supabase_source_removed_at")
   .eq("id",id).single();
  if(lookupError||!row||row.uploaded_by!==user.id)
    return failure("TRACK_NOT_FOUND",404,origin);
+ if(action==="cleanup"){
+   if(row.storage_provider!=="r2"||!row.r2_object_key)
+     return failure("R2_COPY_NOT_VERIFIED",409,origin);
+   if(row.supabase_source_removed_at)
+     return reply({ok:true,already_clean:true,track_id:id},200,origin);
+   if(!/^[0-9a-f-]{36}$/.test(id)||!/^tracks\/[0-9a-f-]{36}\/[0-9a-f]{64}\.mp3$/.test(row.r2_object_key))
+     return failure("INVALID_R2_METADATA",409,origin);
+   const aws=new AwsClient({accessKeyId:ACCESS,secretAccessKey:SECRET,service:"s3",region:"auto"});
+   const head=await aws.fetch(r2Url(row.r2_object_key),{method:"HEAD"});
+   if(!head.ok||Number(head.headers.get("content-length"))!==Number(row.bytes))
+     return failure("R2_COPY_NOT_AVAILABLE",409,origin);
+   const publicProbe=await fetch(PUBLIC+"/"+row.r2_object_key+"?cleanup="+Date.now(),
+     {method:"GET",headers:{Range:"bytes=0-0"},cache:"no-store"});
+   if(!publicProbe.ok)return failure("R2_PUBLIC_DELIVERY_FAILED",409,origin);
+   try{await publicProbe.body?.cancel()}catch{}
+   // Redundant copies exist in either old LIVE (migrations) or INBOX (new
+   // publications). Delete ONLY after verified R2 copy; never delete R2 here.
+   for(const bucket of ["humkin-radio-live","humkin-radio-inbox"]){
+     const {error}=await db.storage.from(bucket).remove([row.storage_path]);
+     if(error)return failure("SUPABASE_COPY_DELETE_FAILED",502,origin);
+   }
+   const {error:updateError}=await db.from("humkin_radio_tracks")
+     .update({supabase_source_removed_at:new Date().toISOString()})
+     .eq("id",id).eq("uploaded_by",user.id).eq("storage_provider","r2");
+   if(updateError)return failure("COPY_DELETE_RECORDED_LATER",503,origin);
+   return reply({ok:true,track_id:id,source_copy_removed:true,
+     bytes_reclaimed:Number(row.bytes)},200,origin);
+ }
  if(row.storage_provider==="r2")
    return reply({ok:true,already_migrated:true,track_id:id,object_key:row.r2_object_key},200,origin);
  if(action==="publish"&&row.published_at)
