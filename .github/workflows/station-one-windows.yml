@@ -1,5 +1,12 @@
 name: HUMKIN Station One Windows launcher validation
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/radio-broadcast/windows/**'
+      - 'tools/radio-broadcast/engine.py'
+      - 'tests/radio-broadcast.test.py'
+      - '.github/workflows/station-one-windows.yml'
   pull_request:
     paths:
       - 'tools/radio-broadcast/windows/**'
@@ -25,6 +32,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install Windows IANA time zone data
+        shell: powershell
+        run: python -m pip install tzdata
       - name: Python planner and PCM offline unit tests
         shell: powershell
         run: python tests/radio-broadcast.test.py
