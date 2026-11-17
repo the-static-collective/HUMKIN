@@ -164,12 +164,14 @@ public final class MainActivity extends Activity {
         albumHeading = text("ALBUMS / THE RECORD SHELF", 24, INK, true);
         albumHeading.setPadding(dp(inset),dp(12),dp(inset),0);
         albumHeading.setGravity(Gravity.START);
+        albumHeading.setBackgroundColor(RebelReceiverSkin.PAPER);
         if (Build.VERSION.SDK_INT >= 28) albumHeading.setAccessibilityHeading(true);
         outer.addView(albumHeading, wrap(0));
         tagline = text("", 16, INK, false);
         HumkinVisuals.italic(tagline);
         tagline.setPadding(dp(inset),dp(8),dp(inset),0);
         tagline.setGravity(Gravity.START);
+        tagline.setBackgroundColor(RebelReceiverSkin.PAPER);
         outer.addView(tagline, wrap(0));
         // The player uses the real bundled published album art; ornamental hardware
         // is drawn natively as scalable shapes, not baked-in fake song screenshots.
@@ -178,7 +180,8 @@ public final class MainActivity extends Activity {
         albumsScreen = column();
         radioScreen.setPadding(dp(10), dp(7), dp(10), dp(18));
         radioScreen.setBackgroundColor(RebelReceiverSkin.NAVY);
-        albumsScreen.setPadding(dp(inset), 0, dp(inset), 0);
+        albumsScreen.setPadding(dp(inset), dp(12), dp(inset), dp(22));
+        albumsScreen.setBackgroundColor(RebelReceiverSkin.PAPER);
         outer.addView(radioScreen, wrap(0));
         outer.addView(albumsScreen, wrap(12));
         buildRadio();
