@@ -300,5 +300,11 @@
     "medium_max_seconds": 60,
     "medium_target_seconds": 690,
     "long_target_seconds": 1350
+  },
+  "r2_catalog": "./r2-tracks.json",
+  "seasonal_rotation": {
+    "multiplier": 3,
+    "track_ids": [],
+    "note": "Three total music slots per rotation; active only for explicitly approved seasonal tracks. Manually disable seasonal status when the season ends."
   }
 }
