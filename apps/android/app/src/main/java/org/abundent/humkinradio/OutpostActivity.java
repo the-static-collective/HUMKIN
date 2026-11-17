@@ -278,7 +278,7 @@ public final class OutpostActivity extends Activity {
             "New activities will arrive when there is something real to do.",12,HumkinVisuals.PLUM,false,5);
         String[] moduleNames={"THE ANTENNA","THE TAPE ARCHIVE","THE NIGHT CREW"};
         String[] moduleDesc={
-            "Stronger signal from each half-minute of actual music.",
+            "More Signal from real listening. First upgrade unlocks static controls.",
             "More experience from listening. Discoveries remain unique.",
             "Help the transmitter scavenge; expand capacitor storage."
         };
@@ -300,7 +300,9 @@ public final class OutpostActivity extends Activity {
                 if(SignalRpg.upgrade(this,module)){
                     java.util.List<SignalFeatures.Door> newDoors=
                         SignalFeatures.justUnlocked(module,old,old+1);
-                    if(SHOW_EXPERIMENTAL_PANELS && !newDoors.isEmpty())
+                    if(module==0 && old==0)
+                        announce("ANTENNA ONLINE! Static + signal dips can now be adjusted in Radio ⋯.");
+                    else if(SHOW_EXPERIMENTAL_PANELS && !newDoors.isEmpty())
                         announce("UNLOCKED: "+newDoors.get(0).title+"! A new desk is operational.");
                     else announce("Workshop upgraded. Your station produces more from actual listening.");
                 }else announce("Not enough SIGNAL. Collect more from the capacitor.");
