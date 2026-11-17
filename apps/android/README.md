@@ -1,3 +1,60 @@
+# HUMKIN RADIO Android · v0.21 Field Test — BOOTLEG FREQUENCY
+
+**Install name:** HUMKIN · BOOTLEG FM  
+**Independent test package:** `org.abundent.humkinradio.frequency`  
+**GitHub Actions:** `humkin-radio-android-field-test` → `app-fieldTest.apk`.
+
+The main receiver's **BOOTLEG FREQUENCY** button opens a fully **native**
+listener-run radio dial, not the prior embedded web sketchbook. It shares the
+real Media3 background audio receiver and plays only owner-published tracks.
+There are three painless decisions: desired human feeling (open, hope, tears,
+less alone, laughter, movement, stays-with-me), whose ears to consider
+(my local reactions / both / anonymous community), and optionally the first
+song (currently playing or one previously personally reacted to).
+The user can preview and reshuffle before explicitly starting playback.
+It keeps adding real, new, mixed-era selections while the phone is locked,
+and incorporates existing owner-approved bumpers only if the public station
+has a nonzero bumper cadence. It does **not** emit RF or set up actual
+broadcasting equipment.
+
+**Signal math:** Released singles and albums get roughly 2× their normal
+sample probability. Local answers favor the corresponding feeling, while
+voluntary public **Listener Weather** aggregates provide gently smoothed
+crowd support without making any song compulsory. Unreported songs always
+remain eligible. Current or recently heard songs are pushed later; an
+explicitly anchored song still starts first. If the community board is
+empty or offline, the interface says so and uses private/local-first choices.
+The public web Listener Weather form at `/fm/top42/#listener-weather`
+accepts anonymous human reactions from anyone—not only Android users.
+The private listening diary stays on the individual phone unless the
+listener explicitly opts in to share answers.
+
+**Accounting boundary:** The official Top 42 still counts only real
+qualified audible listens and never the emotional answers themselves.
+Local Outpost/HUM uses only audible Media3 playback as before. The main
+Same-Time radio and the 93/7 scheduled chart-programming split are unchanged.
+The old three-song web sketchbook remains under the radio overflow menu
+but is no longer the primary station-building path.
+
+**Field-testing boundary:** The `.frequency` build is a new side-by-side
+debug package because current GitHub CI builds use ephemeral signing keys.
+This means private reactions and Outpost progress in the previous `.weather`
+or `.station` installs **do not transfer automatically**. Do not uninstall
+previous builds until we have a stable, securely stored signing key and a
+proper migration path. CI and JVM unit tests are necessary but do not replace
+physical Android 11 audio-focus and lock-screen tests.
+
+Device acceptance: choose a mood, anchor a rated song, preview, start the
+native station; confirm lock-screen play, native waveform, Next Up and history;
+confirm approved bumpers appear at configured intervals, no analog hiss in
+personal mode, and Same-Time/Shuffle still switch cleanly. React on phone,
+optionally share, check real Listener Weather aggregates on the public site,
+then change the feeling and verify it replaces the earlier submission rather
+than incrementing chart plays. Check airplane-mode fallback and that the phone
+can still tune public radio normally after leaving the personal dial.
+
+---
+
 # HUMKIN RADIO Android · v0.18 Field Test — Live Network Crossing
 
 **Install name:** HUMKIN RADIO · NETWORK
