@@ -40,6 +40,7 @@ public final class OutpostActivity extends Activity {
     private final TextView[] moduleNotes=new TextView[3];
     private final Button[] moduleButtons=new Button[3];
     private final Button[] featureButtons=new Button[SignalFeatures.DOORS.length];
+    private final View[] featureCards=new View[SignalFeatures.DOORS.length];
     private final TextView[] dailyProgress=new TextView[3];
     private final Button[] dailyButtons=new Button[3];
     private TextView missionTitle,missionDescription,missionProgress,achievementText,chronicleText;
@@ -279,13 +280,14 @@ public final class OutpostActivity extends Activity {
         // cosmetic level-up text. Unimplemented doors remain honest previews.
         eyebrow(body,"04 / REPAIR THE STATION, CHANGE WHAT YOU CAN DO",30,HumkinVisuals.PLUM);
         add(body,"THE UNLOCK BOARD",30,HumkinVisuals.INK,true,6);
-        add(body,"Every department opens new gameplay, not merely bigger numbers. "+
-            "The future doors are drawn here early, so there's something to build toward.",
+        add(body,"The board unfolds as each workshop department improves. "+
+            "You won't see every mystery at the beginning.",
             12,HumkinVisuals.PLUM,false,7);
         String[] departments={"ANTENNA","TAPE ARCHIVE","NIGHT CREW"};
         for(int i=0;i<SignalFeatures.DOORS.length;i++){
             SignalFeatures.Door door=SignalFeatures.DOORS[i];
             LinearLayout card=card(body,door.implemented?0xfffffdf6:0xffeee7ec,11);
+            featureCards[i]=card;
             eyebrow(card,departments[door.module]+"  /  TIER "+door.tier+
                 (door.implemented?"  /  READY TO UNLOCK":"  /  FUTURE PROJECT"),
                 0,HumkinVisuals.PLUM);
@@ -523,6 +525,12 @@ public final class OutpostActivity extends Activity {
             boolean enabled=SignalFeatures.unlocked(door,s.tower,s.archive,s.crew);
             button.setEnabled(enabled);
             button.setText(!door.implemented?"PLANNED":enabled?"✳ OPEN":"LOCKED\nTIER "+door.tier);
+            // Reveal the next door in each department, not all nine at once.
+            // Existing unlocked skills remain visible forever.
+            int ownTier=door.module==0?s.tower:door.module==1?s.archive:s.crew;
+            if(featureCards[i]!=null)
+                featureCards[i].setVisibility(door.tier<=ownTier+1
+                    ?View.VISIBLE:View.GONE);
         }
         missionChoices.setVisibility(s.missionActive?View.GONE:View.VISIBLE);
         missionActive.setVisibility(s.missionActive?View.VISIBLE:View.GONE);
