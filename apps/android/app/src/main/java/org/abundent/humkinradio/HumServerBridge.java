@@ -76,7 +76,7 @@ final class HumServerBridge {
             InputStream raw=status<400?con.getInputStream():con.getErrorStream();
             if(raw==null)throw new java.io.IOException("Station wallet did not answer");
             byte[] bytes;
-            try(InputStream in=raw){bytes=in.readNBytes(12000);}
+            try(InputStream in=raw){bytes=ApiCompatStreams.readAtMost(in,12000);}
             JSONObject data=new JSONObject(new String(bytes,StandardCharsets.UTF_8));
             if(status>=400)throw new java.io.IOException(
                     data.optString("error","Station wallet unavailable"));

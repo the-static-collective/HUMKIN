@@ -10,8 +10,8 @@ android {
         applicationId 'org.abundent.humkinradio'
         minSdk 26
         targetSdk 36
-        versionCode 30
-        versionName '0.30.0'
+        versionCode 31
+        versionName '0.31.0'
         resValue 'string', 'app_name', 'HUMKIN RADIO'
     }
 
@@ -43,6 +43,14 @@ android {
             applicationIdSuffix '.living'
             versionNameSuffix '-living'
             resValue 'string', 'app_name', 'HUMKIN · LIVING RECEIVER'
+        }
+        // Visually rebuilt pocket receiver. Independent package retains
+        // older Living Receiver, Rebel and Doctor app installations/data.
+        radioPocket {
+            initWith debug
+            applicationIdSuffix '.pocket'
+            versionNameSuffix '-pocket'
+            resValue 'string', 'app_name', 'HUMKIN · POCKET RECEIVER'
         }
         nightWatch {
             initWith debug

@@ -30,8 +30,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Check Java I/O against Android 11
+        run: |
+          if grep -RnE '\.readNBytes\(|\.readAllBytes\(|\.transferTo\(' apps/android/app/src/main/java | grep -vE '^[^:]+:[0-9]+: *\*|^[^:]+:[0-9]+: *//'; then
+            echo "Unsupported Android 11 Java I/O method call"; exit 1
+          fi
       - name: Build debug receiver
-        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest
+        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:assembleRadioPocket :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest :app:testRadioPocketUnitTest
       - uses: actions/upload-artifact@v4
         with:
           name: humkin-radio-android-debug
@@ -58,6 +63,12 @@ jobs:
         with:
           name: humkin-radio-android-living-028
           path: apps/android/app/build/outputs/apk/radioLiving/app-radioLiving.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-pocket-receiver-030
+          path: apps/android/app/build/outputs/apk/radioPocket/app-radioPocket.apk
           if-no-files-found: error
 
       # Explicit one-shot smoke check. Never create disposable test accounts
