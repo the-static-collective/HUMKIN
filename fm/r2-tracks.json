@@ -1,5 +1,16 @@
 {
   "schema": "humkin.radio.r2/v1",
   "description": "Only owner-approved public R2 recordings. Uploaded objects are not automatically broadcast.",
-  "tracks": []
+  "tracks": [
+    {
+      "id": "blue-at-the-tip",
+      "object_key": "tracks/Blue At The Tip.mp3",
+      "title": "Blue At The Tip",
+      "artist": "HUMKIN",
+      "album": "HUMKIN RADIO · SEASONAL",
+      "approved": false,
+      "seasonal": true,
+      "note": "Filename and 3x seasonal request confirmed by creator. Airplay remains disabled pending public R2 URL connectivity and measured duration_seconds; artist/album provisional."
+    }
+  ]
 }
