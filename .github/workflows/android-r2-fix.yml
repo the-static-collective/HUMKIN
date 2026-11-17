@@ -5,6 +5,10 @@ on:
     paths:
       - 'apps/android/**'
       - '.github/workflows/android-r2-fix.yml'
+  pull_request:
+    paths:
+      - 'apps/android/**'
+      - '.github/workflows/android-r2-fix.yml'
   workflow_dispatch:
 permissions:
   contents: read
