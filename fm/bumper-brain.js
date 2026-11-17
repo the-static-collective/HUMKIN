@@ -126,6 +126,7 @@ function plan(songs,bumpers,every,tracks,policy={}){
  const longEvery=(Number(policy.long_target_seconds)||1350)*scale;
  let nextMid=midEvery,nextLong=longEvery,shortPulse=0;
  let nextShort=phiGap(shortPulse++,scale),nominalSeconds=0;
+ let lastAnchorAt=-Infinity;
  const breaks=[],sequence=[];
  for(let i=0;i<base.length;i++){
    sequence.push(base[i]);
@@ -140,12 +141,16 @@ function plan(songs,bumpers,every,tracks,policy={}){
      while(nextLong<=nominalSeconds)nextLong+=longEvery;
      while(nextMid<=nominalSeconds+midEvery*0.4)nextMid+=midEvery;
    }else if(groups.medium.length&&nominalSeconds>=nextMid){
-     chosen=pick("medium");
+     // Do not cram a medium feature immediately after a long one merely
+     // because two independent 11/22-minute targets nearly coincided.
+     if(nominalSeconds-lastAnchorAt>=midEvery*0.55)
+       chosen=pick("medium");
      while(nextMid<=nominalSeconds)nextMid+=midEvery;
    }else if(shortDue){
      chosen=pick("short");
    }
    if(!chosen)continue;
+   if(chosen.lane!=="short")lastAnchorAt=nominalSeconds;
    sequence.push(chosen.index);
    nominalSeconds+=chosen.seconds;
    breaks.push({number:breaks.length+1,afterSong:i+1,index:chosen.index,
