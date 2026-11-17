@@ -11,6 +11,30 @@ const DB_NAME="humkin-orchard-listener-key-v1";
 const M=window.HumkinOrchard;
 const $=id=>document.getElementById(id);
 let keys=null,mine=null,allHomes=[],recipient="",running=false,toastTimer=0,heartbeatTimer=0,requestBusy=false,servingBusy=false;
+let importedNative=null;
+function receiveNativeProjection(){
+ // A phone can carry its decorative *self-report*, NOT a proof of listening,
+ // tradeable artifact, server balance, identity or verified work.
+ const url=new URL(location.href),value=url.searchParams.get("native");
+ if(!value)return;
+ try{
+  if(value.length>2400||!/^[A-Za-z0-9_-]+$/.test(value))throw Error("Invalid scene");
+  const encoded=value.replace(/-/g,"+").replace(/_/g,"/");
+  const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+  const result=JSON.parse(new TextDecoder().decode(bytes));
+  if(result.v!==1||!Number.isInteger(result.stage)||!Array.isArray(result.things))
+   throw Error("Unrecognized scene version");
+  const things=result.things.slice(0,24).filter(x=>typeof x==="string"&&M?.item?.(x));
+  importedNative={room:typeof result.room==="string"?result.room.slice(0,32):"Native Listening Room",
+    stage:Math.max(0,Math.min(6,result.stage)),things,
+    minutes:Number.isInteger(result.minutes)?Math.max(0,Math.min(100000,result.minutes)):0};
+ }catch{
+  importedNative=null;
+ }finally{
+  url.searchParams.delete("native");
+  history.replaceState(null,"",url);
+ }
+}
 function node(tag,cls,text){
  const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text);return e;
 }
@@ -77,6 +101,7 @@ async function signed(action,payload={}){
  return data;
 }
 function local(){
+ if(importedNative)return {...importedNative,things:importedNative.things.slice()};
  let saved=M?M.fresh():null;
  try{if(M)saved=M.read(localStorage)}catch{}
  let room="The Room With The Radio";
@@ -87,6 +112,8 @@ function local(){
 function showLocal(){
  const data=local();
  $("home-name").value=data.room.slice(0,32);
+ const notice=$("native-import-notice");
+ if(notice)notice.hidden=!importedNative;
  $("snapshot-preview").textContent=
    "GARDEN STAGE "+(data.stage+1)+"/7 · "+data.things.length+
    " local objects · "+data.minutes+" local listening minutes. "+
@@ -394,6 +421,7 @@ async function chart(){
  }catch{$("chart-mini").replaceChildren(node("li","","Record office temporarily offline."))}
 }
 async function boot(){
+ receiveNativeProjection();
  showIdentity();
  try{keys=await readKey();showIdentity();if(keys)await sync()}
  catch(e){$("identity-status").textContent="Private key storage isn't accessible: "+errorText(e)}
