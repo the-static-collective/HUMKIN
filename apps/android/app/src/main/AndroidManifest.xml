@@ -27,6 +27,9 @@
             android:name=".SignalStudioActivity"
             android:exported="false" />
         <activity
+            android:name=".MyRecordsActivity"
+            android:exported="false" />
+        <activity
             android:name=".GuildActivity"
             android:exported="false" />
         <activity
