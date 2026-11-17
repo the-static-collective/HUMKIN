@@ -74,8 +74,16 @@ final class PirateSelector {
                     double confidence=Math.log1p(Math.min(40,observed.total))/Math.log(41);
                     weight*=1.0+(dial==BOTH?2.8:5.0)*p*confidence;
                 }
-            } else if(dial!=EVERYBODY && mine.containsKey(s.id)) {
-                weight*=1.8; // A remembered recording is interesting, not a win.
+            } else {
+                if(dial!=EVERYBODY && mine.containsKey(s.id))
+                    weight*=1.8; // A remembered recording is interesting, not a win.
+                Weather observed=crowd.get(s.id);
+                if(dial!=ME && observed!=null && observed.total>0){
+                    // Open-road mode listens for ANY reported human impact.
+                    // Modest lift, capped, so untouched tracks can still bloom.
+                    double coverage=Math.log1p(Math.min(40,observed.total))/Math.log(41);
+                    weight*=1.0+(dial==BOTH?0.35:0.7)*coverage;
+                }
             }
             if(recent.contains(s.id) && !s.id.equals(anchor))weight*=0.12;
             double u=Math.max(1.0e-12,random.nextDouble());
