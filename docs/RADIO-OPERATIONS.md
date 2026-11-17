@@ -251,9 +251,13 @@ recordings are not disfavored by a weight: they receive *different,
 slower slots* instead of competing with five-second station tags.
 
 - Short: ≤19s, frequent φ-shaped short drops after completed songs.
-- Medium: 20–59.999s, approximately every 11.5 minutes.
-- Long: 60–180s, approximately every 22.5 minutes.
-- Long supersedes a colliding medium opportunity, and both take precedence
+- Medium: 20–59.999s, between long feature anchors; medium and long
+  together furnish a feature break every ~11–12 minutes. With no long
+  items available, mediums fill all ~11–12-minute anchors.
+- Long: 60–180s, approximately every 22.5 minutes, substituting for
+  alternate medium breaks. Thus a given medium recording's *lane* is
+  not separately promised a slot every 11 minutes.
+- Long and medium anchors take precedence
   over a colliding short one. Never play two carts back-to-back or cut
   into a song to hit a target wall-clock second.
 - Within each lane, every eligible recording gets one turn from a
