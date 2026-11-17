@@ -17,7 +17,7 @@
    - `HUMKIN_R2_ACCOUNT_ID`: `9edad7a17d56c1f1c368a724a9a4e4cb`
    - `HUMKIN_R2_ACCESS_KEY_ID`: the **Access Key ID** from Cloudflare
    - `HUMKIN_R2_SECRET_ACCESS_KEY`: the **Secret Access Key** from Cloudflare
-3. Open the authenticated [HUMKIN Station Manager](https://humkin.abundent.org/fm/manage/), refresh, and look for **R2 ACCESS READY**. A configured flag proves secrets exist; the first *actual* successful migration is the end-to-end R2 write test.
+3. Open the authenticated [HUMKIN Station Manager](https://humkin.abundent.org/fm/manage/), refresh, and look for **R2 CREDENTIALS PRESENT**. A configured flag proves secrets exist; the first *actual* successful migration is the end-to-end R2 write test.
 4. Press **MIGRATE NEXT 20 TO R2**. The owner can rerun to resume the next batch, without duplicate writes for already-migrated rows. For each published file, the bridge reads its known Supabase original, recomputes SHA-256, uploads to R2, validates the signed HEAD's byte count and publicly accessible GET, and **then** switches the DB row to `storage_provider='r2'`. A failed item stays pointed at Supabase.
 5. Press **RECLAIM 20 VERIFIED COPIES** *only when ready to remove the redundant Supabase originals*. This is an irreversible deletion of the Supabase backup, not the R2 object, with a confirmation prompt and fresh remote verification. Repeat for remaining batches. Before that, both copies exist and Supabase usage has **not** decreased.
 6. From the [Crate Loader](https://humkin.abundent.org/fm/load/), upload a new track, review it and publish. The uploader uses R2 automatically once credentials are configured. With R2 credentials absent, it preserves the old Supabase publication route and clearly says why.
