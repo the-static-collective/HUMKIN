@@ -484,3 +484,19 @@ On device verify:
 
 This is an unsigned-for-store debug build; Google Play developer enrollment,
 physical receiver tests, and production signing are still pending.
+
+
+## 0.23.0 — NIGHT WATCH 001 (native Android receiver)
+
+The **Outpost** now has one small, collapsed **Night Watch** ticket near the beginning of its page. The existing Media3 service persists listening reports in private app preferences while actual native audio progresses, including while the phone is locked and the service keeps running.
+
+- Its sole input is the same bounded, actually audible Media3 delta already accepted for native Signal RPG XP. A session opens with playback, closes after **30 minutes without recorded playback**, and keeps a bounded 12-watch local archive. An ongoing watch has a read-only interim report after **five actual minutes**.
+- Every distinct recording needs **30 seconds of observed native playback in a watch** to count as heard; first logged means first qualified hearing **since this report feature was installed**. Reports also show real Outpost level changes and newly credited rare Orchard items, never made-up milestones.
+- Reports add **zero** Signal, HUM, chart plays, external trading rights, or XP. They are not uploaded, synced, sold, or tied to a login. Cleared Android app data removes the journal. Web PWA journals and native journals are independent.
+- Every report opens only if the listener taps it; the opening screen stays simple. Existing Level 4 Orchard / Level 7 Bootleg Frequency doors remain untouched.
+- The native service was already capable of screen-off Media3 playback and next-track transitions. Night Watch now records that service's progress, rather than guessing from a browser timer. Force-stop, unavailable network/audio, or Android killing the service cannot be counted.
+- Field-test variant stays a separate package; versionCode 23 and versionName 0.23.0. Debug APK from CI is not Play Store signed.
+
+**On-device acceptance:** Begin listening through Same-Time Radio, Road Shuffle and an album. Visit Outpost after five *actual* minutes and inspect a current-watch report; confirm 30-second qualifying tracks, new-to-this-device counts, and no false first-heard duplicates. Pause for 30 minutes, reopen and inspect the completed report. Lock the screen through natural song transitions and check that actual Media3 playback and the watch continue; then stop playback and confirm the report stops growing. Check later Outpost doors still remain gated to Level 4 and Level 7. Test corrupted/cleared app data and offline playback interruption without reconstructing unobserved minutes.
+
+Native CI: `gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:testDebugUnitTest :app:testFieldTestUnitTest`.
