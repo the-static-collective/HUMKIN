@@ -82,6 +82,8 @@ public final class MainActivity extends Activity {
         }
     };
     private RebelReceiverSkin.Dial receiverDial;
+    private LivingReceiverFace livingFace;
+    private boolean isLivingFaceBuild(){return getPackageName().endsWith(".pocket");}
     private boolean warmStaticEnabled;
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;
@@ -173,7 +175,7 @@ public final class MainActivity extends Activity {
         outer.setBackgroundColor(RebelReceiverSkin.NAVY);
         page.addView(outer, new FrameLayout.LayoutParams(dp(Math.min(520, width)), -2,
                 Gravity.TOP | Gravity.CENTER_HORIZONTAL));
-        addWebHero(outer,width);
+        if(!isLivingFaceBuild())addWebHero(outer,width);
 
         albumHeading = text("ALBUMS / THE RECORD SHELF", 24, INK, true);
         albumHeading.setPadding(dp(inset),dp(12),dp(inset),0);
@@ -201,6 +203,32 @@ public final class MainActivity extends Activity {
         outer.addView(albumsScreen, wrap(12));
         buildRadio();
         buildAlbums();
+        // A different visual surface, not a second media player. Build the
+        // familiar radio/album models for Media3 callbacks, then hide only the
+        // retired radio face for the independent Pocket build.
+        if(isLivingFaceBuild()) {
+            livingFace=new LivingReceiverFace(this,new LivingReceiverFace.Operations(){
+                @Override public void tuneIn(){MainActivity.this.tuneIn();}
+                @Override public void mode(boolean same){MainActivity.this.changeMode(same);}
+                @Override public void records(){MainActivity.this.showAlbums(true);}
+                @Override public void outpost(){
+                    startActivity(new Intent(MainActivity.this,OutpostActivity.class));
+                }
+                @Override public void signal(){MainActivity.this.showMoreRadio();}
+                @Override public void unbuilt(String circuit,float frequency,boolean archive){
+                    MainActivity.this.showUnbuiltReceiverCircuit(circuit,frequency,archive);
+                }
+                @Override public void volume(float level){
+                    getSharedPreferences("humkin-radio",MODE_PRIVATE).edit()
+                        .putFloat("receiver-volume",level).apply();
+                    if(controller!=null) controller.setVolume(level);
+                }
+                @Override public void frequencyChanged(boolean playable){
+                    if(!playable && controller!=null&&controller.isPlaying())controller.pause();
+                }
+            });
+            outer.addView(livingFace,0,new LinearLayout.LayoutParams(-1,-2));
+        }
         // No concept-art skyline: only published music/album artwork is canon.
         showAlbums(onAlbums);
         setContentView(scroll);
@@ -816,10 +844,19 @@ public final class MainActivity extends Activity {
         int bundled=AlbumArtwork.forAlbum(album.id);
         if(bundled!=R.drawable.ic_radio) {
             image.setImageResource(bundled);
+            if(image==radioArt && livingFace!=null)
+                livingFace.updateUi(controller!=null&&controller.isPlaying(),radioMode,
+                    nowPlaying.getText().toString(),playingArtist.getText().toString(),image.getDrawable());
             return;
         }
         Bitmap cached=coverCache.get(album.coverUrl);
-        if(cached!=null) {image.setImageBitmap(cached);return;}
+        if(cached!=null) {
+            image.setImageBitmap(cached);
+            if(image==radioArt && livingFace!=null)
+                livingFace.updateUi(controller!=null&&controller.isPlaying(),radioMode,
+                    nowPlaying.getText().toString(),playingArtist.getText().toString(),image.getDrawable());
+            return;
+        }
         image.setImageResource(R.drawable.ic_radio);
         coverWorker.execute(()->{
             Bitmap art=null;
@@ -827,8 +864,12 @@ public final class MainActivity extends Activity {
             final Bitmap result=art;
             runOnUiThread(()->{
                 if(result!=null)coverCache.put(album.coverUrl,result);
-                if(alive && album.id.equals(image.getTag()) && result!=null)
+                if(alive && album.id.equals(image.getTag()) && result!=null){
                     image.setImageBitmap(result);
+                    if(image==radioArt && livingFace!=null)
+                        livingFace.updateUi(controller!=null&&controller.isPlaying(),radioMode,
+                            nowPlaying.getText().toString(),playingArtist.getText().toString(),image.getDrawable());
+                }
             });
         });
     }
@@ -962,7 +1003,8 @@ public final class MainActivity extends Activity {
             if (yes) back.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, albumsBack);
             else back.unregisterOnBackInvokedCallback(albumsBack);
         }
-        radioScreen.setVisibility(yes ? View.GONE : View.VISIBLE);
+        radioScreen.setVisibility(yes || livingFace!=null ? View.GONE : View.VISIBLE);
+        if(livingFace!=null)livingFace.setVisibility(yes?View.GONE:View.VISIBLE);
         albumsScreen.setVisibility(yes ? View.VISIBLE : View.GONE);
         albumHeading.setVisibility(yes ? View.VISIBLE : View.GONE);
         tagline.setText("Take a song home.");
@@ -1075,7 +1117,11 @@ public final class MainActivity extends Activity {
     @Override public void onDestroy(){worker.shutdownNow();coverWorker.shutdownNow();super.onDestroy();}
 
     private void tuneIn(){
-        if(receiverDial!=null && !receiverDial.isMainStationTuned()){
+        if(livingFace!=null && !livingFace.playable()){
+            showUnbuiltReceiverCircuit("DIAL",livingFace.frequency(),livingFace.archive());
+            return;
+        }
+        if(livingFace==null && receiverDial!=null && !receiverDial.isMainStationTuned()){
             showUnbuiltReceiverCircuit("DIAL",receiverDial.frequency(),receiverDial.isArchive());
             return;
         }
@@ -1362,5 +1408,9 @@ public final class MainActivity extends Activity {
         feature.setFocusable(!albumActive);
         feature.setContentDescription(albumActive ? null : "Play featured album, "+featuredAlbum.title);
         albumNext.setVisibility(albumActive ? View.VISIBLE : View.GONE);
+        if(livingFace!=null)
+            livingFace.updateUi(playing,radioMode,
+                nowPlaying.getText().toString(),playingArtist.getText().toString(),
+                radioArt.getDrawable());
     }
 }
