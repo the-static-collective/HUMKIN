@@ -236,21 +236,8 @@ public final class MainActivity extends Activity {
         kicker.setLetterSpacing(.06f);
         radioScreen.addView(kicker,wrap(4));
 
-        // The RPG is a new first-class station door, not a buried web link.
-        // Listening continues through Media3 if the screen is opened.
-        outpostButton=pill("✳  SIGNAL OUTPOST  /  LEVEL 1",null,PINK,17);
-        outpostButton.setMinHeight(dp(57));
-        outpostButton.setContentDescription("Open the Signal Outpost listening RPG");
-        outpostButton.setOnClickListener(v ->
-                startActivity(new Intent(this,OutpostActivity.class)));
-        radioScreen.addView(outpostButton,wrap(12));
-        // A second native RPG door. Media3 continues playing while the orchard is open.
-        Button orchardDoor=pill("🌱  YOUR LISTENING ORCHARD  /  MAKE IT GROW",null,MINT,15);
-        orchardDoor.setMinHeight(dp(52));
-        orchardDoor.setContentDescription("Open your collectible listening room and orchard");
-        orchardDoor.setOnClickListener(v ->
-                startActivity(new Intent(this,OrchardActivity.class)));
-        radioScreen.addView(orchardDoor,wrap(8));
+        // Let the music be the first thing on the dial. The living world
+        // follows the actual receiver instead of pushing it below the fold.
         sameTime = pill("SAME-TIME\nRADIO", Icon.RADIO, YELLOW, 18);
         road = pill("ROAD\nSHUFFLE", Icon.SHUFFLE, MINT, 18);
         sameTime.setMinHeight(dp(66));
@@ -321,21 +308,43 @@ public final class MainActivity extends Activity {
         albums.setMinHeight(dp(61));
         albums.setOnClickListener(v -> showAlbums(true));
         radioScreen.addView(albums, wrap(12));
-        // Separate league screen, without replacing native player or station controls.
-        Button chart = pill("THE TOP 42 · RECORD LEAGUE", null, MINT, 17);
-        chart.setMinHeight(dp(53));
-        chart.setOnClickListener(v -> {
-            SignalRpg.visitLeague(this);
-            startActivity(new Intent(this, LeagueActivity.class));
+
+        // One beautiful listening -> making step. A published record can seed
+        // the little station; the web studio verifies the catalog ID before use.
+        Button makeSignal=pill("✳  MAKE YOUR LITTLE STATION",null,PINK,17);
+        makeSignal.setMinHeight(dp(57));
+        makeSignal.setContentDescription("Build a three-song station from the song currently on the radio");
+        makeSignal.setOnClickListener(v -> {
+            MediaItem selected=controller==null?null:controller.getCurrentMediaItem();
+            String seed=selected==null?"":selected.mediaId;
+            // The Studio has its own user-initiated browser audio. Never mix it
+            // with native Media3 playback or silently award native listening HUM.
+            if(controller!=null && controller.isPlaying())controller.pause();
+            Intent intent=new Intent(this,SignalStudioActivity.class);
+            intent.putExtra(SignalStudioActivity.EXTRA_SEED_TRACK,seed);
+            startActivity(intent);
         });
-        radioScreen.addView(chart, wrap(9));
-        // Real station jobs: upload original audio/video, submit honest public
-        // street-team posts or volunteer a server without asking for an email.
-        Button guilds=pill("✳  STATION GUILDS  /  REAL MISSIONS",null,YELLOW,16);
-        guilds.setMinHeight(dp(58));
-        guilds.setContentDescription("Open the station guild mission board and submission studio");
-        guilds.setOnClickListener(v -> startActivity(new Intent(this,GuildActivity.class)));
-        radioScreen.addView(guilds,wrap(11));
+        radioScreen.addView(makeSignal,wrap(11));
+
+        // The two native places people inhabit: growth and capability. Keep
+        // them a single row and let the actual radio dominate the first screen.
+        outpostButton=pill("✳ OUTPOST / LEVEL 1",null,YELLOW,12);
+        outpostButton.setMinHeight(dp(54));
+        outpostButton.setContentDescription("Open the native Signal Outpost listening RPG");
+        outpostButton.setOnClickListener(v ->
+                startActivity(new Intent(this,OutpostActivity.class)));
+        Button orchardDoor=pill("🌱 MY ORCHARD",null,MINT,12);
+        orchardDoor.setMinHeight(dp(54));
+        orchardDoor.setContentDescription("Open your native listening garden and collectibles");
+        orchardDoor.setOnClickListener(v ->
+                startActivity(new Intent(this,OrchardActivity.class)));
+        addPair(radioScreen,outpostButton,orchardDoor,9);
+
+        // The Top 42, contribution Guilds and public network are real but
+        // secondary, grouped behind one door rather than three large banners.
+        Button world=pill("↗  EXPLORE THE STATION WORLD",null,CREAM,14);
+        world.setOnClickListener(v->showWorldMenu());
+        radioScreen.addView(world,wrap(10));
 
         Button share = pill("SHARE THE DIAL", null, MINT, 13);
         share.setOnClickListener(v -> {
@@ -354,6 +363,27 @@ public final class MainActivity extends Activity {
         // Archive, privacy, listening history, and tuning options live in ⋯.
     }
 
+
+    private void showWorldMenu() {
+        new AlertDialog.Builder(this)
+                .setTitle("THE HUMKIN WORLD")
+                .setItems(new String[]{
+                        "THE TOP 42 · record league",
+                        "STATION GUILDS · make something real",
+                        "THE LIVING NETWORK · homes & trading"
+                }, (dialog, choice) -> {
+                    if(choice==0){
+                        SignalRpg.visitLeague(this);
+                        startActivity(new Intent(this,LeagueActivity.class));
+                    }else if(choice==1){
+                        startActivity(new Intent(this,GuildActivity.class));
+                    }else{
+                        visit("https://humkin.abundent.org/fm/orchard/network.html");
+                    }
+                })
+                .setNegativeButton("Back to radio",null)
+                .show();
+    }
 
     private void showMoreRadio() {
         // Keep the radio's primary face for listening. All secondary actions
@@ -865,7 +895,7 @@ public final class MainActivity extends Activity {
         if (tune == null) return;
         if (outpostButton != null) {
             int level=SignalRpg.snapshot(this).level;
-            String name="✳  SIGNAL OUTPOST  /  LEVEL "+level;
+            String name="✳ OUTPOST / LEVEL "+level;
             if(!name.contentEquals(outpostButton.getText()))outpostButton.setText(name);
         }
         if (!modeStyled || sameTime.isSelected() != radioMode) {
