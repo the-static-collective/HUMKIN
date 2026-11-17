@@ -42,6 +42,9 @@
             android:name=".OrchardActivity"
             android:exported="false" />
         <activity
+            android:name=".GraftTapeActivity"
+            android:exported="false" />
+        <activity
             android:name=".LeagueActivity"
             android:exported="false" />
         <service
