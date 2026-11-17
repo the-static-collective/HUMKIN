@@ -28,6 +28,8 @@ test("the existing radio engine has all its required DOM IDs",()=>{
   const missing=[...engineIds].filter(i=>!pageIds.has(i));
   assert.deepEqual(missing,[]);
   assert.ok(html.indexOf('src="./compat.js"')<html.indexOf('src="../radio.js"'));
+  assert.ok(html.includes('window.HUMKIN_RADIO_BASE="/fm/"'));
+  assert.ok(engine.includes("window.HUMKIN_RADIO_BASE?new URL(window.HUMKIN_RADIO_BASE,location.origin)"));
 });
 
 test("the entire album shelf uses one radio-owned player",()=>{
