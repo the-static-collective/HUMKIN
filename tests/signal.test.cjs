@@ -59,3 +59,17 @@ test("the Signal is a separate, opt-in projection; the Orchard save stays intact
  assert.match(read("sw.js"),/fm\/signal\/model\.js/);
  assert.match(read("fm/orchard/index.html"),/\.\.\/signal\//);
 });
+
+test("one approved on-air song seeds an editable three-song station, never a guest link",()=>{
+ const across=M.fromSeed("?seed=a2",rows,()=>0);
+ assert.deepEqual(across.tracks,["a2","b1","c1"]);
+ assert.equal(across.name,"My Little Station");
+ assert.equal(across.mode,"across");
+ assert.deepEqual(M.fromSeed("?seed=a2&m=together",rows,()=>0).tracks,["a2","a1","a3"]);
+ assert.equal(M.fromSeed("?seed=missing",rows),null);
+ assert.equal(M.fromSeed("?seed=a1%26admin%3D1",rows),null);
+ assert.equal(M.fromSeed("?seed="+("x".repeat(91)),rows),null);
+ assert.equal(M.fromSeed("?t=a1.b1.c1&seed=a2",rows),null);
+ assert.equal(M.fromSeed("",rows),null);
+ assert.ok(read("fm/signal/signal.js").includes("M.fromSeed(location.search,tracks)"));
+});

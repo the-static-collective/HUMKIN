@@ -197,17 +197,31 @@ async function boot(){
     tracks=safeCatalog(data.tracks);
     if(tracks.length<3)throw Error("too few playable recordings");
     const shared=M.fromUrl(location.search,tracks);
+    // The receiver hands over a single published song, not a finished share
+    // link. This choice becomes the first song of a new editable arrangement.
+    const seeded=shared?null:M.fromSeed(location.search,tracks);
     receivedOrigin=shared?{...shared,tracks:shared.tracks.slice()}:null;
     guest=!!shared;
     rootSeed=S.read(store);
     const stored=storedDraft();
-    draft=shared||M.normalize(stored,tracks);
+    draft=shared||seeded||M.normalize(stored,tracks);
     if(!shared&&!stored){
       draft.name=M.clean(profileName(),48)||draft.name;
       storeDraft();
     }
+    if(seeded){
+      // Never replace an existing immutable station origin; this updates only
+      // the mutable local draft. Remove the handoff query after saving it.
+      storeDraft();
+      if(store){
+        const cleanUrl=new URL(location.href);
+        cleanUrl.searchParams.delete("seed");
+        history.replaceState(null,"",cleanUrl.href);
+      }
+    }
     render();
     notice(guest?"Someone sent you three real songs. Play them, or make a copy.":
+      seeded?"That song became the first seed of your new arrangement. Shape the other two, then start your station.":
       rootSeed?"Your station remembers its beginning. The current arrangement can keep evolving.":"Your selections will become your station's permanent starting seed when you begin.");
   }catch(e){
     $("track-choices").textContent="The published music list is unavailable. Try again when you're connected.";
