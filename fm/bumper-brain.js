@@ -124,6 +124,9 @@ function plan(songs,bumpers,every,tracks,policy={}){
  const scale=frequency/4;
  const midEvery=(Number(policy.medium_target_seconds)||690)*scale;
  const longEvery=(Number(policy.long_target_seconds)||1350)*scale;
+ // If long features exist, anchor mediums between long features instead
+ // of independently scheduling a second feature 30 seconds after one.
+ const midPeriod=groups.long.length?longEvery:midEvery;
  let nextMid=midEvery,nextLong=longEvery,shortPulse=0;
  let nextShort=phiGap(shortPulse++,scale),nominalSeconds=0;
  let lastAnchorAt=-Infinity;
@@ -139,14 +142,14 @@ function plan(songs,bumpers,every,tracks,policy={}){
      // When the long-form feature occupies a ~22-minute anchor,
      // consume the overlapping ~11-minute medium opportunity.
      while(nextLong<=nominalSeconds)nextLong+=longEvery;
-     while(nextMid<=nominalSeconds+midEvery*0.4)nextMid+=midEvery;
+     while(nextMid<=nominalSeconds)nextMid+=midPeriod;
    }else if(groups.medium.length&&nominalSeconds>=nextMid){
      // Do not cram a medium feature immediately after a long one merely
      // because two independent 11/22-minute targets nearly coincided.
      const longSoon=groups.long.length&&nextLong-nominalSeconds<=midEvery*0.55;
      if(!longSoon&&nominalSeconds-lastAnchorAt>=midEvery*0.55)
        chosen=pick("medium");
-     while(nextMid<=nominalSeconds)nextMid+=midEvery;
+     while(nextMid<=nominalSeconds)nextMid+=midPeriod;
    }else if(shortDue){
      chosen=pick("short");
    }
