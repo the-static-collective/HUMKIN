@@ -61,7 +61,7 @@ public final class MainActivity extends Activity {
     private LinearLayout firstAlbums, secondAlbums;
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
-    private Button tune,sameTime,road,albumNext,outpostButton;
+    private Button tune,sameTime,road,albumNext,outpostButton,reactionButton;
     private boolean warmStaticEnabled;
     private ScrollView scroll;
     private LinearLayout radioScreen,albumsScreen;
@@ -257,6 +257,15 @@ public final class MainActivity extends Activity {
         radioWaveform = addWaveform(labels);
         radioScreen.addView(player, wrap(12));
 
+        // Tiny and human: an invitation about how this record landed, not
+        // another vote or gamified heart count.
+        reactionButton=pill("✳  THIS ONE DID SOMETHING  ↗",null,CREAM,13);
+        reactionButton.setMinHeight(dp(47));
+        reactionButton.setContentDescription("Tell HUMKIN how this song made you feel");
+        reactionButton.setOnClickListener(v->reactToSong());
+        reactionButton.setVisibility(View.GONE);
+        radioScreen.addView(reactionButton,wrap(7));
+
         tune = pill("TUNE IN", Icon.PLAY, YELLOW, 26);
         tune.setMinHeight(dp(58));
         tune.setOnClickListener(v -> tuneIn());
@@ -385,6 +394,62 @@ public final class MainActivity extends Activity {
                 .show();
     }
 
+    private void reactToSong() {
+        MediaItem item=controller==null?null:controller.getCurrentMediaItem();
+        String id=item==null?null:SongReactionId.canonical(item.mediaId);
+        if(id==null){
+            Toast.makeText(this,"Tune to a published song first.",Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String title=item.mediaMetadata.title==null?"THIS SONG":item.mediaMetadata.title.toString();
+        new AlertDialog.Builder(this)
+                .setTitle("HOW DID IT LAND?  ·  "+title)
+                .setItems(SongReactions.CHOICES,(dialog,which)->{
+                    String code=SongReactions.codeAt(which);
+                    if(code==null||!SongReactions.save(this,id,code)) {
+                        Toast.makeText(this,"Couldn't save that response.",Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    redraw();
+                    // The answer exists privately on this device regardless of
+                    // Internet availability or whether the person elects to share.
+                    if(SongReactions.sharing(this)==0){
+                        new AlertDialog.Builder(this)
+                                .setTitle("SHARE IT WITH THE STATION?")
+                                .setMessage("Share the selected song and response as an anonymous, provisional mark in HUMKIN's Listener Weather. A random app key prevents duplicate responses. No name, email or listening history. This will not award chart plays.")
+                                .setPositiveButton("Share my responses",(d,w)->{
+                                    SongReactions.setSharing(this,1);
+                                    transmitReaction(id,code);
+                                })
+                                .setNegativeButton("Keep on my phone",(d,w)->{
+                                    SongReactions.setSharing(this,2);
+                                    Toast.makeText(this,"Kept on this phone.",Toast.LENGTH_SHORT).show();
+                                }).show();
+                    }else if(SongReactions.sharing(this)==1){
+                        transmitReaction(id,code);
+                    }else{
+                        Toast.makeText(this,"Saved to your private song memories.",Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Not this time",null)
+                .show();
+    }
+
+    private void transmitReaction(String id,String code){
+        worker.execute(()->{
+            boolean accepted;
+            try{accepted=ResonanceBridge.submit(getApplicationContext(),id,code);}
+            catch(Exception ignored){accepted=false;}
+            final boolean ok=accepted;
+            runOnUiThread(()->{
+                if(isFinishing()||isDestroyed())return;
+                Toast.makeText(this,ok
+                    ? "Your feeling reached the Listener Weather board."
+                    : "Saved here. The station couldn't receive it yet.",Toast.LENGTH_LONG).show();
+            });
+        });
+    }
+
     private void showMoreRadio() {
         // Keep the radio's primary face for listening. All secondary actions
         // remain available without a network request or another page.
@@ -417,6 +482,18 @@ public final class MainActivity extends Activity {
             titles.add("Reshuffle");
             actions.add(() -> fetchRadio(true, false));
         }
+        titles.add("Listener Weather · how the songs landed");
+        actions.add(() -> visit("https://humkin.abundent.org/fm/top42/#listener-weather"));
+        titles.add(SongReactions.sharing(this)==1
+                ? "Send my song responses · ON (tap to keep private)"
+                : "Send my song responses · OFF (tap to enable)");
+        actions.add(()->{
+            boolean enable=SongReactions.sharing(this)!=1;
+            SongReactions.setSharing(this,enable?1:2);
+            Toast.makeText(this,enable
+                ? "Future responses can be sent anonymously; existing memories stay local."
+                : "Future responses will stay on this phone.",Toast.LENGTH_LONG).show();
+        });
         titles.add("Station archive");
         actions.add(() -> visit("https://humkin.abundent.org/fm/archive/"));
         titles.add("Privacy");
@@ -915,6 +992,16 @@ public final class MainActivity extends Activity {
 
         MediaItem item = ready ? controller.getCurrentMediaItem() : null;
         String thisId = item == null ? "" : item.mediaId;
+        if(reactionButton!=null){
+            String songId=SongReactionId.canonical(thisId);
+            reactionButton.setVisibility(songId==null?View.GONE:View.VISIBLE);
+            if(songId!=null){
+                String reaction=SongReactions.get(this,songId);
+                String wording=reaction==null?"✳  THIS ONE DID SOMETHING  ↗"
+                        : "✳  THIS ONE: "+SongReactions.phrase(reaction)+"  ↗";
+                if(!wording.contentEquals(reactionButton.getText()))reactionButton.setText(wording);
+            }
+        }
         if (!lastRenderedTrackId.equals(thisId)) {
             lastRenderedTrackId = thisId;
             updateRecentRecords();
