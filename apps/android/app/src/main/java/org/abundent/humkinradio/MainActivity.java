@@ -95,8 +95,10 @@ public final class MainActivity extends Activity {
             currentAlbum=savedInstanceState.getString("currentAlbum","");
         }
         if (Build.VERSION.SDK_INT >= 33) albumsBack = () -> showAlbums(false);
-        warmStaticEnabled=getSharedPreferences("humkin-radio",MODE_PRIVATE)
-                .getBoolean("analog-static",true);
+        // First Antenna upgrade is the only route to static controls.
+        warmStaticEnabled=!SignalRpg.canControlRadioStatic(this) ||
+                getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                        .getBoolean("analog-static",true);
         RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
         buildScreen();
         if (Build.VERSION.SDK_INT >= 35) {
@@ -434,18 +436,22 @@ public final class MainActivity extends Activity {
         // remain available without a network request or another page.
         List<String> titles = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();
-        titles.add(warmStaticEnabled
-                ? "Static + signal dips  ·  ON (tap to turn off)"
-                : "Static + signal dips  ·  OFF (tap to turn on)");
-        actions.add(() -> {
-            warmStaticEnabled = !warmStaticEnabled;
-            getSharedPreferences("humkin-radio", MODE_PRIVATE).edit()
-                    .putBoolean("analog-static", warmStaticEnabled).apply();
-            RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
-            Toast.makeText(this, warmStaticEnabled
-                    ? "Analog radio texture on" : "Analog radio texture off",
-                    Toast.LENGTH_SHORT).show();
-        });
+        if (SignalRpg.canControlRadioStatic(this)) {
+            titles.add(warmStaticEnabled
+                    ? "Static + signal dips  ·  ON (tap to turn off)"
+                    : "Static + signal dips  ·  OFF (tap to turn on)");
+            actions.add(() -> {
+                // Recheck at the moment of use, not only when opening the menu.
+                if (!SignalRpg.canControlRadioStatic(this)) return;
+                warmStaticEnabled = !warmStaticEnabled;
+                getSharedPreferences("humkin-radio", MODE_PRIVATE).edit()
+                        .putBoolean("analog-static", warmStaticEnabled).apply();
+                RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
+                Toast.makeText(this, warmStaticEnabled
+                        ? "Analog radio texture on" : "Analog radio texture off",
+                        Toast.LENGTH_SHORT).show();
+            });
+        }
         if (radioMode) {
             titles.add("Catch up to air");
             actions.add(() -> fetchRadio(true));
@@ -810,6 +816,12 @@ public final class MainActivity extends Activity {
 
     @Override public void onStart(){
         super.onStart();alive=true;
+        // Returning from the Outpost may have earned the first Antenna tier.
+        // Older OFF preferences cannot suppress the default before then.
+        warmStaticEnabled=!SignalRpg.canControlRadioStatic(this) ||
+                getSharedPreferences("humkin-radio",MODE_PRIVATE)
+                        .getBoolean("analog-static",true);
+        RadioPlaybackService.setWarmStaticEnabled(warmStaticEnabled);
         refreshAlbumIndex();
         SessionToken token=new SessionToken(this,new ComponentName(this,RadioPlaybackService.class));
         controllerFuture=new MediaController.Builder(this,token).buildAsync();
