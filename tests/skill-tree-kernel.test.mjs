@@ -27,6 +27,8 @@ test('a new listener sees radio, outpost and only a teased Orchard',()=>{
 test('the existing level-4 Orchard and level-7 Bootleg gates are unchanged',()=>{
   assert.equal(project({level:3}).byId('outpost.orchard').status,'LOCKED');
   assert.equal(project({level:4}).byId('outpost.orchard').status,'AVAILABLE');
+  assert.equal(project({level:3}).byId('orchard.graft').status,'HIDDEN');
+  assert.equal(project({level:4}).byId('orchard.graft').status,'AVAILABLE');
   assert.equal(project({level:4}).byId('outpost.bootleg').status,'LOCKED');
   assert.equal(project({level:6}).byId('outpost.bootleg').status,'LOCKED');
   assert.equal(project({level:7}).byId('outpost.bootleg').status,'AVAILABLE');
