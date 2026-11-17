@@ -336,7 +336,9 @@ function updateModeUI(){
   $("mode-shuffle").setAttribute("aria-pressed",String(mode==="shuffle"));
   $("catch-up").hidden=mode!=="clock"||Boolean(remoteStream);
   $("next-song").hidden=mode!=="shuffle"&&mode!=="album";
-  modeHelp.textContent=mode==="shuffle"
+  modeHelp.textContent=mode==="album"
+   ?"Playing a complete published album in its recorded order. Tap SAME-TIME or ROAD SHUFFLE to return to radio."
+   :mode==="shuffle"
    ?"Your own shuffle blends old and new. Released album cuts and designated singles get roughly twice the airtime; each song keeps a one-hour repeat memory."
    :remoteStream
    ?"Tuning an independent continuous broadcast stream. Everyone connected to that stream receives the same live program."
@@ -358,7 +360,11 @@ function updateOnDeck(){
   const target=$("on-deck");
   if(!target)return;
   const names=[];
-  if(mode==="shuffle"&&order.length){
+  if(mode==="album"&&albumQueue.length){
+    for(let n=albumCursor+1;n<Math.min(albumQueue.length,albumCursor+4);n++){
+      if(tracks[albumQueue[n]])names.push(tracks[albumQueue[n]].title);
+    }
+  }else if(mode==="shuffle"&&order.length){
     for(let n=1;n<=3;n++){
       const next=n===1?chooseShuffleCandidate():order[(cursor+n)%order.length];
       if(tracks[next])names.push(tracks[next].title);
@@ -472,7 +478,8 @@ function showTrack(i,position=0){
   $("current-art").alt=(currentShow?.art_asset_id&&artAssets.has(currentShow.art_asset_id)?
       currentShow.name+" program cover":t.title+" cover")+" — HUMKIN RADIO";
   setMediaInfo({...t,artwork:cover});
-  counter.textContent=mode==="clock"?(remoteStream?"LIVE STREAM":"ON THE SHARED CLOCK"):(pad(cursor+1)+" / "+pad(order.length));
+  counter.textContent=mode==="album"?("ALBUM "+pad(albumCursor+1)+" / "+pad(albumQueue.length)):
+    mode==="clock"?(remoteStream?"LIVE STREAM":"ON THE SHARED CLOCK"):(pad(cursor+1)+" / "+pad(order.length));
   updateOnDeck();
 }
 // An explicit playing state keeps Android's media notification attached while
@@ -723,7 +730,7 @@ async function share(){
 $("listen").addEventListener("click",startRadio);
 $("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
 $("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
-$("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused)});
+$("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused);else if(mode==="album")nextAlbum(!audio.paused)});
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
