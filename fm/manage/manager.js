@@ -1,5 +1,6 @@
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import {prepareCover} from "./art-upload.js";
+import {r2Bridge} from "../r2-bridge-client.js";
 
 // Publishable key only. Every write is checked again by owner-only Postgres RLS.
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
@@ -10,6 +11,7 @@ const $=id=>document.getElementById(id);
 const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 let user=null,library=[],shows=[],staticList=[],editing=null,editingShow=null,slots=[],busy=false;
 let artAssets=[];
+let r2Status=null;
 let stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 let bumperPolicy={};
 const selected=new Set();
@@ -51,7 +53,7 @@ async function requireOwner(){
 }
 function setBusy(v){
  busy=v;
- for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off","auto-save","art-upload"])
+ for(const id of ["save-show","edit-save","edit-delete","refresh","new-show","bulk-on","bulk-off","auto-save","art-upload","r2-migrate","r2-cleanup"])
    $(id).disabled=v;
 }
 async function checkOne(result,action){
@@ -74,10 +76,10 @@ async function loadDesk(){
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
  try{
-  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts]=await Promise.all([
+  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts,r2Manifest]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks")
-    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,is_single,art_asset_id,published_at,created_at")
+    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,is_single,art_asset_id,published_at,created_at,storage_provider,r2_object_key,supabase_source_removed_at")
     .order("created_at",{ascending:false}).limit(2000),
    db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind,art_asset_id").limit(1000),
    db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at,art_asset_id")
@@ -85,7 +87,8 @@ async function loadDesk(){
    db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label").eq("id","main").limit(1),
    db.from("humkin_radio_art_assets").select("id,owner_id,sha256,storage_path,label,width,height,bytes,created_at")
     .order("created_at",{ascending:false}).limit(500),
-   fetch("../air-carts.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
+   fetch("../air-carts.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null),
+   fetch("../r2-tracks.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
   ]);
   if(!configResponse.ok)throw Error("Original rotation not reachable");
   for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult],["station settings",settingsResult],["art shelf",artResult]])
@@ -115,17 +118,31 @@ async function loadDesk(){
      duration:Number(track.duration),url:new URL(track.src,"https://humkin.abundent.org/fm/").href,
      originalName:String(track.src),bytes:null};
   });
-  const cloud=(cloudResult.data||[]).map(track=>({
-   id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,
-   artist:track.artist,album:track.album,kind:track.kind,is_single:track.is_single===true,
-   enabled:track.enabled,published:!!track.published_at,art_asset_id:track.art_asset_id||null,
-   artwork:new URL("../../cover.jpg",location.href).href,
-   duration:Number(track.duration_seconds),bytes:track.bytes,
-   originalName:track.original_name,
-   url:track.published_at?publicSrc(track.storage_path):"",
-   storagePath:track.storage_path,publishedAt:track.published_at
+  const cloud=(cloudResult.data||[]).map(track=>{
+   const provider=track.storage_provider==="r2"?"r2":"supabase";
+   const r2Url=provider==="r2"?window.HUMKIN_R2_CATALOG?.objectUrl(track.r2_object_key):"";
+   return {
+    id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,
+    artist:track.artist,album:track.album,kind:track.kind,is_single:track.is_single===true,
+    enabled:track.enabled,published:!!track.published_at,art_asset_id:track.art_asset_id||null,
+    artwork:new URL("../../cover.jpg",location.href).href,
+    duration:Number(track.duration_seconds),bytes:track.bytes,
+    originalName:track.original_name,
+    url:track.published_at?(provider==="r2"?r2Url:publicSrc(track.storage_path)):"",
+    storage_provider:provider,r2ObjectKey:track.r2_object_key||null,
+    sourceRemoved:!!track.supabase_source_removed_at,
+    storagePath:track.storage_path,publishedAt:track.published_at
+   };
+  });
+  // Read-only catalog entries explicitly approved in the GitHub R2 manifest.
+  // Do not expose a public-bucket listing or infer consent from arbitrary uploads.
+  const r2Static=(window.HUMKIN_R2_CATALOG?.parse(r2Manifest,
+      new URL("../../cover.jpg",location.href).href)||[]).map(t=>({
+    ...t,source:"r2",storage_provider:"r2",url:t.src,
+    originalName:t.src,enabled:true,published:true,bytes:null,
+    art_asset_id:null,readonly:true
   }));
-  library=[...cloud,...staticList];
+  library=[...cloud,...staticList,...r2Static];
   shows=showsResult.data||[];
   stationSettings={
     bumper_every:Number(settingsResult.data?.[0]?.bumper_every)||0,
@@ -133,6 +150,7 @@ async function loadDesk(){
   };
   for(const id of [...selected])if(!library.find(t=>t.id===id))selected.delete(id);
   renderArtShelf();renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
+  await refreshR2VaultStatus();
  }catch(err){note("Could not read station: "+err.message);$("auth-status").textContent="Signed in · data unavailable"}
 }
 
