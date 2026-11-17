@@ -286,7 +286,7 @@ public final class MainActivity extends Activity {
         // These four real native navigation buttons replace a screenshot's
         // inert printed tabs, and leave the earned Outpost doors intact.
         LinearLayout nav=row();
-        Button radioTab=pill("◉\nRADIO",null,PEACH,11);
+        Button radioTab=pill("◉\nRADIO",null,RebelReceiverSkin.PEACH,11);
         Button records=pill("▤\nRECORDS",null,CREAM,11);
         outpostButton=pill("✳\nOUTPOST",null,CREAM,11);
         Button signal=pill("⌁\nSIGNAL",null,CREAM,11);
