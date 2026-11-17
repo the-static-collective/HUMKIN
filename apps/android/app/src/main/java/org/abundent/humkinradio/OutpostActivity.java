@@ -48,6 +48,9 @@ public final class OutpostActivity extends Activity {
     private Button missionClaim,claimCache;
     private LinearLayout discoveryBoard;
     private TextView milestoneProgress;
+    private TextView nightWatchStatus,nightWatchDetails;
+    private Button nightWatchButton;
+    private String expandedWatchId="";
     private int lastMilestoneStage=-1;
     private OutpostMapView map;
     private ScrollView scroll;
@@ -221,6 +224,31 @@ public final class OutpostActivity extends Activity {
         // as a crowded first-launch strip on the main radio receiver.
         discoveryBoard=vertical();
         body.addView(discoveryBoard,full(14));
+
+        // The service remembers only actual audible progress. Keep this one
+        // small optional ticket ahead of the game dashboards.
+        LinearLayout watch=card(body,0xfff6e8cf,13);
+        eyebrow(watch,"THE NIGHT WATCH  /  LOCAL RECEIPT",0,HumkinVisuals.PLUM);
+        add(watch,"WHAT THE DIAL REMEMBERS.",22,HumkinVisuals.INK,true,6);
+        nightWatchStatus=add(watch,"A report forms from real listening.",12,HumkinVisuals.INK,false,7);
+        nightWatchButton=pill("REPORT NOT READY",HumkinVisuals.MINT,12);
+        nightWatchButton.setOnClickListener(v->{
+            NativeNightWatch.Report report=NativeNightWatch.latest(this);
+            if(report==null)return;
+            if(report.id.equals(expandedWatchId)
+                    &&nightWatchDetails.getVisibility()==View.VISIBLE){
+                expandedWatchId="";
+                nightWatchDetails.setVisibility(View.GONE);
+            }else{
+                expandedWatchId=report.id;
+                nightWatchDetails.setVisibility(View.VISIBLE);
+                if(!report.ongoing)NativeNightWatch.markRead(this,report.id);
+            }
+            drawState();
+        });
+        watch.addView(nightWatchButton,full(10));
+        nightWatchDetails=add(watch,"",12,HumkinVisuals.INK,false,10);
+        nightWatchDetails.setVisibility(View.GONE);
 
         // The signature idle loop: music charges a capacitor while you are away
         // from this page; you choose when to cash out and upgrade the station.
@@ -486,6 +514,7 @@ public final class OutpostActivity extends Activity {
         rankText.setText(s.rank);
         chapterText.setText(s.chapter+"  /  SECTOR "+(1+(s.level>=4?1:0)+(s.level>=7?1:0)+(s.level>=11?1:0)));
         paintMilestones(s);
+        paintNightWatch();
         int lower=SignalMath.levelFloor(s.level);
         int upper=SignalMath.levelFloor(s.level+1);
         experienceText.setText(s.xp+" XP  /  NEXT LEVEL AT "+upper);
@@ -570,6 +599,27 @@ public final class OutpostActivity extends Activity {
         achievementText.setText(earned.length()==0?
             "◌ SIX ODDITIES TO FIND. Your first one is only a minute away.":
             earned.toString());
+    }
+    private void paintNightWatch(){
+        if(nightWatchStatus==null)return;
+        NativeNightWatch.Report report=NativeNightWatch.latest(this);
+        if(report==null){
+            nightWatchStatus.setText("A report opens after five minutes of observed listening. "+
+                    "A completed watch follows 30 quiet minutes.");
+            nightWatchButton.setText("REPORT NOT READY");
+            nightWatchButton.setEnabled(false);
+            nightWatchDetails.setVisibility(View.GONE);
+            expandedWatchId="";
+            return;
+        }
+        nightWatchStatus.setText(report.brief());
+        nightWatchButton.setEnabled(true);
+        boolean open=report.id.equals(expandedWatchId)
+                &&nightWatchDetails.getVisibility()==View.VISIBLE;
+        nightWatchButton.setText(open?"CLOSE REPORT":
+                report.unread?"✳ OPEN NEW REPORT":"VIEW WATCH");
+        if(open)nightWatchDetails.setText(report.detail());
+        else nightWatchDetails.setVisibility(View.GONE);
     }
     private void badge(StringBuilder b,boolean yes,String name,String note){
         if(!yes)return;
