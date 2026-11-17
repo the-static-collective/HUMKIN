@@ -153,7 +153,7 @@ public final class OrchardActivity extends Activity {
             .setTitle("Share a little scene?")
             .setMessage("This will put only your garden stage, locally owned decorative item names, and total listening minutes in a temporary website link. The network page previews them first; nothing is published until you explicitly choose PUBLIC and SAVE. The temporary link can appear in browser or server logs. Your native HUM, Signal, possessions and private keys are NOT transferred.")
             .setNegativeButton("NOT NOW",null)
-            .setPositiveButton("OPEN SCENE PREVIEW",(d,w)->openNetwork(true))
+            .setPositiveButton("OPEN SCENE PREVIEW",(dialog,which)->openNetwork(true))
             .show());
         page.addView(carry,block(7));
         add(page,"HUM IS LOCAL-ONLY GAME CURRENCY · 1 HUM PER 18 SECONDS OF REAL MEDIA3 PLAYBACK",10,0xff795466,true,17);
