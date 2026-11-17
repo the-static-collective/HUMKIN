@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.net.Uri;
@@ -50,6 +51,7 @@ import org.abundent.humkinradio.HumkinVisuals.Icon;
 public final class MainActivity extends Activity {
     private final ExecutorService worker=Executors.newFixedThreadPool(3);
     private final AtomicBoolean loading=new AtomicBoolean(false);
+    private final AtomicBoolean albumRefreshing=new AtomicBoolean(false);
     private MediaController controller;
     private ListenableFuture<MediaController> controllerFuture;
     private TextView nowPlaying, status, albumPlaying, albumState;
@@ -58,6 +60,11 @@ public final class MainActivity extends Activity {
 
     private TextView tagline, albumHeading, playingHeading, playingArtist, featureHeading, featureArtist;
     private ImageView radioArt, featureArt;
+    private LinearLayout albumGrid;
+    private List<AlbumCatalog.Album> shelfAlbums=AlbumCatalog.builtIn();
+    private AlbumCatalog.Album featuredAlbum=AlbumCatalog.EVERYWHERE;
+    private final Map<String, Bitmap> coverCache=new HashMap<>();
+    private String lastFeatureCoverKey="", lastRadioCoverId="";
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
     private Button tune,sameTime,road,albumNext,outpostButton,reactionButton;
@@ -487,9 +494,9 @@ public final class MainActivity extends Activity {
         back.setOnClickListener(v -> showAlbums(false));
         albumsScreen.addView(back, wrap(9));
 
-        addAlbums(
-                albumCard(AlbumCatalog.MUTANT_POP, R.drawable.album_mutant_pop, "Bright, strange and familiar."),
-                albumCard(AlbumCatalog.EVERYWHERE, R.drawable.album_everywhere_near_you, "Road songs for close and far away."));
+        albumGrid=column();
+        albumsScreen.addView(albumGrid,wrap(3));
+        renderAlbumCards();
 
         // Warmth was a placeholder for an album not wired into the app.
         // Show only two playable albums and the existing Singles lane.
@@ -503,15 +510,16 @@ public final class MainActivity extends Activity {
         albumsScreen.addView(singles, wrap(9));
 
         LinearLayout feature = console();
-        featureArt = HumkinVisuals.art(this, R.drawable.album_mutant_pop);
+        featureArt = HumkinVisuals.art(this, R.drawable.album_everywhere_near_you);
         LinearLayout labels = consoleLabels(feature, featureArt, wideCards ? 106 : 80);
         featureHeading = consoleHeading(labels, "FEATURED ALBUM");
-        albumPlaying = consoleTitle(labels, "MUTANT POP", 23);
+        albumPlaying = consoleTitle(labels, featuredAlbum.title, 23);
         featureArtist = consoleSubtitle(labels);
         albumWaveform = addWaveform(labels);
         feature.setFocusable(true);
-        feature.setContentDescription("Play featured album, MUTANT POP");
-        feature.setOnClickListener(v -> playAlbum(AlbumCatalog.MUTANT_POP));
+        feature.setContentDescription("Play featured album, "+featuredAlbum.title);
+        // Resolve at click time so newly published records require no APK rebuild.
+        feature.setOnClickListener(v -> playAlbum(featuredAlbum));
         albumsScreen.addView(feature, wrap(13));
 
         albumState = message(INK);
@@ -537,13 +545,80 @@ public final class MainActivity extends Activity {
         screen.addView(pair, wrap(top));
     }
 
-    private LinearLayout addAlbums(LinearLayout left, LinearLayout right) {
-        LinearLayout group = wideCards ? row() : column();
-        group.setGravity(Gravity.TOP);
-        group.addView(left, wideCards ? flex(0) : wrap(0));
-        group.addView(right, wideCards ? flex(8) : wrap(8));
-        albumsScreen.addView(group, wrap(9));
-        return group;
+    private void renderAlbumCards() {
+        if(albumGrid==null)return;
+        albumGrid.removeAllViews();
+        // A release publication grows the real shelf; no empty promises.
+        for(int i=0;i<shelfAlbums.size();i+=2){
+            AlbumCatalog.Album leftAlbum=shelfAlbums.get(i);
+            LinearLayout left=albumCard(leftAlbum,AlbumArtwork.forAlbum(leftAlbum.title),leftAlbum.detail);
+            LinearLayout group=wideCards?row():column();
+            if(i+1<shelfAlbums.size()){
+                AlbumCatalog.Album rightAlbum=shelfAlbums.get(i+1);
+                LinearLayout right=albumCard(rightAlbum,AlbumArtwork.forAlbum(rightAlbum.title),rightAlbum.detail);
+                group.addView(left,wideCards?flex(0):wrap(0));
+                group.addView(right,wideCards?flex(8):wrap(8));
+            }else{
+                if(wideCards)left.getChildAt(0).setLayoutParams(
+                        new LinearLayout.LayoutParams(dp(104),dp(104)));
+                group.addView(left,wrap(0));
+            }
+            albumGrid.addView(group,wrap(9));
+        }
+    }
+
+    private void refreshAlbumIndex() {
+        if(!albumRefreshing.compareAndSet(false,true))return;
+        worker.execute(()->{
+            List<AlbumCatalog.Album> published=null;
+            try {published=AlbumCatalog.discover();}
+            catch(Exception ignored) {
+                // An offline listener keeps the two built-in published records.
+            } finally {albumRefreshing.set(false);}
+            if(published==null)return;
+            final List<AlbumCatalog.Album> found=published;
+            runOnUiThread(()->{
+                if(!alive)return;
+                shelfAlbums=found;
+                featuredAlbum=found.get(0);
+                renderAlbumCards();
+                lastFeatureCoverKey="";
+                redraw();
+            });
+        });
+    }
+
+    private AlbumCatalog.Album findAlbum(MediaItem item) {
+        if(item==null)return null;
+        String id=item.mediaId;
+        CharSequence title=item.mediaMetadata.albumTitle;
+        for(AlbumCatalog.Album album:shelfAlbums) {
+            if(id.startsWith("album:"+album.id+":") ||
+                    (title!=null && album.title.equalsIgnoreCase(title.toString())))return album;
+        }
+        return null;
+    }
+
+    private void showAlbumCover(ImageView image,AlbumCatalog.Album album) {
+        image.setTag(album.id);
+        int bundled=AlbumArtwork.forAlbum(album.title);
+        if(bundled!=R.drawable.ic_radio) {
+            image.setImageResource(bundled);
+            return;
+        }
+        Bitmap cached=coverCache.get(album.coverUrl);
+        if(cached!=null) {image.setImageBitmap(cached);return;}
+        image.setImageResource(R.drawable.ic_radio);
+        worker.execute(()->{
+            Bitmap art=null;
+            try{art=AlbumCoverLoader.fetch(album.coverUrl);}catch(Exception ignored){}
+            final Bitmap result=art;
+            runOnUiThread(()->{
+                if(result!=null)coverCache.put(album.coverUrl,result);
+                if(alive && album.id.equals(image.getTag()) && result!=null)
+                    image.setImageBitmap(result);
+            });
+        });
     }
 
     private LinearLayout albumCard(AlbumCatalog.Album album, int art, String detail) {
@@ -553,6 +628,7 @@ public final class MainActivity extends Activity {
         cover.setContentDescription("Open " + album.title + " album page");
         cover.setFocusable(true);
         cover.setOnClickListener(v -> visit(album.pageUrl));
+        showAlbumCover(cover,album);
         return card;
     }
 
@@ -732,6 +808,7 @@ public final class MainActivity extends Activity {
 
     @Override public void onStart(){
         super.onStart();alive=true;
+        refreshAlbumIndex();
         SessionToken token=new SessionToken(this,new ComponentName(this,RadioPlaybackService.class));
         controllerFuture=new MediaController.Builder(this,token).buildAsync();
         controllerFuture.addListener(()->{
@@ -1020,14 +1097,32 @@ public final class MainActivity extends Activity {
         nowPlaying.setText(item == null ? "Ready to tune in" : name);
         playingArtist.setVisibility(item == null ? View.GONE : View.VISIBLE);
         playingArtist.setText(artist);
-        radioArt.setImageResource(artwork);
+        AlbumCatalog.Album activeAlbum=albumActive?findAlbum(item):null;
+        if(!thisId.equals(lastRadioCoverId)) {
+            lastRadioCoverId=thisId;
+            if(activeAlbum!=null)showAlbumCover(radioArt,activeAlbum);
+            else {
+                radioArt.setTag(null);
+                radioArt.setImageResource(artwork);
+            }
+        }
 
         View feature = (View) featureArt.getParent();
         featureHeading.setText(albumActive
                 ? (playing ? "ALBUM PLAYING" : loadingTrack ? "OPENING ALBUM" : "ALBUM SELECTED")
                 : "FEATURED ALBUM");
-        albumPlaying.setText(albumActive ? name : "MUTANT POP");
-        featureArt.setImageResource(albumActive ? artwork : R.drawable.album_mutant_pop);
+        albumPlaying.setText(albumActive ? name : featuredAlbum.title);
+        AlbumCatalog.Album coverAlbum=albumActive?activeAlbum:featuredAlbum;
+        String coverKey=(albumActive?"playing:":"featured:")+
+                (coverAlbum==null?"unknown":coverAlbum.id);
+        if(!coverKey.equals(lastFeatureCoverKey)){
+            lastFeatureCoverKey=coverKey;
+            if(coverAlbum!=null)showAlbumCover(featureArt,coverAlbum);
+            else {
+                featureArt.setTag(null);
+                featureArt.setImageResource(artwork);
+            }
+        }
         featureArtist.setVisibility(albumActive ? View.VISIBLE : View.GONE);
         if (albumActive) {
             CharSequence albumTitle = item.mediaMetadata.albumTitle;
@@ -1035,7 +1130,7 @@ public final class MainActivity extends Activity {
         }
         feature.setClickable(!albumActive);
         feature.setFocusable(!albumActive);
-        feature.setContentDescription(albumActive ? null : "Play featured album, MUTANT POP");
+        feature.setContentDescription(albumActive ? null : "Play featured album, "+featuredAlbum.title);
         albumNext.setVisibility(albumActive ? View.VISIBLE : View.GONE);
     }
 }
