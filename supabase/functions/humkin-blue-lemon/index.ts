@@ -43,6 +43,7 @@ async function publicHealth(req: Request) {
   return response(req,{ok:true,schema:"humkin.blue-lemon/v1",connected:ready,catalog_count:count||0,issued_cards_disclosed:false});
 }
 async function workerAction(req:Request, action:string, body:Record<string,unknown>, workerId:string) {
+  if (action==="worker_probe") return response(req,{ok:true,authorized:true});
   if (action==="worker_heartbeat" || action==="worker_offline") {
     const {error}=await db.from("humkin_lemon_workers")
       .update({last_seen_at:action==="worker_offline"?null:new Date().toISOString()})
@@ -95,13 +96,10 @@ async function workerAction(req:Request, action:string, body:Record<string,unkno
     if(typeof id!=="string" || !/^[0-9a-f-]{36}$/i.test(id) || !["aired","failed"].includes(String(status)))
       return failure(req,400,"INVALID_FINISH");
     const {data,error}=await db.from("humkin_lemon_queue")
-      .update({status,lease_until:null,aired_at:null})
+      .update({status,lease_until:null,aired_at:status==="aired"?new Date().toISOString():null})
       .eq("id",id).eq("status","leased").eq("lease_worker",workerId).select("id").maybeSingle();
     if(error)return failure(req,503,"QUEUE_UNAVAILABLE");
     if(!data)return failure(req,409,"NOT_LEASED_BY_WORKER");
-    if(status==="aired"){
-      await db.from("humkin_lemon_queue").update({aired_at:new Date().toISOString()}).eq("id",id).eq("status","aired");
-    }
     return response(req,{ok:true,id,status});
   }
   return failure(req,400,"UNKNOWN_ACTION");
