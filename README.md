@@ -120,3 +120,14 @@ New playable annex: /fm/orchard/ . Listeners can play the **real station song ca
 
 **Boundaries:** All rewards, serials, inventories and receipts remain on one device; neither peer trading nor real GHoT distributed work has shipped. The workbench performs a bounded local metadata audit with a local-only receipt; it doesn't run remote user tasks or certify a global contribution. No financial token, no background mining, no phone-on rewards. Android native APK isn't changed by this browser/PWA work. See docs/ORCHARD-001.md and tests/orchard.test.cjs.
 
+
+
+## The Living Orchard — Signed Network 004 / Foreground Relay 005 (November 16, 2026)
+
+**New public entry:** /fm/orchard/network.html . The real HUMKIN RADIO, Top 42 record league, original local listening RPG, and new Station Guilds are now linked into one navigable listener network. This is separate from the original 12-track album landing.
+
+The network now has opt-in *server-hosted public room snapshots*, signed P-256 browser listener identities, short-lived presence, server-issued nonmonetary collectibles, one-day recipient-accepted atomic trades, and bounded server-verified catalog-check receipts. A separately opted-in visible browser can also answer another listener's fresh room request through the station relay. A completed live serve earns a once-per-issuer server-recorded Porch Bell, not fictitious listening or staking money. All private network tables are protected by RLS, Edge signatures and service-only atomic RPCs; no service secrets in frontend code.
+
+**Evidence:** CI integration tests exercise two distinct signed identities, private-home refusal, replay protection, exactly-once artifact transfer and catalog task; an additional live service test demonstrates request/poll/fresh delivery and withdrawal. Frontend deployment still requires merge+Pages Action. No two-physical-phone trial or native GHoT daemon execution is claimed.
+
+**Important limits:** local HUM, native Signal, Top 42 qualified plays, and staff-reviewed Guild verified HUM are independent ledgers, not freely exchangeable. The current browser key is nonextractable and cannot be recovered after device storage loss. Public rooms are server-hosted; live peer replies work only while the owner page is visible. This is not a blockchain, stake yield, cash token, guaranteed background phone service, or a production identity/recovery system. Details: docs/ORCHARD-NETWORK-004.md .
