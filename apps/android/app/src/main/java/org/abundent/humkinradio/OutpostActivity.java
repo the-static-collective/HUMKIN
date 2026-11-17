@@ -45,6 +45,9 @@ public final class OutpostActivity extends Activity {
     private TextView missionTitle,missionDescription,missionProgress,achievementText,chronicleText;
     private LinearLayout missionChoices,missionActive;
     private Button missionClaim,claimCache;
+    private LinearLayout discoveryBoard;
+    private TextView milestoneProgress;
+    private int lastMilestoneStage=-1;
     private OutpostMapView map;
     private ScrollView scroll;
 
@@ -212,6 +215,11 @@ public final class OutpostActivity extends Activity {
         discoverText.setGravity(Gravity.END);
         stats.addView(discoverText,new LinearLayout.LayoutParams(0,-2,1f));
         profile.addView(stats,full(13));
+
+        // Progressively revealed worlds live inside the actual Outpost, never
+        // as a crowded first-launch strip on the main radio receiver.
+        discoveryBoard=vertical();
+        body.addView(discoveryBoard,full(14));
 
         // The signature idle loop: music charges a capacitor while you are away
         // from this page; you choose when to cash out and upgrade the station.
@@ -404,12 +412,78 @@ public final class OutpostActivity extends Activity {
         setContentView(scroll);
     }
 
+    private void paintMilestones(SignalRpg.Snapshot state) {
+        int stage=OutpostMilestones.stage(state.level);
+        if(discoveryBoard==null)return;
+        if(lastMilestoneStage!=stage){
+            lastMilestoneStage=stage;
+            discoveryBoard.removeAllViews();
+            eyebrow(discoveryBoard,"02 / THE NEXT PART OF THE STATION",2,HumkinVisuals.PLUM);
+            add(discoveryBoard,"THE DISCOVERY BOARD",27,HumkinVisuals.INK,true,5);
+            add(discoveryBoard,"Something new opens as your actual listening experience grows. The ordinary radio is yours from the first moment.",12,HumkinVisuals.PLUM,false,5);
+
+            if(stage==0){
+                LinearLayout sealed=card(discoveryBoard,0xffede4ee,12);
+                eyebrow(sealed,"SEALED / THE FIRST GREEN SIGNAL",0,HumkinVisuals.PLUM);
+                add(sealed,"SOMETHING IS TAKING ROOT.",20,HumkinVisuals.INK,true,7);
+                add(sealed,"The signal can grow more than a tower. Keep listening until Level 4, then return to find what opened.",12,HumkinVisuals.PLUM,false,8);
+                milestoneProgress=add(sealed,"LEVEL 4 / WORK IN PROGRESS",11,HumkinVisuals.INK,true,11);
+            }else{
+                LinearLayout orchard=card(discoveryBoard,0xffd7e8ce,12);
+                eyebrow(orchard,"NEW WORLD / UNLOCKED AT LEVEL 4",0,HumkinVisuals.PLUM);
+                add(orchard,"THE LISTENING ORCHARD.",21,HumkinVisuals.INK,true,8);
+                add(orchard,"A garden and a room that grow as the radio plays. Find, collect and arrange peculiar things.",12,HumkinVisuals.INK,false,6);
+                Button enterOrchard=pill("✳ ENTER THE ORCHARD ↗",HumkinVisuals.YELLOW,14);
+                enterOrchard.setOnClickListener(v->openMilestone(OutpostMilestones.ORCHARD));
+                orchard.addView(enterOrchard,full(11));
+
+                if(stage==1){
+                    LinearLayout sealed=card(discoveryBoard,0xffede4ee,10);
+                    eyebrow(sealed,"SEALED / THE LONG-RANGE STATION",0,HumkinVisuals.PLUM);
+                    add(sealed,"A FREQUENCY WITH NO OWNER.",19,HumkinVisuals.INK,true,6);
+                    add(sealed,"The tower hears other listeners now. At Level 7, find out how to answer them.",12,HumkinVisuals.PLUM,false,7);
+                    milestoneProgress=add(sealed,"LEVEL 7 / WORK IN PROGRESS",11,HumkinVisuals.INK,true,11);
+                }else{
+                    LinearLayout bootleg=card(discoveryBoard,0xffffe6af,10);
+                    eyebrow(bootleg,"NEW FREQUENCY / UNLOCKED AT LEVEL 7",0,HumkinVisuals.PLUM);
+                    add(bootleg,"BOOTLEG FREQUENCY.",22,HumkinVisuals.INK,true,7);
+                    add(bootleg,"Tune your own native radio by the songs that gave you hope, brought tears, made you laugh or stayed with you. Mix your ears with the whole listener room.",12,HumkinVisuals.INK,false,7);
+                    Button go=pill("✳ BUILD YOUR FREQUENCY ↗",HumkinVisuals.MINT,15);
+                    go.setOnClickListener(v->openMilestone(OutpostMilestones.BOOTLEG));
+                    bootleg.addView(go,full(11));
+                    milestoneProgress=null;
+                }
+            }
+        }
+        String next=OutpostMilestones.nextDoor(state.level);
+        if(milestoneProgress!=null&&!next.isEmpty()){
+            int level=OutpostMilestones.requiredLevel(next);
+            int needed=OutpostMilestones.remainingXp(next,state.xp);
+            milestoneProgress.setText("LV "+state.level+" / NEXT DOOR: LV "+level
+                    +"  ·  "+needed+" XP UNTIL THE SIGNAL OPENS");
+        }
+    }
+    private void openMilestone(String door){
+        SignalRpg.Snapshot state=SignalRpg.snapshot(this);
+        if(!OutpostMilestones.unlocked(door,state.level)){
+            announce("The next door opens at Outpost level "
+                +OutpostMilestones.requiredLevel(door)+".");
+            return;
+        }
+        if(OutpostMilestones.ORCHARD.equals(door)){
+            startActivity(new Intent(this,OrchardActivity.class));
+        }else if(OutpostMilestones.BOOTLEG.equals(door)){
+            startActivity(new Intent(this,PirateRadioActivity.class));
+        }
+    }
+
     private void drawState() {
         if(levelText==null)return;
         SignalRpg.Snapshot s=SignalRpg.snapshot(this);
         levelText.setText("LEVEL "+s.level);
         rankText.setText(s.rank);
         chapterText.setText(s.chapter+"  /  SECTOR "+(1+(s.level>=4?1:0)+(s.level>=7?1:0)+(s.level>=11?1:0)));
+        paintMilestones(s);
         int lower=SignalMath.levelFloor(s.level);
         int upper=SignalMath.levelFloor(s.level+1);
         experienceText.setText(s.xp+" XP  /  NEXT LEVEL AT "+upper);
