@@ -1,0 +1,42 @@
+const {test}=require("node:test");
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const read=name=>fs.readFileSync(path.join(__dirname,"..",name),"utf8");
+
+test("the chart adds a distinct feelings room without altering qualified-play ranks",()=>{
+ const html=read("fm/top42/index.html");
+ const client=read("fm/top42/resonance.js");
+ const league=read("fm/top42/league.js");
+ assert.match(html,/id="listener-weather"/);
+ assert.match(html,/id="weather-list"/);
+ assert.match(html,/src="\.\/resonance.js"/);
+ assert.match(html,/not a qualified listen/i);
+ assert.match(client,/humkin-resonance/);
+ assert.match(client,/humkin-league/);
+ assert.match(client,/GAVE HOPE/);
+ assert.match(client,/BROUGHT TEARS/);
+ assert.match(client,/LESS ALONE/);
+ assert.match(client,/MADE ME LAUGH/);
+ assert.match(client,/MADE ME MOVE/);
+ assert.match(client,/STAYED WITH ME/);
+ assert.doesNotMatch(client,/action:\s*["']play["']/);
+ assert.match(league,/action:"play"/);
+ assert.match(read("sw.js"),/fm\/top42\/resonance\.js/);
+ assert.doesNotThrow(()=>new Function(client));
+});
+
+test("server keeps human responses out of official listens and restricts private data",()=>{
+ const edge=read("fm/top42/resonance-edge.ts");
+ assert.match(edge,/humkin_listener_weather/);
+ assert.match(edge,/humkin\.listener-weather\/v1/);
+ assert.match(edge,/new Set\(\["hope","tears","seen","laugh","move","stayed"\]\)/);
+ assert.match(edge,/actor_hash/);
+ assert.match(edge,/hash\("resonance\.actor\.v1:"/);
+ assert.match(edge,/verify/gi);
+ assert.doesNotMatch(edge,/\.from\(["']humkin_league_plays/);
+ assert.doesNotMatch(edge,/\.rpc\(["']humkin_league_scores/);
+ assert.doesNotMatch(edge,/raw_ip|user_email|full_name/i);
+ assert.match(edge,/onConflict:"station_week,track_id,actor_hash"/);
+ assert.match(edge,/provisional:true/);
+});
