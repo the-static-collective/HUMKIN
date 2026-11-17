@@ -24,6 +24,9 @@ import android.widget.Toast;
  * pauses. Local game currency cannot buy Top 42 plays or standings.
  */
 public final class OutpostActivity extends Activity {
+    // Disabled until these systems offer meaningful, station-linked actions.
+    // Keep underlying XP, discoveries, unlocked activities and reports intact.
+    private static final boolean SHOW_EXPERIMENTAL_PANELS=false;
     private final Handler refreshHandler=new Handler(Looper.getMainLooper());
     private final Runnable refreshTick=new Runnable() {
         @Override public void run() {
@@ -222,11 +225,14 @@ public final class OutpostActivity extends Activity {
 
         // Progressively revealed worlds live inside the actual Outpost, never
         // as a crowded first-launch strip on the main radio receiver.
-        discoveryBoard=vertical();
-        body.addView(discoveryBoard,full(14));
+        if(SHOW_EXPERIMENTAL_PANELS){
+            discoveryBoard=vertical();
+            body.addView(discoveryBoard,full(14));
+        }
 
         // The service remembers only actual audible progress. Keep this one
         // small optional ticket ahead of the game dashboards.
+        if(SHOW_EXPERIMENTAL_PANELS){
         LinearLayout watch=card(body,0xfff6e8cf,13);
         eyebrow(watch,"THE NIGHT WATCH  /  LOCAL RECEIPT",0,HumkinVisuals.PLUM);
         add(watch,"WHAT THE DIAL REMEMBERS.",22,HumkinVisuals.INK,true,6);
@@ -249,6 +255,7 @@ public final class OutpostActivity extends Activity {
         watch.addView(nightWatchButton,full(10));
         nightWatchDetails=add(watch,"",12,HumkinVisuals.INK,false,10);
         nightWatchDetails.setVisibility(View.GONE);
+        }
 
         // The signature idle loop: music charges a capacitor while you are away
         // from this page; you choose when to cash out and upgrade the station.
@@ -293,9 +300,9 @@ public final class OutpostActivity extends Activity {
                 if(SignalRpg.upgrade(this,module)){
                     java.util.List<SignalFeatures.Door> newDoors=
                         SignalFeatures.justUnlocked(module,old,old+1);
-                    if(!newDoors.isEmpty())
+                    if(SHOW_EXPERIMENTAL_PANELS && !newDoors.isEmpty())
                         announce("UNLOCKED: "+newDoors.get(0).title+"! A new desk is operational.");
-                    else announce("Workshop upgraded. The dial is learning.");
+                    else announce("Workshop upgraded. Your station produces more from actual listening.");
                 }else announce("Not enough SIGNAL. Collect more from the capacitor.");
             });
             LinearLayout.LayoutParams action=new LinearLayout.LayoutParams(dp(116),dp(69));
@@ -306,6 +313,7 @@ public final class OutpostActivity extends Activity {
 
         // A visible capability tree with actual interaction screens, not
         // cosmetic level-up text. Unimplemented doors remain honest previews.
+        if(SHOW_EXPERIMENTAL_PANELS){
         eyebrow(body,"04 / REPAIR THE STATION, CHANGE WHAT YOU CAN DO",30,HumkinVisuals.PLUM);
         add(body,"THE UNLOCK BOARD",30,HumkinVisuals.INK,true,6);
         add(body,"The board unfolds as each workshop department improves. "+
@@ -342,35 +350,36 @@ public final class OutpostActivity extends Activity {
             detail.addView(open,action);
             card.addView(detail,full(7));
         }
+        }
 
         eyebrow(body,"05 / THE ROAD BEYOND",28,HumkinVisuals.PLUM);
         add(body,"FIELD MISSIONS",29,HumkinVisuals.INK,true,7);
-        add(body,"Dispatch an imaginary crew. Missions advance only while you hear real music.",12,HumkinVisuals.PLUM,false,6);
+        add(body,"Pick a listening challenge. Progress counts only while actual music plays.",12,HumkinVisuals.PLUM,false,6);
         LinearLayout expeditions=card(body,0xffeee0ec,12);
         missionChoices=vertical();
-        String[] missions={"REPAIR THE AM RELAY  /  8 MINUTES",
-                "RECOVER LOST B-SIDES  /  4 DISTINCT SONGS",
+        String[] missions={"STAY TUNED  /  8 MINUTES",
+                "HEAR FOUR DIFFERENT SONGS",
                 "THE LONG NIGHT  /  25 MINUTES (LEVEL 4)"};
         for(int i=0;i<3;i++){
             final int id=i;
             Button button=pill(missions[i],i==1?HumkinVisuals.MINT:HumkinVisuals.YELLOW,12);
             button.setOnClickListener(v->{
-                if(SignalRpg.startMission(this,id))announce("Crew dispatched. Keep the radio on.");
-                else announce("This mission is locked or another crew is already away.");
+                if(SignalRpg.startMission(this,id))announce("Challenge started. Keep listening.");
+                else announce("This challenge is locked or one is already active.");
             });
             button.setTag("mission"+i);
             missionChoices.addView(button,full(i==0?0:8));
         }
         expeditions.addView(missionChoices,full(0));
         missionActive=vertical();
-        eyebrow(missionActive,"THE CREW IS OUT",0,HumkinVisuals.PLUM);
-        missionTitle=add(missionActive,"ON AN EXPEDITION",23,HumkinVisuals.INK,true,5);
+        eyebrow(missionActive,"YOUR CURRENT LISTENING CHALLENGE",0,HumkinVisuals.PLUM);
+        missionTitle=add(missionActive,"NOW IN PROGRESS",23,HumkinVisuals.INK,true,5);
         missionDescription=add(missionActive,"",13,HumkinVisuals.PLUM,false,6);
         missionProgress=add(missionActive,"",14,HumkinVisuals.INK,true,10);
         missionClaim=pill("CLAIM EXPEDITION",HumkinVisuals.YELLOW,15);
         missionClaim.setOnClickListener(v->{
-            if(SignalRpg.claimMission(this))announce("Expedition complete. The crew brought something back.");
-            else announce("Crew is still out. Let the radio keep playing.");
+            if(SignalRpg.claimMission(this))announce("Listening challenge complete. Signal collected.");
+            else announce("Not finished yet. Keep listening.");
         });
         missionActive.addView(missionClaim,full(13));
         expeditions.addView(missionActive,full(0));
@@ -401,6 +410,10 @@ public final class OutpostActivity extends Activity {
         }
         shiftText=add(orders,"SHIFTS RESET AT CENTRAL TIME MIDNIGHT",10,HumkinVisuals.PLUM,true,14);
 
+        // No trophy cabinet, fake notices, faux locked doors or oversized
+        // secondary dashboards on the receiver. Their data and real station
+        // destinations remain available elsewhere for future integrations.
+        if(SHOW_EXPERIMENTAL_PANELS){
         eyebrow(body,"07 / YOUR TROPHY CABINET",28,HumkinVisuals.PLUM);
         add(body,"WALL OF ODDITIES",29,HumkinVisuals.INK,true,5);
         LinearLayout trophy=card(body,0xfffffdf6,11);
@@ -435,9 +448,9 @@ public final class OutpostActivity extends Activity {
         open.setOnClickListener(v->league());
         leagueCard.addView(open,full(14));
 
-        add(body,"THE SMALL PRINT: Signal, experience, missions and badges live on this device. "+
-            "They advance only during real audio playback, not when the app is closed and silent. "+
-            "Outpost rewards never manufacture public radio points, plays or listeners.",
+        }
+        add(body,"Station Signal is a local listening game—not money or public chart plays. "+
+            "Progress comes from actual audio, never from opening this screen.",
             11,HumkinVisuals.PLUM,false,20);
         setContentView(scroll);
     }
@@ -564,18 +577,18 @@ public final class OutpostActivity extends Activity {
         missionChoices.setVisibility(s.missionActive?View.GONE:View.VISIBLE);
         missionActive.setVisibility(s.missionActive?View.VISIBLE:View.GONE);
         if(s.missionActive){
-            String[] names={"REPAIR THE AM RELAY","RECOVER LOST B-SIDES","THE LONG NIGHT"};
+            String[] names={"STAY TUNED","FOUR DIFFERENT SONGS","THE LONG NIGHT"};
             missionTitle.setText(names[s.missionId]);
             missionDescription.setText(s.missionId==1?
                 "Find four different real recordings. Each must play at least 30 seconds.":
                 "Keep any real album, road shuffle or station stream playing.");
             missionProgress.setText(Math.min(s.missionProgress,s.missionTarget)+
                 " / "+s.missionTarget+" "+(s.missionId==1?"DISTINCT SONGS":"MINUTES")
-                +(s.missionReady()?"  ·  CREW IS HOME":"  ·  EXPEDITION RUNNING"));
+                +(s.missionReady()?"  ·  READY TO CLAIM":"  ·  IN PROGRESS"));
             missionClaim.setEnabled(s.missionReady());
             missionClaim.setText(s.missionReady()?
                 "CLAIM  +"+SignalMath.missionReward(s.missionId)+" SIGNAL":
-                "CREW STILL OUT");
+                "KEEP LISTENING");
         }
         View nightMission=missionChoices.findViewWithTag("mission2");
         if(nightMission!=null)nightMission.setEnabled(s.level>=4);
@@ -595,8 +608,8 @@ public final class OutpostActivity extends Activity {
         badge(earned,s.missions>=3,"CREW CHIEF","Three expeditions completed");
         badge(earned,s.level>=10,"TOWER KEEPER","Reached level ten");
         badge(earned,s.chartVisited,"SCOUT'S HONOR","Visited the Top 42");
-        chronicleText.setText(s.journal);
-        achievementText.setText(earned.length()==0?
+        if(chronicleText!=null)chronicleText.setText(s.journal);
+        if(achievementText!=null)achievementText.setText(earned.length()==0?
             "◌ SIX ODDITIES TO FIND. Your first one is only a minute away.":
             earned.toString());
     }
