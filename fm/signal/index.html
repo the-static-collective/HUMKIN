@@ -10,6 +10,7 @@
 <title>MY LITTLE SIGNAL · HUMKIN RADIO</title>
 <link rel="stylesheet" href="./signal.css">
 <script defer src="./model.js"></script>
+<script defer src="./seed.js"></script>
 <script defer src="./signal.js"></script>
 </head>
 <body>
@@ -56,6 +57,15 @@
    <button type="button" id="share" disabled>↗ SEND THE SIGNAL</button>
   </div>
   <p id="message" class="message" role="status" aria-live="polite">Your draft stays on this device until you choose to share it.</p>
+  <details class="station-seed-tools">
+   <summary id="seed-summary">MY STATION SEED · NOT YET PLANTED</summary>
+   <p id="seed-status">Your first three songs and their order become the seed of your station when you press Start.</p>
+   <div class="seed-actions"><button type="button" id="backup-seed" disabled>↓ BACK UP MY STATION</button>
+    <label for="restore-seed" class="restore-label">↑ RESTORE A STATION</label>
+    <input type="file" id="restore-seed" accept=".json,application/json" hidden>
+   </div>
+   <small>Stored on this device. A backup preserves your original selections and your current arrangement. This is not a network account.</small>
+  </details>
   <div id="fallback" hidden><label for="share-url" class="eyebrow">YOUR LINK · COPY IT MANUALLY</label><input id="share-url" readonly aria-label="Shareable station link"></div>
  </article>
  <aside class="side">
