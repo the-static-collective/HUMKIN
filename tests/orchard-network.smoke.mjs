@@ -50,4 +50,29 @@ r=await send(a,"complete",{challenge_id:challenge,digest});
 assert.equal(r.status,200,JSON.stringify(r.data));
 assert.ok(r.data.receipt.artifact_id);
 r=await send(a,"complete",{challenge_id:challenge,digest});assert.equal(r.status,409);
+// A real relay-assisted peer serve: B asks, foreground A offers a fresh room,
+// the station relays it, and only a valid signed serve earns one Porch Bell.
+await new Promise(resolve=>setTimeout(resolve,20200)); // prior private publication has a 20s write cooldown.
+r=await send(a,"publish",{public:true,name:"CI FIELD TEST (TEMPORARY)",home:{room:"CI TEMP LIVE ROOM",stage:1,things:["blue-cup"],minutes:0}});
+assert.equal(r.status,200,JSON.stringify(r.data));
+r=await send(a,"heartbeat",{serve:true});assert.equal(r.status,200,JSON.stringify(r.data));
+r=await send(b,"request_live",{to:a.id});assert.equal(r.status,200,JSON.stringify(r.data));
+const liveId=r.data.request.id;
+r=await send(a,"poll_live");assert.equal(r.status,200,JSON.stringify(r.data));
+assert.ok(r.data.requests.some(x=>x.id===liveId));
+r=await send(a,"serve_live",{request_id:liveId,home:{room:"CI FRESH ROOM",stage:2,things:["first-seed"],minutes:0}});
+assert.equal(r.status,200,JSON.stringify(r.data));
+assert.ok(r.data.served.served);
+let result=await fetch(endpoint+"?mode=live-result&id="+liveId);
+assert.equal(result.status,200);const live=await result.json();
+assert.equal(live.state,"served");assert.equal(live.home.room,"CI FRESH ROOM");
+r=await send(a,"serve_live",{request_id:liveId,home:{room:"REPLAY"}});
+assert.equal(r.status,409,"live serve must be exactly once");
+r=await send(a,"state");assert.ok(r.data.artifacts.some(x=>x.kind==="porch-bell"));
+await new Promise(resolve=>setTimeout(resolve,20200)); // return the synthetic test porch to PRIVATE.
+r=await send(a,"publish",{public:false,name:"CI PRIVATE A",home:{room:"CI PRIVATE ROOM",stage:0,things:[],minutes:0}});
+assert.equal(r.status,200,JSON.stringify(r.data));
+assert.equal((await fetch(endpoint+"?mode=home&id="+a.id)).status,404);
+console.log("PASS: live owner-consented peer snapshot request/serve/result, Porch Bell, replay refusal and privacy withdrawal");
+
 console.log("PASS orchard network: signed identities, replay refusal, opt-out, presence, atomic transfer, verified catalog work");
