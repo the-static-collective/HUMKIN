@@ -10,8 +10,8 @@ android {
         applicationId 'org.abundent.humkinradio'
         minSdk 26
         targetSdk 36
-        versionCode 23
-        versionName '0.23.0'
+        versionCode 24
+        versionName '0.24.0'
         resValue 'string', 'app_name', 'HUMKIN RADIO'
     }
 
@@ -21,9 +21,9 @@ android {
     buildTypes {
         fieldTest {
             initWith debug
-            applicationIdSuffix '.discovery'
+            applicationIdSuffix '.records'
             versionNameSuffix '-fieldtest'
-            resValue 'string', 'app_name', 'HUMKIN · OUTPOST 023'
+            resValue 'string', 'app_name', 'HUMKIN · RECORDS 024'
         }
         // The GitHub Actions debug signature may differ from previous runs.
         // A side-by-side variant lets a listener try Night Watch without
@@ -47,4 +47,5 @@ dependencies {
     implementation "androidx.media3:media3-exoplayer:$media3_version"
     implementation "androidx.media3:media3-session:$media3_version"
     testImplementation "junit:junit:4.13.2"
+    testImplementation 'org.json:json:20240303'
 }
