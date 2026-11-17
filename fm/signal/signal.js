@@ -16,10 +16,10 @@ function node(tag,text,cls){
 function notice(text){$("message").textContent=text}
 function seedDisplay(){
   const existing=!!rootSeed;
-  $("play").textContent=existing?"▶ HEAR MY SIGNAL":"▶ START MY STATION";
+  $("play").textContent=guest?"▶ HEAR THIS SIGNAL":existing?"▶ HEAR MY SIGNAL":"▶ START MY STATION";
   $("backup-seed").disabled=!existing;
   $("seed-summary").textContent=existing?"MY STATION SEED · SAVED":"MY STATION SEED · NOT YET PLANTED";
-  $("seed-status").textContent=existing?
+  $("seed-status").textContent=guest?"This is a visiting signal. Make it yours to save a founding seed locally.":existing?
     "Founded with "+rootSeed.founding.tracks.map(t=>t.title||t.id).join(" · ")+". These first choices stay remembered while your station evolves.":
     "Your first three songs, their order and your programming rule become the origin of your station when you start. Later changes won't erase it.";
 }
