@@ -23,7 +23,6 @@ jobs:
       - run: python3 scripts/build_dj_pack.py
       - run: node tests/dj.test.mjs
       - run: node tests/radio.test.mjs
-      - run: node tests/receiver.test.mjs
       - run: node tests/radio-loader.test.mjs
       - run: node tests/radio-manager.test.mjs
       - run: node tests/radio-studio.test.mjs

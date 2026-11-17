@@ -11,7 +11,6 @@
 <meta property="og:url" content="https://humkin.abundent.org/fm/">
 <title>HUMKIN RADIO · Music for the Long Way Home</title>
 <link rel="stylesheet" href="./radio.css">
-<link rel="stylesheet" href="./receiver.css">
 <link rel="manifest" href="./manifest.webmanifest">
 <script defer src="./scheduler.js"></script>
 <script defer src="./autodj.js"></script>
@@ -24,7 +23,6 @@
 <script defer src="./hosted-nowplaying.js"></script>
 <script defer src="./chart-rotation.js"></script>
 <script defer src="./radio.js"></script>
-<script defer src="./receiver.js"></script>
 <script defer src="./archive/ledger.js"></script>
 <script defer src="./orchard/model.js"></script>
 <script defer src="./orchard/night-watch.js"></script>
@@ -32,93 +30,6 @@
 <script defer src="./orchard/night-watch-ui.js"></script>
 </head>
 <body>
-
-<section id="living-receiver" class="receiver-stage" aria-label="HUMKIN living radio receiver">
-  <div class="receiver-shell" id="receiver-shell">
-    <div class="receiver-topstrap"><span>✳</span> FREE SOUNDS FROM ANOTHER DIRECTION <span>✳</span></div>
-    <div class="receiver-antenna" aria-hidden="true"></div>
-    <div class="receiver-logo-block">
-      <p class="receiver-kicker">THE LITTLE HUMAN TRANSMITTER</p>
-      <div class="receiver-logo" aria-label="HUMKIN">HUMKIN<span>✳</span></div>
-      <div class="receiver-brand-line"><span>RADIO<span class="receiver-lightning">ϟ</span>REBEL</span><small>THE AIR BELONGS TO EVERYBODY</small></div>
-    </div>
-    <div class="receiver-future">EST. IN THE FUTURE</div>
-    <svg class="receiver-swirl receiver-swirl-upper-left" viewBox="0 0 120 170" aria-hidden="true"><path d="M9 143C18 90 83 72 97 30 104 7 60 8 44 37 33 54 38 70 48 76 39 74 24 63 20 49 4 1 75-17 104 30 120 59 91 84 64 101 42 116 22 133 9 143Z" fill="#f59a83" stroke="#ffc655" stroke-width="7"/><path d="M25 150C53 105 100 102 99 73 87 100 67 101 50 113 24 131 17 149 25 150Z" fill="#6aab87" stroke="#08294e" stroke-width="5"/><path d="M35 43C61 12 99 23 93 44 84 62 65 48 71 34 50 34 36 50 35 43Z" fill="#fdd65a"/><circle cx="19" cy="97" r="9" fill="#fbd65e"/><circle cx="24" cy="97" r="5" fill="#082e4d"/></svg>
-    <svg class="receiver-swirl receiver-swirl-upper-right" viewBox="0 0 120 170" aria-hidden="true"><path d="M9 143C18 90 83 72 97 30 104 7 60 8 44 37 33 54 38 70 48 76 39 74 24 63 20 49 4 1 75-17 104 30 120 59 91 84 64 101 42 116 22 133 9 143Z" fill="#f59a83" stroke="#ffc655" stroke-width="7"/><path d="M25 150C53 105 100 102 99 73 87 100 67 101 50 113 24 131 17 149 25 150Z" fill="#6aab87" stroke="#08294e" stroke-width="5"/><path d="M35 43C61 12 99 23 93 44 84 62 65 48 71 34 50 34 36 50 35 43Z" fill="#fdd65a"/><circle cx="19" cy="97" r="9" fill="#fbd65e"/><circle cx="24" cy="97" r="5" fill="#082e4d"/></svg>
-    <div class="receiver-screw sc-1" aria-hidden="true"></div><div class="receiver-screw sc-2" aria-hidden="true"></div>
-    <div class="receiver-screw sc-3" aria-hidden="true"></div><div class="receiver-screw sc-4" aria-hidden="true"></div>
-    <div class="receiver-screw sc-5" aria-hidden="true"></div><div class="receiver-screw sc-6" aria-hidden="true"></div>
-    <section class="receiver-frequency" aria-label="Virtual station frequency">
-      <div class="receiver-axis"><span>FM</span><span>AM</span></div>
-      <div class="receiver-scale">
-        <div class="receiver-fm-numbers"><span>88</span><span>90</span><span>94</span><span>98</span><span>102</span><span>106</span><span>108</span></div>
-        <div class="receiver-fm-track" aria-hidden="true"><span class="receiver-needle" id="receiver-needle"></span></div>
-        <div class="receiver-am-numbers"><span>530</span><span>700</span><span>900</span><span>1200</span><span>1500</span><span>1700</span></div>
-      </div>
-      <div class="receiver-units"><span>MHz</span><span>kHz</span></div>
-    </section>
-    <div class="receiver-pocket"><strong>ϟ</strong><span>THE<br>POCKET<br>RECEIVER</span></div>
-    <div class="receiver-volume-box">
-      <span class="receiver-control-heading">VOLUME</span>
-      <label class="receiver-volume-ring">
-        <span class="receiver-volume-hardware" id="receiver-volume-hardware"><span class="receiver-volume-core"></span></span>
-        <input id="receiver-volume" type="range" min="0" max="100" value="75" aria-label="Volume">
-      </label>
-      <div class="receiver-volume-legend"><span>MIN</span><span>MAX</span></div>
-    </div>
-    <div class="receiver-tuning-box">
-      <button id="receiver-tuning" class="receiver-tuning" type="button" role="slider" aria-label="Virtual FM frequency. Drag or use arrow keys." aria-valuemin="88" aria-valuemax="108" aria-valuenow="98.2" aria-valuetext="98.2 FM" tabindex="0">
-        <span class="receiver-tuning-ring"></span><span class="receiver-knob" id="receiver-knob"><span class="receiver-knob-disc"><span class="receiver-index-mark"></span></span></span>
-      </button>
-      <div class="receiver-tuning-legend"><span>◀</span><b>TUNING</b><span>▶</span></div>
-    </div>
-    <div class="receiver-switchbank" role="group" aria-label="Band and controls">
-      <div class="receiver-switch-unit"><span>BAND</span><button class="receiver-switch" id="receiver-band" aria-label="Switch from FM to AM archive band" aria-pressed="false"><i></i></button><small>FM<br>AM</small></div>
-      <div class="receiver-switch-unit"><span>MODE</span><button class="receiver-switch" id="receiver-mono" aria-label="Stereo or mono monitor under construction" aria-pressed="false"><i></i></button><small>STEREO<br>MONO</small></div>
-      <div class="receiver-switch-unit"><span>BOOST</span><button class="receiver-switch" id="receiver-boost" aria-label="Signal boost under construction" aria-pressed="false"><i></i></button><small>OFF<br>ON</small></div>
-    </div>
-    <button class="receiver-signal" id="receiver-signal" type="button" aria-label="Show connection and station signal status">
-      <span class="receiver-control-heading">SIGNAL</span><span class="receiver-signal-bars">▰ ▰ ▰ ▰ ▰</span>
-      <span class="receiver-signal-hardware"></span><span class="receiver-led" id="receiver-led"></span>
-    </button>
-    <div class="receiver-pirate-sticker" aria-hidden="true">RADIO<br>PIRATE<br>CREW ϟ</div>
-    <section class="receiver-now" aria-labelledby="receiver-now-label">
-      <a href="../" class="receiver-record" aria-label="Open HUMKIN records"><span class="receiver-record-sticker">A REAL HUMAN RECORD</span>
-        <span class="receiver-vinyl"><img id="receiver-current-art" src="../cover.jpg" alt="Current album artwork"></span><span class="receiver-label-sticker">NO<br>GATE<br>KEEPERS</span>
-      </a>
-      <div class="receiver-now-copy"><p id="receiver-now-label"><span id="receiver-live-dot" class="receiver-live-dot"></span> NOW SPINNING / PREVIEW</p>
-        <h1 id="receiver-current-title">FINDING A SONG…</h1><p id="receiver-current-artist">HUMKIN · RADIO</p>
-        <div class="receiver-wave" id="receiver-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      </div>
-    </section>
-    <div class="receiver-modes" role="group" aria-label="Radio listening modes">
-      <button id="receiver-clock" type="button" class="receiver-mode receiver-mode-active" aria-pressed="true"><span class="receiver-mode-lamp"></span> SAME-TIME RADIO</button>
-      <button id="receiver-shuffle" type="button" class="receiver-mode" aria-pressed="false">∿ ROAD SHUFFLE</button>
-    </div>
-    <button class="receiver-tunein" id="receiver-tunein" type="button" aria-label="Tune in to HUMKIN Radio" disabled><span class="receiver-play">▶</span><span id="receiver-tunein-label">TUNE IN</span></button>
-    <div class="receiver-road">MUSIC FOR THE LONG WAY HOME</div>
-    <div class="receiver-speaker" aria-hidden="true"><div class="receiver-speaker-flowers">❧</div><div class="receiver-speaker-star">✳</div><div class="receiver-speaker-flowers mirror">❧</div></div>
-    <nav class="receiver-nav" aria-label="HUMKIN sections">
-      <a class="receiver-nav-active" href="./" aria-current="page"><span>◉</span>RADIO</a>
-      <a href="../"><span>▥</span>RECORDS</a>
-      <a href="./orchard/network.html"><span>✳</span>OUTPOST</a>
-      <a href="./top42/"><span>ϟ</span>SIGNAL</a>
-    </nav>
-    <div class="receiver-footer">✳ &nbsp; STRANGE FLOWERS · GOOD COMPANY · NO TOLLS &nbsp; ✳</div>
-    <output class="receiver-toast" id="receiver-toast" aria-live="polite" aria-atomic="true" hidden></output>
-    <div class="receiver-workshop" id="receiver-workshop" role="dialog" aria-modal="true" aria-labelledby="receiver-workshop-title" hidden>
-      <div class="receiver-workshop-panel">
-        <button class="receiver-workshop-close" type="button" id="receiver-workshop-close" aria-label="Close workshop">×</button>
-        <div class="receiver-workshop-spark" aria-hidden="true">ϟ ⚡ ϟ</div><p>THE CIRCUIT BOARD REPORTS</p>
-        <h2 id="receiver-workshop-title">LOOSE WIRE!</h2>
-        <p id="receiver-workshop-description">This frequency hasn't been built yet. One day the community can wire up its own station.</p>
-        <a href="./participate/" class="receiver-workshop-action">VISIT THE WORKSHOP ↗</a>
-        <button id="receiver-workshop-dismiss" class="receiver-workshop-dismiss" type="button">BACK TO THE DIAL</button>
-      </div>
-    </div>
-  </div>
-  <p class="receiver-explanation">HUMKIN's stations are virtual channels, not licensed terrestrial FM/AM frequencies. The original HUMKIN radio engine plays the real recordings underneath this new receiver.</p>
-</section>
 <header class="topline">
   <a class="brand" href="../" aria-label="HUMKIN album homepage">HUMKIN <span>✳</span></a>
   <span class="station-id">RADIO / NO ADS / NO ACCOUNT</span>
