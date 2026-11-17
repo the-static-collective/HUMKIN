@@ -92,7 +92,15 @@ final class RebelReceiverSkin {
             c.save();c.scale(w/360f,h/35f);
             paisley(c,8,28,.7f);
             c.save();c.translate(360,0);c.scale(-1,1);paisley(c,8,28,.7f);c.restore();
-            star(c,180,17,11,GOLD);
+            p.setStyle(Paint.Style.STROKE);
+            p.setColor(GOLD);
+            p.setStrokeWidth(2.4f);
+            for(int i=0;i<8;i++){
+                double a=i*Math.PI/4;
+                c.drawLine(180+4*(float)Math.cos(a),17+4*(float)Math.sin(a),
+                        180+11*(float)Math.cos(a),17+11*(float)Math.sin(a),p);
+            }
+            p.setStyle(Paint.Style.FILL);
             c.restore();
         }
         private void paisley(Canvas c,float x,float y,float s){
@@ -140,6 +148,7 @@ final class RebelReceiverSkin {
         }
         private void screw(Canvas c,float x,float y) {
             fill(0xff1c2540);c.drawCircle(x+1,y+2,6.5f,p);
+            p.setStyle(Paint.Style.FILL);
             p.setShader(new RadialGradient(x-2,y-2,9,
                     new int[]{0xffffefbb,BRASS,0xff523118},null,Shader.TileMode.CLAMP));
             c.drawCircle(x,y,5,p);p.setShader(null);
@@ -147,6 +156,7 @@ final class RebelReceiverSkin {
         }
         private void knob(Canvas c,float x,float y,float radius,int tint) {
             fill(DARK);c.drawCircle(x+1.5f,y+4,radius+7,p);
+            p.setStyle(Paint.Style.FILL);
             p.setShader(new RadialGradient(x-radius*.4f,y-radius*.5f,radius*1.8f,
                     new int[]{0xfffff9d7,BRASS,0xff5a381f},null,Shader.TileMode.CLAMP));
             c.drawCircle(x,y,radius+2,p);p.setShader(null);
