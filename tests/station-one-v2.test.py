@@ -4,6 +4,7 @@ import importlib.util
 import random
 import sys
 import unittest
+from unittest.mock import patch
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -60,6 +61,25 @@ class ProgrammingTests(unittest.TestCase):
         self.assertGreater(counts["short-a"]+counts["short-b"],0)
         self.assertGreater(counts["medium"],0)
         self.assertGreater(counts["long"],0)
+
+    def test_bonus_spins_do_not_invade_original_cycle_edges(self):
+        from scheduler_v2 import add_bonus_slots
+        baseline=["s%02d"%i for i in range(18)]
+        enhanced=add_bonus_slots(baseline,["s00","s08","s10","s12"],random.Random(7))
+        self.assertEqual(enhanced[:4],baseline[:4])
+        self.assertEqual(enhanced[-4:],baseline[-4:])
+
+    def test_ffmpeg_icecast_source_requires_tls(self):
+        import engine
+        with patch.object(engine.subprocess,"Popen") as popen:
+            engine.output_process("icecast://source:demo@source.invalid:8443/humkin.mp3",128)
+            command=popen.call_args.args[0]
+            self.assertIn("-tls",command)
+            self.assertEqual(command[command.index("-tls")+1],"1")
+        with patch.object(engine.subprocess,"Popen") as popen:
+            engine.output_process("test.mp3",128,realtime=False)
+            command=popen.call_args.args[0]
+            self.assertNotIn("-tls",command)
 
     def test_no_bumpers_when_off(self):
         self.catalog["settings"]["bumper_every"]=0
