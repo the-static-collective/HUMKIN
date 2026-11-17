@@ -50,6 +50,7 @@ import org.abundent.humkinradio.HumkinVisuals.Icon;
 
 public final class MainActivity extends Activity {
     private final ExecutorService worker=Executors.newFixedThreadPool(3);
+    private final ExecutorService coverWorker=Executors.newFixedThreadPool(2);
     private final AtomicBoolean loading=new AtomicBoolean(false);
     private final AtomicBoolean albumRefreshing=new AtomicBoolean(false);
     private MediaController controller;
@@ -583,6 +584,7 @@ public final class MainActivity extends Activity {
                 featuredAlbum=found.get(0);
                 renderAlbumCards();
                 lastFeatureCoverKey="";
+                lastRadioCoverId="";
                 redraw();
             });
         });
@@ -609,7 +611,7 @@ public final class MainActivity extends Activity {
         Bitmap cached=coverCache.get(album.coverUrl);
         if(cached!=null) {image.setImageBitmap(cached);return;}
         image.setImageResource(R.drawable.ic_radio);
-        worker.execute(()->{
+        coverWorker.execute(()->{
             Bitmap art=null;
             try{art=AlbumCoverLoader.fetch(album.coverUrl);}catch(Exception ignored){}
             final Bitmap result=art;
@@ -848,7 +850,7 @@ public final class MainActivity extends Activity {
         }
         super.onStop();
     }
-    @Override public void onDestroy(){worker.shutdownNow();super.onDestroy();}
+    @Override public void onDestroy(){worker.shutdownNow();coverWorker.shutdownNow();super.onDestroy();}
 
     private void tuneIn(){
         if(controller==null){
