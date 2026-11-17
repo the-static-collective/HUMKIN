@@ -22,7 +22,6 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from blue_lemon import BlueLemon
 
 API="https://kbhqacsdvjsstzyplqij.supabase.co"
 KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"
@@ -221,6 +220,7 @@ def streaming(catalog,args):
     cache=Path(args.cache).expanduser().resolve()
     lemon=None
     if args.blue_lemon and not args.file_output:
+        from blue_lemon import BlueLemon
         candidate=BlueLemon()
         if candidate.start(catalog):lemon=candidate
     encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output))
