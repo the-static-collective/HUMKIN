@@ -21,6 +21,9 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".PirateRadioActivity"
+            android:exported="false" />
+        <activity
             android:name=".SignalStudioActivity"
             android:exported="false" />
         <activity
