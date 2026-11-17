@@ -31,7 +31,7 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Build debug receiver
-        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:testDebugUnitTest :app:testFieldTestUnitTest
+        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest
       - uses: actions/upload-artifact@v4
         with:
           name: humkin-radio-android-debug
@@ -41,4 +41,9 @@ jobs:
         with:
           name: humkin-radio-android-field-test
           path: apps/android/app/build/outputs/apk/fieldTest/app-fieldTest.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-night-watch
+          path: apps/android/app/build/outputs/apk/nightWatch/app-nightWatch.apk
           if-no-files-found: error

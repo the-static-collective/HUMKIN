@@ -23,7 +23,16 @@ android {
             initWith debug
             applicationIdSuffix '.discovery'
             versionNameSuffix '-fieldtest'
-            resValue 'string', 'app_name', 'HUMKIN · OUTPOST 022'
+            resValue 'string', 'app_name', 'HUMKIN · OUTPOST 023'
+        }
+        // The GitHub Actions debug signature may differ from previous runs.
+        // A side-by-side variant lets a listener try Night Watch without
+        // uninstalling the earlier Outpost and losing local progress.
+        nightWatch {
+            initWith debug
+            applicationIdSuffix '.nightwatch'
+            versionNameSuffix '-nightwatch'
+            resValue 'string', 'app_name', 'HUMKIN · NIGHT WATCH'
         }
     }
 
