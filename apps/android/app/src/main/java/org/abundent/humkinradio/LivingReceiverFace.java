@@ -52,15 +52,18 @@ final class LivingReceiverFace extends FrameLayout {
     private final Operations commands;
     private final FacePaint painter;
     private final SlicedReceiverSkin chassis;
+    // The old ancestor-search listener never produced the usable Android
+    // window height on the user's phone, so the entire instrument stayed at
+    // its original aspect ratio with hundreds of blank navy pixels below.
+    // MainActivity now explicitly supplies its ScrollView's viewport height.
     private int viewportHeightPx=0;
-    private View boundViewport;
-    private final View.OnLayoutChangeListener viewportListener=(v,l,t,r,b,ol,ot,oright,ob)->{
-        int actual=b-t;
-        if(actual>0&&actual!=viewportHeightPx){
-            viewportHeightPx=actual;
+    void setViewportHeight(int pixels){
+        if(pixels>0 && pixels!=viewportHeightPx){
+            viewportHeightPx=pixels;
             requestLayout();
+            invalidate();
         }
-    };
+    }
     private final ImageView realArt;
     private final TextView title,artist;
     private final View dialTouch;
@@ -85,6 +88,11 @@ final class LivingReceiverFace extends FrameLayout {
         addView(chassis,new FrameLayout.LayoutParams(-1,-1));
         painter=new FacePaint(c);
         addView(painter,new FrameLayout.LayoutParams(-1,-1));
+        // Temporary fallback: replaced by the actual ScrollView height after
+        // the first Android layout pass. Works even if post-layout callbacks
+        // are delayed while connecting Media3 or on a slow 2021 handset.
+        viewportHeightPx=Math.max(0,getResources().getDisplayMetrics().heightPixels
+                -Math.round(28f*getResources().getDisplayMetrics().density));
 
         Bitmap art=BitmapFactory.decodeResource(getResources(),R.drawable.living_receiver_face);
         // The active objects are cut out of the exact uploaded picture, so they
@@ -267,31 +275,6 @@ final class LivingReceiverFace extends FrameLayout {
      * offers. This avoids inventing status/navigation bar dimensions and
      * removes the giant blank navy rectangle on tall Android 11 handsets.
      */
-    @Override protected void onAttachedToWindow(){
-        super.onAttachedToWindow();
-        post(()->{
-            if(getParent()==null)return;
-            View candidate=this;
-            while(candidate.getParent() instanceof View){
-                candidate=(View)candidate.getParent();
-                if(candidate instanceof ScrollView){
-                    if(boundViewport!=candidate){
-                        if(boundViewport!=null)boundViewport.removeOnLayoutChangeListener(viewportListener);
-                        boundViewport=candidate;
-                        boundViewport.addOnLayoutChangeListener(viewportListener);
-                    }
-                    viewportListener.onLayoutChange(candidate,0,0,candidate.getWidth(),
-                            candidate.getHeight(),0,0,0,0);
-                    break;
-                }
-            }
-        });
-    }
-    @Override protected void onDetachedFromWindow(){
-        if(boundViewport!=null)boundViewport.removeOnLayoutChangeListener(viewportListener);
-        boundViewport=null;
-        super.onDetachedFromWindow();
-    }
     @Override protected void onMeasure(int widthMeasureSpec,int heightMeasureSpec){
         int w=MeasureSpec.getSize(widthMeasureSpec);
         if(w<=0)w=864;
@@ -343,6 +326,58 @@ final class LivingReceiverFace extends FrameLayout {
         positionChildren(w);
     }
 
+    /**
+     * Native text and calibration lines replace the unreadable printed radio
+     * frequencies in the first preview import. The aged metal bezel remains
+     * in the source picture; the glass dial face itself is a true Android View
+     * drawing with readable type and a live moving pointer at any screen size.
+     */
+    private void drawNativeFrequencyFace(Canvas canvas,Paint p){
+        canvas.save();
+        p.setStyle(Paint.Style.FILL);
+        p.setShader(new LinearGradient(115,259,115,360,
+                new int[]{0xffe7be84,0xffffedc3,0xffdfb47d},
+                null,Shader.TileMode.CLAMP));
+        RectF glass=new RectF(111,260,752,361);
+        canvas.drawRoundRect(glass,15,15,p);
+        p.setShader(null);
+        p.setColor(0xff19314a);
+        p.setTypeface(Typeface.create("sans-serif-condensed",Typeface.BOLD));
+        p.setTextAlign(Paint.Align.CENTER);
+        p.setTextSize(25f);
+        int[] fm={88,90,94,98,102,106,108};
+        float[] fmX={213,284,354,434,514,591,661};
+        for(int i=0;i<fm.length;i++)canvas.drawText(String.valueOf(fm[i]),fmX[i],291,p);
+        p.setTextSize(22f);
+        canvas.drawText("FM",148,291,p);
+        canvas.drawText("AM",148,352,p);
+        p.setTextSize(16f);
+        canvas.drawText("MHz",714,291,p);
+        canvas.drawText("kHz",714,351,p);
+        p.setTextSize(20f);
+        int[] am={530,700,900,1200,1500,1700};
+        float[] amX={216,297,385,480,576,666};
+        for(int i=0;i<am.length;i++)canvas.drawText(String.valueOf(am[i]),amX[i],351,p);
+        p.setColor(0xff19314a);
+        p.setStrokeWidth(2.2f);
+        canvas.drawLine(194,316,682,316,p);
+        for(int i=0;i<=49;i++){
+            float x=194f+i*(488f/49f);
+            float length=i%7==0?15f:8f;
+            canvas.drawLine(x,316-length/2, x,316+length/2,p);
+        }
+        // Frequencies are *virtual HUMKIN channels*. The pointer is a
+        // truthful in-app navigation indicator, not a claim of RF reception.
+        float markerX=194f+(Math.max(88f,Math.min(108f,frequency))-88f)/20f*488f;
+        p.setShader(new LinearGradient(markerX-4,0,markerX+4,0,
+                new int[]{0xffa42a27,0xffff6959,0xffae2924},
+                null,Shader.TileMode.CLAMP));
+        canvas.drawRoundRect(new RectF(markerX-4.8f,296,markerX+4.8f,348),4.8f,4.8f,p);
+        p.setShader(null);
+        p.setStyle(Paint.Style.FILL);
+        canvas.restore();
+    }
+
     private final class FacePaint extends View {
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
         private final RectF rect=new RectF();
@@ -356,6 +391,7 @@ final class LivingReceiverFace extends FrameLayout {
             c.scale(getWidth()/W,getWidth()/W);
             float extra=ReceiverSliceGeometry.expansion(getWidth(),getHeight());
             float upper=ReceiverSliceGeometry.shiftBefore(743f,extra);
+            drawNativeFrequencyFace(c,p);
             c.save();c.translate(0,upper);
             // The mockup's original fake track title is covered with a paper
             // insert. Its artwork, speaker grille and chrome stay intact.

@@ -10,8 +10,8 @@ android {
         applicationId 'org.abundent.humkinradio'
         minSdk 26
         targetSdk 36
-        versionCode 32
-        versionName '0.32.0'
+        versionCode 33
+        versionName '0.33.0'
         resValue 'string', 'app_name', 'HUMKIN RADIO'
     }
 
@@ -60,6 +60,14 @@ android {
             applicationIdSuffix '.flex'
             versionNameSuffix '-flex'
             resValue 'string', 'app_name', 'HUMKIN · FLEX RECEIVER'
+        }
+        // Side-by-side native responsive fix; GitHub's disposable debug
+        // signing certificates cannot safely update the prior .flex APK.
+        radioFit {
+            initWith debug
+            applicationIdSuffix '.fit'
+            versionNameSuffix '-fit'
+            resValue 'string', 'app_name', 'HUMKIN · FIT RADIO'
         }
         nightWatch {
             initWith debug
