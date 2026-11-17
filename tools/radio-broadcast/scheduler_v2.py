@@ -72,15 +72,18 @@ def add_bonus_slots(base, bonuses, rng):
     bonuses = bonuses[:]
     rng.shuffle(bonuses)
     out = base[:]
+    guard = min(4, len(base) // 4)
     for i, id_ in enumerate(bonuses):
-        target = round((i + 1) * (len(base) + len(bonuses)) / (len(bonuses) + 1))
-        target = min(max(0, target), len(out))
-        limit = min(8, len(out))
+        # Keep original cycle head and tail intact, particularly where the
+        # next era-mixed cycle joins this one. The interior grows as we insert.
+        low, high = guard, len(out) - guard
+        target = low + round((i + 1) * (high - low) / (len(bonuses) + 1))
+        target = min(max(low, target), high)
         candidates = [target]
-        for offset in range(1, limit + 1):
+        for offset in range(1, min(8, len(out)) + 1):
             candidates += [target + offset, target - offset]
         for at in candidates:
-            if 0 <= at <= len(out) and id_ not in out[max(0, at - 4):at + 4]:
+            if low <= at <= high and id_ not in out[max(0, at - 4):at + 4]:
                 target = at
                 break
         out.insert(target, id_)
