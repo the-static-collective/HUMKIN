@@ -78,8 +78,9 @@ footer{padding:20px;text-align:center}
 <section class="panel" aria-labelledby="health-title">
 <h2 id="health-title">02 · Storage gauge</h2>
 <p id="stats">Checking storage…</p>
+<p id="r2-storage-note" class="small" role="status">Checking R2 storage bridge…</p>
 <p id="total">0:00 on air</p>
-<p class="small">Existing radio tracks stay untouched. This new crate is staged separately. The connected Supabase organization is on its <strong>1 GB free storage allowance</strong>, shared with other projects. Loader uses a conservative 700 MiB soft budget—stop before hitting the ceiling. Approx. 10 hours at 128 kbps is ~550 MiB.</p>
+<p class="small">This loader temporarily stages uploads in a private Supabase inbox, then publishes approved recordings to Cloudflare R2 when owner-scoped R2 keys are installed. Existing Supabase recordings continue playing during migration. The 700 MiB soft limit reflects actual remaining Supabase copies; removing a confirmed backup is a separate, optional action.</p>
 </section>
 </div>
 <section class="panel card" aria-labelledby="drop-title">
