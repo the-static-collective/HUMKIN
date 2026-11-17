@@ -44,8 +44,10 @@ final class HumServerBridge {
             lastAward=p.getInt("last_award",0);
             awardSequence=p.getLong("award_seq",0L);
             awardAt=p.getLong("award_at",0L);
-            try{records=new JSONArray(p.getString("records","[]"));}
-            catch(Exception ignored){throw new IllegalStateException("Corrupt HUM receipt cache");}
+            JSONArray saved;
+            try{saved=new JSONArray(p.getString("records","[]"));}
+            catch(Exception ignored){saved=new JSONArray();}
+            records=saved;
         }
         boolean owns(String id){
             if(id==null)return false;
