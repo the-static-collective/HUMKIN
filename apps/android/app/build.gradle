@@ -10,8 +10,8 @@ android {
         applicationId 'org.abundent.humkinradio'
         minSdk 26
         targetSdk 36
-        versionCode 29
-        versionName '0.29.0'
+        versionCode 30
+        versionName '0.30.0'
         resValue 'string', 'app_name', 'HUMKIN RADIO'
     }
 
@@ -35,6 +35,14 @@ android {
             applicationIdSuffix '.rebel'
             versionNameSuffix '-rebel'
             resValue 'string', 'app_name', 'HUMKIN · RADIO REBEL'
+        }
+        // Next-generation tactile radio is independently installable, preserving
+        // the existing Radio Rebel / Night Watch local data and device package.
+        radioLiving {
+            initWith debug
+            applicationIdSuffix '.living'
+            versionNameSuffix '-living'
+            resValue 'string', 'app_name', 'HUMKIN · LIVING RECEIVER'
         }
         nightWatch {
             initWith debug
