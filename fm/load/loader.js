@@ -53,10 +53,11 @@ function drawQueue(){
  const knownSeconds=selected.reduce((s,item)=>s+(Number(item.duration)||0),0);
  const filter=$("queue-search").value.toLowerCase().trim(),sort=$("queue-sort").value;
  const matches=selected.filter(item=>!filter||
-   [item.title,item.artist,item.album,item.file.name,item.folderInfo?.relativePath]
+   [item.title,item.artist,item.album,item.folderInfo?.genre,item.folderInfo?.collection,item.folderInfo?.disc,item.file.name,item.folderInfo?.relativePath]
     .some(value=>String(value||"").toLowerCase().includes(filter)));
  const ordered=matches.slice().sort((a,b)=>{
-   const key=item=>sort==="path"?(item.folderInfo?.relativePath||item.file.name):item[sort]||"";
+   const key=item=>sort==="path"?(item.folderInfo?.relativePath||item.file.name):
+     (["genre","collection","disc"].includes(sort)?item.folderInfo?.[sort]:item[sort])||"";
    return String(key(a)).localeCompare(String(key(b)),undefined,{numeric:true,sensitivity:"base"});
  });
  for(const item of ordered.slice(0,150)){
