@@ -1,0 +1,40 @@
+name: Validate HUMKIN Listener Receptacle
+on:
+  pull_request:
+    paths:
+      - 'support.html'
+      - 'support.css'
+      - 'support.js'
+      - 'support-logic.mjs'
+      - 'support-doors.json'
+      - 'tools/receptacle/**'
+      - 'tests/receptacle.test.mjs'
+      - '.github/workflows/listener-receptacle.yml'
+  push:
+    paths:
+      - 'support.html'
+      - 'support.css'
+      - 'support.js'
+      - 'support-logic.mjs'
+      - 'support-doors.json'
+      - 'tools/receptacle/**'
+      - 'tests/receptacle.test.mjs'
+      - '.github/workflows/listener-receptacle.yml'
+  workflow_dispatch:
+jobs:
+  noncustodial-boundary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node syntax
+        run: |
+          node --check support.js
+          node --check support-logic.mjs
+          node --check tools/receptacle/export-jubilee.mjs
+      - name: Signed doorway regression tests
+        run: node --test tests/receptacle.test.mjs
