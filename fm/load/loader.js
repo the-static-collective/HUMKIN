@@ -39,7 +39,7 @@ function drawQueue(){
    title.addEventListener("input",()=>{item.title=title.value});
    const kind=document.createElement("select");
    kind.setAttribute("aria-label","Recording category for "+item.file.name);
-   for(const [value,label] of [["song","RADIO-ONLY SONG"],["single","OFFICIAL SINGLE ✳"],["bumper","STATION BUMPER"]]){
+   for(const [value,label] of [["song","RADIO-ONLY SONG"],["single","OFFICIAL SINGLE ✳"],["bumper","STATION BUMPER / SPOKEN FEATURE"]]){
      const option=document.createElement("option");option.value=value;option.textContent=label;
      kind.append(option);
    }
