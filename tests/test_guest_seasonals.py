@@ -1,52 +1,78 @@
-"""Regression guards: seasonal uploads are fingerprinted, not title-matched."""
+"""HUMKIN guest feature: two seasonal songs, interview is not music rotation."""
+import json
 import pathlib
+import random
 import sys
 import unittest
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "tools" / "radio-broadcast"))
-from scheduler_v2 import featured_extra
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools" / "radio-broadcast"))
+from scheduler_v2 import featured_extra, with_bumpers
 
-HASH_1 = "ffc6cc64c5233b4d3ec35cdb2c935c65e3bf37d8e60767bf455b63809820c2b5"
-HASH_2 = "a9223523d009c520a7add920b954258c73017198eb0411bfa6a54e795f1136a4"
-HASH_3 = "e9b16482a25cce61b9bc6a68aa5589cb9a36ef28007b5c3436b73d8458b8a964"
+FEATURE = next(f for f in json.loads((ROOT / "fm" / "guest-features.json").read_text())["features"]
+               if f["id"] == "eno-efia-unshackled-dreams")
+SEASONAL = json.loads((ROOT / "fm" / "rotation.json").read_text())["seasonal_rotation"]
 
 
 class GuestSeasonals(unittest.TestCase):
     def setUp(self):
         self.tracks = {
-            "crate-a": {"id": "crate-a", "album": "Unshackled Dreams", "source": "cloud", "sha256": HASH_1},
-            "crate-b": {"id": "crate-b", "album": "Unshackled Dreams", "source": "cloud", "sha256": HASH_2},
-            "crate-c": {"id": "crate-c", "album": "Unshackled Dreams", "source": "cloud", "sha256": HASH_3},
-            "crate-other": {"id": "crate-other", "album": "Unshackled Dreams", "source": "cloud", "sha256": "0"*64}
+            f"crate-{i}": {"id": f"crate-{i}", "album": "Unshackled Dreams",
+                           "source": "cloud", "kind": row["catalog_kind"], "sha256": row["sha256"]}
+            for i, row in enumerate(FEATURE["tracks"])
         }
-        self.song_ids = list(self.tracks)
-        self.seasonal = {"multiplier": 3, "sha256s": [HASH_1, HASH_2, HASH_3]}
+        self.tracks["other"] = {"id": "other", "album": "Unshackled Dreams",
+                                "source": "cloud", "kind": "song", "sha256": "0"*64}
+        self.song_ids = [id_ for id_, t in self.tracks.items() if t["kind"]=="song"]
 
-    def test_feature_songs_get_three_total_plays(self):
-        rotation = {"featured_rotation": {"multiplier": 2, "albums": [], "singles": []},
-                    "seasonal_rotation": self.seasonal}
-        extras = featured_extra(self.song_ids, self.tracks, rotation)
-        self.assertEqual(extras.count("crate-a"), 2)
-        self.assertEqual(extras.count("crate-b"), 2)
-        self.assertEqual(extras.count("crate-c"), 2)
-        self.assertNotIn("crate-other", extras)
+    def test_roles_and_feature_order(self):
+        self.assertEqual([t["kind"] for t in FEATURE["tracks"]], ["song", "interview", "song"])
+        self.assertEqual(FEATURE["tracks"][1]["introduces"], FEATURE["tracks"][2]["title"])
+        self.assertTrue(FEATURE["tracks"][1]["feature_only"])
 
-    def test_featured_plus_seasonal_still_three_total_not_five(self):
-        rotation = {"featured_rotation": {"multiplier": 2, "albums": ["Unshackled Dreams"], "singles": []},
-                    "seasonal_rotation": self.seasonal}
-        extras = featured_extra(self.song_ids, self.tracks, rotation)
-        for ident in ("crate-a", "crate-b", "crate-c"):
-            self.assertEqual(extras.count(ident), 2)
+    def test_only_two_songs_are_seasonal(self):
+        hashes = {row["sha256"] for row in FEATURE["tracks"] if row["kind"]=="song"}
+        self.assertEqual(len(hashes), 2)
+        self.assertEqual(set(SEASONAL["sha256s"]), hashes)
+        self.assertNotIn(FEATURE["tracks"][1]["sha256"], SEASONAL["sha256s"])
 
-    def test_unpublished_songs_cannot_appear_without_catalog_entry(self):
-        tracks = {"crate-other": self.tracks["crate-other"]}
-        extras = featured_extra(["crate-other"], tracks, {"seasonal_rotation": self.seasonal})
-        self.assertEqual(extras, [])
+    def test_music_extras(self):
+        extras = featured_extra(self.song_ids, self.tracks, {"seasonal_rotation": SEASONAL})
+        self.assertEqual(extras.count("crate-0"), 2)
+        self.assertEqual(extras.count("crate-2"), 2)
+        self.assertNotIn("crate-1", extras)
+        self.assertNotIn("other", extras)
 
-    def test_wrong_hash_is_not_a_seasonal(self):
-        self.tracks["crate-a"]["sha256"] = "f"*64
-        extras = featured_extra(self.song_ids, self.tracks, {"seasonal_rotation": self.seasonal})
-        self.assertNotIn("crate-a", extras)
+    def test_featured_and_seasonal_total_three(self):
+        r = {"featured_rotation": {"multiplier": 2, "albums": ["Unshackled Dreams"]},
+             "seasonal_rotation": SEASONAL}
+        extras = featured_extra(self.song_ids, self.tracks, r)
+        self.assertEqual(extras.count("crate-0"), 2)
+        self.assertEqual(extras.count("crate-2"), 2)
+
+    def test_long_interview_stays_out_of_automatic_bumper_rotation(self):
+        # Even if a later operator increases the duration threshold, this
+        # explicitly feature-only recording may not be randomly inserted.
+        interview = FEATURE["tracks"][1]
+        config = json.loads((ROOT / "fm" / "rotation.json").read_text())
+        self.assertEqual(config["feature_only_spoken_sha256s"], [interview["sha256"]])
+        tracks = {
+            "song": {"id": "song", "kind": "song", "duration": 180.0},
+            "interview": {"id": "interview", "kind": "bumper",
+                          "sha256": interview["sha256"], "duration": 262.531},
+            "short": {"id": "short", "kind": "bumper", "duration": 12.0},
+        }
+        policy = {"maximum_break_seconds": 500,
+                  "feature_only_spoken_sha256s": config["feature_only_spoken_sha256s"]}
+        sequence = with_bumpers(["song"]*12, tracks, {"bumper_every": 1}, policy, random.Random(42))
+        self.assertNotIn("interview", sequence)
+        self.assertIn("short", sequence)
+
+    def test_interview_wrongly_tagged_song_still_has_no_seasonal_bonus(self):
+        tracks = dict(self.tracks)
+        tracks["crate-1"] = dict(tracks["crate-1"], kind="song")
+        extras = featured_extra(list(tracks), tracks, {"seasonal_rotation": SEASONAL})
+        self.assertNotIn("crate-1", extras)
 
 
 if __name__ == "__main__":
