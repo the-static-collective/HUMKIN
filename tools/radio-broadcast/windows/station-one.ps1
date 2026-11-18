@@ -199,7 +199,10 @@ function Start-Broadcast {
     }
     $username = (Read-Host 'Source username [source]').Trim()
     if (-not $username) { $username = 'source' }
-    if ($username -notmatch '^[a-zA-Z0-9._-]{1,64}
+    if ($username -notmatch '^[a-zA-Z0-9._-]{1,64}$') {
+        throw 'Use the source username shown by your radio host (letters, numbers, dots, underscores or hyphens).'
+    }
+    $mount = (Read-Host 'Mount path [/humkin.mp3]').Trim()
     if (-not $mount) { $mount = '/humkin.mp3' }
     if ($mount -notmatch '^/[a-zA-Z0-9._/-]+$' -or $mount -match '//') {
         throw 'Enter a simple mount path beginning with /, such as /humkin.mp3.'
