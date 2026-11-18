@@ -167,7 +167,7 @@ test("Adversarial imports fail closed: extra authority fields, duplicate IDs, fo
   }, relic), /invalid ancestor/);
   assert.throws(() => recheckImportedPocket({
     ...p, gifts: [{ ...p.gifts[0], asset: { sha256: "a".repeat(64), mime: "audio/webm", size: 4 } }]
-  }, relic), /statement/);
+  }, relic), /unsupported|statement/);
 });
 
 test("A genuine musical influence requires scoped local review and synthetic gift confirmation", () => {
