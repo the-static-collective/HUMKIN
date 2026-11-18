@@ -110,7 +110,7 @@ function Start-R2LiveManaged {
         ProcessId = $proc.Id
         StartTicks = [string]$proc.StartTime.ToUniversalTime().Ticks
     }
-    [IO.File]::WriteAllText($R2LiveState, ($state | ConvertTo-Json -Compress), [Text.Encoding]::UTF8)
+    [IO.File]::WriteAllText($R2LiveState, ($state | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding($false)))
     Start-Sleep -Seconds 2
     if ($null -eq (Get-ActiveR2LiveRun)) {
         Show-R2LiveStatus
@@ -127,7 +127,7 @@ function Stop-R2LiveManaged {
         return
     }
     # Cooperative, run-specific stop, not a forced process-tree kill.
-    [IO.File]::WriteAllText($R2LiveStop, [string]$state.RunId, [Text.Encoding]::UTF8)
+    [IO.File]::WriteAllText($R2LiveStop, [string]$state.RunId, (New-Object System.Text.UTF8Encoding($false)))
     Write-Host 'STOP requested. Station One will finish its current audio segment.' -ForegroundColor Green
     Write-Host 'Check option 0 for OFFLINE; Worker HLS status becomes stale after 90 seconds.'
 }
@@ -143,7 +143,7 @@ function Test-R2LiveControl {
         StartTicks = [string]$proc.StartTime.ToUniversalTime().Ticks
     }
     try {
-        [IO.File]::WriteAllText($R2LiveState, ($fake | ConvertTo-Json -Compress), [Text.Encoding]::UTF8)
+        [IO.File]::WriteAllText($R2LiveState, ($fake | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding($false)))
         $found = Get-ActiveR2LiveRun
         if ($null -eq $found -or $found.RunId -cne $fake.RunId) {
             throw 'Managed station run lookup failed.'
