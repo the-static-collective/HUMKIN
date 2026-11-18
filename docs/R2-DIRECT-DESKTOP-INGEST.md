@@ -1,14 +1,15 @@
 # HUMKIN: Direct private R2 bulk crate (desktop)
 
 **Source:** `fm/load/` and `supabase/functions/humkin-r2-direct/index.ts`.
-**Status:** Implemented behind a live owner-only readiness check; if any private R2 prerequisite is missing, the existing authenticated Supabase crate loader stays operational. Never assume deploying an Edge Function provisions an R2 bucket or R2 API credentials.
+**Status:** Implemented behind a live owner-only readiness check; existing R2 secrets are reused when they have access to both buckets. If any private R2 prerequisite is missing, the existing authenticated Supabase crate loader stays operational. Never assume deploying an Edge Function provisions an R2 bucket or R2 API credentials.
 
 ## Buckets and privileges
 
 - `humkin-radio-media` is **public**, and bound to `media.abundent.org`. Keep it and its R2 DNS record intact.
 - `humkin-radio-private` is a **separate private R2 bucket**; ensure public `r2.dev` and Custom Domains access are OFF. Do not put unpublished audio in the public bucket, even under a `private/` folder.
-- In Cloudflare, issue a new Object Read & Write R2 S3 token limited to **only `humkin-radio-private`**. Existing public bucket credentials remain scoped to `humkin-radio-media`.
-- In Supabase `pantry-gate` project Edge Functions → Secrets, install `HUMKIN_R2_PRIVATE_ACCESS_KEY_ID` and `HUMKIN_R2_PRIVATE_SECRET_ACCESS_KEY`. `HUMKIN_R2_PRIVATE_BUCKET` is optional; default `humkin-radio-private`.
+- **Simplest path (no Supabase secrets step):** If the already-configured `HUMKIN_R2_ACCESS_KEY_ID` / `HUMKIN_R2_SECRET_ACCESS_KEY` token permits Object Read & Write for **both** R2 buckets, the direct uploader reuses that existing secret pair automatically. Keep the **two buckets separate**; never enable public access on `humkin-radio-private`. Check `DIRECT PRIVATE R2 READY` after choosing the private bucket.
+- **If the existing token only grants the public bucket:** it cannot magically write to the private one. You must grant private-bucket access at Cloudflare and ensure the server credentials reflect it, or create a new private-bucket token. For separate credentials, install `HUMKIN_R2_PRIVATE_ACCESS_KEY_ID` and `HUMKIN_R2_PRIVATE_SECRET_ACCESS_KEY` under Supabase `pantry-gate` → Edge Functions → Secrets. The latter is a fallback, not a mandatory setup step.
+- `HUMKIN_R2_PRIVATE_BUCKET` is optional; its default is `humkin-radio-private`. A partially supplied private access-key pair is ignored in favor of the complete existing pair.
 - Do not disclose S3 credentials, Supabase service-role keys, or presigned URLs in the browser console, GitHub, ChatGPT or documentation.
 
 ### CORS for the private bucket
@@ -16,21 +17,17 @@
 In Cloudflare R2 → `humkin-radio-private` → Settings → CORS Policy, apply:
 
 ```json
-{
-  "rules": [
-    {
-      "allowed": {
-        "origins": ["https://humkin.abundent.org"],
-        "methods": ["PUT"],
-        "headers": ["Content-Type"]
-      },
-      "maxAgeSeconds": 3600
-    }
-  ]
-}
+[
+  {
+    "AllowedOrigins": ["https://humkin.abundent.org"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type"],
+    "MaxAgeSeconds": 3600
+  }
+]
 ```
 
-If Cloudflare UI requires `AllowedOrigins/AllowedMethods/AllowedHeaders` instead of the above JSON shape, enter the equivalent values. The browser must send **exactly** `Content-Type: audio/mpeg`. The private bucket must remain nonpublic. For requests from the GitHub Pages preview origin, explicitly add `https://the-static-collective.github.io` to CORS as needed.
+This is the format for Cloudflare's **dashboard JSON tab**, not the Wrangler CLI configuration format. The browser must send **exactly** `Content-Type: audio/mpeg`. Keep the private bucket nonpublic. For testing from the GitHub Pages preview origin, explicitly add `https://the-static-collective.github.io` to `AllowedOrigins` if needed.
 
 ## Database and deployed backend
 

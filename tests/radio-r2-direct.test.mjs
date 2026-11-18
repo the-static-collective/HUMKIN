@@ -32,6 +32,10 @@ for(const mark of ['getUser(token)','email_confirmed_at','PRIVATE_BUCKET!==PUBLI
  assert(edge.includes(mark),"Missing security invariant: "+mark);
 }
 assert(edge.includes('if(origin&&!ORIGINS.has(origin))'),"Block unexpected website origins");
+assert(edge.includes('PRIVATE_PAIR_COMPLETE?PRIVATE_ACCESS_CONFIG:PUBLIC_ACCESS')&&
+ edge.includes('PRIVATE_PAIR_COMPLETE?PRIVATE_SECRET_CONFIG:PUBLIC_SECRET'),
+ "Private bucket may reuse complete existing server-only credentials, never public JS secrets");
+assert(edge.includes('credential_mode:PRIVATE_CREDENTIAL_MODE'),"Owner readiness report should identify which credential route was selected");
 assert(edge.includes('auth?.user'),"Auth must resolve actual Supabase user");
 assert(edge.indexOf('await privateAws.fetch(objectUrl(PRIVATE_BUCKET,row.r2_staging_key)')>
        edge.indexOf('R2_CATALOG_PUBLICATION_FAILED'),"Staging cleanup must follow committed public catalog state");

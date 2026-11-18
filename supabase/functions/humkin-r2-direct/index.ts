@@ -9,8 +9,14 @@ const SERVICE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const ACCOUNT=Deno.env.get("HUMKIN_R2_ACCOUNT_ID")||"";
 const PUBLIC_ACCESS=Deno.env.get("HUMKIN_R2_ACCESS_KEY_ID")||"";
 const PUBLIC_SECRET=Deno.env.get("HUMKIN_R2_SECRET_ACCESS_KEY")||"";
-const PRIVATE_ACCESS=Deno.env.get("HUMKIN_R2_PRIVATE_ACCESS_KEY_ID")||"";
-const PRIVATE_SECRET=Deno.env.get("HUMKIN_R2_PRIVATE_SECRET_ACCESS_KEY")||"";
+// Reuse existing server-held public R2 credentials when they already have access
+// to the separate private bucket. Never reuse an incomplete private key pair.
+const PRIVATE_ACCESS_CONFIG=Deno.env.get("HUMKIN_R2_PRIVATE_ACCESS_KEY_ID")||"";
+const PRIVATE_SECRET_CONFIG=Deno.env.get("HUMKIN_R2_PRIVATE_SECRET_ACCESS_KEY")||"";
+const PRIVATE_PAIR_COMPLETE=Boolean(PRIVATE_ACCESS_CONFIG&&PRIVATE_SECRET_CONFIG);
+const PRIVATE_ACCESS=PRIVATE_PAIR_COMPLETE?PRIVATE_ACCESS_CONFIG:PUBLIC_ACCESS;
+const PRIVATE_SECRET=PRIVATE_PAIR_COMPLETE?PRIVATE_SECRET_CONFIG:PUBLIC_SECRET;
+const PRIVATE_CREDENTIAL_MODE=PRIVATE_PAIR_COMPLETE?"dedicated":"existing";
 const PRIVATE_BUCKET=Deno.env.get("HUMKIN_R2_PRIVATE_BUCKET")||"humkin-radio-private";
 const PUBLIC_BUCKET="humkin-radio-media";
 const PUBLIC_ORIGIN="https://media.abundent.org";
@@ -91,6 +97,7 @@ Deno.serve(async(request:Request)=>{
     return reply({ok:true,ready:privateReady&&publicReady,
       reason:!privateReady?"PRIVATE_R2_BUCKET_NOT_ACCESSIBLE":!publicReady?
         "PUBLIC_R2_BUCKET_NOT_ACCESSIBLE":"READY",
+      credential_mode:PRIVATE_CREDENTIAL_MODE,
       max_file_bytes:MAX_BYTES,parallel_uploads:3},200,origin);
   }
   if(!["prepare","finalize","publish"].includes(action))return fail("UNKNOWN_ACTION",400,origin);
