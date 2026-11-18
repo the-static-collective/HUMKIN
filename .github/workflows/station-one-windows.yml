@@ -48,6 +48,20 @@ jobs:
             & py -3 tools/radio-broadcast/windows/check_timezone.py
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+      - name: Full Windows PowerShell launcher preflight (offline)
+        shell: powershell
+        run: |
+          # FFmpeg is checked for presence only by Test-Dependencies. Lightweight
+          # command shims isolate the real Python/PowerShell pipeline regression
+          # from external audio binaries without any network/catalog access.
+          $tools = Join-Path $env:RUNNER_TEMP 'humkin-ffmpeg-smoke'
+          New-Item -ItemType Directory -Force -Path $tools | Out-Null
+          foreach ($exe in @('ffmpeg.cmd', 'ffprobe.cmd')) {
+            Set-Content -LiteralPath (Join-Path $tools $exe) -Value '@echo off' -Encoding ascii
+          }
+          $env:PATH = "$tools;$env:PATH"
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/radio-broadcast/windows/station-one.ps1 -Action Preflight
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Python planner and PCM offline unit tests
         shell: powershell
         run: python tests/radio-broadcast.test.py
