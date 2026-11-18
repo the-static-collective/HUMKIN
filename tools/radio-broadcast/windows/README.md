@@ -20,7 +20,7 @@
 
 ## What the current engine actually does
 
-- Loads the public HUMKIN catalog and approved cloud media, plus recurring Supabase program windows.
+- Loads the public HUMKIN catalog and approved cloud media, plus recurring Supabase program windows. **Station One 003 now reads `storage_provider` and `r2_object_key` from the Supabase catalog.** The 152 migrated recording rows keep metadata/identity in Supabase while approved listening files are fetched from Cloudflare R2. Its source URL is rebuilt from the public media domain with strict path validation; it will not silently fall back to the deleted Supabase audio copy for migrated rows. Disabled/unpublished recordings remain excluded.
 - Uses one FFmpeg encoder for continuous output, softly crossfades and lightly normalizes audio.
 - **V2 program selection** reads explicit release 2× and approved seasonal 3× total rules from the published station policy, mixes catalog-arrival eras, schedules φ-shaped short IDs and approximately 11/22-minute medium/long breaks, and optionally includes the Top 42's small bonus share. Publicly published field carts and approved public R2 manifests are eligible; unpublished/private recordings are never ingested.
 - Recurring Central-time programs still take priority at track boundaries.
@@ -46,6 +46,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\radio-broadcast\wind
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\radio-broadcast\windows\station-one.ps1 -Action Preview
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\radio-broadcast\windows\station-one.ps1 -Action Test
 ```
+
+**After the November 17 R2 storage migration:** if you downloaded a HUMKIN ZIP before **Station One 003**, extract a **fresh ZIP from main** over a new folder (do not overlay scripts inside the old extracted copy). The previous Python version still pointed migrated records to a now-empty Supabase audio bucket. The Windows launcher name and menu are unchanged.
+
+**Current storage proof (read-only):** On November 17, pantry-gate reported 152 rows with `storage_provider=r2`, 142 published/enabled and 31 of those labeled bumpers. No R2 key was missing. This is a snapshot, not a claim that a physical Acer has played them.
 
 **Acceptance:** One local preview MP3 actually plays on the Acer, and the offline test script passes. A live broadcast remains unverified until the output stream URL has been proven on a second device/network.
 
