@@ -103,6 +103,19 @@ class HlsPublisherTest(unittest.TestCase):
             self.assertFalse(publisher.publish_once())
             self.assertNotIn(bridge.PLAYLIST_KEY, client.objects)
 
+    def test_managed_stop_is_run_specific_and_ignores_stale_requests(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            marker = Path(temporary) / "stop.txt"
+            current_run = "0123456789abcdef0123456789abcdef"
+            previous_run = "fedcba9876543210fedcba9876543210"
+            self.assertFalse(bridge.stop_requested(marker, current_run))
+            marker.write_text(previous_run, encoding="utf-8")
+            self.assertFalse(bridge.stop_requested(marker, current_run))
+            marker.write_text(current_run, encoding="utf-8")
+            self.assertTrue(bridge.stop_requested(marker, current_run))
+            self.assertFalse(bridge.stop_requested(marker, ""))
+            self.assertFalse(bridge.stop_requested(None, current_run))
+
     def test_unreferenced_segments_are_removed_after_grace_period(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)
