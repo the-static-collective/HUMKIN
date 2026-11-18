@@ -252,6 +252,82 @@ async function loadKnown(){
  $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper"&&
    (row.storage_provider!=="r2_private"||row.r2_upload_verified_at));
 }
+
+async function refreshDirectStatus(){
+ if(!activeUser){directReady=false;return;}
+ try{
+  const info=await r2Direct(db,"status");
+  directReady=info.ready===true;
+  $("direct-r2-status").textContent=directReady?
+    "DIRECT PRIVATE R2 READY · 3 simultaneous uploads · no Supabase file staging.":
+    "DIRECT PRIVATE R2 NOT READY ("+String(info.reason||"configuration required")+
+    "). Existing private Supabase loader remains available.";
+ }catch(error){
+  directReady=false;
+  $("direct-r2-status").textContent="DIRECT R2 OFFLINE ("+error.message+"). Existing loader remains available.";
+ }
+ $("stage").textContent=directReady?"STAGE DIRECTLY TO PRIVATE R2 ↗":"STAGE THIS CRATE ↗";
+}
+// Each item can be retried by pressing Stage again or by reselecting the folder.
+// Completed hashes are deduplicated against the authoritative catalog.
+async function stageDirect(){
+ if(busy||!selected.length)return;
+ try{await ensureSession();await scanPromise}catch(error){feedback(error.message);return}
+ setBusy(true);stopRequested=false;
+ const tasks=selected.filter(item=>item.status!=="STAGED"&&item.status!=="DUPLICATE");
+ let next=0,uploaded=0,skipped=0,failed=0,finished=0;
+ const setProgress=()=>{$("progress").value=tasks.length?100*finished/tasks.length:0;};
+ const runOne=async item=>{
+  item.status="PREPARING";drawQueue();
+  try{
+   if(!(item.duration>=1&&item.duration<=14400))item.duration=await getDuration(item.file);
+   if(!item.title.trim()||!item.artist.trim()||!item.album.trim())
+     throw Error("Title, artist and album are required.");
+   if(item.album.trim().length>160)throw Error("Album exceeds 160 characters.");
+   const mp3=isWav(item.file)||isM4a(item.file)?await convertWav(item):item.file;
+   if(mp3.size>MAX_FILE)throw Error("MP3 exceeds 50 MiB; convert locally first.");
+   const hash=await digest(mp3);
+   if(known.some(x=>x.sha256===hash&&x.storage_provider!=="r2_private")){
+     skipped++;item.status="DUPLICATE";return;
+   }
+   const preparation=await r2Direct(db,"prepare",{
+     sha256:hash,bytes:mp3.size,original_name:item.file.name,
+     title:item.title.trim(),artist:item.artist.trim(),album:item.album.trim(),
+     duration_seconds:item.duration,kind:item.kind==="bumper"?"bumper":"song",
+     is_single:item.kind==="single"
+   });
+   if(preparation.already_cataloged){skipped++;item.status="DUPLICATE";return}
+   if(!preparation.already_staged){
+     item.status="UPLOADING TO PRIVATE R2";drawQueue();
+     let last=-1;
+     await putPrivateMp3(mp3,preparation.put_url,(written,total)=>{
+       const pct=Math.floor(100*written/Math.max(1,total));
+       if(pct>=last+10){last=pct;item.status="UPLOADING "+pct+"%";drawQueue();}
+     });
+     item.status="VERIFYING SHA-256";drawQueue();
+     await r2Direct(db,"finalize",{track_id:preparation.track_id});
+   }
+   uploaded++;item.status="STAGED";
+  }catch(error){
+   failed++;item.status="ERROR";log(item.file.name+" — "+error.message);
+  }finally{finished++;setProgress();drawQueue();}
+ };
+ try{
+  await loadKnown();
+  await Promise.all(Array.from({length:Math.min(3,tasks.length)},async()=>{
+   while(next<tasks.length&&!stopRequested){
+    const item=tasks[next++];await runOne(item);
+   }
+  }));
+  feedback("Direct R2 crate: "+uploaded+" verified private drafts, "+skipped+
+    " duplicates, "+failed+" errors"+(stopRequested?", stopped early":"")+
+    ". Nothing was published.");
+ }finally{
+  setBusy(false);
+  try{await loadKnown()}catch(error){log("Catalog refresh: "+error.message)}
+ }
+}
+
 async function stage(){
  if(directReady)return stageDirect();
  if(busy||!selected.length)return;
