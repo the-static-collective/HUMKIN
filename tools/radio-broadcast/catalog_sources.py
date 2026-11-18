@@ -3,6 +3,19 @@ import re
 from urllib.parse import quote, urljoin, urlsplit
 
 
+def r2_public_url(key):
+    """Return a canonical public R2 MP3 URL or None; never use private objects."""
+    if not isinstance(key,str) or not key or key!=key.strip() or len(key)>400:
+        return None
+    parts=key.split("/")
+    if not key.lower().endswith(".mp3") or any(
+        not part or part in (".","..") or re.search(r"[\\?#\x00-\x1f\x7f]",part)
+        for part in parts
+    ):
+        return None
+    return "https://media.abundent.org/"+"/".join(quote(part,safe="") for part in parts)
+
+
 def optional_catalog(get_json, radio, api):
     tracks, chart_ids = [], []
 
@@ -46,11 +59,9 @@ def optional_catalog(get_json, radio, api):
                 parts = key.split("/")
                 try: duration = float(row.get("duration_seconds", 0))
                 except (ValueError, TypeError): continue
+                url = r2_public_url(key)
                 if not (re.fullmatch(r"[a-z0-9][a-z0-9-]{2,79}",bare)
-                        and len(key) <= 400 and key.endswith(".mp3")
-                        and all(part not in ("", ".", "..") and
-                            not re.search(r"[\\?#\x00-\x1f\x7f]", part) for part in parts)
-                        and 0 < duration < 14400 and bare not in seen
+                        and url and 0 < duration < 14400 and bare not in seen
                         and str(row.get("title", "")).strip()):
                     continue
                 seen.add(bare)
@@ -59,7 +70,7 @@ def optional_catalog(get_json, radio, api):
                     album=str(row.get("album") or "HUMKIN RADIO · R2")[:200],
                     kind="song",duration=duration,source="r2",
                     seasonal=row.get("seasonal") is True,
-                    url="https://media.abundent.org/"+"/".join(quote(p,safe="") for p in parts)))
+                    url=url))
     except (OSError, ValueError, TypeError, KeyError):
         pass
 
