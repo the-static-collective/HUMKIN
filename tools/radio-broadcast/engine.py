@@ -303,6 +303,14 @@ def streaming(catalog,args):
     maximum=int(args.seconds*RATE*FRAME_BYTES) if args.seconds else None
     def write(chunk):
         nonlocal written
+        # Cooperative managed stop lets FFmpeg close its current segment and
+        # release the temporary playlist before the R2 publisher exits.
+        if args.stop_file and args.run_id:
+            try:
+                if args.stop_file.read_text(encoding="utf-8").strip() == args.run_id:
+                    raise StopIteration()
+            except (OSError, UnicodeError):
+                pass
         if not chunk:return
         if maximum is not None:
             chunk=chunk[:max(0,maximum-written)]
@@ -355,7 +363,7 @@ def streaming(catalog,args):
                 # Leave the single source connection open across a bad song.
                 write(b"\0"*(RATE*FRAME_BYTES))
     except StopIteration:
-        print("Local timed broadcast sample complete.",flush=True)
+        print("Station One stopping; flushing audio segments.",flush=True)
     finally:
         fetch_pool.shutdown(wait=False,cancel_futures=True)
         # An interrupted preview must not leave decoder processes holding pipes.
@@ -387,12 +395,18 @@ def main():
     p.add_argument("--icecast-url",help="private Icecast source URL; prefer env HUMKIN_ICECAST_URL")
     p.add_argument("--file-output",type=Path,help="local MP3 test output instead of broadcasting")
     p.add_argument("--hls-dir",type=Path,help="encode live AAC/HLS to local directory for R2 publisher")
+    p.add_argument("--stop-file",type=Path,help="managed HLS stop marker path (local)")
+    p.add_argument("--run-id",help="managed HLS session identifier")
     p.add_argument("--seconds",type=int,default=0,help="limit local test output duration")
     p.add_argument("--bitrate",type=int,default=128,choices=[96,128,160,192])
     p.add_argument("--crossfade",type=float,default=1.5,help="equal-power crossfade seconds, 0–5")
     args=p.parse_args()
     if sum(bool(x) for x in (args.hls_dir,args.file_output,args.icecast_url))>1:
         p.error("Choose only one output: --hls-dir, --file-output, or --icecast-url")
+    if bool(args.stop_file)!=bool(args.run_id) or (args.run_id and not re.fullmatch(r"[0-9a-f]{32}",args.run_id)):
+        p.error("--stop-file and --run-id must be provided together")
+    if args.stop_file and not args.hls_dir:
+        p.error("--stop-file is only supported in HLS mode")
     if not 0<=args.crossfade<=5:p.error("--crossfade must be between 0 and 5")
     if not 0<=args.retry_count<=100:p.error("--retry-count must be between 0 and 100")
     if args.fixture:catalog=json.loads(args.fixture.read_text(encoding="utf-8"))
