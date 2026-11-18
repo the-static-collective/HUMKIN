@@ -166,7 +166,8 @@ export function program(tracks,seed){
  const random=prng(seed);
  const songs=tracks.filter(t=>t.kind==="song");
  const carts=tracks.filter(t=>t.kind==="bumper"&&t.duration<=180&&
-   allowedBumper(t,tracks.bumper_rules||[],new Date()));
+   !(Array.isArray(tracks.bumper_rules)&&tracks.bumper_rules.some(r=>
+     r?.enabled===true&&r.kind==="hold"&&r.track_ids?.includes(t.id))));
  if(!songs.length)return [];
  const slots=[];
  for(const song of songs){slots.push(song);
@@ -253,8 +254,14 @@ export function continuousStream(bucket,tracks,options={}){
  let counter=0,cycle=0,rotation=[],index=0,reader=null,closed=false,errors=0;
  const seed=Number.isInteger(options.seed)?options.seed:(crypto.getRandomValues(new Uint32Array(1))[0]>>>0);
  function nextTrack(){
-   if(index>=rotation.length){rotation=program(tracks,(seed+cycle*7919)>>>0);cycle++;index=0;}
-   return rotation[index++];
+   // Optional date/day restrictions are evaluated at the REAL cart boundary,
+   // not once per potentially multi-hour queue. Music is never interrupted.
+   while(true){
+     if(index>=rotation.length){rotation=program(tracks,(seed+cycle*7919)>>>0);cycle++;index=0;}
+     const chosen=rotation[index++];
+     if(chosen.kind!=="bumper"||allowedBumper(chosen,tracks.bumper_rules||[],new Date()))
+       return chosen;
+   }
  }
  return new ReadableStream({
    async pull(controller){
