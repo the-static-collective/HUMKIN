@@ -33,7 +33,7 @@ function buildPicker(container,library,chosen,label){
  const count=status(chosen.size+" selected",container);
  const list=node("div");list.style.cssText="max-height:250px;overflow:auto;border:2px solid #261d3e;border-radius:8px;background:white;padding:8px";
  container.append(query,list);
- const candidates=library.filter(t=>t.kind==="bumper").sort((a,b)=>a.title.localeCompare(b.title));
+ const candidates=library.filter(t=>t.kind==="bumper"&&t.published).sort((a,b)=>a.title.localeCompare(b.title));
  function render(){
   list.replaceChildren();
   const q=query.value.trim().toLowerCase();
@@ -65,7 +65,7 @@ function renderCard(target,title,detail,actions,off=false){
 export function mountBumperControls({db,ownerId,library,groups,rules,selected,refresh,authorize}){
  const groupRoot=$("group-editor-root"),ruleRoot=$("rule-editor-root");
  if(!groupRoot||!ruleRoot)return;
- const selectedBumpers=ids=>[...new Set(ids)].filter(id=>library.some(t=>t.id===id&&t.kind==="bumper")).slice(0,100);
+ const selectedBumpers=ids=>[...new Set(ids)].filter(id=>library.some(t=>t.id===id&&t.kind==="bumper"&&t.published)).slice(0,100);
  let working=false;
  const save=async(key,value,message,feedback)=>{
   if(working)return;
@@ -92,7 +92,7 @@ export function mountBumperControls({db,ownerId,library,groups,rules,selected,re
   editor.append(node("h3",existing?"EDIT GROUP":"NEW MAGNETIC GROUP"),
     field("Group name",name),field("Relationship",type));
   const active=field(" ACTIVE (you decide)",enabled);editor.append(active);
-  editor.append(node("p","Pick two or more recordings. No relationships are inferred.","sub"));
+  editor.append(node("p","Choose published recordings, including currently OFF AIR cuts. Group names are public programming metadata; no relationships are inferred.","sub"));
   const pick=node("div");editor.append(pick);buildPicker(pick,library,chosen,"Group recording");
   const feedback=status("",editor);
   const row=node("div",null,"row");editor.append(row);
