@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1a2330">
+<meta name="description" content="HUMKIN Long Wave — an experimental continuous R2-powered radio receiver for background listening.">
+<title>HUMKIN LONG WAVE · Continuous Radio Receiver</title>
+<link rel="stylesheet" href="./long-wave.css">
+<script type="module" src="./receiver.js"></script>
+</head>
+<body>
+<main class="radio-shell">
+  <header class="top"><a href="../">HUMKIN RADIO</a><span>LONG WAVE / EXPERIMENTAL</span></header>
+  <div class="radio-face">
+    <p class="eyebrow">A SINGLE SIGNAL / NO SONG-BY-SONG RESTARTS</p>
+    <h1>THE LONG<br><em>WAVE.</em></h1>
+    <div class="dial"><div class="dial-track"><div class="dial-indicator"></div></div><small>AM&nbsp;&nbsp;&nbsp;∴&nbsp;&nbsp;&nbsp;FM&nbsp;&nbsp;&nbsp;∴&nbsp;&nbsp;&nbsp;HUMKIN</small></div>
+    <p class="explainer">One continuous audio connection from Cloudflare R2. Designed to keep playing when your phone locks. No ads, no account required to listen.</p>
+    <p id="status" class="status" role="status" aria-live="polite">CONNECT THE LONG-WAVE TRANSMITTER</p>
+    <audio id="receiver" preload="none" controls aria-label="Long Wave radio stream"></audio>
+    <form id="connect-form">
+      <label for="stream-url">Cloudflare Worker streaming address</label>
+      <input id="stream-url" type="url" placeholder="https://your-worker.example.workers.dev/live.mp3" autocomplete="url" spellcheck="false" inputmode="url">
+      <div class="actions"><button type="submit">SAVE SIGNAL</button><button id="clear-url" type="button" class="secondary">FORGET SIGNAL</button></div>
+    </form>
+    <p class="explainer small">The receiver needs a deployed HUMKIN Long Wave Cloudflare Worker. It does not copy recordings into Supabase. This experimental channel has its own rotation; track titles, shared-clock synchronization and listener scoring remain on the regular station for now.</p>
+  </div>
+  <footer><a href="../">RETURN TO SAME-TIME / ROAD SHUFFLE</a></footer>
+</main>
+</body>
+</html>
