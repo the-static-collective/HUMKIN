@@ -25,8 +25,9 @@ over. In particular, fm/rotation.json live_stream_url is still null.
    humkin-radio-media R2 bucket. An existing Cloudflare deployment may need an
    explicit approval/update; don't paste worker.mjs alone into Dashboard editor
    because it imports hls-routes.mjs.
-2. Create a narrowly scoped **R2 S3 API token** with object write and delete
-   access restricted to humkin-radio-media where supported. The token is
+2. **Reuse an existing appropriately restricted R2 S3 API token**, or create
+   one with object write and delete access restricted to humkin-radio-media
+   where supported. The token is
    entered only on the Acer, never in a browser, issue, or GitHub secret.
    Cloudflare account ID is also required. Do not use the public Supabase key
    as an R2 secret; the services have independent credentials.
@@ -37,7 +38,10 @@ over. In particular, fm/rotation.json live_stream_url is still null.
    CLOUDFLARE_ACCOUNT_ID, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY.
    For the secret, use a masked PowerShell prompt rather than a typed command
    that ends up in terminal history.
-5. From the repository root, launch:
+5. **Preferred on the Acer:** launch windows/STATION-ONE.cmd, select
+   **6 — R2 live HLS test**, and follow the masked prompts for a supervised
+   70-second run. It requests explicit R2 TEST confirmation. Alternatively,
+   from the repository root (after configuring environment variables), run:
    py -3 tools\radio-broadcast\hls_push.py --seconds 70
    The uploader starts engine.py with a private temporary HLS directory,
    encodes AAC at 96 kbps by default and uploads complete segments first.
