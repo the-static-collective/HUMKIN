@@ -91,3 +91,33 @@ test("offline station selects backup without autoplay",async()=>{
   assert.equal(f.audio.src,"https://humkin-long-wave.example.workers.dev/live.mp3");
   assert.equal(f.audio.paused,true);
 });
+
+
+test("manual retry returns from backup to shared live only when operator requests it",async()=>{
+  const f=fixture(false);
+  const live="https://humkin-long-wave.example.workers.dev/hls/live.m3u8";
+  f.elements.get("url").value=live;
+  f.click("connect");await f.flush();
+  assert.equal(f.audio.src,"https://humkin-long-wave.example.workers.dev/live.mp3");
+  // A failed retry must leave the independent backup selected.
+  f.click("retry-live");await f.flush();
+  assert.equal(f.audio.src,"https://humkin-long-wave.example.workers.dev/live.mp3");
+  assert.match(f.elements.get("status").textContent,/staying on Long Wave/);
+  f.setOnline(true);
+  f.click("retry-live");await f.flush();
+  assert.equal(f.hls().source,live);
+  assert.equal(f.audio.paused,true,"no automatic play if listener did not press Play");
+});
+
+test("automatic rescue can be disabled by the listener",async()=>{
+  const f=fixture();
+  const live="https://humkin-long-wave.example.workers.dev/hls/live.m3u8";
+  f.elements.get("url").value=live;
+  f.elements.get("auto-rescue").checked=false;
+  f.click("connect");await f.flush();
+  await f.audio.play();
+  f.hls().onError("error",{fatal:true,type:"networkError"});
+  await f.flush();
+  assert.notEqual(f.audio.src,"https://humkin-long-wave.example.workers.dev/live.mp3");
+  assert.match(f.elements.get("status").textContent,/Choose Long Wave/);
+});
