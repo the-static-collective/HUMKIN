@@ -221,6 +221,20 @@
     "cooldown_breaks": 4,
     "rare_long_break_every": 5,
     "profiles": {
+      "crate-13309e7f-ea07-4847-8b13-2268d277bfef": {"family": "robot-radio"},
+      "crate-5b5b4cef-09d6-4c6e-897b-d2d6c2e8f161": {"family": "robot-radio"},
+      "crate-3fbc9578-c3eb-4d8f-aaa7-b95a844c5075": {"family": "robot-radio"},
+      "crate-4a771f99-a1b5-4e72-9039-1a0e14fb2be5": {"family": "robot-radio"},
+      "crate-720778a0-f76f-46d4-b139-8f4eb90dd096": {"family": "robot-radio"},
+      "crate-60178c47-90e2-432f-bb35-48c46d8565fb": {"family": "robot-radio"},
+      "crate-43777a72-b569-4ba2-bace-c985912aad84": {"family": "robot-radio"},
+      "crate-8e6a88f6-c082-49e6-9ffc-c20d1b2533b0": {"family": "robot-radio"},
+      "crate-2cd4c3db-2a5b-4ee7-8a5c-bf5de72b4258": {"family": "lantern-bells"},
+      "crate-6506fd3f-a7ee-48c5-b790-f2f0af0cd6ac": {"family": "lantern-bells"},
+      "crate-ca419e95-f5f7-4f6e-acbb-ae9cd4c349e0": {"family": "lantern-bells"},
+      "crate-6b8b4bf5-5c0c-43c2-a59d-41d8b2ffb2bb": {"family": "lantern-bells"},
+      "air-field-fm-001": {"family": "lantern-bells"},
+      "air-field-fm-005": {"family": "lantern-bells"},
       "crate-d48fabca-c8fe-42cc-921e-ad4337d09f76": {
         "role": "musical",
         "family": "hard-dark-train"
