@@ -42,6 +42,8 @@ jobs:
         run: python -m compileall -q tools/radio-broadcast
       - name: Current v2 policy, rights gates and station programs
         run: python tests/station-one-v2.test.py
+      - name: Hosted HTTPS listener and AzuraCast optionality
+        run: python tests/radio-house-host.test.py
       - name: Original continuous-source acceptance
         run: python tests/radio-broadcast.test.py
       - name: Station Desk 0.3 programming lab and private diagnostics

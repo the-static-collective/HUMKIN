@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Offline transmitter smoke-test acceptance without a hosted station."""
 import importlib.util
+import io
+import sys
+from contextlib import redirect_stdout, redirect_stderr
 import json
 import unittest
 from pathlib import Path
@@ -36,6 +39,29 @@ class Tests(unittest.TestCase):
         self.assertTrue(proof["audio_bytes_read"]>=256)
         with patch.object(host,"safe_open",return_value=Response(b"<html>bad</html>","text/html")):
             with self.assertRaises(RuntimeError):host.check_stream("https://radio.example.org/listen.mp3")
+    def test_bare_icecast_https_probe_without_azuracast(self):
+        args=["host_preflight.py","--stream-url","https://radio.example.org/humkin.mp3"]
+        with patch.object(sys,"argv",args), patch.object(host,"check_stream",return_value={
+             "content_type":"audio/mpeg","http_status":200,"audio_bytes_read":2048
+             }) as verify, redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(host.main(),0)
+        record=json.loads(out.getvalue())
+        self.assertTrue(record["verified_listener"])
+        self.assertEqual(record["status_proof"],"audio_bytes_only")
+        self.assertIsNone(record["website_configuration"]["live_nowplaying_url"])
+        verify.assert_called_once_with("https://radio.example.org/humkin.mp3")
+
+    def test_azuracast_endpoint_remains_optional_but_enforced(self):
+        args=["host_preflight.py","--stream-url","https://radio.example.org/humkin.mp3",
+              "--nowplaying-url","https://radio.example.org/api/nowplaying/humkin"]
+        with patch.object(sys,"argv",args), patch.object(host,"check_stream",return_value={
+             "content_type":"audio/mpeg","http_status":200,"audio_bytes_read":2048
+             }), patch.object(host,"check_nowplaying",return_value={
+             "station":"HUMKIN","is_online":False,"now_playing":"None"
+             }), redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(host.main(),1)
+        self.assertIn("offline",err.getvalue())
+
     def test_now_playing_requires_real_api(self):
         sample={"station":{"name":"HUMKIN RADIO"},"is_online":True,
                 "now_playing":{"song":{"title":"HaileyLu Bloom"}}}

@@ -70,24 +70,29 @@ def check_stream(url):
 def main():
     p=argparse.ArgumentParser(description="Read-only hosted transmitter preflight; no publication")
     p.add_argument("--stream-url",required=True,help="Public listener URL, NOT private source password URL")
-    p.add_argument("--nowplaying-url",required=True,help="AzuraCast /api/nowplaying/STATION_SHORTCODE URL")
+    p.add_argument("--nowplaying-url",help="Optional AzuraCast /api/nowplaying/STATION_SHORTCODE URL")
     args=p.parse_args()
     try:
         stream=public_https(args.stream_url)
-        nowplaying=public_https(args.nowplaying_url)
-        # Managed providers may serve the audio mount on a different public
-        # CDN hostname than their station dashboard. Both must use HTTPS.
-        now=check_nowplaying(nowplaying)
+        nowplaying=public_https(args.nowplaying_url) if args.nowplaying_url else None
+        # A bare Icecast service may not provide an AzuraCast API. Prove the
+        # listener's audio bytes regardless; only claim host-reported online
+        # state if the optional supported AzuraCast endpoint actually exists.
         sound=check_stream(stream)
-        if not now["is_online"]:
+        now=check_nowplaying(nowplaying) if nowplaying else None
+        if now is not None and not now["is_online"]:
             raise RuntimeError("AzuraCast reports station offline; do not mark a live listener ready.")
-        print(json.dumps({"verified_listener":True,"stream_url":stream,
-            "nowplaying_url":nowplaying,"nowplaying":now,"stream":sound,
+        result={"verified_listener":True,"stream_url":stream,
+            "stream":sound,"nowplaying_url":nowplaying,"nowplaying":now,
+            "status_proof":"azuracast_online" if now is not None else "audio_bytes_only",
             "website_configuration":{
                 "live_stream_url":stream,
                 "live_nowplaying_url":nowplaying
             },
-            "note":"Read-only preflight succeeded; publishing to HUMKIN still needs separate owner approval."},indent=2))
+            "note":("Read-only probe passed. Independently listen on cellular; no site update or broadcast occurred. "+
+                    ("Host reports online." if now is not None else
+                     "No now-playing service was checked; audio bytes do not establish the source identity or station continuity."))}
+        print(json.dumps(result,indent=2))
     except (OSError,ValueError,RuntimeError,urllib.error.URLError,json.JSONDecodeError) as e:
         print("NOT READY: "+str(e),file=sys.stderr)
         return 1
