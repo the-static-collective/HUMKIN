@@ -41,6 +41,10 @@ jobs:
           & python tools/radio-broadcast/windows/check_timezone.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (Get-Command py -ErrorAction SilentlyContinue) {
+            # GitHub's py -3 may select a different installed Python than
+            # actions/setup-python. That interpreter needs its own tzdata.
+            & py -3 -m pip install tzdata
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             & py -3 tools/radio-broadcast/windows/check_timezone.py
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
