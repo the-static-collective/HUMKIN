@@ -15,6 +15,8 @@ const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
+// Keep a local first-party fallback when an optional cloud source fails.
+let localFallbackCount=0,usingLocalFallback=false;
 let lastPlaybackPosition=0,lastPlaybackProgressAt=Date.now(),lastBoundaryToken=-1;
 let albumQueue=[],albumCursor=0; // Optional iOS14 receiver album mode; no extra audio element.
 let remoteStream=null,hostedNowPlayingUrl=null,hostedPollTimer=null;
@@ -573,7 +575,8 @@ function setSource(src,offset,shouldPlay){
     // Play immediately: no awaits/timers before play(), even for song changes.
     audio.play().then(()=>{
       if(token!==seekToken)return;
-      switching=false;failureCount=0;
+      switching=false;
+      // play() can resolve before a byte actually decodes; wait for progress.
       setPlaybackState("playing");updateListen();
       rememberShuffleTrack();
       preloadNext();
@@ -845,16 +848,40 @@ function watchNaturalEnd(){
   // fraction of the song, should not leave the station stuck indefinitely.
   if(audio.ended||Date.now()-lastPlaybackProgressAt>1700)advanceNaturalEnd("watchdog");
 }
+function recoverLocalDial(shouldPlay){
+  if(usingLocalFallback||!localFallbackCount||remoteStream)return false;
+  // A stream of unavailable cloud objects must not strand the receiver.
+  usingLocalFallback=true;
+  tracks=tracks.slice(0,localFallbackCount);
+  programs=[];mode="shuffle";order=[];cursor=0;pendingClockJoin=null;
+  failureCount=0;
+  resetRate();warmSignal.setPlayback(false);
+  updateModeUI();
+  startShuffle(shouldPlay);
+  setMessage("Cloud audio couldn't load. Switched to built-in HUMKIN recordings.");
+  trace("mode_change",{mode:"shuffle",reason:"source_error"});
+  return true;
+}
 audio.addEventListener("error",()=>{
   if(!tracks.length&&!remoteStream)return;
   failureCount++;
   trace("audio_error",{mode,track_id:tracks[index]?.id,
     audio_code:Number(audio.error?.code)||0,reason:"source_error"});
-  if(failureCount>2){pause();setMessage("The station lost the audio feed. Check your connection and tune in again.");return}
+  // preload=auto may fail before a listener presses Play: never autoplay here.
+  if(!active&&!switching){
+    if(recoverLocalDial(false))return;
+    setMessage("That recording did not load. Press TUNE IN to retry.");
+    return;
+  }
+  if(failureCount>=3){
+    if(recoverLocalDial(true))return;
+    pause();setMessage("The station lost the audio feed. Check your connection and tune in again.");
+    return;
+  }
   setMessage("Couldn't load that recording. Trying to continue…");
   if(mode==="shuffle")nextShuffle(true);
   else if(mode==="album")nextAlbum(true);
-  else if(!remoteStream)setTimeout(()=>nextClock(true),1300);
+  else if(!remoteStream)nextClock(true);
 });
 document.addEventListener("visibilitychange",()=>{
   // Don't interrupt a song when the screen is unlocked after a background gap.
@@ -868,6 +895,7 @@ audio.addEventListener("timeupdate",()=>{
   const now=Number(audio.currentTime);
   if(Number.isFinite(now)&&Math.abs(now-lastPlaybackPosition)>.035){
     lastPlaybackPosition=now;lastPlaybackProgressAt=Date.now();
+    if(now>1&&!audio.paused)failureCount=0;
   }
   if(audio.paused)return;
   gentlyAlignClock();
@@ -934,6 +962,7 @@ async function boot(){
       }));
     }
     if(!tracks.length||tracks.some(t=>!t.src||!t.title||!(t.duration>0&&t.duration<14400)))throw Error("Incomplete playable playlist");
+    localFallbackCount=tracks.length;
     const [cloud,r2,overrides,schedule,settings,artRows,clockSample,airCarts,leagueSnapshot]=await Promise.all([
       getPublishedCrate(),
       getPublicR2Tracks(),
@@ -1002,7 +1031,7 @@ window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
   get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
     programs:programs.length,bumperEvery:stationSettings.bumper_every,
     hourWindowMs:shufflePolicy?.WINDOW_MS||3600000,warmSignal:warmSignal.status(),
-    clockOffsetMs,clockCalibrated,playbackRate:Number(audio.playbackRate)||1,
+    clockOffsetMs,clockCalibrated,usingLocalFallback,playbackRate:Number(audio.playbackRate)||1,
     bumperCount:bumperIndices().length,stream:remoteStream,
     currentTrack:remoteStream?null:(tracks[index]?{id:tracks[index].id,title:tracks[index].title,kind:tracks[index].kind}:null)}}});
 boot();
