@@ -1,0 +1,25 @@
+import assert from "node:assert/strict";
+import {inferFileMetadata,parseLayout,titleFromFile} from "../fm/load/folder-metadata.mjs";
+
+assert.deepEqual(parseLayout("artist/album"),["artist","album"]);
+assert.deepEqual(parseLayout("{genre}/{artist}/{album}"),["genre","artist","album"]);
+assert.throws(()=>parseLayout("artist/artist"),/no repeated/i);
+assert.throws(()=>parseLayout("secret/album"),/Folder layout/i);
+assert.equal(titleFromFile("02 - Take this song_home.mp3"),"Take this song home");
+const a=inferFileMetadata("Music/Eno Efia/Unshackled Dreams/02 - Open Sky.wav","artist/album");
+assert.deepEqual([a.artist,a.album,a.title],["Eno Efia","Unshackled Dreams","Open Sky"]);
+const b=inferFileMetadata("Music/Unshackled Dreams/Song.mp3","album");
+assert.deepEqual([b.artist,b.album],["","Unshackled Dreams"]);
+const c=inferFileMetadata("Music/Jazz/Humkin/Warmth/Disc 2/07 - Light.mp3","genre/artist/album/disc");
+assert.deepEqual([c.genre,c.artist,c.album,c.disc],["Jazz","Humkin","Warmth","Disc 2"]);
+const d=inferFileMetadata("Music/Misc/Eno Efia/Unshackled Dreams/Song.mp3","artist/album");
+assert.deepEqual([d.artist,d.album],["Eno Efia","Unshackled Dreams"]);
+assert.equal(inferFileMetadata("C:\\Music\\Violet\\Track.mp3","artist").artist,"Violet");
+assert.equal(inferFileMetadata("Track.mp3","artist/album").artist,"");
+assert.equal(inferFileMetadata("Music/Untitled.mp3","artist/album").album,"");
+assert.deepEqual([inferFileMetadata("Music/Artist/Track.mp3","artist/album").artist,inferFileMetadata("Music/Artist/Track.mp3","artist/album").album],["",""]);
+const e=inferFileMetadata("Music/Album/Artist/Song.mp3","album/artist");
+assert.deepEqual([e.artist,e.album],["Artist","Album"]);
+const f=inferFileMetadata("Music/Artist/Live/Album/Track.mp3","artist/ignore/album");
+assert.deepEqual([f.artist,f.album],["Artist","Album"]);
+console.log("Folder metadata parsing checks passed.");

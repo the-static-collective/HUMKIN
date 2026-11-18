@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import * as tus from "https://esm.sh/tus-js-client@4.3.1";
 import {r2Bridge} from "../r2-bridge-client.js";
+import {inferFileMetadata,parseLayout,titleFromFile} from "./folder-metadata.mjs";
 
 const API = "https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY = "sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public, RLS-scoped key. Never a secret/service key.
@@ -10,6 +11,7 @@ const MAX_FILE = 50 * 1024 * 1024;
 const db = createClient(API, KEY, {auth: {persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $ = id => document.getElementById(id);
 let selected = [], busy = false, stopRequested = false, drafts = [], known = [], activeUser = null;
+let scanPromise=Promise.resolve();
 const fmtTime = seconds => {
   seconds = Math.max(0, Math.round(Number(seconds)||0));
   return String(Math.floor(seconds / 3600)).padStart(2,"0") + ":" + String(Math.floor(seconds % 3600 / 60)).padStart(2,"0") + ":" + String(seconds % 60).padStart(2,"0");
@@ -22,37 +24,74 @@ function feedback(msg) { $("feedback").textContent = msg; log(msg) }
 function isWav(f) {return /\.wav$/i.test(f.name)}
 function isMp3(f) {return /\.mp3$/i.test(f.name)}
 function isM4a(f) {return /\.m4a$/i.test(f.name)}
-function titleFromName(name){
- return name.replace(/\.(mp3|wav|m4a)$/i,"").replace(/^\d{1,3}[\s._-]+/,"")
-   .replace(/[_]+/g," ").replace(/\s+/g," ").trim().slice(0,240) || "Untitled song";
+function titleFromName(name){return titleFromFile(name)}
+function currentLayout(){
+ return $("folder-layout").value==="custom"?$("folder-custom").value:$("folder-layout").value;
+}
+function inferItem(item){
+ const mapping=inferFileMetadata(item.file.webkitRelativePath||item.file.name,currentLayout());
+ item.folderInfo=mapping;
+ const defaults={artist:$("fallback-artist").value.trim(),album:$("fallback-album").value.trim()};
+ for(const field of ["title","artist","album"]){
+   if(!item.edited[field])item[field]=mapping[field]||defaults[field]||"";
+ }
+}
+function refreshFolderRules(){
+ $("custom-layout-row").classList.toggle("hidden",$("folder-layout").value!=="custom");
+ try{
+  parseLayout(currentLayout());
+  for(const item of selected)inferItem(item);
+  $("folder-note").textContent="Using "+(currentLayout()||"none")+" for "+selected.length+" selected files. Folder paths are used only to infer editable metadata.";
+ }catch(error){
+  $("folder-note").textContent=error.message;
+ }
+ drawQueue();
 }
 function drawQueue(){
  $("queue").replaceChildren();
- let knownSeconds=0, pending=0;
- for(const item of selected){
-   if(item.duration) knownSeconds += item.duration; else pending++;
+ const pending=selected.filter(item=>!item.duration).length;
+ const knownSeconds=selected.reduce((s,item)=>s+(Number(item.duration)||0),0);
+ const filter=$("queue-search").value.toLowerCase().trim(),sort=$("queue-sort").value;
+ const matches=selected.filter(item=>!filter||
+   [item.title,item.artist,item.album,item.folderInfo?.genre,item.folderInfo?.collection,item.folderInfo?.disc,item.file.name,item.folderInfo?.relativePath]
+    .some(value=>String(value||"").toLowerCase().includes(filter)));
+ const ordered=matches.slice().sort((a,b)=>{
+   const key=item=>sort==="path"?(item.folderInfo?.relativePath||item.file.name):
+     (["genre","collection","disc"].includes(sort)?item.folderInfo?.[sort]:item[sort])||"";
+   return String(key(a)).localeCompare(String(key(b)),undefined,{numeric:true,sensitivity:"base"});
+ });
+ for(const item of ordered.slice(0,150)){
    const li=document.createElement("li"),details=document.createElement("div"),
      name=document.createElement("span"),status=document.createElement("span"),row=document.createElement("div");
-   name.textContent=item.file.name+" · "+fmtBytes(item.file.size)+(item.duration?" · "+fmtTime(item.duration):"");
-   const title=document.createElement("input");title.type="text";title.maxLength=120;
-   title.value=item.title;title.setAttribute("aria-label","On-air title for "+item.file.name);
-   title.addEventListener("input",()=>{item.title=title.value});
+   name.textContent=(item.folderInfo?.relativePath||item.file.name)+" · "+fmtBytes(item.file.size)+
+     (item.duration?" · "+fmtTime(item.duration):"")+
+     (item.folderInfo?.genre?" · GENRE "+item.folderInfo.genre:"")+
+     (item.folderInfo?.collection?" · COLLECTION "+item.folderInfo.collection:"")+
+     (item.folderInfo?.disc?" · "+item.folderInfo.disc:"");
+   row.className="queue-controls";
+   for(const [field,limit] of [["title",120],["artist",160],["album",200]]){
+     const input=document.createElement("input");input.type="text";input.maxLength=limit;
+     input.value=item[field]||"";input.placeholder=field.toUpperCase();
+     input.setAttribute("aria-label",field+" for "+item.file.name);
+     input.addEventListener("input",()=>{item[field]=input.value;item.edited[field]=true});
+     row.append(input);
+   }
    const kind=document.createElement("select");
-   kind.setAttribute("aria-label","Recording category for "+item.file.name);
+   kind.className="kind";kind.setAttribute("aria-label","Recording category for "+item.file.name);
    for(const [value,label] of [["song","RADIO-ONLY SONG"],["single","OFFICIAL SINGLE ✳"],["bumper","STATION BUMPER / SPOKEN FEATURE"]]){
-     const option=document.createElement("option");option.value=value;option.textContent=label;
-     kind.append(option);
+     const option=document.createElement("option");option.value=value;option.textContent=label;kind.append(option);
    }
    kind.value=item.kind;kind.addEventListener("change",()=>{item.kind=kind.value});
-   row.className="queue-controls";row.append(title,kind);
-   details.append(name,row);status.className="state";status.textContent=item.status;
+   row.append(kind);details.append(name,row);
+   status.className="state";status.textContent=item.status;
    li.append(details,status);$("queue").append(li);
  }
+ $("queue-note").textContent="Showing "+Math.min(150,matches.length)+" of "+matches.length+
+   " matching files. Edit title / artist / album; use search to review the rest. Staging covers ALL "+selected.length+" selected files.";
  $("selection").textContent=selected.length+" files selected; "+pending+" durations still being scanned.";
  $("selected-time").textContent=fmtTime(knownSeconds)+" total duration detected.";
  $("stage").disabled=busy||!selected.length||!activeUser;
- $("cancel").disabled=!busy;
- $("clear").disabled=busy;
+ $("cancel").disabled=!busy;$("clear").disabled=busy;
 }
 function drawAuth(){
  $("signed-out").classList.toggle("hidden",!!activeUser);
@@ -83,21 +122,34 @@ async function getDuration(file){
    a.src=url;
  });
 }
+async function scanDurations(){
+ const pending=selected.filter(item=>item.status==="READY"&&!item.duration);
+ let next=0,finished=0;
+ await Promise.all(Array.from({length:Math.min(4,pending.length)},async()=>{
+   while(next<pending.length){
+     const item=pending[next++];
+     try{item.duration=await getDuration(item.file)}
+     catch(err){item.status="NEEDS CHECK";log(item.file.name+": "+err.message)}
+     finished++;
+     if(finished%8===0||finished===pending.length)drawQueue();
+   }
+ }));
+}
 async function addFiles(files){
- const existing=new Set(selected.map(x=>[x.file.name,x.file.size,x.file.lastModified].join("|")));
+ const existing=new Set(selected.map(x=>[
+   x.file.webkitRelativePath||x.file.name,x.file.size,x.file.lastModified].join("|")));
+ try{parseLayout(currentLayout())}catch(error){feedback(error.message);return}
  for(const file of files){
    if(!isMp3(file)&&!isWav(file)&&!isM4a(file))continue;
-   const key=[file.name,file.size,file.lastModified].join("|");
+   const key=[file.webkitRelativePath||file.name,file.size,file.lastModified].join("|");
    if(existing.has(key))continue;existing.add(key);
-   selected.push({file,status:"READY",duration:0,title:titleFromName(file.name),kind:"song"});
+   const item={file,status:"READY",duration:0,kind:"song",
+     title:titleFromName(file.name),artist:"",album:"",edited:{title:false,artist:false,album:false}};
+   inferItem(item);selected.push(item);
  }
- drawQueue();
- for(const item of selected){
-   if(item.status!=="READY"||item.duration)continue;
-   try {item.duration=await getDuration(item.file)}
-   catch(err){item.status="NEEDS CHECK";log(item.file.name+": "+err.message)}
-   drawQueue();
- }
+ refreshFolderRules();
+ scanPromise=scanPromise.then(scanDurations);
+ await scanPromise;
 }
 async function convertWav(item){
  if(!window.lamejs?.Mp3Encoder) throw Error("WAV encoder not loaded. Retry online or use the desktop batch converter.");
@@ -206,6 +258,8 @@ async function stage(){
      item.status="PREPARING";drawQueue();
      try{
        if(!(item.duration>0&&item.duration<14400))item.duration=await getDuration(item.file);
+       if(!item.title.trim()||!item.artist.trim()||!item.album.trim())
+         throw Error("Missing title, artist or album. Set these in the preview before staging.");
        const mp3=isWav(item.file)||isM4a(item.file)?await convertWav(item):item.file;
        if(mp3.size>MAX_FILE)throw Error("MP3 larger than 50 MiB; use desktop converter at 128 kbps.");
        if(!(item.duration>0&&item.duration<14400))throw Error("Cannot determine track duration.");
@@ -226,8 +280,8 @@ async function stage(){
          log("Object already staged; retrying metadata registration.");
        }
        const record={uploaded_by:user.id,sha256:sha,storage_path:path,original_name:item.file.name,
-         title:(item.title.trim().slice(0,120)||titleFromName(item.file.name)),
-         artist:"HUMKIN",album:item.kind==="single"?"HUMKIN RADIO · Singles":"HUMKIN RADIO · INBOX",
+         title:item.title.trim().slice(0,120),
+         artist:item.artist.trim().slice(0,160),album:item.album.trim().slice(0,200),
          kind:item.kind==="bumper"?"bumper":"song",
          is_single:item.kind==="single",enabled:item.kind!=="bumper",
          duration_seconds:item.duration,bytes:mp3.size};
@@ -318,13 +372,18 @@ async function publishOne(selectedRow){
 }
 
 $("pick").addEventListener("change",e=>addFiles(e.target.files));
+$("pick-folder").addEventListener("change",e=>addFiles(e.target.files));
+for(const field of ["folder-layout","folder-custom","fallback-artist","fallback-album"])
+ $(field).addEventListener(field==="folder-layout"?"change":"input",refreshFolderRules);
+$("queue-search").addEventListener("input",drawQueue);
+$("queue-sort").addEventListener("change",drawQueue);
 const drop=$("drop");
 for(const event of ["dragenter","dragover"]){drop.addEventListener(event,e=>{e.preventDefault();drop.classList.add("over")})}
 for(const event of ["dragleave","drop"]){drop.addEventListener(event,e=>{e.preventDefault();drop.classList.remove("over")})}
 drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));
 $("stage").addEventListener("click",stage);
 $("cancel").addEventListener("click",()=>{stopRequested=true;feedback("Finishing the current file, then stopping.")});
-$("clear").addEventListener("click",()=>{selected=[];$("pick").value="";drawQueue()});
+$("clear").addEventListener("click",()=>{selected=[];$("pick").value="";$("pick-folder").value="";drawQueue()});
 $("publish").addEventListener("click",publish);
 $("refresh-drafts").addEventListener("click",async()=>{try{await ensureSession();await loadKnown()}catch(e){feedback(e.message)}});
 $("send-link").addEventListener("click",async()=>{

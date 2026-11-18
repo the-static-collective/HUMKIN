@@ -19,7 +19,16 @@ p{line-height:1.5}
 .card{margin-top:22px}
 label{font-weight:700}
 input[type=email],input[type=text],#queue select{padding:13px;width:100%;max-width:400px;border:2px solid #211b3a;border-radius:8px;background:#fff;font:inherit;margin:6px 0}
-.queue-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(145px,180px);gap:7px;margin-top:8px}
+.queue-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
+.queue-controls .kind{grid-column:1/-1}
+.queue-controls input{padding:9px!important;max-width:none!important}
+.folder-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.folder-controls label{display:block}
+.folder-controls select,.folder-controls input[type=text]{padding:10px;width:100%;max-width:none;border:2px solid #211b3a;border-radius:8px;font:inherit;background:white;box-sizing:border-box}
+#pick-folder{max-width:100%}
+#folder-note{font-weight:700}
+@media(max-width:660px){.folder-controls{grid-template-columns:1fr}}
+
 .queue-controls input{min-width:0;width:100%!important}
 .queue-controls select{padding:9px;background:#fff;font-weight:800;max-width:100%}
 #draft-list li{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}
@@ -83,20 +92,64 @@ footer{padding:20px;text-align:center}
 <p class="small">This loader temporarily stages uploads in a private Supabase inbox, then publishes approved recordings to Cloudflare R2 when owner-scoped R2 keys are installed. Existing Supabase recordings continue playing during migration. Supabase Free has a <strong>1 GB free storage allowance</strong> shared with this organization; the 700 MiB soft limit reflects actual remaining Supabase copies; removing a confirmed backup is a separate, optional action.</p>
 </section>
 </div>
+<section class="panel card" aria-labelledby="folder-title">
+<h2 id="folder-title">03 · Desktop folder reader</h2>
+<p>Choose the <strong>parent folder</strong> containing your music subfolders. Nothing is uploaded or made public just by selecting a folder. A file's path can fill artist and album before you review each recording.</p>
+<div class="folder-controls">
+<div>
+<label for="pick-folder">Choose a whole music folder (desktop Chrome / Edge)</label>
+<input type="file" id="pick-folder" webkitdirectory directory multiple accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4">
+</div>
+<div>
+<label for="folder-layout">Interpret subfolders as</label>
+<select id="folder-layout">
+<option value="none">Don't infer (manual / fallback)</option>
+<option value="artist/album" selected>Artist / Album / Song.mp3</option>
+<option value="album/artist">Album / Artist / Song.mp3</option>
+<option value="artist">Artist / Song.mp3</option>
+<option value="album">Album / Song.mp3</option>
+<option value="genre/artist/album">Genre / Artist / Album / Song.mp3</option>
+<option value="collection/artist/album">Collection / Artist / Album / Song.mp3</option>
+<option value="artist/album/disc">Artist / Album / Disc / Song.mp3</option>
+<option value="custom">My own layout…</option>
+</select>
+</div>
+<div id="custom-layout-row" class="hidden">
+<label for="folder-custom">Custom order (separate fields with /)</label>
+<input type="text" id="folder-custom" value="genre/artist/album" placeholder="artist/album/ignore">
+<p class="small">Available fields: artist, album, genre, collection, disc, ignore. Extra outer folders are skipped. Artist and album are saved to the radio catalog; the other fields are preview context for now.</p>
+</div>
+<div>
+<label for="fallback-artist">Artist when path doesn't provide one</label>
+<input id="fallback-artist" type="text" value="HUMKIN" maxlength="160">
+</div>
+<div>
+<label for="fallback-album">Album when path doesn't provide one</label>
+<input id="fallback-album" type="text" value="HUMKIN RADIO · INBOX" maxlength="200">
+</div>
+</div>
+<p id="folder-note" class="small" role="status">Folder layout: Artist / Album. The chosen parent folder itself is not treated as an artist.</p>
+</section>
 <section class="panel card" aria-labelledby="drop-title">
-<h2 id="drop-title">03 · Drop songs, singles and bumpers</h2>
-<label id="drop" for="pick">DROP MUSIC / SINGLES / BUMPERS HERE<br><span class="small">or tap to choose as many files as you like</span></label>
+<h2 id="drop-title">04 · Drop songs, singles and bumpers</h2>
+<label id="drop" for="pick">DROP MUSIC / SINGLES / BUMPERS HERE<br><span class="small">or tap for individual files; use the folder reader above for a library</span></label>
 <input type="file" id="pick" multiple accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4">
-<p class="small">MP3 stays original; WAV/M4A → 128 kbps MP3 on this device (if the browser can decode it). WAV/M4A sources are never uploaded. Choose RADIO-ONLY SONG, OFFICIAL SINGLE, or STATION BUMPER / SPOKEN FEATURE for each file and edit its title. For the Eno Efia guest feature, upload the interview as spoken audio, not a seasonal song. An official single gets <strong>two plays per rotation cycle</strong> where the station's release weighting applies; radio-only songs get one. Long audio conversion uses memory, so keep this tab open.</p>
+<p class="small">MP3 stays original; WAV/M4A → 128 kbps MP3 on this device (if the browser can decode it). WAV/M4A sources are never uploaded. Choose RADIO-ONLY SONG, OFFICIAL SINGLE, or STATION BUMPER / SPOKEN FEATURE for each file and review its title, artist, and album. For the Eno Efia guest feature, upload the interview as spoken audio, not a seasonal song. An official single gets <strong>two plays per rotation cycle</strong> where the station's release weighting applies; radio-only songs get one. Long audio conversion uses memory, so keep this tab open.</p>
 <p id="selection">No files selected.</p>
 <p id="selected-time">0 hours 0 minutes queued</p>
+<div class="folder-controls">
+<div><label for="queue-search">Find a recording in this crate</label><input id="queue-search" type="text" placeholder="Search artist, album, title, or filename"></div>
+<div><label for="queue-sort">Sort preview by</label><select id="queue-sort">
+<option value="path">Folder / filename</option><option value="artist">Artist</option><option value="album">Album</option><option value="genre">Genre folder</option><option value="collection">Collection folder</option><option value="disc">Disc folder</option><option value="title">Title</option></select></div>
+</div>
+<p id="queue-note" class="small">Edit the inferred titles, artists, and albums before staging. Showing up to 150 matching files at once.</p>
 <ul id="queue"></ul>
 <div class="row"><button id="stage" class="accent" disabled>STAGE THIS CRATE ↗</button><button id="cancel" class="warn" disabled>STOP AFTER CURRENT SONG</button><button id="clear">CLEAR SELECTION</button></div>
 <progress class="progress" id="progress" value="0" max="100"></progress>
 <p id="feedback" role="status" aria-live="polite"></p>
 </section>
 <section class="panel card" aria-labelledby="ready-title">
-<h2 id="ready-title">04 · Put it on the air</h2>
+<h2 id="ready-title">05 · Put it on the air</h2>
 <p>Everything enters as a private draft. Approve a <strong>specific song or bumper</strong> using its own button below; this publishes that one item and enables it for the radio. The bulk button handles SONGS and SINGLES only. Never approve private callers or unverified real-world announcements.</p>
 <ul id="draft-list"><li>Sign in to view private drafts.</li></ul>
 <p><a href="../manage/" class="button-like">✳ OPEN STATION MANAGER — EDIT SONGS & SHOWS ↗</a></p>
