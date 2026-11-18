@@ -2,6 +2,29 @@
 **Implementation:** GitHub Pages `/fm/load/`, browser WAV conversion + authenticated Supabase Storage, dynamic live rotation.
 **Status:** backend schema deployed; website branch awaiting CI/merge; physical Android field test and email redirect must still be verified.
 
+## Desktop folder import — Artist / Album / custom path mapping
+
+Open [the owner-only Crate Loader](https://humkin.abundent.org/fm/load/) in current Chrome or Edge on your **Windows computer** and sign in. Under **Desktop folder reader**, choose the parent folder containing your music files. The browser recursively selects MP3, WAV and M4A files without uploading or publishing any file yet.
+
+Choose the layout matching the directories **under the selected parent**. For example:
+
+| On-disk path under the chosen parent | Choose layout | Saved artist | Saved album |
+| --- | --- | --- | --- |
+| `Eno Efia/Unshackled Dreams/01 - Opening.mp3` | `artist/album` | Eno Efia | Unshackled Dreams |
+| `Unshackled Dreams/Eno Efia/Opening.mp3` | `album/artist` | Eno Efia | Unshackled Dreams |
+| `Eno Efia/Opening.mp3` | `artist` | Eno Efia | Editable fallback |
+| `Unshackled Dreams/Opening.mp3` | `album` | Editable fallback | Unshackled Dreams |
+| `Folk/Eno Efia/Unshackled Dreams/Opening.mp3` | `genre/artist/album` | Eno Efia | Unshackled Dreams |
+| `Eno Efia/Unshackled Dreams/Disc 1/Opening.mp3` | `artist/album/disc` | Eno Efia | Unshackled Dreams |
+
+Choose **My own layout** for a slash-separated combination of `artist`, `album`, `genre`, `collection`, `disc`, or `ignore`. Example: `collection/artist/album`. Extra *outer* directories are ignored. The first folder selected in the folder picker is always the root and never an artist. Paths with **too few** directories for the chosen layout are not guessed; the editable fallbacks apply.
+
+**Review:** Search and sort the intake queue by artist, album, title or path; edit title / artist / album per song. Up to 150 matching recordings display at a time, but **STAGE THIS CRATE** stages every selected item (unless explicitly stopped). Manual edits survive switching layouts. The app preserves the source file untouched and stores only approved artist and album fields in the existing Supabase catalog; genre/collection/disc are displayed as hints, **not stored as searchable library metadata yet**.
+
+**Publication:** The existing owner-only, hash-deduplicated Supabase private staging route is retained. A file must still be individually or batch-approved before being copied to R2 and made public. Existing Supabase staging limits still apply, including the 700 MiB soft cap; this change is a metadata/desktop workflow improvement, **not yet direct bulk-to-private-R2 upload**.
+
+**Browser caveats:** Browser directory pickers do not give access to your full disk path, and must be chosen again after a browser restart. For thousands of files, use multiple crates; a handful of WAV/M4A files should be pre-converted offline with `tools/humkin-radio-batch.py` to avoid expensive browser memory conversion.
+
 ## Two-click path
 1. Open `https://humkin.abundent.org/fm/load/` in Chrome on your phone or computer.
 2. Enter `us@abundent.org`, request the sign-in link, and open it on the same device. Supabase Auth must allow `https://humkin.abundent.org/fm/load/` as an additional redirect URL. If the link lands elsewhere, add it under Authentication → URL Configuration in the pantry-gate project; no public password is stored.
