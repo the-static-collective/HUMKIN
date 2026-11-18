@@ -31,6 +31,28 @@ class RadioTests(unittest.TestCase):
     def setUp(self):
         self.catalog={"tracks":[item("A",3),item("B",3),item("C",3),item("ID",1,"bumper")],
                       "shows":[],"settings":{"bumper_every":2}}
+    def test_cp1252_windows_log_title_cannot_crash_station(self):
+        # The hidden PowerShell launcher on Windows can redirect stdout with
+        # cp1252, which cannot encode U+2011 nonbreaking hyphens or some
+        # multilingual song titles. Never let a song name crash live audio.
+        for codec, label in [
+            ("cp1252", "HUMKIN ‑ Signing Back In — स्टेशन"),
+            ("ascii", "HUMKIN ‑ Signing Back In — स्टेशन"),
+        ]:
+            with self.subTest(codec=codec):
+                target = io.BytesIO()
+                stream = io.TextIOWrapper(
+                    target, encoding=codec, errors="strict", write_through=True)
+                with patch.object(engine.sys, "stdout", stream):
+                    engine.configure_log_output()
+                    print("ON AIR: HUMKIN —", label, flush=True)
+                    print("ON AIR: HUMKIN —", label, flush=True)
+                raw = target.getvalue()
+                self.assertIn(b"ON AIR:", raw)
+                self.assertIn(b"\\u2011", raw,
+                              "unrepresentable track text should be escaped, not fatal")
+                stream.close()
+
     def test_rotation_never_repeats_music_before_cycle(self):
         s=engine.Station(self.catalog)
         result=[s.next()["id"] for _ in range(4)]
