@@ -1,0 +1,8 @@
+{
+  "schema": "humkin.receptacle/v0.1",
+  "mode": "preview",
+  "recipient": "HUMKIN",
+  "purposeId": "purpose-humkin-listener-support-001",
+  "ownerApproved": false,
+  "doors": []
+}
