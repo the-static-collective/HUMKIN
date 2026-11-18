@@ -26,6 +26,8 @@
 <script defer src="./r2-catalog.js"></script>
 <script defer src="./black-box.js"></script>
 <script defer src="./radio.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+<script defer src="./live-station.js"></script>
 <script defer src="./archive/ledger.js"></script>
 <script defer src="./orchard/model.js"></script>
 <script defer src="./orchard/night-watch.js"></script>
@@ -52,6 +54,18 @@
     <div class="seal" aria-hidden="true">TAKE THE<br>LONG WAY<br>HOME</div>
   </div>
   <div class="controls">
+    <section class="live-station" aria-labelledby="live-station-heading">
+      <p class="eyebrow">STATION ONE / THE ACTUAL SHARED SIGNAL</p>
+      <h2 id="live-station-heading">LIVE FROM THE <em>ACER.</em></h2>
+      <p id="live-status" role="status" aria-live="polite">Checking the transmitter…</p>
+      <div class="live-actions" role="group" aria-label="Shared radio controls">
+        <button id="live-listen" type="button" aria-pressed="false">▶ LISTEN LIVE</button>
+        <button id="live-backup" type="button" aria-pressed="false">↪ LONG WAVE</button>
+        <button id="live-retry" type="button" hidden>↻ RETRY LIVE</button>
+      </div>
+      <audio id="live-air" controls preload="none" aria-label="HUMKIN Station One live audio"></audio>
+      <p class="live-note">One real program shared across listeners. If the Acer goes offline, this receiver switches to independent Long Wave. No autoplay. The older Same-Time and Road Shuffle dial below remains available.</p>
+    </section>
     <p id="station-status" class="status-pill" role="status" aria-live="polite">CONNECTING THE TUNER…</p>
     <h2 id="desk-heading">THERE'S MUSIC<br>OUT HERE.</h2>
     <p class="eyebrow">NOW ON THE DIAL</p>
@@ -115,8 +129,8 @@
 <section class="about">
  <div><p class="eyebrow">A STATION YOU CAN CARRY</p><h2>DRIVE.<br><em>LISTEN.</em><br>REPEAT.</h2></div>
  <div class="about-copy">
- <p>Two ways to listen. <strong>Same-time radio</strong> uses a shared clock so listeners arriving together hear approximately the same part of the rotation. <strong>Road shuffle</strong> plays continuously in a different, repeat-free order on your own device.</p>
- <p>Both run on your phone or computer using direct HUMKIN recordings. They do not require a broadcast server. Music continues while the browser can keep playing audio; some phones may suspend background tabs or require you to resume.</p>
+ <p>Three ways to listen. <strong>Station One Live</strong> carries the Acer's actual shared broadcast when it's running, with Long Wave as its independent fallback. <strong>Same-time radio</strong> uses a shared clock so listeners arriving together hear approximately the same part of the rotation. <strong>Road shuffle</strong> plays continuously in a different, repeat-free order on your own device.</p>
+ <p>Same-Time and Road Shuffle run on your phone or computer using direct HUMKIN recordings; neither requires the Acer. The separate live radio needs the Acer's transmitter and Cloudflare Worker. Music continues while the browser can keep playing audio; some phones may suspend background tabs or require you to resume.</p>
  <p class="preview-note" id="playlist-note">Now spinning 21 songs: MUTANT POP, everywhere;near you, HaileyLu Bloom, and Leave The Kettle On. More radio-minded selections are on the way.</p>
  <div class="about-actions"><a href="./top42/" class="button">THE TOP 42 · RECORD LEAGUE ↗</a><a href="../" class="button">MUTANT POP · 12 SONGS ↗</a><a href="../releases/everywhere-near-you/" class="button">EVERYWHERE;NEAR YOU · 7 SONGS ↗</a><a href="../somewhere.html" class="button">PUT HUMKIN SOMEWHERE ↗</a><a href="../dj.html" class="button">THE DJ CRATE ↗</a></div>
  </div>
@@ -124,7 +138,7 @@
 <section class="road-notes">
  <p class="eyebrow">ONE IMPORTANT DISTINCTION</p>
  <h2>RADIO VIBES,<br><em>REAL ENGINEERING.</em></h2>
- <p>This page currently plays a continuous radio-style rotation, not a traditional licensed FM signal, native Android Auto app, or an always-on Icecast stream. To broadcast the same live program to every receiver—even while nobody has a browser open—we can connect an actual streaming server later. The independent full-album homepage stays as it is for the Walmart submission.</p>
+ <p>Station One Live is a real synchronized internet-radio broadcast from the Acer, delivered by Cloudflare R2/HLS. It isn't a licensed terrestrial FM signal or a native Android Auto app. The older browser radio modes and independent Long Wave backup remain available. The independent full-album homepage stays as it is for the Walmart submission.</p>
  <p>Listening on personal devices is different from playing recordings over a business sound system. Venue, composition and any applicable broadcast permissions remain separate matters. <a href="../docs/RADIO-OPERATIONS.md">How the real broadcast upgrade works ↗</a></p>
 </section>
 </main>

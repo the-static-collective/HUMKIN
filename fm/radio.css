@@ -65,3 +65,18 @@
 .topline .tip-jar-link{font-size:11px;font-weight:950;letter-spacing:.06em;background:var(--yellow);color:var(--ink);padding:7px 11px;border-radius:99px;text-decoration:none;white-space:nowrap}
 .topline .tip-jar-link:hover{background:#fff4ad}
 @media(max-width:480px){.topline{gap:9px;flex-wrap:wrap}.topline .brand{font-size:20px}.topline .dj-link,.topline .tip-jar-link{font-size:10px}}
+
+/* Real Station One receiver: an independent, prominent face on the existing dial. */
+.live-station{margin:0 0 34px;padding:22px;background:#2b2442;color:#fffaec;border:2px solid #594c78;border-radius:16px;box-shadow:5px 6px 0 #e7b8ad}
+.live-station .eyebrow{color:#f8cc73;font-size:10px;margin-bottom:8px}
+.controls .live-station h2{font-size:clamp(24px,3vw,39px);line-height:1.05;letter-spacing:-.05em;color:#fff7e7;margin:0 0 13px}
+.live-station h2 em{font-style:normal;color:#f8cc73}
+#live-status{color:#eee1d5;font-size:13px;line-height:1.45;min-height:2.6em;margin:0 0 13px}
+.live-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.live-actions button{flex:1 1 128px;border:2px solid #f8cc73;background:#f8cc73;color:#241b37;border-radius:24px;padding:11px 10px;font-size:12px;font-weight:950;letter-spacing:.02em}
+.live-actions button:nth-child(2),.live-actions button:nth-child(3){background:transparent;color:#fff4df;border-color:#aea0b8}
+.live-actions button[aria-pressed=true]{outline:2px solid #fff6e6;outline-offset:2px}
+.live-actions button[hidden]{display:none}
+.live-station audio{display:block;width:100%;margin:12px 0}
+.controls .live-station .live-note{color:#d9cdde;font-size:11px;line-height:1.5;margin:12px 0 0}
+@media(max-width:480px){.live-station{padding:16px 13px;margin-bottom:28px}.live-actions button{font-size:11px;flex-basis:112px}}
