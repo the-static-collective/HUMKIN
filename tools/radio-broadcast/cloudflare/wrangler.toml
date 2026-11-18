@@ -7,3 +7,9 @@ workers_dev = true
 [[r2_buckets]]
 binding = "RADIO_MEDIA"
 bucket_name = "humkin-radio-media"
+
+# Live HLS uploader uses its own bucket and credentials; never grant it
+# write/delete access to the permanent RADIO_MEDIA music archive.
+[[r2_buckets]]
+binding = "RADIO_LIVE"
+bucket_name = "humkin-radio-live"
