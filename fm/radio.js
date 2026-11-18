@@ -665,7 +665,8 @@ function nextShuffle(shouldPlay){
   // Shuffle, not just when the playlist was first built. Same-Time has a
   // fixed epoch and never applies variable time exclusions.
   for(let n=0;n<order.length&&tracks[order[cursor]]?.kind==="bumper"&&
-      !window.HUMKIN_BUMPER_RELATIONS?.permitted(
+      window.HUMKIN_BUMPER_RELATIONS&&
+      !window.HUMKIN_BUMPER_RELATIONS.permitted(
        tracks[order[cursor]].id,stationSettings.bumper_rules,
        new Date(stationNow()),"shuffle");n++){
     cursor++;
