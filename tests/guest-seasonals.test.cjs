@@ -1,20 +1,39 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const policy=require("../fm/r2-catalog.js");
-const hashes=["ffc6cc64c5233b4d3ec35cdb2c935c65e3bf37d8e60767bf455b63809820c2b5",
-"a9223523d009c520a7add920b954258c73017198eb0411bfa6a54e795f1136a4",
-"e9b16482a25cce61b9bc6a68aa5589cb9a36ef28007b5c3436b73d8458b8a964"];
-test("exact hashes add two seasonal slots per regular song",()=>{
- const tracks=hashes.map((sha256,i)=>({id:"crate-"+i,sha256,kind:"song"}));
- tracks.push({id:"other",sha256:"0".repeat(64),kind:"song"});
- const extras=policy.additionalPositions([0,1,2,3],tracks,[],{multiplier:3,sha256s:hashes});
- assert.deepEqual(extras,[0,0,1,1,2,2]);
+const feature=require("../fm/guest-features.json").features.find(x=>x.id==="eno-efia-unshackled-dreams");
+const rotation=require("../fm/rotation.json").seasonal_rotation;
+const songs=feature.tracks.filter(t=>t.kind==="song");
+const interview=feature.tracks.find(t=>t.kind==="interview");
+
+test("guest feature keeps interview immediately before My Best Friend",()=>{
+ assert.equal(feature.tracks.length,3);
+ assert.equal(interview.title,"Interview — Introduction to My Best Friend");
+ assert.equal(interview.catalog_kind,"bumper");
+ assert.equal(interview.feature_only,true);
+ assert.equal(interview.seasonal,false);
+ assert.equal(feature.tracks.indexOf(interview)+1,feature.tracks.findIndex(t=>t.title==="My Best Friend"));
 });
-test("featured and seasonal total only three slots",()=>{
- const tracks=[{id:"crate-a",sha256:hashes[0],kind:"song",is_single:true}];
- assert.deepEqual(policy.additionalPositions([0],tracks,[0],{multiplier:3,sha256s:hashes}),[0]);
+test("seasonal policy lists the two songs, not the interview",()=>{
+ assert.equal(songs.length,2);
+ assert.equal(rotation.multiplier,3);
+ assert.deepEqual(new Set(rotation.sha256s),new Set(songs.map(t=>t.sha256)));
+ assert.equal(rotation.sha256s.includes(interview.sha256),false);
 });
-test("bumper with same fingerprint never becomes seasonal",()=>{
- const tracks=[{id:"bumper",sha256:hashes[0],kind:"bumper"}];
- assert.deepEqual(policy.additionalPositions([0],tracks,[],{multiplier:3,sha256s:hashes}),[]);
+test("two songs each receive three total positions",()=>{
+ const tracks=feature.tracks.map((t,i)=>({id:"crate-"+i,sha256:t.sha256,kind:t.catalog_kind}));
+ const extra=policy.additionalPositions([0,2],tracks,[],rotation);
+ assert.deepEqual(extra,[0,0,1,1]);
+});
+test("featured seasonal song still receives three total, not five",()=>{
+ const tracks=[{id:"crate-song",sha256:songs[0].sha256,kind:"song"}];
+ assert.deepEqual(policy.additionalPositions([0],tracks,[0],rotation),[0]);
+});
+test("misclassified interview cannot gain seasonal slots",()=>{
+ const tracks=[{id:"interview",sha256:interview.sha256,kind:"song"}];
+ assert.deepEqual(policy.additionalPositions([0],tracks,[],rotation),[]);
+});
+test("bumpers do not enter seasonal music under any matching fingerprint",()=>{
+ const tracks=[{id:"bumper",sha256:songs[0].sha256,kind:"bumper"}];
+ assert.deepEqual(policy.additionalPositions([0],tracks,[],rotation),[]);
 });
