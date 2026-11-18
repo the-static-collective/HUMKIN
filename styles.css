@@ -38,3 +38,9 @@ footer{background:#231b37;color:#ddd;padding:25px 5%;display:flex;justify-conten
 
 /* An optional pocket doorway; never compete with the free album. */
 footer a[href="./support.html"]{color:#fbd67c;text-decoration:underline;text-underline-offset:3px}
+
+/* Visible but voluntary: the tip jar never competes with free playback. */
+.sitehead nav a.tip-jar-link{background:var(--sun);color:#201830;border-radius:99px;padding:5px 10px;white-space:nowrap}
+.sitehead nav a.tip-jar-link:hover{background:#fff0af}
+.hero-tip-note{font-size:13px;line-height:1.5;color:#e9e0f6;max-width:36rem;margin:-5px 0 16px}
+.hero-tip-note a{color:var(--sun);font-weight:900;text-underline-offset:3px}
