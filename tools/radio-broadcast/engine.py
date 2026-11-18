@@ -324,11 +324,20 @@ def streaming(catalog,args):
     # Download the NEXT public audio copy while the current recording plays.
     # This avoids blocking the encoder after a crossfade on ordinary cache misses.
     fetch_pool=ThreadPoolExecutor(max_workers=1)
+    prepared_decoders=set()
+    def prepare_next(item,reserved_bytes):
+        # Prefetch *and decode* the opening PCM while the preceding song plays.
+        # Previously only the MP3 was downloaded ahead of time. FFmpeg decoder
+        # startup then blocked the encoder exactly at the musical boundary.
+        process=decode(cache_track(item,cache))
+        prepared_decoders.add(process)
+        return process,read_exact(process.stdout,reserved_bytes)
     try:
         current=station.next()
         ahead=station.next()
         decode_current=decode(cache_track(current,cache))
-        ahead_future=fetch_pool.submit(cache_track,ahead,cache)
+        ahead_future=fetch_pool.submit(
+            prepare_next,ahead,overlap_bytes(current,ahead,args.crossfade))
         while True:
             # 'source_select' is a playout decision, never proof a listener heard it.
             trace("source_select",{"mode":"stream","track_id":current["id"],
@@ -337,8 +346,9 @@ def streaming(catalog,args):
             tail_size=overlap_bytes(current,ahead,args.crossfade)
             try:
                 tail=pump_with_tail(decode_current,write,tail_size)
-                head_process=decode(ahead_future.result(timeout=45))
-                head=read_exact(head_process.stdout,tail_size)
+                # The opening PCM should already be available: no decoder
+                # startup pause between the tail and this crossfade.
+                head_process,head=ahead_future.result(timeout=45)
                 n=min(len(head),len(tail))//FRAME_BYTES*FRAME_BYTES
                 if n:
                     write(tail[:-n])
@@ -349,7 +359,8 @@ def streaming(catalog,args):
                       "next_track_id":ahead["id"],"reason":"automatic"})
                 current=ahead
                 ahead=station.next()
-                ahead_future=fetch_pool.submit(cache_track,ahead,cache)
+                ahead_future=fetch_pool.submit(
+                    prepare_next,ahead,overlap_bytes(current,ahead,args.crossfade))
                 decode_current=head_process
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
                 trace("audio_error",{"mode":"stream","track_id":current["id"],
@@ -365,7 +376,16 @@ def streaming(catalog,args):
     except StopIteration:
         print("Station One stopping; flushing audio segments.",flush=True)
     finally:
-        fetch_pool.shutdown(wait=False,cancel_futures=True)
+        # Let a pending predecode finish before releasing its FFmpeg handle.
+        # This worker only reads a short opening; it cannot stream a whole
+        # recording in the background. A rare bad network source can still
+        # delay teardown, bounded by cache_track's existing HTTP timeout.
+        fetch_pool.shutdown(wait=True,cancel_futures=True)
+        for proc in prepared_decoders:
+            if proc.poll() is None:
+                proc.kill()
+                try:proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:pass
         # An interrupted preview must not leave decoder processes holding pipes.
         for proc in [locals().get("decode_current"),locals().get("head_process")]:
             if proc is not None and proc.poll() is None:
