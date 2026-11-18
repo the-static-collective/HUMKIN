@@ -233,6 +233,104 @@ function Start-Broadcast {
     finally { Remove-Item Env:\HUMKIN_ICECAST_URL -ErrorAction SilentlyContinue }
 }
 
+# Windows PowerShell uses the current Windows user's DPAPI key when encrypting
+# SecureStrings without a custom key. The vault is not portable to other PCs
+# or Windows accounts, and no plaintext secret is saved in the repository.
+$R2VaultFile = Join-Path $HomeDir 'r2-live-credentials.dpapi'
+
+function Assert-R2Credentials {
+    param($Data)
+    if ($null -eq $Data -or
+        $Data.AccountId -notmatch '^[0-9a-fA-F]{32}$' -or
+        [string]::IsNullOrWhiteSpace($Data.AccessKeyId) -or
+        [string]::IsNullOrWhiteSpace($Data.SecretAccessKey)) {
+        throw 'R2 credentials are missing or invalid. Use option 7 to replace the saved credentials.'
+    }
+}
+
+function Save-R2Credentials {
+    param($Data)
+    Assert-R2Credentials -Data $Data
+    New-Item -ItemType Directory -Path $HomeDir -Force | Out-Null
+    $json = $Data | ConvertTo-Json -Compress
+    $protected = ConvertTo-SecureString -String $json -AsPlainText -Force |
+        ConvertFrom-SecureString
+    [IO.File]::WriteAllText($R2VaultFile, $protected, [Text.Encoding]::ASCII)
+    $json = $null
+    Write-Host 'Cloudflare R2 credentials saved with Windows user encryption (DPAPI).' -ForegroundColor Green
+}
+
+function Load-R2Credentials {
+    if (-not (Test-Path -LiteralPath $R2VaultFile)) { return $null }
+    try {
+        $cipher = ([IO.File]::ReadAllText($R2VaultFile)).Trim()
+        $secure = ConvertTo-SecureString -String $cipher
+        $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+        try {
+            $json = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
+            $data = ConvertFrom-Json -InputObject $json
+            Assert-R2Credentials -Data $data
+            return $data
+        }
+        finally {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
+            $json = $null
+        }
+    }
+    catch {
+        throw 'Saved R2 credentials cannot be opened on this Windows account. Use option 7 to reset them.'
+    }
+}
+
+function Setup-R2Credentials {
+    Write-Host 'One-time Cloudflare R2 setup for this Windows account.' -ForegroundColor Cyan
+    $accountId = (Read-Host 'Cloudflare Account ID (32 characters)').Trim()
+    $accessId = (Read-Host 'R2 S3 Access Key ID').Trim()
+    Write-Host 'Secret input: use the clipboard so you never have to type a long key.' -ForegroundColor Cyan
+    Write-Host 'Copy the R2 S3 SECRET Access Key (not the token ID) from your private password manager.'
+    Write-Host 'Only do this on your own computer. The clipboard is cleared after import.'
+    $method = (Read-Host 'Enter C to import secret from clipboard, or H for hidden typing').Trim().ToUpperInvariant()
+    $secretText = $null
+    switch ($method) {
+        'C' {
+            try { $secretText = (Get-Clipboard -Raw -ErrorAction Stop).Trim() }
+            finally {
+                try { Set-Clipboard -Value ' ' -ErrorAction Stop }
+                catch { Write-Warning 'Could not clear clipboard; clear it manually now.' }
+            }
+        }
+        'H' {
+            $secureInput = Read-Host 'R2 S3 Secret Access Key (input hidden)' -AsSecureString
+            $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureInput)
+            try { $secretText = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
+            finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
+        }
+        default { throw 'Choose C for clipboard import or H for hidden entry.' }
+    }
+    try {
+        $data = [pscustomobject]@{
+            AccountId = $accountId
+            AccessKeyId = $accessId
+            SecretAccessKey = $secretText
+        }
+        Assert-R2Credentials -Data $data
+        Save-R2Credentials -Data $data
+        return $data
+    }
+    finally { $secretText = $null }
+}
+
+function Reset-R2Credentials {
+    if (-not (Test-Path -LiteralPath $R2VaultFile)) {
+        Write-Host 'There is no saved R2 credential vault on this Windows account.'
+        return
+    }
+    $answer = Read-Host 'Type RESET to forget saved credentials on this PC (Cloudflare token is NOT revoked)'
+    if ($answer -cne 'RESET') { Write-Host 'Credentials left unchanged.'; return }
+    Remove-Item -LiteralPath $R2VaultFile -Force
+    Write-Host 'Local credentials cleared. Option 6 will run one-time setup again.' -ForegroundColor Green
+}
+
 function Start-R2Hls {
     Write-Host ''
     Write-Host '=== HUMKIN STATION ONE : R2 LIVE HLS TEST ===' -ForegroundColor Cyan
@@ -242,27 +340,26 @@ function Start-R2Hls {
     if (-not (Test-Path -LiteralPath $publisher)) {
         throw 'Missing hls_push.py. Update the complete HUMKIN repository before continuing.'
     }
-    Write-Host 'Requires R2 S3 API credentials for your dedicated humkin-radio-live bucket.'
-    Write-Host 'Use a bucket-scoped R2 token that cannot modify the permanent music archive.'
-    Write-Host 'This test publishes a short rolling HLS stream to R2. Upload operations may be billable.'
+    Write-Host 'Uses only a dedicated humkin-radio-live bucket; permanent recordings are untouched.'
+    Write-Host 'This 70-second test uploads to Cloudflare R2 and may incur usage charges.'
     Write-Host 'It will NOT redirect the existing website or Android station.'
     $choice = Read-Host 'Type R2 TEST to publish a supervised 70-second experiment'
     if ($choice -cne 'R2 TEST') { Write-Host 'No R2 upload started.'; return }
-    $env:CLOUDFLARE_ACCOUNT_ID = (Read-Host 'Cloudflare Account ID').Trim()
-    $env:AWS_ACCESS_KEY_ID = (Read-Host 'R2 S3 Access Key ID').Trim()
-    $secret = Read-Host 'R2 S3 Secret Access Key (hidden, not saved)' -AsSecureString
-    $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
+    $data = $null
     try {
-        $env:AWS_SECRET_ACCESS_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
-    }
-    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
-    try {
+        $data = Load-R2Credentials
+        if ($null -eq $data) { $data = Setup-R2Credentials }
+        else { Write-Host 'Using saved Windows-protected R2 credentials.' -ForegroundColor Green }
+        $env:CLOUDFLARE_ACCOUNT_ID = $data.AccountId
+        $env:AWS_ACCESS_KEY_ID = $data.AccessKeyId
+        $env:AWS_SECRET_ACCESS_KEY = $data.SecretAccessKey
         Write-Host 'Sending only complete station segments to R2 over HTTPS. Ctrl+C cancels.' -ForegroundColor Yellow
         Invoke-Python -Python $python -PythonArgs @($publisher, '--cache', $CacheDir, '--seconds', '70')
-        Write-Host 'Test finished. The Worker must be independently deployed and verified.' -ForegroundColor Green
+        Write-Host 'Test finished. Verify the deployed Worker status and playback externally.' -ForegroundColor Green
     }
     finally {
         Remove-Item Env:\AWS_SECRET_ACCESS_KEY,Env:\AWS_ACCESS_KEY_ID,Env:\CLOUDFLARE_ACCOUNT_ID -ErrorAction SilentlyContinue
+        $data = $null
     }
 }
 
@@ -276,9 +373,10 @@ function Start-Menu {
     Write-Host '  3  Run offline broadcaster tests'
     Write-Host '  4  Broadcast to an ALREADY-SET-UP encrypted Icecast source'
     Write-Host '  5  Verify a PUBLIC HTTPS listener URL (read-only)'
-    Write-Host '  6  Test a shared live station through our existing Cloudflare R2 bucket'
+    Write-Host '  6  Test shared live station through the dedicated Cloudflare R2 live bucket'
+    Write-Host '  7  Reset locally saved R2 credentials'
     Write-Host '  Q  Quit'
-    $choice = (Read-Host 'Select 1-6 or Q').Trim().ToUpperInvariant()
+    $choice = (Read-Host 'Select 1-7 or Q').Trim().ToUpperInvariant()
     switch ($choice) {
         '1' { Check-Station }
         '2' { Make-Preview }
@@ -286,8 +384,9 @@ function Start-Menu {
         '4' { Start-Broadcast }
         '5' { Check-PublicListener }
         '6' { Start-R2Hls }
+        '7' { Reset-R2Credentials }
         'Q' { return }
-        default { Write-Host 'No change; choose 1-6 or Q.' }
+        default { Write-Host 'No change; choose 1-7 or Q.' }
     }
 }
 
