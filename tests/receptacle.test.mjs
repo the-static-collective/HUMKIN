@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash,generateKeyPairSync,sign} from "node:crypto";
-import {AMOUNTS,safeLink,amountText,parseReceptacle,previewObservation} from "../support-logic.mjs";
+import {AMOUNTS,safeLink,amountText,parseReceptacle,previewObservation,providerAmountStatus} from "../support-logic.mjs";
 import {canonical,inspectSignedRegistry,prepareManifest} from "../tools/receptacle/export-jubilee.mjs";
 import {readFileSync} from "node:fs";
 const sample=JSON.parse(readFileSync(new URL("../support-doors.json",import.meta.url),"utf8"));
+const candidates=JSON.parse(readFileSync(new URL("../tools/receptacle/owner-supplied-candidates.json",import.meta.url),"utf8"));
 test("default production asset is strictly disabled preview",()=>{
   assert.equal(parseReceptacle(sample).mode,"preview");
   assert.equal(parseReceptacle(sample).doors.length,0);
@@ -75,4 +76,57 @@ test("manifest does not mistake a public link for payment evidence",()=>{
   assert.equal(m.amountReceived,undefined);
   assert.throws(()=>parseReceptacle({...m,mode:"preview"}),/Preview/);
   assert.throws(()=>parseReceptacle({...m,sourceHead:null}),/source/);
+});
+
+test("user-supplied candidate rails stay behind HOLD, with exact supported link patterns",()=>{
+  assert.equal(candidates.publicationStatus,"HOLD_NOT_PUBLISHED");
+  assert.equal(candidates.doors.length,3);
+  assert.deepEqual(candidates.doors.map(x=>x.suppliedIdentifier),[
+    "$LuVstudio","@The_Real_Lucas_V","@thestaticcollective"]);
+  assert.equal(candidates.doors.every(x=>x.identityVerified===false&&
+    x.ownerPublicationApproved===false),true);
+  const [cash,venmo,paypal]=candidates.doors;
+  assert.equal(safeLink("cash_app",cash.candidateUrl),"https://cash.app/$LuVstudio");
+  assert.equal(safeLink("venmo",venmo.candidateUrl),"https://venmo.com/u/The_Real_Lucas_V");
+  assert.equal(paypal.candidateUrl,null,"Never invent a PayPal.Me URL from an @username");
+  assert.equal(sample.doors.length,0,"Public manifest must not inherit candidates");
+});
+test("one-cent experiments cannot advertise an ordinary Cash App payment",()=>{
+  for(const amount of [1,5,25]){
+    assert.equal(providerAmountStatus("cash_app",amount).available,false);
+  }
+  assert.equal(providerAmountStatus("cash_app",100).available,true);
+  assert.equal(providerAmountStatus("cash_app",500).available,true);
+  assert.equal(providerAmountStatus("venmo",1).available,true);
+  assert.match(providerAmountStatus("venmo",1).reason,/not been verified/);
+  assert.equal(providerAmountStatus("paypal",1).available,true);
+  assert.throws(()=>providerAmountStatus("bad",1));
+});
+test("synthetic Jubilee-signing fixture accepts exact proposed Cash App and Venmo URLs, but not payment evidence",()=>{
+  const [cash,venmo]=candidates.doors;
+  let registry=mk();
+  for(const door of [cash,venmo]){
+    registry=add(registry,"OPEN",{
+      id:door.id,kind:"payment_link",
+      purposeId:"purpose-humkin-listener-support-001",
+      termsRef:"synthetic-test-only-001",
+      publicationRef:"synthetic-approval-test-001",
+      target:{provider:door.provider,url:door.candidateUrl}
+    });
+  }
+  const manifest=prepareManifest(registry,pem,{
+    approvedDoorIds:[cash.id,venmo.id],
+    ownerApprovalRef:"synthetic-approval-test-001",
+    confirmedRecipient:"HUMKIN"
+  });
+  assert.equal(manifest.doors.length,2);
+  assert.equal(manifest.paymentReceived,undefined);
+  assert.equal(manifest.amountReceived,undefined);
+  // Synthetic test keys and synthetic authorization cannot certify account ownership.
+  const withdrawn=add(registry,"WITHDRAW",{doorId:venmo.id,evidenceRef:"synthetic-revocation-001"});
+  assert.throws(()=>prepareManifest(withdrawn,pem,{
+    approvedDoorIds:[cash.id,venmo.id],
+    ownerApprovalRef:"synthetic-approval-test-001",
+    confirmedRecipient:"HUMKIN"
+  }),/not currently open/);
 });
