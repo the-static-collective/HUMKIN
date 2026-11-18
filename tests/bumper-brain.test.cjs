@@ -1,5 +1,6 @@
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
+const relations=require("../fm/bumper-relations.js");
 const brain=require("../fm/bumper-brain.js");
 const rotation=JSON.parse(fs.readFileSync("fm/rotation.json","utf8"));
 assert.equal(rotation.bumper_brain.schema,"humkin.radio.bumper-brain/v1");
@@ -164,30 +165,29 @@ assert(workflow.includes("workflow_dispatch:")&&workflow.includes("upload-artifa
  "Robot machine should generate review-only packs");
 assert(!workflow.includes("git push")&&!workflow.includes("service_role")&&!workflow.includes("curl -X POST"),
  "Scheduled action must never publish or send recordings to the air");
-// ONLY proven different-length edits of the same master can share a key.
-// Theme, voice, character, bell texture, or approximate title must never group.
+// All groups are EXPLICIT owner-authored; no title or profile silently groups art.
 const kin=[
- {index:135,id:"cut-21s",title:"Hard Dark Train 21s",family:"same-master",lane:"medium",seconds:21},
+ {index:135,id:"cut-21s",title:"Hard Dark Train 21s",family:"cut-21s",lane:"medium",seconds:21},
  {index:136,id:"other-voice",title:"Another Work",family:"other-voice",lane:"short",seconds:8},
- {index:137,id:"cut-42s",title:"Hard Dark Train 42s",family:"same-master",lane:"medium",seconds:42},
+ {index:137,id:"cut-42s",title:"Hard Dark Train 42s",family:"cut-42s",lane:"medium",seconds:42},
  {index:138,id:"other-recording",title:"A Third Work",family:"other-recording",lane:"medium",seconds:30}
 ];
-brain.spreadFamilies(kin,{short:1,medium:3,long:0},3);
-assert.equal(kin[2].id,"other-recording","Space the two cuts if another piece remains");
-assert.equal(kin[3].id,"cut-42s","Both cuts retain their fair turns");
+relations.arrange(kin,[{id:"manual",kind:"repel",enabled:true,
+ track_ids:["cut-21s","cut-42s"]}],{short:1,medium:3,long:0},3);
+assert.equal(kin[2].id,"other-recording","Explicit REPEL exchanges an alternate cut");
+assert.equal(kin[3].id,"cut-42s","Displaced cut still gets its scheduled turn");
 assert.deepEqual(new Set(kin.map(x=>x.id)),new Set(["cut-21s","other-voice","cut-42s","other-recording"]));
-assert.deepEqual(kin.map(x=>x.lane),["medium","short","medium","medium"],
- "Keep the existing short / medium / long break slots");
-assert.equal(rotation.bumper_brain.profiles["crate-d48fabca-c8fe-42cc-921e-ad4337d09f76"].edit_group,
- "hard-dark-train-master");
-assert.equal(rotation.bumper_brain.profiles["crate-ee24d2c5-209a-402e-9cd9-dda2372f7d2a"].edit_group,
- "hard-dark-train-master");
-const unrelated={"id":"robot-original","title":"Robot Radio Work","duration":31};
-assert.equal(brain.classify(unrelated,{profiles:{"robot-original":{family:"robot-radio"}}}).family,
- "robot-original","Legacy thematic family labels cannot group independent art");
-assert.equal(brain.classify({id:"other-robot",title:"Robot Radio Work Two",duration:31},{}).family,
- "other-robot","Similar titles cannot imply the same recording");
+assert.deepEqual(kin.map(x=>x.lane),["medium","short","medium","medium"]);
+const ungrouped=brain.classify({id:"same-voice",title:"Robot Radio Days",duration:24},
+ {profiles:{"same-voice":{role:"musical",family:"robot-radio",edit_group:"robot-master"}}});
+assert.equal(ungrouped.family,"same-voice","Profiles never create groups");
+assert.equal(relations.validGroups([]).length,0,"No grouping without explicit action");
 assert(!Object.values(rotation.bumper_brain.profiles).some(x=>x.hold===true),
- "Remove the assistant-imposed editorial holds, not owner-approved works");
+ "No assistant-inferred editorial holds");
+assert(!Object.values(rotation.bumper_brain.profiles).some(x=>x.edit_group||x.family),
+ "No family group preset without owner choice");
+assert(html.includes("bumper-relations.js"),"Browser must load owner relation engine");
+assert(manager.includes("bumperGroups")&&manager.includes("editorialRules"),
+ "Owner groups and rules must be loaded into Station Manager");
 
 console.log("Bumper Brain: "+result.breaks.length+" φ-short / ~11-minute medium / ~22-minute long breaks; "+result.held.length+" explicit holds; deterministic, tier-fair, unrelated art independent.");
