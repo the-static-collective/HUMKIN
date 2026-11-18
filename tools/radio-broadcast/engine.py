@@ -26,6 +26,7 @@ from zoneinfo import ZoneInfo
 # Also works when imported by tests from an unrelated working directory.
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from scheduler_v2 import StationV2
+from black_box import BlackBox
 from catalog_sources import optional_catalog, r2_public_url
 import re
 
@@ -257,6 +258,11 @@ def streaming(catalog,args):
     if not args.file_output and not output.startswith("icecast://"):
         raise RuntimeError("HUMKIN_ICECAST_URL must start with icecast://")
     station=StationV2(catalog,seed=args.seed if args.seed is not None else int(time.time())) if catalog.get("policy_version")==2 else Station(catalog)
+    journal=BlackBox(args.black_box_file) if getattr(args,"black_box_file",None) else None
+    def trace(event, detail):
+        if journal:
+            try:journal.record(event,detail)
+            except OSError:pass  # Logging is never allowed to stop the broadcast.
     cache=Path(args.cache).expanduser().resolve()
     encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output))
     written=0
@@ -280,6 +286,9 @@ def streaming(catalog,args):
         decode_current=decode(cache_track(current,cache))
         ahead_future=fetch_pool.submit(cache_track,ahead,cache)
         while True:
+            # 'source_select' is a playout decision, never proof a listener heard it.
+            trace("source_select",{"mode":"stream","track_id":current["id"],
+                 "kind":current.get("kind","song"),"reason":"automatic"})
             print("ON AIR:",current["artist"],"—",current["title"],flush=True)
             tail_size=overlap_bytes(current,ahead,args.crossfade)
             try:
@@ -292,11 +301,15 @@ def streaming(catalog,args):
                     write(equal_power_mix(tail[-n:],head[:n]))
                 else:write(tail)
                 # If decoder reads less than requested, no source data is dropped.
+                trace("boundary",{"mode":"stream","track_id":current["id"],
+                      "next_track_id":ahead["id"],"reason":"automatic"})
                 current=ahead
                 ahead=station.next()
                 ahead_future=fetch_pool.submit(cache_track,ahead,cache)
                 decode_current=head_process
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
+                trace("audio_error",{"mode":"stream","track_id":current["id"],
+                      "reason":"source_error"})
                 print("Audio source problem; moving on:",exc,file=sys.stderr)
                 if 'head_process' in locals() and head_process.poll() is None:
                     head_process.kill();head_process.wait()
@@ -329,6 +342,7 @@ def main():
     p.add_argument("--fixture",type=Path,help="test with a local exported catalog JSON")
     p.add_argument("--at",help="dry-run timestamp (e.g. 2026-11-13T13:30:00+00:00)")
     p.add_argument("--cache",default="./radio-cache",help="local MP3 cache folder")
+    p.add_argument("--black-box-file",type=Path,help="optional local private diagnostic JSONL; never uploaded")
     p.add_argument("--icecast-url",help="private Icecast source URL; prefer env HUMKIN_ICECAST_URL")
     p.add_argument("--file-output",type=Path,help="local MP3 test output instead of broadcasting")
     p.add_argument("--seconds",type=int,default=0,help="limit local test output duration")
@@ -354,6 +368,9 @@ def main():
         except (OSError,RuntimeError,subprocess.SubprocessError):
             if args.file_output or attempt>=args.retry_count:raise
             delay=min(60,2**attempt)
+            if args.black_box_file:
+                try:BlackBox(args.black_box_file).record("reconnect",{"mode":"stream","reason":"reconnect"})
+                except OSError:pass
             print("Broadcast disconnected; reconnecting after "+str(delay)+"s.",file=sys.stderr)
             time.sleep(delay)
             if not args.fixture:catalog=live_catalog()
