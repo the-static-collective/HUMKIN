@@ -69,13 +69,13 @@ class HlsPublisherTest(unittest.TestCase):
             publisher = bridge.Publisher("humkin-radio-live", path, client, session=SESSION)
             for count in (1, 2):
                 n = 1700000000 + count - 1
-                (path / ("segment-%012d.ts" % n)).write_bytes(b"\\x47" + b"x" * 187)
+                (path / ("segment-%012d.ts" % n)).write_bytes(b"\x47" + b"x" * 187)
                 (path / "index.m3u8").write_text(
                     playlist(1700000000, count), encoding="utf-8")
                 self.assertFalse(publisher.publish_once())
                 self.assertEqual(client.calls, [], "Startup must not upload a partial manifest")
 
-            (path / "segment-001700000002.ts").write_bytes(b"\\x47" + b"x" * 187)
+            (path / "segment-001700000002.ts").write_bytes(b"\x47" + b"x" * 187)
             (path / "index.m3u8").write_text(
                 playlist(1700000000, 3), encoding="utf-8")
             self.assertTrue(publisher.publish_once())
@@ -87,7 +87,7 @@ class HlsPublisherTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)
             (path / "index.m3u8").write_text(
-                "#EXTM3U\\n../unsafe.ts\\n", encoding="utf-8")
+                "#EXTM3U\n../unsafe.ts\n", encoding="utf-8")
             client = FakeS3()
             publisher = bridge.Publisher("humkin-radio-live", path, client, session=SESSION)
             with self.assertRaises(ValueError):
