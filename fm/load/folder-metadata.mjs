@@ -23,6 +23,8 @@ export function inferFileMetadata(relativePath,layout="none"){
   const tokens=parseLayout(layout);
   const result={title:titleFromFile(filename),artist:"",album:"",genre:"",collection:"",disc:"",
     folders:folders.join(" / "),relativePath:segments.join("/")};
+  // A partial layout is ambiguous (artist-only might otherwise become album).
+  if(folders.length<tokens.length)return result;
   for(let i=0;i<tokens.length;i++){
     const part=folders[folders.length-tokens.length+i];
     const token=tokens[i];
