@@ -18,14 +18,14 @@ test("provider exact-host/path allowlist rejects lookalikes and injections",()=>
   for(const [p,u] of [
     ["cash_app","https://cash.app/$HUMKIN"],
     ["venmo","https://venmo.com/u/humkin_test"],
-    ["paypal","https://paypal.me/HumkinTest"]
+    ["paypal","https://paypal.me/HumkinTest"],\n    ["paypal_qr","https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW"]
   ])assert.equal(safeLink(p,u),u);
   for(const u of ["http://cash.app/$Foo","https://cash.app.evil.test/$Foo",
     "https://cash.app/$Foo?amount=100","https://cash.app/$Foo#hello",
     "https://user@cash.app/$Foo","https://cash.app/%24Foo","https://cash.app:444/$Foo"])
     assert.throws(()=>safeLink("cash_app",u));
   assert.throws(()=>safeLink("bank","https://cash.app/$Foo"));
-  assert.throws(()=>safeLink("venmo","https://paypal.me/Foo"));
+  assert.throws(()=>safeLink("venmo","https://paypal.me/Foo"));\n  for(const bad of [\n    "https://www.paypal.com.evil.test/qrcodes/p2pqrc/GKTLBLRSAM5ZW",\n    "https://paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW",\n    "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW?amount=1",\n    "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW#fragment",\n    "https://www.paypal.com/qrcodes/p2pqrc/WRONG"\n  ])assert.throws(()=>safeLink("paypal_qr",bad));
 });
 const keys=generateKeyPairSync("ed25519");
 const pem=keys.publicKey.export({type:"spki",format:"pem"});
@@ -78,18 +78,21 @@ test("manifest does not mistake a public link for payment evidence",()=>{
   assert.throws(()=>parseReceptacle({...m,sourceHead:null}),/source/);
 });
 
-test("user-supplied candidate rails stay behind HOLD, with exact supported link patterns",()=>{
-  assert.equal(candidates.publicationStatus,"HOLD_NOT_PUBLISHED");
+test("recipient-supplied handles match published links with owner attestation",()=>{
+  assert.equal(candidates.publicationStatus,"OWNER_CONFIRMED_LINKS_NOT_PROVIDER_VERIFIED");
   assert.equal(candidates.doors.length,3);
-  assert.deepEqual(candidates.doors.map(x=>x.suppliedIdentifier),[
-    "$LuVstudio","@The_Real_Lucas_V","@thestaticcollective"]);
   assert.equal(candidates.doors.every(x=>x.identityVerified===false&&
-    x.ownerPublicationApproved===false),true);
-  const [cash,venmo,paypal]=candidates.doors;
-  assert.equal(safeLink("cash_app",cash.candidateUrl),"https://cash.app/$LuVstudio");
-  assert.equal(safeLink("venmo",venmo.candidateUrl),"https://venmo.com/u/The_Real_Lucas_V");
-  assert.equal(paypal.candidateUrl,null,"Never invent a PayPal.Me URL from an @username");
-  assert.equal(sample.doors.length,0,"Public manifest must not inherit candidates");
+    x.ownerPublicationApproved===true&&x.ownerSelfAttested===true),true);
+  assert.equal(candidates.doors[0].suppliedIdentifier,"$LuVstudio");
+  assert.equal(candidates.doors[1].suppliedIdentifier,"@The_Real_Lucas_V");
+  assert.equal(candidates.doors[2].provider,"paypal_qr");
+  for(const candidate of candidates.doors){
+    assert.equal(safeLink(candidate.provider,candidate.candidateUrl),candidate.candidateUrl);
+    const published=sample.doors.find(d=>d.id===candidate.id);
+    assert(published);
+    assert.equal(published.url,candidate.candidateUrl);
+  }
+  assert(!sample.doors.some(d=>d.url.includes("paypal.me/")));
 });
 test("one-cent experiments cannot advertise an ordinary Cash App payment",()=>{
   for(const amount of [1,5,25]){
@@ -99,13 +102,13 @@ test("one-cent experiments cannot advertise an ordinary Cash App payment",()=>{
   assert.equal(providerAmountStatus("cash_app",500).available,true);
   assert.equal(providerAmountStatus("venmo",1).available,true);
   assert.match(providerAmountStatus("venmo",1).reason,/not been verified/);
-  assert.equal(providerAmountStatus("paypal",1).available,true);
+  assert.equal(providerAmountStatus("paypal",1).available,true);\n  assert.equal(providerAmountStatus("paypal_qr",1).available,true);
   assert.throws(()=>providerAmountStatus("bad",1));
 });
 test("synthetic Jubilee-signing fixture accepts exact proposed Cash App and Venmo URLs, but not payment evidence",()=>{
   const [cash,venmo]=candidates.doors;
   let registry=mk();
-  for(const door of [cash,venmo]){
+  for(const door of candidates.doors){
     registry=add(registry,"OPEN",{
       id:door.id,kind:"payment_link",
       purposeId:"purpose-humkin-listener-support-001",
@@ -115,15 +118,15 @@ test("synthetic Jubilee-signing fixture accepts exact proposed Cash App and Venm
     });
   }
   const manifest=prepareManifest(registry,pem,{
-    approvedDoorIds:[cash.id,venmo.id],
+    approvedDoorIds:candidates.doors.map(d=>d.id),
     ownerApprovalRef:"synthetic-approval-test-001",
     confirmedRecipient:"HUMKIN"
   });
-  assert.equal(manifest.doors.length,2);
+  assert.equal(manifest.doors.length,3);
   assert.equal(manifest.paymentReceived,undefined);
   assert.equal(manifest.amountReceived,undefined);
   // Synthetic test keys and synthetic authorization cannot certify account ownership.
-  const withdrawn=add(registry,"WITHDRAW",{doorId:venmo.id,evidenceRef:"synthetic-revocation-001"});
+  const withdrawn=add(registry,"WITHDRAW",{doorId:candidates.doors[1].id,evidenceRef:"synthetic-revocation-001"});
   assert.throws(()=>prepareManifest(withdrawn,pem,{
     approvedDoorIds:[cash.id,venmo.id],
     ownerApprovalRef:"synthetic-approval-test-001",
