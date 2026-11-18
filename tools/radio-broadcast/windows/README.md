@@ -1,5 +1,7 @@
 # HUMKIN STATION ONE — Windows 10 Acer launch desk
 
+**For the public radio relay:** see [GO-ON-AIR.md](GO-ON-AIR.md). It covers the distinction between encrypted Icecast source ingest and the separate HTTPS listener, host signup, bitrates, and verification.
+
 **Status:** a Windows launcher for the existing, offline-tested `tools/radio-broadcast/engine.py`. It is **not** a new radio engine, does not deploy an Icecast host and does not enable the public site by itself. Designed for the Acer i5-4590 / 8 GB RAM / Windows 10 Pro 22H2. The local sample is deliberately the first milestone.
 
 ## Get the PC making radio sound
@@ -18,7 +20,9 @@
 
    The `tzdata` package is needed because Windows may not ship the IANA `America/Chicago` database used by Python's `zoneinfo`. The launcher recognizes either `py -3` or `python`, and checks FFmpeg **and** ffprobe on PATH. Installation is **not automatic**; review the terminal messages and accept package prompts yourself. If `winget` isn't available, install Python from python.org and FFmpeg from its official download page, then open a new terminal.
 4. Choose **2 — Local preview**. The engine caches public listening MP3s under `%LOCALAPPDATA%\HUMKIN\StationOne\cache`, writes a 45-second local MP3 at `%LOCALAPPDATA%\HUMKIN\StationOne\station-one-preview.mp3`, and opens your music player. No stream server or paid account is needed. If the preview fails, choose **3** to check the offline FFmpeg path.
-5. Only **after** you have an authorized external Icecast source endpoint should you choose **4 — Broadcast**. You must explicitly type `ON AIR` and enter the hostname, port, mount path and a masked source password. The source credentials stay in the PowerShell/child-process memory for that session; **they are never saved** in repo files, argument lists or the generated MP3. Stop with Ctrl+C. Do not share unredacted FFmpeg errors if the server includes the private URL.
+5. Only **after** you have an authorized external TLS-capable Icecast source endpoint should you choose **4 — Broadcast**. You must explicitly type `ON AIR` and enter the hostname, source port, source username, mount path and bitrate. The launcher **verifies source TLS before asking for the private source password**. An encrypted public listening URL alone does not establish encrypted source ingest. The source credentials stay in the PowerShell/child-process memory for that session; **they are never saved** in repo files, argument lists or the generated MP3. Stop with Ctrl+C. Do not share unredacted FFmpeg errors if the server includes the private URL.
+
+For a live hosted source, **option 5** can verify a public HTTPS MP3 listener independently of AzuraCast's optional now-playing API. It checks real audio bytes but does not claim ownership of the stream without separately listening from another network. The site/app do not switch automatically.
 
 ## What the current engine actually does
 
