@@ -10,7 +10,7 @@ function envAt(uploaded = new Date(now)) {
   const keys = [];
   return {
     keys,
-    RADIO_MEDIA: {
+    RADIO_LIVE: {
       async get(key) {
         keys.push(key);
         if (key === "live/station-one/live.m3u8") return {
@@ -52,11 +52,11 @@ test("stale or absent live manifest never advertises station as on air", async (
   const stale = envAt(new Date(now - 91000));
   assert.equal((await serveHls(new Request("https://humkin.test/hls/status"),
                               stale, now)).status, 503);
-  const missing = { RADIO_MEDIA: { get: async () => null } };
+  const missing = { RADIO_LIVE: { get: async () => null } };
   assert.equal((await serveHls(new Request("https://humkin.test/hls/live.m3u8"),
                               missing, now)).status, 503);
   const invalid = envAt(undefined);
-  invalid.RADIO_MEDIA.get = async () => ({ body: new Blob(["x"]).stream() });
+  invalid.RADIO_LIVE.get = async () => ({ body: new Blob(["x"]).stream() });
   assert.equal((await serveHls(new Request("https://humkin.test/hls/live.m3u8"),
                               invalid, now)).status, 503);
 });
