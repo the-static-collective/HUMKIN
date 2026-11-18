@@ -35,3 +35,6 @@ footer{background:#231b37;color:#ddd;padding:25px 5%;display:flex;justify-conten
 .newsletter-trap{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}
 @media(max-width:870px){.newsletter-inner{grid-template-columns:1fr;gap:40px}.newsletter-copy h2{font-size:clamp(48px,12vw,75px)}.newsletter-section{padding:60px 6% 78px}}
 @media(max-width:470px){.newsletter-card{padding:22px 19px;box-shadow:7px 7px 0 #8c6c9c;transform:none}.newsletter-stamp{right:11px;top:11px;padding:8px;font-size:9px}.newsletter-row{display:flex;flex-direction:column}.newsletter-row button{border:0;border-top:2px solid #2b2142;padding:13px}.newsletter-row input{width:100%;min-height:51px}.newsletter-card-label{font-size:11px;min-height:35px}}
+
+/* An optional pocket doorway; never compete with the free album. */
+footer a[href="./support.html"]{color:#fbd67c;text-decoration:underline;text-underline-offset:3px}
