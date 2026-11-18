@@ -79,6 +79,47 @@ class ProgrammingTests(unittest.TestCase):
         self.assertEqual(set(remaining), {"cut-21s", "cut-42s"},
                          "Spacing cannot skip or duplicate an individual cut")
 
+    def test_owner_attract_repel_preserve_music_inventory_and_duration(self):
+        from scheduler_v2 import arrange_bumpers
+        songs = [make_track("s"+str(i),duration=180) for i in range(7)]
+        bumpers = [make_track("A",kind="bumper",duration=7),
+                   make_track("X",kind="bumper",duration=36),
+                   make_track("Y",kind="bumper",duration=42),
+                   make_track("B",kind="bumper",duration=38),
+                   make_track("Z",kind="bumper",duration=33)]
+        by = {x["id"]: x for x in songs+bumpers}
+        seq = ["s0","A","s1","X","s2","Y","s3","B","s4","Z","s5","s6"]
+        output = arrange_bumpers(seq,by,[{"enabled":True,"kind":"attract",
+            "track_ids":["A","B"]}],{"short":1,"medium":4,"long":0})
+        self.assertEqual(output[3],"B")
+        self.assertEqual({k:output.count(k) for k in seq},
+                         {k:seq.count(k) for k in seq})
+        self.assertEqual([k for k in seq if k.startswith("s")],
+                         [k for k in output if k.startswith("s")])
+        self.assertEqual(sum(by[k]["duration"] for k in seq),
+                         sum(by[k]["duration"] for k in output))
+        quiet = arrange_bumpers(seq,by,[{"enabled":False,"kind":"attract",
+            "track_ids":["A","B"]}],{"short":1,"medium":4,"long":0})
+        self.assertEqual(quiet,seq, "Disabled groups cannot move recordings")
+
+    def test_opt_in_rules_are_disabled_unless_owner_activates(self):
+        from scheduler_v2 import allowed_bumper
+        day = datetime.fromisoformat("2026-11-18T18:00:00+00:00")
+        night = datetime.fromisoformat("2026-11-18T05:00:00+00:00")
+        hold = [{"kind":"hold","enabled":False,"track_ids":["bumper"]}]
+        self.assertTrue(allowed_bumper("bumper",hold,day))
+        hold[0]["enabled"] = True
+        self.assertFalse(allowed_bumper("bumper",hold,day))
+        window = [{"kind":"daypart","enabled":True,"track_ids":["bumper"],
+                   "days":[3],"start_minute":540,"end_minute":1020}]
+        self.assertTrue(allowed_bumper("bumper",window,day))
+        self.assertFalse(allowed_bumper("bumper",window,night))
+        self.assertTrue(allowed_bumper("bumper",window,night,clock=True),
+                        "Fixed Same-Time clock ignores variable dayparts")
+        dates = [{"kind":"date","enabled":True,"track_ids":["bumper"],
+                  "start_date":"2026-11-19","end_date":"2026-12-04"}]
+        self.assertFalse(allowed_bumper("bumper",dates,day))
+
     def test_ffmpeg_icecast_source_requires_tls(self):
         import engine
         with patch.object(engine.subprocess,"Popen") as popen:
