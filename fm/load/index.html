@@ -88,8 +88,9 @@ footer{padding:20px;text-align:center}
 <h2 id="health-title">02 · Storage gauge</h2>
 <p id="stats">Checking storage…</p>
 <p id="r2-storage-note" class="small" role="status">Checking R2 storage bridge…</p>
+<p id="direct-r2-status" class="small" role="status">Direct private R2: sign in to check bucket permissions and transfer readiness.</p>
 <p id="total">0:00 on air</p>
-<p class="small">This loader temporarily stages uploads in a private Supabase inbox, then publishes approved recordings to Cloudflare R2 when owner-scoped R2 keys are installed. Existing Supabase recordings continue playing during migration. Supabase Free has a <strong>1 GB free storage allowance</strong> shared with this organization; the 700 MiB soft limit reflects actual remaining Supabase copies; removing a confirmed backup is a separate, optional action.</p>
+<p class="small">When direct R2 is ready, this loader transfers MP3 copies straight from your computer to a separate <strong>private R2 bucket</strong>, verifies them, and waits for your approval before publishing to the public R2 bucket. If private R2 is not ready, the existing Supabase inbox route remains available. Existing recordings continue playing. Supabase Free has a <strong>1 GB free storage allowance</strong> shared with this organization; the 700 MiB soft limit reflects actual remaining Supabase copies; removing a confirmed backup is a separate, optional action.</p>
 </section>
 </div>
 <section class="panel card" aria-labelledby="folder-title">
@@ -150,7 +151,7 @@ footer{padding:20px;text-align:center}
 </section>
 <section class="panel card" aria-labelledby="ready-title">
 <h2 id="ready-title">05 · Put it on the air</h2>
-<p>Everything enters as a private draft. Approve a <strong>specific song or bumper</strong> using its own button below; this publishes that one item and enables it for the radio. The bulk button handles SONGS and SINGLES only. Never approve private callers or unverified real-world announcements.</p>
+<p>Everything enters as a private draft. Direct R2 drafts require server-side SHA-256 verification before approval. Approve a <strong>specific song or bumper</strong> using its own button below; this publishes that one item and enables it for the radio. The bulk button handles SONGS and SINGLES only. Never approve private callers or unverified real-world announcements.</p>
 <ul id="draft-list"><li>Sign in to view private drafts.</li></ul>
 <p><a href="../manage/" class="button-like">✳ OPEN STATION MANAGER — EDIT SONGS & SHOWS ↗</a></p>
 <div class="row"><button id="publish" disabled>PUBLISH SONGS + SINGLES (NOT BUMPERS) ↗</button><button id="refresh-drafts">REFRESH CRATE</button><a href="../" class="button-like">LISTEN TO RADIO ↗</a></div>
@@ -158,7 +159,7 @@ footer{padding:20px;text-align:center}
 <section class="panel card">
 <h2>Field notes</h2>
 <p>Keep originals on your phone or computer; this loader makes listening copies, not archival masters. Upload failures leave the unshared source untouched. Exact duplicates are skipped by SHA-256. A locked screen may suspend uploads, so leave this tab visible while a crate is transferring.</p>
-<p>For hundreds of WAVs, a desktop FFmpeg batch conversion is faster and more reliable than encoding on a phone. The repo also includes a local offline converter at <code>tools/humkin-radio-batch.py</code>. Make MP3s once, then drop the resulting folder here.</p>
+<p>For hundreds of WAVs, a desktop FFmpeg batch conversion is faster and more reliable than encoding on a phone. The repo also includes a local offline converter at <code>tools/humkin-radio-batch.py</code>. Make MP3s once, then select the resulting folder here. Direct R2 allows up to three parallel recordings (50 MiB each); interrupted batches can be resumed by reselecting the same folder or retrying errors. Individual PUTs restart on network failure.</p>
 <pre id="history" role="log" aria-live="polite">Ready.</pre>
 </section>
 </main>
