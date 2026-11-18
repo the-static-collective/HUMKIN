@@ -42,34 +42,38 @@ Neither credential nor an R2 account write token is distributed to listeners.
 3. On the Acer, make sure FFmpeg/ffprobe and Python 3.9+ are on PATH.
    Install the optional upload library locally:
    py -3 -m pip install --user boto3
-4. Set these in the local terminal environment (never commit them):
-   CLOUDFLARE_ACCOUNT_ID, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY.
-   For the secret, use a masked PowerShell prompt rather than a typed command
-   that ends up in terminal history.
-5. **Preferred on the Acer:** launch windows/STATION-ONE.cmd, select
-   **6 — R2 live HLS test**, and follow the masked prompts for a supervised
-   70-second run. It requests explicit R2 TEST confirmation. Alternatively,
-   from the repository root (after configuring environment variables), run:
-   py -3 tools\radio-broadcast\hls_push.py --seconds 70
-   The uploader starts engine.py with a private temporary HLS directory,
-   encodes AAC at 96 kbps by default and uploads complete segments first.
-   A 70-second test is recommended; it leaves a short playlist on R2,
-   which correctly becomes **offline** after 90 seconds without updates.
-   Remove --seconds for a continuous supervised test.
+4. **Preferred on the Acer:** launch `tools\radio-broadcast\windows\STATION-ONE.cmd`,
+   choose **6 — R2 live HLS test**, and enter `R2 TEST`. The first run prompts
+   for Cloudflare Account ID and R2 S3 Access Key ID. For the secret, choose
+   **C** to import a copied key directly from the Windows clipboard instead of
+   trying to paste into an invisible SecureString prompt. The clipboard is
+   cleared afterward. Choose **H** for hidden manual entry if preferred.
+   The launcher saves the three fields encrypted using the Windows current-user
+   DPAPI in `%LOCALAPPDATA%\HUMKIN\StationOne\r2-live-credentials.dpapi`.
+   **Subsequent tests reuse these encrypted credentials without prompting.**
+   The saved file can only be decrypted by the same Windows account on the
+   same PC; don't copy it to GitHub, the website or a different machine.
+   If a secret was not saved from an earlier test, Cloudflare cannot reveal it
+   again: generate a new bucket-scoped R2 token if needed. **Menu option 7**
+   resets the local vault when rotating keys; it does not revoke the token
+   in Cloudflare.
+5. The test runs for **70 seconds** using a temporary HLS directory and
+   96 kbps AAC by default. FFmpeg normally writes a one- or two-segment
+   playlist at startup. The publisher now waits for **three complete
+   segments** before sending any manifest, while rejecting malformed paths
+   and encrypted/unsafe playlists. A short test finishes naturally; the
+   Worker reports offline after 90 seconds without an updated playlist.
 
-### Masked PowerShell credential example
+For advanced manual runs from the repository root, environment variables
+`CLOUDFLARE_ACCOUNT_ID`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY`
+still work with:
 
-From a *local* PowerShell terminal on the Acer:
-
-    $env:CLOUDFLARE_ACCOUNT_ID = Read-Host "Cloudflare Account ID"
-    $env:AWS_ACCESS_KEY_ID = Read-Host "R2 S3 Access Key ID"
-    $secret = Read-Host "R2 S3 Secret Access Key" -AsSecureString
-    $p = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
-    try { $env:AWS_SECRET_ACCESS_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($p) }
-    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($p) }
-    py -3 -m pip install --user boto3
     py -3 tools\radio-broadcast\hls_push.py --seconds 70
-    Remove-Item Env:AWS_SECRET_ACCESS_KEY,Env:AWS_ACCESS_KEY_ID -ErrorAction SilentlyContinue
+
+Do not type the secret into a persistent shell command or commit it to code.
+The launcher is preferred because it prompts once, protects the saved secret,
+and clears the child's environment after the test. Remove `--seconds` for a
+continuous **supervised** run only after verifying the public live receiver.
 
 You can stop a continuous broadcast with Ctrl+C. A clean stop does NOT
 automatically switch the site or point users to stale HLS.
