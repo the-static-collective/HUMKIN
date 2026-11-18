@@ -2,7 +2,7 @@
 # No credentials are written to disk or submitted to GitHub.
 [CmdletBinding()]
 param(
-    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast', 'R2Hls', 'Preflight')]
+    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast', 'R2Hls', 'Preflight', 'VaultSelfTest')]
     [string]$Action = 'Menu'
 )
 
@@ -331,6 +331,29 @@ function Reset-R2Credentials {
     Write-Host 'Local credentials cleared. Option 6 will run one-time setup again.' -ForegroundColor Green
 }
 
+function Test-R2Vault {
+    # Offline regression: fake credentials only, never a real Cloudflare token.
+    if (Test-Path -LiteralPath $R2VaultFile) {
+        throw 'Refusing self-test: vault already exists at this path.'
+    }
+    $expected = [pscustomobject]@{
+        AccountId = ('a' * 32)
+        AccessKeyId = 'fake-access-id'
+        SecretAccessKey = 'fake-secret-for-vault-self-test'
+    }
+    try {
+        Save-R2Credentials -Data $expected
+        $actual = Load-R2Credentials
+        if ($actual.AccountId -cne $expected.AccountId -or
+            $actual.AccessKeyId -cne $expected.AccessKeyId -or
+            $actual.SecretAccessKey -cne $expected.SecretAccessKey) {
+            throw 'Windows DPAPI vault round-trip mismatch.'
+        }
+        Write-Host 'WINDOWS DPAPI R2 VAULT SELF-TEST PASSED.' -ForegroundColor Green
+    }
+    finally { Remove-Item -LiteralPath $R2VaultFile -Force -ErrorAction SilentlyContinue }
+}
+
 function Start-R2Hls {
     Write-Host ''
     Write-Host '=== HUMKIN STATION ONE : R2 LIVE HLS TEST ===' -ForegroundColor Cyan
@@ -399,6 +422,7 @@ try {
         'Broadcast' { Start-Broadcast }
         'R2Hls' { Start-R2Hls }
         'Preflight' { Invoke-PreflightSmoke }
+        'VaultSelfTest' { Test-R2Vault }
     }
 }
 catch {
