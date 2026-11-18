@@ -801,7 +801,7 @@ function closeToEnd(tolerance=.25){
     position>=Math.max(0,duration-tolerance);
 }
 function advanceNaturalEnd(){
-  if(!tracks.length||switching||!active&&!audio.ended)return;
+  if(!tracks.length||switching||!active)return;
   // Ignore a queued late 'ended' event from a previous source after the new
   // MP3 has already reset its currentTime to zero.
   if(!remoteStream&&!audio.ended&&!closeToEnd(.85))return;
