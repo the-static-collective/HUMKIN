@@ -221,95 +221,58 @@
     "cooldown_breaks": 4,
     "rare_long_break_every": 5,
     "profiles": {
-      "crate-13309e7f-ea07-4847-8b13-2268d277bfef": {"family": "robot-radio"},
-      "crate-5b5b4cef-09d6-4c6e-897b-d2d6c2e8f161": {"family": "robot-radio"},
-      "crate-3fbc9578-c3eb-4d8f-aaa7-b95a844c5075": {"family": "robot-radio"},
-      "crate-4a771f99-a1b5-4e72-9039-1a0e14fb2be5": {"family": "robot-radio"},
-      "crate-720778a0-f76f-46d4-b139-8f4eb90dd096": {"family": "robot-radio"},
-      "crate-60178c47-90e2-432f-bb35-48c46d8565fb": {"family": "robot-radio"},
-      "crate-43777a72-b569-4ba2-bace-c985912aad84": {"family": "robot-radio"},
-      "crate-8e6a88f6-c082-49e6-9ffc-c20d1b2533b0": {"family": "robot-radio"},
-      "crate-2cd4c3db-2a5b-4ee7-8a5c-bf5de72b4258": {"family": "lantern-bells"},
-      "crate-6506fd3f-a7ee-48c5-b790-f2f0af0cd6ac": {"family": "lantern-bells"},
-      "crate-ca419e95-f5f7-4f6e-acbb-ae9cd4c349e0": {"family": "lantern-bells"},
-      "crate-6b8b4bf5-5c0c-43c2-a59d-41d8b2ffb2bb": {"family": "lantern-bells"},
-      "air-field-fm-001": {"family": "lantern-bells"},
-      "air-field-fm-005": {"family": "lantern-bells"},
       "crate-d48fabca-c8fe-42cc-921e-ad4337d09f76": {
         "role": "musical",
-        "family": "hard-dark-train"
+        "edit_group": "hard-dark-train-master"
       },
       "crate-ee24d2c5-209a-402e-9cd9-dda2372f7d2a": {
         "role": "musical",
-        "family": "hard-dark-train"
+        "edit_group": "hard-dark-train-master"
       },
       "crate-8ac4481d-c4b6-4c9d-821b-b189b7f2f714": {
-        "role": "musical",
-        "family": "taken-minute"
+        "role": "musical"
       },
       "crate-1cbdc9af-761e-401f-a9d7-e722d8c2a650": {
-        "role": "show_opener",
-        "family": "taken-minute",
-        "hold": true
+        "role": "show_opener"
       },
       "crate-868f006a-4388-4278-b655-4c1cb3f3de54": {
-        "role": "feature",
-        "family": "taken-minute",
-        "hold": true
+        "role": "feature"
       },
       "crate-946c9dc2-558e-46af-9645-527bff6e44a3": {
-        "role": "comedy",
-        "family": "art-is-difficult"
+        "role": "comedy"
       },
       "crate-e82a2805-6813-488d-ae37-cbb069789f3f": {
-        "role": "comedy",
-        "family": "schfwifty"
+        "role": "comedy"
       },
       "crate-3dd62060-8a81-49b5-83f2-7531ffb37cdf": {
-        "role": "character",
-        "family": "focus"
+        "role": "character"
       },
       "air-field-fm-007": {
-        "role": "character",
-        "family": "fictional-clock",
-        "hold": true
+        "role": "character"
       },
       "air-field-fm-009": {
-        "role": "character",
-        "family": "fictional-clock",
-        "hold": true
+        "role": "character"
       },
       "air-field-fm-010": {
-        "role": "character",
-        "family": "fictional-clock",
-        "hold": true
+        "role": "character"
       },
       "air-field-fm-011": {
-        "role": "feature",
-        "family": "requests",
-        "hold": true
+        "role": "feature"
       },
       "air-field-fm-012": {
-        "role": "character",
-        "family": "farewell",
-        "hold": true
+        "role": "character"
       },
       "air-field-fm-008": {
-        "role": "feature",
-        "family": "thank-you",
-        "hold": true
+        "role": "feature"
       },
       "air-field-fm-013": {
-        "role": "station_id",
-        "family": "thank-you"
+        "role": "station_id"
       },
       "crate-65afe228-23ff-48cf-9d5a-086305758ae5": {
-        "role": "feature",
-        "family": "fellowship-dated",
-        "hold": true
+        "role": "feature"
       }
     },
-    "description": "Published enabled station bumpers share one library. φ-shaped frequent short IDs; a medium-or-long break about every 11–12 minutes with a long feature on roughly every other such anchor (~22–23 minutes). Medium-alone every ~11–12 minutes if no long features are available. Equal weight within each duration lane, at completed song boundaries only; explicit editorial holds stay.",
+    "description": "All published/enabled approved recordings rotate as individual works. Short, medium and long intervals control timing only, not artistic classification, subject or voice. Only explicitly identified alternate-length cuts of the same underlying recording share an edit_group. No title-based, time-of-day, role-based or assistant-inferred holds; future owner-confirmed holds may be configured explicitly.",
     "short_max_seconds": 19,
     "medium_max_seconds": 60,
     "medium_target_seconds": 690,
