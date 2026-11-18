@@ -23,6 +23,16 @@ PLAYLIST_KEY = PREFIX + "live.m3u8"
 RETIRE_SECONDS = 180
 
 
+def stop_requested(path, run_id):
+    """Read only a matching managed-run stop request; ignore stale markers."""
+    if path is None or not run_id:
+        return False
+    try:
+        return path.read_text(encoding="utf-8").strip() == run_id
+    except (OSError, UnicodeError):
+        return False
+
+
 class PlaylistNotReady(ValueError):
     """Valid but incomplete startup playlist; retry when more segments arrive."""
 
@@ -146,12 +156,16 @@ def main(argv=None):
                    help="Optional limited-duration test; 0 means continuous")
     p.add_argument("--no-launch", action="store_true",
                    help="Upload from an already-running Station One HLS directory")
+    p.add_argument("--stop-file", type=Path, help="Managed station stop-request file")
+    p.add_argument("--run-id", help="Unique managed station run ID (32 hex chars)")
     p.add_argument("--poll", type=float, default=1.5)
     args = p.parse_args(argv)
     if not 0.5 <= args.poll <= 10 or args.seconds < 0:
         p.error("poll must be 0.5-10 seconds and seconds nonnegative")
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,62}", args.bucket):
         p.error("Invalid bucket name")
+    if bool(args.stop_file) != bool(args.run_id) or (args.run_id and not re.fullmatch(r"[0-9a-f]{32}", args.run_id)):
+        p.error("--stop-file and a 32-character hex --run-id must be provided together")
     # Fail before starting FFmpeg if this machine cannot publish to R2.
     client = r2_client()
     temporary = None
@@ -172,11 +186,23 @@ def main(argv=None):
                        "--cache", str(args.cache), "--bitrate", str(args.bitrate)]
             if args.seconds:
                 command.extend(["--seconds", str(args.seconds)])
+            if args.stop_file:
+                command.extend(["--stop-file", str(args.stop_file), "--run-id", args.run_id])
             child = subprocess.Popen(command)
         print("HUMKIN HLS bridge armed; no listener URL is being published to the website.",
               flush=True)
+        stop_since = None
         while True:
             publisher.publish_once()
+            if stop_requested(args.stop_file, args.run_id):
+                if stop_since is None:
+                    stop_since = time.monotonic()
+                    print("HUMKIN stop requested; waiting for Station One to flush its audio.", flush=True)
+                if child is None:
+                    return 0
+                if child.poll() is None and time.monotonic() - stop_since > 60:
+                    print("HUMKIN encoder did not stop within 60 seconds; terminating.", file=sys.stderr)
+                    child.terminate()
             if child is not None and child.poll() is not None:
                 # FFmpeg has had a chance to flush its final completed segment.
                 publisher.publish_once()
