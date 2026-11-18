@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import * as tus from "https://esm.sh/tus-js-client@4.3.1";
 import {r2Bridge} from "../r2-bridge-client.js";
+import {r2Direct,putPrivateMp3} from "./r2-direct-client.mjs";
 import {inferFileMetadata,parseLayout,titleFromFile} from "./folder-metadata.mjs";
 
 const API = "https://kbhqacsdvjsstzyplqij.supabase.co";
@@ -12,6 +13,7 @@ const db = createClient(API, KEY, {auth: {persistSession:true,autoRefreshToken:t
 const $ = id => document.getElementById(id);
 let selected = [], busy = false, stopRequested = false, drafts = [], known = [], activeUser = null;
 let scanPromise=Promise.resolve();
+let directReady=false;
 const fmtTime = seconds => {
   seconds = Math.max(0, Math.round(Number(seconds)||0));
   return String(Math.floor(seconds / 3600)).padStart(2,"0") + ":" + String(Math.floor(seconds % 3600 / 60)).padStart(2,"0") + ":" + String(seconds % 60).padStart(2,"0");
@@ -69,7 +71,7 @@ function drawQueue(){
      (item.folderInfo?.collection?" · COLLECTION "+item.folderInfo.collection:"")+
      (item.folderInfo?.disc?" · "+item.folderInfo.disc:"");
    row.className="queue-controls";
-   for(const [field,limit] of [["title",120],["artist",160],["album",200]]){
+   for(const [field,limit] of [["title",120],["artist",160],["album",160]]){
      const input=document.createElement("input");input.type="text";input.maxLength=limit;
      input.value=item[field]||"";input.placeholder=field.toUpperCase();
      input.setAttribute("aria-label",field+" for "+item.file.name);
@@ -98,7 +100,8 @@ function drawAuth(){
  $("signed-in").classList.toggle("hidden",!activeUser);
  $("signed-label").textContent=activeUser?"Connected: "+activeUser.email:"";
  drawQueue();
- $("publish").disabled=busy||!activeUser||!drafts.some(row=>row.kind!=="bumper");
+ $("publish").disabled=busy||!activeUser||!drafts.some(row=>row.kind!=="bumper"&&
+  (row.storage_provider!=="r2_private"||row.r2_upload_verified_at));
 }
 function setBusy(value){
  busy=value;drawQueue();drawAuth();$("refresh-drafts").disabled=busy;
@@ -220,7 +223,7 @@ async function uploadFile(file,path,onProgress){
 }
 async function loadKnown(){
  const {data,error}=await db.from("humkin_radio_tracks")
-   .select("id,sha256,storage_path,title,kind,is_single,enabled,bytes,duration_seconds,published_at,storage_provider,supabase_source_removed_at")
+   .select("id,sha256,storage_path,title,kind,is_single,enabled,bytes,duration_seconds,published_at,storage_provider,r2_upload_verified_at,supabase_source_removed_at")
    .order("created_at",{ascending:false}).limit(2000);
  if(error)throw error;
  known=data||[];
@@ -235,17 +238,22 @@ async function loadKnown(){
      " · "+fmtTime(row.duration_seconds)+" · "+fmtBytes(row.bytes);
    const action=document.createElement("button");
    action.type="button";action.className="accent";
-   action.textContent=row.kind==="bumper"?"REVIEW + AIR THIS BUMPER":row.is_single?"REVIEW + AIR THIS SINGLE":"REVIEW + AIR THIS SONG";
+   const awaiting=row.storage_provider==="r2_private"&&!row.r2_upload_verified_at;
+   action.disabled=awaiting;
+   action.textContent=awaiting?"TRANSFER NOT VERIFIED":row.kind==="bumper"?"REVIEW + AIR THIS BUMPER":row.is_single?"REVIEW + AIR THIS SINGLE":"REVIEW + AIR THIS SONG";
    action.addEventListener("click",()=>publishOne(row));
    li.append(label,action);$("draft-list").append(li);
  }
- const used=known.filter(r=>!r.supabase_source_removed_at).reduce((s,r)=>s+Number(r.bytes||0),0);
+ const used=known.filter(r=>r.storage_provider!=="r2_private"&&!r.supabase_source_removed_at)
+   .reduce((s,r)=>s+Number(r.bytes||0),0);
  const secs=known.filter(x=>x.published_at).reduce((s,r)=>s+Number(r.duration_seconds||0),0);
  $("stats").textContent=known.filter(x=>x.published_at).length+" cloud recordings on air · "+drafts.length+" private drafts · "+fmtBytes(used)+" still in Supabase storage · "+known.filter(x=>x.storage_provider==="r2").length+" served by R2";
  $("total").textContent=fmtTime(secs)+" new cloud airtime";
- $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper");
+ $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper"&&
+   (row.storage_provider!=="r2_private"||row.r2_upload_verified_at));
 }
 async function stage(){
+ if(directReady)return stageDirect();
  if(busy||!selected.length)return;
  try{await ensureSession()}catch(err){feedback(err.message);return}
  setBusy(true);stopRequested=false;let uploaded=0,skipped=0,failed=0;
@@ -267,7 +275,8 @@ async function stage(){
        if(known.some(x=>x.sha256===sha)){
          skipped++;item.status="DUPLICATE";drawQueue();continue;
        }
-       const used=known.filter(x=>!x.supabase_source_removed_at).reduce((s,x)=>s+Number(x.bytes||0),0);
+       const used=known.filter(x=>x.storage_provider!=="r2_private"&&!x.supabase_source_removed_at)
+         .reduce((s,x)=>s+Number(x.bytes||0),0);
        if(used+mp3.size>BUDGET)throw Error("700 MiB radio soft budget reached; stop and choose larger storage before continuing.");
        const {user}=await ensureSession();
        const path=user.id+"/"+sha+".mp3";
@@ -281,7 +290,7 @@ async function stage(){
        }
        const record={uploaded_by:user.id,sha256:sha,storage_path:path,original_name:item.file.name,
          title:item.title.trim().slice(0,120),
-         artist:item.artist.trim().slice(0,160),album:item.album.trim().slice(0,200),
+         artist:item.artist.trim().slice(0,160),album:item.album.trim().slice(0,160),
          kind:item.kind==="bumper"?"bumper":"song",
          is_single:item.kind==="single",enabled:item.kind!=="bumper",
          duration_seconds:item.duration,bytes:mp3.size};
@@ -303,6 +312,12 @@ async function stage(){
 }
 // R2 becomes the publication destination; the Supabase inbox is temporary.
 async function publishStorage(row){
+ if(row.storage_provider==="r2_private"){
+   if(!row.r2_upload_verified_at)throw Error("Finish or retry the private upload before publication.");
+   const result=await r2Direct(db,"publish",{track_id:row.id});
+   log("R2 DIRECT ON AIR: "+row.title+" · "+result.object_key);
+   return "R2 DIRECT";
+ }
  try{
   const result=await r2Bridge(db,"publish",row.id);
   log("R2 ON AIR: "+row.title+" · "+result.object_key);
@@ -337,7 +352,8 @@ async function refreshR2Status(){
 async function publish(){
  if(busy)return;
  try{await ensureSession();await loadKnown()}catch(err){feedback(err.message);return}
- const songDrafts=drafts.filter(row=>row.kind!=="bumper");
+ const songDrafts=drafts.filter(row=>row.kind!=="bumper"&&
+   (row.storage_provider!=="r2_private"||row.r2_upload_verified_at));
  if(!songDrafts.length)return;
  if(!confirm("Approve and publish all "+songDrafts.length+" SONG/SINGLE draft(s)? Single designations are retained. Bumpers require individual review."))return;
  setBusy(true);let live=0,failed=0;
@@ -358,6 +374,8 @@ async function publishOne(selectedRow){
  try{await ensureSession();await loadKnown()}catch(err){feedback(err.message);return}
  const row=drafts.find(r=>r.id===selectedRow.id);
  if(!row)return feedback("This draft is already published or unavailable. Refresh the crate.");
+ if(row.storage_provider==="r2_private"&&!row.r2_upload_verified_at)
+   return feedback("This draft still needs a verified private R2 upload. Reselect the file and retry staging.");
  const isBumper=row.kind==="bumper";
  const claim=isBumper
   ?"Approve this exact bumper for public between-song rotation? Confirm content, voice rights, and any references to time, weather, or requests are appropriate. Longer spots may play in the ordinary bumper lottery."
@@ -438,7 +456,7 @@ async function updateSession(){
  activeUser=user?.email?.toLowerCase()===OWNER?user:null;
  drawAuth();
  if(user&&!activeUser)$("auth-message").textContent="This account is not the designated HUMKIN owner.";
- if(activeUser){$("auth-message").textContent="Crate unlocked.";try{await loadKnown();await refreshR2Status()}catch(e){feedback("Catalog unavailable: "+e.message)}}
+ if(activeUser){$("auth-message").textContent="Crate unlocked.";try{await loadKnown();await refreshR2Status();await refreshDirectStatus()}catch(e){feedback("Catalog unavailable: "+e.message)}}
  else if(error)log("Authentication: "+error.message);
 }
 db.auth.onAuthStateChange((_event,_session)=>{setTimeout(updateSession,0)});
