@@ -370,9 +370,23 @@ def streaming(catalog,args):
                 print("Audio source problem; moving on:",exc,file=sys.stderr)
                 if 'head_process' in locals() and head_process.poll() is None:
                     head_process.kill();head_process.wait()
+                # Do not reuse a stale predecoded future after skipping a
+                # broken source: that would replay the wrong opening audio.
+                if ahead_future.done() and not ahead_future.cancelled():
+                    try:
+                        unused,_=ahead_future.result()
+                        if unused.poll() is None:
+                            unused.kill();unused.wait()
+                        prepared_decoders.discard(unused)
+                    except (OSError,ValueError,subprocess.SubprocessError):
+                        pass
+                else:
+                    ahead_future.cancel()
                 current=ahead
                 ahead=station.next()
                 decode_current=decode(cache_track(current,cache))
+                ahead_future=fetch_pool.submit(
+                    prepare_next,ahead,overlap_bytes(current,ahead,args.crossfade))
                 # Leave the single source connection open across a bad song.
                 write(b"\0"*(RATE*FRAME_BYTES))
     except StopIteration:
