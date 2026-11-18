@@ -193,7 +193,10 @@ export function mountBumperControls({db,ownerId,library,groups,rules,selected,re
    const detail=(r.kind==="daypart"?"Time window · ":r.kind==="date"?"Date window · ":"Always hold · ")+names.join(" / ");
    renderCard(ruleRoot,(r.enabled?"ON · ":"OFF · ")+r.name,detail,[
      ["EDIT",()=>ruleEditor(r),"primary"],
-     [r.enabled?"DISABLE":"ENABLE",()=>save("bumper_rules",rules.map(x=>x.id===r.id?{...x,enabled:!r.enabled}:x),"",feedback)],
+     [r.enabled?"DISABLE":"ENABLE",()=>{
+       if(!r.enabled&&r.kind!=="hold")return ruleEditor({...r,enabled:true});
+       return save("bumper_rules",rules.map(x=>x.id===r.id?{...x,enabled:!r.enabled}:x),"",feedback);
+     }],
      ["DELETE",()=>{if(confirm("Delete optional rule "+r.name+"?"))
        save("bumper_rules",rules.filter(x=>x.id!==r.id),"",feedback)},"danger"]
    ],!r.enabled);
