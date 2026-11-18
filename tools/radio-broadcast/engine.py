@@ -39,6 +39,22 @@ CHANNELS=2
 FRAME_BYTES=4
 MAX_DOWNLOAD=65*1024*1024
 
+def configure_log_output():
+    """Never let a song/artist Unicode character crash the audio transmitter.
+
+    The hidden PowerShell background process can inherit Windows cp1252 even
+    when the interactive terminal uses UTF-8. Keep its current encoding, but
+    escape characters it cannot represent in logs rather than stopping music.
+    No catalog titles, artist names, or audio bytes are modified.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure=getattr(stream,"reconfigure",None)
+        if callable(reconfigure):
+            try:
+                reconfigure(errors="backslashreplace")
+            except (OSError,ValueError,TypeError):
+                pass
+
 def get_json(url,api=False):
     headers={"User-Agent":"HUMKIN-BroadcastKit/0.1"}
     if api:headers["apikey"]=KEY
@@ -420,6 +436,7 @@ def streaming(catalog,args):
                                str(encoder.returncode)+". Check the FFmpeg error above.")
 
 def main():
+    configure_log_output()
     p=argparse.ArgumentParser(description="HUMKIN always-on audio source; physical server setup required")
     p.add_argument("--dry-run",action="store_true",help="show the next 20 selections; no downloads or publishing")
     p.add_argument("--seed",type=int,help="deterministic program selection for offline tests")
