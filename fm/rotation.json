@@ -280,10 +280,9 @@
   "seasonal_rotation": {
     "multiplier": 3,
     "track_ids": [],
-    "note": "Three total music slots per rotation for owner-approved seasonal songs. IDs and SHA256 fingerprints are explicit allowlists; a matched recording only plays after being published and enabled in the live catalog. Remove a fingerprint when its season ends.",
+    "note": "Three total music slots per rotation only for owner-approved seasonal songs. Eno Efia's interview introduces My Best Friend in a programmed feature; it is not a seasonal song. Track IDs and SHA256 fingerprints are explicit allowlists; a matching recording only plays after publication and enablement. Remove a fingerprint when the season ends.",
     "sha256s": [
       "ffc6cc64c5233b4d3ec35cdb2c935c65e3bf37d8e60767bf455b63809820c2b5",
-      "a9223523d009c520a7add920b954258c73017198eb0411bfa6a54e795f1136a4",
       "e9b16482a25cce61b9bc6a68aa5589cb9a36ef28007b5c3436b73d8458b8a964"
     ]
   }
