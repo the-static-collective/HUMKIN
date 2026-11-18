@@ -536,7 +536,7 @@ function showEditor(show=null){
  $("show-start").value=formatMinute(show?.start_minute??420);
  $("show-end").value=formatMinute(show?.end_minute??540);
  $("show-priority").value=show?.priority??0;
- $("show-active").checked=show?.is_active!==false;
+ $("show-active").checked=show?.is_active===true;
  renderArtSelect("show-art",show?.art_asset_id||null);
  updateArtPreview("show");
  document.querySelectorAll('input[name="show-day"]').forEach(input=>{
