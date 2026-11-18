@@ -19,7 +19,7 @@ test("self-attested public links have no fake signature or settlement proof",()=
   assert.deepEqual(AMOUNTS,[1,5,25,100,500]);
   assert.equal(amountText(1),"1¢");
   assert.equal(amountText(500),"$5.00");
-  assert.throws(()=>parseReceptacle({...sample,mode:"live"}),/signed/);
+  assert.throws(()=>parseReceptacle({...sample,mode:"live"}),/Signed/);
   assert.throws(()=>parseReceptacle({...sample,ownerApproved:false}),/self-attested/);
   assert.throws(()=>parseReceptacle({...sample,sourceHead:"a".repeat(64)}),/cryptographic/);
   assert.throws(()=>parseReceptacle({...sample,doors:[...sample.doors,sample.doors[0]]}),/Duplicate/);
