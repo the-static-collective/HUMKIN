@@ -1,0 +1,41 @@
+{
+  "schema": "humkin.receptacle-candidates/v0.1",
+  "purposeId": "purpose-humkin-listener-support-001",
+  "publicationStatus": "OWNER_CONFIRMED_LINKS_NOT_PROVIDER_VERIFIED",
+  "ownerInputDate": "2026-11-18",
+  "notes": "The user confirmed the accounts are good on 2026-11-18 and supplied PayPal's native QR screenshot. Recipient identity and provider settlement are not independently verified. The linked landing page uses a separate self-attested manifest, not a Jubilee signed registry.",
+  "doors": [
+    {
+      "id": "humkin-cashapp-luvstudio-001",
+      "provider": "cash_app",
+      "suppliedIdentifier": "$LuVstudio",
+      "candidateUrl": "https://cash.app/$LuVstudio",
+      "identityVerified": false,
+      "providerReady": false,
+      "ownerPublicationApproved": true,
+      "knownMinimumCents": 100,
+      "ownerSelfAttested": true
+    },
+    {
+      "id": "humkin-venmo-lucasv-001",
+      "provider": "venmo",
+      "suppliedIdentifier": "@The_Real_Lucas_V",
+      "candidateUrl": "https://venmo.com/u/The_Real_Lucas_V",
+      "identityVerified": false,
+      "providerReady": false,
+      "ownerPublicationApproved": true,
+      "accountType": "unknown",
+      "ownerSelfAttested": true
+    },
+    {
+      "id": "humkin-paypal-nativeqr-001",
+      "provider": "paypal_qr",
+      "suppliedIdentifier": "PayPal recipient QR (native PayPal link)",
+      "candidateUrl": "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW",
+      "identityVerified": false,
+      "providerReady": false,
+      "ownerPublicationApproved": true,
+      "ownerSelfAttested": true
+    }
+  ]
+}

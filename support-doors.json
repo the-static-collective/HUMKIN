@@ -1,0 +1,26 @@
+{
+  "schema": "humkin.receptacle/v0.1",
+  "mode": "owner_confirmed",
+  "recipient": "HUMKIN",
+  "purposeId": "purpose-humkin-listener-support-001",
+  "ownerApproved": true,
+  "ownerApprovalRef": "owner-chat-confirmation-2026-11-18",
+  "identityBasis": "owner_self_attestation",
+  "doors": [
+    {
+      "id": "humkin-cashapp-luvstudio-001",
+      "provider": "cash_app",
+      "url": "https://cash.app/$LuVstudio"
+    },
+    {
+      "id": "humkin-venmo-lucasv-001",
+      "provider": "venmo",
+      "url": "https://venmo.com/u/The_Real_Lucas_V"
+    },
+    {
+      "id": "humkin-paypal-nativeqr-001",
+      "provider": "paypal_qr",
+      "url": "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW"
+    }
+  ]
+}
