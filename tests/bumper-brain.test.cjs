@@ -27,19 +27,19 @@ const bumpers=entries.map((_,i)=>songs.length+i),tracks=[
 ];
 const profiles={
  ...policy.profiles,
- "crate-hard-short":{role:"musical",family:"hard-dark"},
- "crate-hard-long":{role:"musical",family:"hard-dark"},
- "crate-taken-teaser":{role:"musical",family:"taken-minute"},
- "crate-opener":{role:"show_opener",family:"taken-minute",hold:true},
- "crate-feature":{role:"feature",family:"taken-minute",hold:true}
+ "crate-hard-short":{role:"musical",edit_group:"hard-dark-master"},
+ "crate-hard-long":{role:"musical",edit_group:"hard-dark-master"},
+ "crate-taken-teaser":{role:"musical"},
+ "crate-opener":{role:"show_opener"},
+ "crate-feature":{role:"feature"}
 };
 const options={...policy,profiles};
 const result=brain.plan(songs,bumpers,4,tracks,options);
 assert(result.breaks.length>20,"Should have many scheduled breaks");
-assert(result.held.some(b=>b.title==="Taken Minute Opener"),"Show opener must be held");
-assert(result.held.some(b=>b.seconds>100),"Full-length music feature held");
-assert(result.held.some(b=>b.title==="Top of the Hour"),"Clock claims held");
-assert(!result.breaks.some(b=>/opener|top of the hour/i.test(b.title)));
+assert.equal(result.held.length,0,"Approved art should not be held for names, format or duration lane");
+for(const id of ["crate-opener","crate-feature","crate-news"])
+ assert.equal(brain.classify(tracks.find(x=>x.id===id),options).hold,false,
+   "Neither opener, full feature nor fictional clock headline is an automatic hold");
 assert(result.breaks.every(b=>b.seconds<=180),"No oversized, unapproved cart can air");
 assert(result.breaks.some(b=>b.lane==="long"),"Approved long features must get ~22-minute slots");
 assert(result.breaks.some(b=>b.lane==="medium"),"Medium segments must get ~11-minute slots");
@@ -85,9 +85,10 @@ const mixedTracks=tracks.map((t,i)=>t.kind==="bumper"?
 const mixed=brain.plan(songs,bumpers,4,mixedTracks,options);
 assert.deepEqual(mixed.breaks,result.breaks,
  "Storage shelf labels must not affect airtime, cadence or priority");
-const manuallyHeld=entries.find(e=>e.id==="crate-feature");
-assert(result.held.some(b=>b.id===manuallyHeld.id),
- "An expressly held long feature must stay held");
+const heldOptions={...options,profiles:{...profiles,
+ "crate-feature":{...profiles["crate-feature"],hold:true}}};
+assert(brain.plan(songs,bumpers,4,tracks,heldOptions).held.some(b=>b.id==="crate-feature"),
+ "Only an expressly configured future hold should exclude a valid recording");
 const altered=brain.plan([...songs].reverse(),bumpers,4,tracks,options);
 assert.deepEqual(altered.breaks,result.breaks,"Same-time recipients get an identical bumper order regardless of shuffled songs");
 assert.equal(altered.sequence.length,result.sequence.length,"Shared-clock cycle length stays stable");
@@ -163,22 +164,30 @@ assert(workflow.includes("workflow_dispatch:")&&workflow.includes("upload-artifa
  "Robot machine should generate review-only packs");
 assert(!workflow.includes("git push")&&!workflow.includes("service_role")&&!workflow.includes("curl -X POST"),
  "Scheduled action must never publish or send recordings to the air");
-// Distinct clips may share the same voice/series despite fair ID-level picks.
-// Family separation must only rearrange peers still in the current lane bag.
+// ONLY proven different-length edits of the same master can share a key.
+// Theme, voice, character, bell texture, or approximate title must never group.
 const kin=[
- {index:135,id:"robot-a",title:"Robot A",family:"robot-radio",lane:"short",seconds:8},
- {index:136,id:"bells-a",title:"Bells A",family:"lantern-bells",lane:"medium",seconds:30},
- {index:137,id:"robot-b",title:"Robot B",family:"robot-radio",lane:"short",seconds:9},
- {index:138,id:"other",title:"Other",family:"other",lane:"short",seconds:7}
+ {index:135,id:"cut-21s",title:"Hard Dark Train 21s",family:"same-master",lane:"medium",seconds:21},
+ {index:136,id:"other-voice",title:"Another Work",family:"other-voice",lane:"short",seconds:8},
+ {index:137,id:"cut-42s",title:"Hard Dark Train 42s",family:"same-master",lane:"medium",seconds:42},
+ {index:138,id:"other-recording",title:"A Third Work",family:"other-recording",lane:"medium",seconds:30}
 ];
-brain.spreadFamilies(kin,{short:3,medium:1,long:0},3);
-assert.equal(kin[2].id,"other","Choose a different voice when a same-bag peer remains");
-assert.equal(kin[3].id,"robot-b","Displaced recording still gets its fair turn");
-assert.deepEqual(new Set(kin.map(x=>x.id)),new Set(["robot-a","bells-a","robot-b","other"]));
-assert.deepEqual(kin.map(x=>x.lane),["short","medium","short","short"],
- "Do not move carts to another duration lane");
-assert.equal(rotation.bumper_brain.profiles["air-field-fm-001"].family,"lantern-bells");
-assert.equal(rotation.bumper_brain.profiles["crate-2cd4c3db-2a5b-4ee7-8a5c-bf5de72b4258"].family,"lantern-bells");
-assert.equal(rotation.bumper_brain.profiles["crate-13309e7f-ea07-4847-8b13-2268d277bfef"].family,"robot-radio");
+brain.spreadFamilies(kin,{short:1,medium:3,long:0},3);
+assert.equal(kin[2].id,"other-recording","Space the two cuts if another piece remains");
+assert.equal(kin[3].id,"cut-42s","Both cuts retain their fair turns");
+assert.deepEqual(new Set(kin.map(x=>x.id)),new Set(["cut-21s","other-voice","cut-42s","other-recording"]));
+assert.deepEqual(kin.map(x=>x.lane),["medium","short","medium","medium"],
+ "Keep the existing short / medium / long break slots");
+assert.equal(rotation.bumper_brain.profiles["crate-d48fabca-c8fe-42cc-921e-ad4337d09f76"].edit_group,
+ "hard-dark-train-master");
+assert.equal(rotation.bumper_brain.profiles["crate-ee24d2c5-209a-402e-9cd9-dda2372f7d2a"].edit_group,
+ "hard-dark-train-master");
+const unrelated={"id":"robot-original","title":"Robot Radio Work","duration":31};
+assert.equal(brain.classify(unrelated,{profiles:{"robot-original":{family:"robot-radio"}}}).family,
+ "robot-original","Legacy thematic family labels cannot group independent art");
+assert.equal(brain.classify({id:"other-robot",title:"Robot Radio Work Two",duration:31},{}).family,
+ "other-robot","Similar titles cannot imply the same recording");
+assert(!Object.values(rotation.bumper_brain.profiles).some(x=>x.hold===true),
+ "Remove the assistant-imposed editorial holds, not owner-approved works");
 
-console.log("Bumper Brain: "+result.breaks.length+" φ-short / ~11-minute medium / ~22-minute long breaks; "+result.held.length+" editorial holds; deterministic and tier-fair.");
+console.log("Bumper Brain: "+result.breaks.length+" φ-short / ~11-minute medium / ~22-minute long breaks; "+result.held.length+" explicit holds; deterministic, tier-fair, unrelated art independent.");
