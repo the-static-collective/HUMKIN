@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUMKIN · Station One live HLS laboratory</title>
+<style>
+:root{color-scheme:dark;font-family:Georgia,serif;background:#171b22;color:#f8ecd1}
+body{margin:0;padding:2rem 1rem;display:flex;justify-content:center;min-height:100vh;box-sizing:border-box}
+main{width:min(560px,100%)}h1{font-size:2.2rem;margin:.7rem 0}
+small,.muted{color:#bbbaa9}input,button{font:inherit;border-radius:8px;padding:.8rem;box-sizing:border-box}
+input{width:100%;background:#2a3039;color:#fff;border:1px solid #85877b}
+button{background:#efbc6c;color:#24201a;border:0;cursor:pointer;margin:.65rem 0}
+audio{width:100%;margin-top:1rem}a{color:#eac080}
+.status{padding:.7rem 0;min-height:1.5rem}
+</style>
+</head>
+<body><main>
+<small>HUMKIN RADIO · EXPERIMENTAL RECEIVER</small>
+<h1>Station One · Live</h1>
+<p>One shared broadcast, heard together. This is an isolated test desk; it does not replace the regular radio.</p>
+<label for="url">Deployed Cloudflare Worker HLS URL</label>
+<input id="url" type="url" placeholder="https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/hls/live.m3u8" autocomplete="off">
+<button id="connect">Connect receiver</button>
+<div id="status" class="status" role="status">Not connected.</div>
+<audio id="receiver" controls preload="none"></audio>
+<p class="muted"><small>HLS.js is loaded from a third-party CDN for non-native browsers. Background playback depends on your browser and device. If the Acer goes offline, the live playlist becomes stale; use Long Wave or regular HUMKIN instead.</small></p>
+<a href="./index.html">Back to Long Wave</a>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+<script>
+(() => {
+  const audio=document.querySelector("#receiver");
+  const input=document.querySelector("#url");
+  const status=document.querySelector("#status");
+  let player=null;
+  function valid(value) {
+    try {
+      const url=new URL(value);
+      if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||
+         url.pathname!=="/hls/live.m3u8")return null;
+      const host=url.hostname.toLowerCase();
+      if(!(host.endsWith(".workers.dev")&&host.split(".").length>=4)&&
+         host!=="stream.abundent.org")return null;
+      return url.href;
+    }catch{return null}
+  }
+  function connect(){
+    const url=valid(input.value);
+    if(!url){status.textContent="Use a public HTTPS Cloudflare Worker /hls/live.m3u8 URL.";return}
+    if(player){player.destroy();player=null}
+    audio.pause();audio.removeAttribute("src");audio.load();
+    if(audio.canPlayType("application/vnd.apple.mpegurl")){
+      audio.src=url;
+    }else if(window.Hls && Hls.isSupported()){
+      player=new Hls({liveSyncDurationCount:3,enableWorker:true});
+      player.loadSource(url);player.attachMedia(audio);
+      player.on(Hls.Events.ERROR,(_,details)=>{
+        if(details.fatal)status.textContent="HLS signal interrupted: "+details.type;
+      });
+    }else{
+      status.textContent="This browser has no HLS support and hls.js was unavailable.";
+      return;
+    }
+    status.textContent="Receiver connected. Press Play; this station is not the personal Long Wave shuffle.";
+    try{localStorage.setItem("humkin-hls-test-url-v1",url)}catch{}
+  }
+  document.querySelector("#connect").addEventListener("click",connect);
+  audio.addEventListener("playing",()=>status.textContent="Playing Station One live.");
+  audio.addEventListener("waiting",()=>status.textContent="Buffering live broadcast…");
+  audio.addEventListener("error",()=>status.textContent="Receiver error. Verify /hls/status and R2 uploads.");
+  try{input.value=localStorage.getItem("humkin-hls-test-url-v1")||""}catch{}
+})();
+</script>
+</main></body></html>

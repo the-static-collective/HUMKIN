@@ -1,0 +1,35 @@
+name: HUMKIN R2 live HLS offline validation
+on:
+  pull_request:
+    paths:
+      - 'tools/radio-broadcast/engine.py'
+      - 'tools/radio-broadcast/hls_push.py'
+      - 'tools/radio-broadcast/cloudflare/**'
+      - 'tests/hls-*'
+      - 'fm/long-wave/hls.html'
+      - 'docs/R2-LIVE-HLS.md'
+      - '.github/workflows/r2-live-hls.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and pure unit tests
+        run: |
+          python -m py_compile tools/radio-broadcast/engine.py tools/radio-broadcast/hls_push.py
+          python tests/hls-relay.test.py
+          node --check tools/radio-broadcast/cloudflare/worker.mjs
+          node --check tools/radio-broadcast/cloudflare/hls-routes.mjs
+          node --test tools/radio-broadcast/cloudflare/hls-routes.test.mjs tools/radio-broadcast/cloudflare/worker.test.mjs
+      - name: Real FFmpeg synthetic HLS encoding (no network or songs)
+        run: python tests/hls-encoder-smoke.py
