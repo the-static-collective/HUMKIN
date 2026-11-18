@@ -34,7 +34,7 @@ function parse(data,fallbackArtwork){
     row.artist.trim().slice(0,160):"HUMKIN",
    album:typeof row.album==="string"&&row.album.trim()?
     row.album.trim().slice(0,200):"HUMKIN RADIO · R2",
-   duration,src,artwork:art,kind:"song",source:"r2",seasonal:row.seasonal===true});
+   duration,src,artwork:art,kind:"song",source:"r2",seasonal:row.seasonal===true,\n    sha256:/^[0-9a-f]{64}$/.test(row.sha256||"")?row.sha256:""});
  }
  return out;
 }
@@ -42,12 +42,12 @@ function parse(data,fallbackArtwork){
 // usual released-music 2x rule. Existing release bonuses count toward those 3.
 function additionalPositions(eligible,tracks,featuredPositions,policy){
  const featured=new Set(featuredPositions||[]);
- const explicit=new Set(Array.isArray(policy?.track_ids)?policy.track_ids:[]);
+ const explicit=new Set(Array.isArray(policy?.track_ids)?policy.track_ids:[]);\n  const hashes=new Set(Array.isArray(policy?.sha256s)?policy.sha256s.filter(x=>/^[0-9a-f]{64}$/.test(x)):[]);
  if(policy?.multiplier!==3)return [];
  const extras=[];
  for(let position=0;position<eligible.length;position++){
   const t=tracks[eligible[position]];
-  if(!t||t.kind==="bumper"||!(t.seasonal===true||explicit.has(t.id)))continue;
+  if(!t||t.kind==="bumper"||!(t.seasonal===true||explicit.has(t.id)||(t.sha256&&hashes.has(t.sha256))))continue;
   const current=featured.has(position)?2:1;
   for(let k=current;k<3;k++)extras.push(position);
  }
