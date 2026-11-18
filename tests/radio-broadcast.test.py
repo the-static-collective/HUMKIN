@@ -3,6 +3,8 @@
 import array
 import importlib.util
 import json
+import io
+from unittest.mock import patch
 import math
 import os
 import shutil
@@ -54,6 +56,30 @@ class RadioTests(unittest.TestCase):
         sunday=datetime.fromisoformat("2026-11-15T13:30:00+00:00")
         self.assertIsNone(s.program(sunday))
         self.assertIn(s.next(sunday)["id"],{"A","B","C"})
+    def test_real_mp3_cache_download_is_renamed_after_close(self):
+        # This must be a REAL file on disk, not a mocked Path.replace().
+        # Windows raises WinError 32 if the NamedTemporaryFile is still open.
+        with tempfile.TemporaryDirectory() as directory:
+            cache=Path(directory)
+            media=item("cached-audio",3)
+            payload=b"ID3" + b"m" * 2000
+            with patch.object(engine.urllib.request,"urlopen",return_value=io.BytesIO(payload)) as fetch:
+                output=engine.cache_track(media,cache)
+            self.assertTrue(output.exists())
+            self.assertEqual(output.read_bytes(),payload)
+            self.assertEqual(list(cache.glob("*.part")),[])
+            with patch.object(engine.urllib.request,"urlopen",side_effect=AssertionError("cache hit should not download")):
+                self.assertEqual(engine.cache_track(media,cache),output)
+            self.assertEqual(fetch.call_count,1)
+
+    def test_failed_download_closes_and_removes_temporary_mp3(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache=Path(directory)
+            with patch.object(engine.urllib.request,"urlopen",return_value=io.BytesIO(b"short")):
+                with self.assertRaisesRegex(ValueError,"Empty audio download"):
+                    engine.cache_track(item("short-download",3),cache)
+            self.assertEqual(list(cache.iterdir()),[])
+
     def test_crossfade_is_pcm_stereo_and_bounded(self):
         sample=struct.pack("<hh",20000,20000)*441
         other=struct.pack("<hh",-20000,-20000)*441
