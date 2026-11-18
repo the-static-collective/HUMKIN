@@ -3,6 +3,8 @@
 
 No inbound Windows ports, web-accessible credentials, or additional database.
 Uploads only complete, locally generated HLS assets under live/station-one/.
+Use dedicated humkin-radio-live bucket and bucket-scoped upload credentials;
+never grant the live computer write access to the permanent music archive.
 """
 import argparse
 import hashlib
@@ -126,7 +128,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="HUMKIN Station One → Cloudflare R2 live HLS")
     p.add_argument("--dir", type=Path, help="Local output folder (default: private temp folder)")
     p.add_argument("--cache", type=Path, default=Path.home() / ".humkin" / "radio-cache")
-    p.add_argument("--bucket", default="humkin-radio-media")
+    p.add_argument("--bucket", default="humkin-radio-live")
     p.add_argument("--bitrate", choices=[96, 128, 160, 192], type=int, default=96)
     p.add_argument("--seconds", type=int, default=0,
                    help="Optional limited-duration test; 0 means continuous")
