@@ -92,6 +92,53 @@ const altered=brain.plan([...songs].reverse(),bumpers,4,tracks,options);
 assert.deepEqual(altered.breaks,result.breaks,"Same-time recipients get an identical bumper order regardless of shuffled songs");
 assert.equal(altered.sequence.length,result.sequence.length,"Shared-clock cycle length stays stable");
 assert.deepEqual(brain.plan(songs,bumpers,4,tracks,options),result,"Deterministic for every receiver");
+// A static order was repeated on every real on-air clock cycle. A rotation
+// seed now remixes *which approved cart follows which song* while preserving
+// each exact cart multiset and total duration; both are necessary for the
+// shared-clock station's epoch arithmetic and fair length-lane distribution.
+const checksum=sequence=>sequence.reduce((sum,index)=>
+  sum+Math.round(tracks[index].duration*1000),0);
+const baseChecksum=checksum(result.sequence);
+const laneCount=lane=>routine.filter(t=>brain.classify(t,options).lane===lane).length;
+const canonCounts=new Map();
+for(const b of result.breaks)canonCounts.set(b.id,(canonCounts.get(b.id)||0)+1);
+const signatures=new Set();
+for(let seed=1;seed<=64;seed++){
+ const mixed=brain.remix(result,bumpers,tracks,options,seed);
+ const repeated=brain.remix(result,bumpers,tracks,options,seed);
+ assert.deepEqual(mixed,repeated,"Cycle "+seed+" must give every listener the same bumpers");
+ assert.equal(checksum(mixed.sequence),baseChecksum,
+   "Cycle "+seed+" must keep the exact broadcast duration in milliseconds");
+ assert.equal(mixed.sequence.length,result.sequence.length,
+   "Remixed bumpers cannot add or remove song slots");
+ assert.deepEqual(mixed.sequence.filter(i=>i<songs.length),songs,
+   "Remixed bumpers must not change the underlying song order");
+ assert.deepEqual(mixed.breaks.map(x=>x.lane),result.breaks.map(x=>x.lane),
+   "Every short/medium/long break opportunity stays in its lane");
+ const counts=new Map();
+ for(const b of mixed.breaks)counts.set(b.id,(counts.get(b.id)||0)+1);
+ assert.deepEqual(counts,canonCounts,
+   "Every seed must use the same approved cart multiset, not just the same count");
+ for(const lane of ["short","medium","long"]){
+  const peers=laneCount(lane);
+  const first=mixed.breaks.filter(b=>b.lane===lane).slice(0,peers);
+  assert.equal(new Set(first.map(b=>b.id)).size,first.length,
+   "Within a "+lane+" bag, every cart plays before repeating");
+ }
+ signatures.add(mixed.breaks.map(b=>b.id).join("|"));
+}
+assert(signatures.size>=24,
+ "64 numbered rotations should not sound like the same bumper sequence");
+const reversedCycle=brain.remix(
+ brain.plan([...songs].reverse(),bumpers,4,tracks,options),
+ bumpers,tracks,options,17);
+assert.deepEqual(reversedCycle.breaks,brain.remix(result,bumpers,tracks,options,17).breaks,
+ "Shared-clock bumper assignment must ignore which song is in each slot");
+assert.equal(checksum(reversedCycle.sequence),baseChecksum,
+ "Shuffling song order cannot change the shared-clock rotation duration");
+assert.strictEqual(brain.remix(result,bumpers,tracks,options,0),result,
+ "Seed zero retains the canonical Station Manager preview");
+
 const legacy=brain.plan(songs.slice(0,21),bumpers.slice(0,1),3,tracks,options);
 assert(legacy.breaks.length>=5&&legacy.breaks.length<=8,
  "A smaller density setting should shorten the medium lane without forcing a rigid count");
@@ -102,6 +149,9 @@ const manager=fs.readFileSync("fm/manage/manager.js","utf8");
 const mgrPage=fs.readFileSync("fm/manage/index.html","utf8");
 const worker=fs.readFileSync("sw.js","utf8");
 assert(radio.includes("HUMKIN_BUMPER_BRAIN?.plan"),"Production radio must actually use Bumper Brain");
+assert(radio.includes("HUMKIN_BUMPER_BRAIN?.remix"),"Radio must actually use the rotating bumper bags");
+assert(radio.includes("withStationIds(weightedMusic(eligible,rotation),rotation)"),"Shared-clock cycle number must drive bumper remix");
+assert(radio.includes("withStationIds(sorted,seed||1)"),"Road Shuffle needs a new cart order on each shuffle build");
 assert(html.indexOf("bumper-brain.js")<html.indexOf("radio.js"),"Radio loads brain before radio.js");
 assert(manager.includes("renderBumperPreview"),"Manager must display a break plan");
 assert(mgrPage.includes('id="bumper-preview"'),"Preview panel required");
