@@ -1,6 +1,6 @@
 # HUMKIN Listener Receptacle 001 — Jubilee economic-layer field test
 
-**Status: PREVIEW ONLY. No payment destinations configured and no real transaction is possible from this version.**
+**Status: OWNER-CONFIRMED PUBLIC PAYMENT LINKS. All transfers remain outside HUMKIN; no payment settlement or donor identity is verified.**
 
 This is a separately addressable page at `/support.html`. It does not replace, redirect, or change the album homepage, FM station, Android app, donation accounts, or publication workflow.
 
@@ -8,8 +8,8 @@ This is a separately addressable page at `/support.html`. It does not replace, r
 
 1. A listener chooses **1¢ / 5¢ / 25¢ / $1 / $5**. This is an intention, *not an authorization*; provider minimums and fees may prevent very small payments.
 2. **Make-believe coin** makes only a volatile client-side simulation. There is no local storage, analytics, database, submission, receipt, API, transaction or counter.
-3. Default `support-doors.json` has `mode: "preview"`, `ownerApproved: false`, and no provider URLs. No live payment button renders.
-4. A separately verified, operator-approved live manifest would open a preexisting Cash App, Venmo, or PayPal.Me profile in its own app/site. **The visitor must verify the actual recipient and enter the amount externally.** No prefilled amounts or transfer promises.
+3. The active `support-doors.json` has `mode: "owner_confirmed"` with the 3 owner-supplied links (Cash App, Venmo, PayPal's native QR). This is explicitly **self-attested**, not a signed Jubilee export, provider identity check or provider integration. The signed `live` path is still available through the adapter.
+4. An owner-confirmed link opens an existing Cash App, Venmo, PayPal.Me, or native PayPal recipient QR URL in the provider's own app/site. **The visitor must verify the actual recipient and enter the amount externally.** No prefilled amounts or transfer promises.
 5. HUMKIN cannot infer that a click paid anything. `OPEN != DONATE`, `LINK != SETTLEMENT`, `PLEDGE != RECEIPT`.
 
 Listening remains free; contributions are not purchases, memberships, or charitable tax receipts.
@@ -52,9 +52,9 @@ They are recorded as **unverified candidates** in
 
 - Cash App: `$LuVstudio` → syntactically valid `https://cash.app/$LuVstudio`.
 - Venmo: `@The_Real_Lucas_V` → syntactically valid `https://venmo.com/u/The_Real_Lucas_V`.
-- PayPal: `@thestaticcollective` → **no PayPal.Me link inferred**. The PayPal.Me link must be explicitly obtained from PayPal account settings and reviewed.
+- PayPal: the supplied QR decodes to `https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW`; this native PayPal QR link is accepted under the narrow `paypal_qr` provider allowlist. No PayPal.Me link is inferred from `@thestaticcollective`.
 
-Public website `support-doors.json` remains empty and in `preview` mode; this file is a staging candidate inventory, not a live provider configuration or signed registry. The candidate addresses are intentionally human-reviewable and **not proof of ownership, successful settlement or business-account eligibility**.
+Public `support-doors.json` now lists all three owner-supplied destinations in `owner_confirmed` mode, and links may be opened. The separate candidate inventory remains for inspection; neither artifact constitutes an Ed25519-signed Jubilee registry, provider recipient verification, or payment evidence. The candidate addresses are intentionally human-reviewable and **not proof of ownership, successful settlement or business-account eligibility**.
 
 Cash App documents a **$1 minimum** for ordinary send/request payments (Nov 2026). Consequently, Cash App is hidden from the live-link panel when 1¢, 5¢ or 25¢ is selected. Venmo and PayPal minimums/fees have not been independently verified; the UI must not promise those micro amounts are payable. Venmo's business-use rules must be checked before using a personal profile to receive payments related to music.
 
@@ -74,3 +74,7 @@ Field-test the static page under GitHub Pages on mobile after a successful previ
 ## Next gate
 
 After a known HUMKIN-owned or authorized provider destination has been independently confirmed and account status verified, publish only approved doors in a separate deliberate deployment. Reconcile any future *real* small payment with a provider transaction record and preserve fee/net amount, currency, reversal and source provenance. Cross-provider netting, pooling, routing, advances and automatic payouts remain **out of scope** until authorized rails and compliance obligations exist.
+
+## Payment receipt boundary (November 18, 2026)
+
+The owner has self-attested the three recipient accounts; their ownership has not been independently authenticated by a payment provider. `owner_confirmed` activates external links without claiming a signed Jubilee registry. The original `live` mode still requires signed-source-head evidence and is produced only by the separately keyed Jubilee adapter. UI clicks are never booked as donations, settled transactions, account balances, or tax receipts. Owner must inspect provider transaction history for a controlled $1 test and reconcile reversals/fees outside this page. A gift to an artist is not an automatically tax-deductible charitable donation.
