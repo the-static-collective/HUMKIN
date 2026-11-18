@@ -1,5 +1,5 @@
 /**
- * Shared R2 HLS receiver. Station One uploads complete segments before its
+ * Dedicated-bucket R2 HLS receiver. Station One uploads complete segments before its
  * playlist; neither credentials nor unfinished recordings reach the browser.
  * Kept separate from personal Long Wave /live.mp3 rotation.
  */
@@ -35,12 +35,12 @@ export async function serveHls(request, env, now = Date.now()) {
   const key = hlsObjectKey(path);
   if (!key || !["GET","HEAD"].includes(request.method))
     return new Response("Not found", { status: 404 });
-  if (!env?.RADIO_MEDIA?.get)
+  if (!env?.RADIO_LIVE?.get)
     return new Response("R2 binding missing", { status: 503 });
   const live = path === "/hls/live.m3u8" || path === "/hls/status";
   // R2ObjectBody.uploaded is the object timestamp; a stale playlist is
   // not evidence that the radio is still broadcasting.
-  const obj = await env.RADIO_MEDIA.get(key);
+  const obj = await env.RADIO_LIVE.get(key);
   if (!obj) return new Response(live ? "Radio not on air" : "Segment missing",
                                  { status: live ? 503 : 404,
                                    headers: headers("text/plain; charset=utf-8", true) });
