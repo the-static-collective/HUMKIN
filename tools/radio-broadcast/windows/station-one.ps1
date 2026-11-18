@@ -2,7 +2,7 @@
 # No credentials are written to disk or submitted to GitHub.
 [CmdletBinding()]
 param(
-    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast')]
+    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast', 'Preflight')]
     [string]$Action = 'Menu'
 )
 
@@ -23,7 +23,8 @@ function Get-PythonCommand {
     foreach ($entry in $candidate) {
         if (-not (Get-Command $entry.Exe -ErrorAction SilentlyContinue)) { continue }
         $probe = @($entry.Prefix) + @('-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 2)')
-        & $entry.Exe @probe 2>$null
+        # Do not permit a child process to contribute output to the return value.
+        & $entry.Exe @probe 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) { return $entry }
     }
     return $null
@@ -31,6 +32,9 @@ function Get-PythonCommand {
 
 function Invoke-Python {
     param($Python, [string[]]$PythonArgs)
+    if ($Python -isnot [hashtable] -or -not $Python.ContainsKey('Exe') -or -not $Python.ContainsKey('Prefix')) {
+        throw 'Invalid Python launcher configuration (expected one launcher hashtable).'
+    }
     $commandArgs = @($Python.Prefix) + $PythonArgs
     & $Python.Exe @commandArgs
     if ($LASTEXITCODE -ne 0) { throw "Python exited with code $LASTEXITCODE." }
@@ -55,7 +59,11 @@ function Test-Dependencies {
         throw 'Missing check_timezone.py. Extract the COMPLETE current HUMKIN ZIP into a new folder.'
     }
     $zoneProbe = @($python.Prefix) + @($zoneCheck)
-    & $python.Exe @zoneProbe
+    # This Python helper prints a success line. PowerShell functions return
+    # every item written to the success stream; without Out-Host that string
+    # gets captured together with the launcher hashtable and breaks .Prefix.
+    # Show the status to the operator without returning it as function data.
+    & $python.Exe @zoneProbe | Out-Host
     if ($LASTEXITCODE -ne 0) {
         Write-Host 'Central timezone check failed. If Python reported missing timezone data, install:' -ForegroundColor Yellow
         Write-Host "  $($python.Exe) $($python.Prefix -join ' ') -m pip install --user tzdata"
@@ -71,6 +79,17 @@ function Test-Dependencies {
     Write-Host 'FFmpeg and ffprobe: found.' -ForegroundColor Green
     New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
     return $python
+}
+
+function Invoke-PreflightSmoke {
+    Write-Host "`n=== HUMKIN STATION ONE : OFFLINE PREFLIGHT SMOKE TEST ===" -ForegroundColor Cyan
+    $python = Test-Dependencies
+    if ($null -eq $python) { throw 'Preflight dependencies unavailable.' }
+    if ($python -isnot [hashtable]) { throw 'Preflight returned more than the Python configuration object.' }
+    # This exercises the same Invoke-Python path as 'Check', without contacting
+    # the catalog or loading/playing any recordings.
+    Invoke-Python -Python $python -PythonArgs @($Engine, '--help')
+    Write-Host 'PREFLIGHT SMOKE TEST PASSED.' -ForegroundColor Green
 }
 
 function Check-Station {
@@ -181,6 +200,7 @@ try {
         'Preview' { Make-Preview }
         'Test' { Run-Tests }
         'Broadcast' { Start-Broadcast }
+        'Preflight' { Invoke-PreflightSmoke }
     }
 }
 catch {
