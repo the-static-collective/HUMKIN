@@ -2,8 +2,9 @@
 # No credentials are written to disk or submitted to GitHub.
 [CmdletBinding()]
 param(
-    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast', 'R2Hls', 'Preflight', 'VaultSelfTest')]
-    [string]$Action = 'Menu'
+    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast', 'R2Hls', 'Preflight', 'VaultSelfTest', 'StartR2', 'StopR2', 'LiveStatus', 'RunR2', 'LiveControlSelfTest')]
+    [string]$Action = 'Menu',
+    [string]$RunId = ''
 )
 
 Set-StrictMode -Version Latest
@@ -386,6 +387,9 @@ function Start-R2Hls {
     }
 }
 
+# Optional independent live control desk (retains existing 70-second R2 test).
+. (Join-Path $PSScriptRoot 'station-one-live.ps1')
+
 function Start-Menu {
     Write-Host ''
     Write-Host '  H U M K I N   /   S T A T I O N   O N E' -ForegroundColor Cyan
@@ -398,8 +402,11 @@ function Start-Menu {
     Write-Host '  5  Verify a PUBLIC HTTPS listener URL (read-only)'
     Write-Host '  6  Test shared live station through the dedicated Cloudflare R2 live bucket'
     Write-Host '  7  Reset locally saved R2 credentials'
+    Write-Host '  8  START CONTINUOUS R2 LIVE (encrypted saved keys)'
+    Write-Host '  9  STOP CONTINUOUS R2 LIVE (clean shutdown)'
+    Write-Host '  0  LIVE STATUS and recent logs'
     Write-Host '  Q  Quit'
-    $choice = (Read-Host 'Select 1-7 or Q').Trim().ToUpperInvariant()
+    $choice = (Read-Host 'Select 0-9 or Q').Trim().ToUpperInvariant()
     switch ($choice) {
         '1' { Check-Station }
         '2' { Make-Preview }
@@ -408,8 +415,11 @@ function Start-Menu {
         '5' { Check-PublicListener }
         '6' { Start-R2Hls }
         '7' { Reset-R2Credentials }
+        '8' { Start-R2LiveManaged }
+        '9' { Stop-R2LiveManaged }
+        '0' { Show-R2LiveStatus }
         'Q' { return }
-        default { Write-Host 'No change; choose 1-7 or Q.' }
+        default { Write-Host 'No change; choose 0-9 or Q.' }
     }
 }
 
@@ -423,6 +433,11 @@ try {
         'R2Hls' { Start-R2Hls }
         'Preflight' { Invoke-PreflightSmoke }
         'VaultSelfTest' { Test-R2Vault }
+        'StartR2' { Start-R2LiveManaged }
+        'StopR2' { Stop-R2LiveManaged }
+        'LiveStatus' { Show-R2LiveStatus }
+        'RunR2' { Run-R2LiveChild }
+        'LiveControlSelfTest' { Test-R2LiveControl }
     }
 }
 catch {
