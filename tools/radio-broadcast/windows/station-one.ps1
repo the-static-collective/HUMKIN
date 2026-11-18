@@ -48,10 +48,16 @@ function Test-Dependencies {
         return $null
     }
     Write-Host "Python: $($python.Exe) $($python.Prefix -join ' ')"
-    $zoneProbe = @($python.Prefix) + @('-c', 'from zoneinfo import ZoneInfo; print(ZoneInfo("America/Chicago"))')
+    # Windows PowerShell 5.1 strips nested quotes from Python -c arguments.
+    # Invoke a real Python file rather than a string passed through cmd.exe.
+    $zoneCheck = Join-Path $PSScriptRoot 'check_timezone.py'
+    if (-not (Test-Path -LiteralPath $zoneCheck)) {
+        throw 'Missing check_timezone.py. Extract the COMPLETE current HUMKIN ZIP into a new folder.'
+    }
+    $zoneProbe = @($python.Prefix) + @($zoneCheck)
     & $python.Exe @zoneProbe
     if ($LASTEXITCODE -ne 0) {
-        Write-Host 'Central timezone data is missing. Install it once with:' -ForegroundColor Yellow
+        Write-Host 'Central timezone check failed. If Python reported missing timezone data, install:' -ForegroundColor Yellow
         Write-Host "  $($python.Exe) $($python.Prefix -join ' ') -m pip install --user tzdata"
         return $null
     }
