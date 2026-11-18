@@ -2,7 +2,7 @@
 # No credentials are written to disk or submitted to GitHub.
 [CmdletBinding()]
 param(
-    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast', 'Preflight')]
+    [ValidateSet('Menu', 'Check', 'Preview', 'Test', 'Broadcast', 'R2Hls', 'Preflight')]
     [string]$Action = 'Menu'
 )
 
@@ -233,6 +233,39 @@ function Start-Broadcast {
     finally { Remove-Item Env:\HUMKIN_ICECAST_URL -ErrorAction SilentlyContinue }
 }
 
+function Start-R2Hls {
+    Write-Host ''
+    Write-Host '=== HUMKIN STATION ONE : R2 LIVE HLS TEST ===' -ForegroundColor Cyan
+    $python = Test-Dependencies
+    if ($null -eq $python) { return }
+    $publisher = Join-Path $RepoRoot 'tools\radio-broadcast\hls_push.py'
+    if (-not (Test-Path -LiteralPath $publisher)) {
+        throw 'Missing hls_push.py. Update the complete HUMKIN repository before continuing.'
+    }
+    Write-Host 'Requires R2 S3 API credentials for your existing humkin-radio-media bucket.'
+    Write-Host 'Use an existing restricted R2 token or create one in Cloudflare.'
+    Write-Host 'This test publishes a short rolling HLS stream to R2. Upload operations may be billable.'
+    Write-Host 'It will NOT redirect the existing website or Android station.'
+    $choice = Read-Host 'Type R2 TEST to publish a supervised 70-second experiment'
+    if ($choice -cne 'R2 TEST') { Write-Host 'No R2 upload started.'; return }
+    $env:CLOUDFLARE_ACCOUNT_ID = (Read-Host 'Cloudflare Account ID').Trim()
+    $env:AWS_ACCESS_KEY_ID = (Read-Host 'R2 S3 Access Key ID').Trim()
+    $secret = Read-Host 'R2 S3 Secret Access Key (hidden, not saved)' -AsSecureString
+    $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
+    try {
+        $env:AWS_SECRET_ACCESS_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
+    }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
+    try {
+        Write-Host 'Sending only complete station segments to R2 over HTTPS. Ctrl+C cancels.' -ForegroundColor Yellow
+        Invoke-Python -Python $python -PythonArgs @($publisher, '--cache', $CacheDir, '--seconds', '70')
+        Write-Host 'Test finished. The Worker must be independently deployed and verified.' -ForegroundColor Green
+    }
+    finally {
+        Remove-Item Env:\AWS_SECRET_ACCESS_KEY,Env:\AWS_ACCESS_KEY_ID,Env:\CLOUDFLARE_ACCOUNT_ID -ErrorAction SilentlyContinue
+    }
+}
+
 function Start-Menu {
     Write-Host ''
     Write-Host '  H U M K I N   /   S T A T I O N   O N E' -ForegroundColor Cyan
@@ -243,16 +276,18 @@ function Start-Menu {
     Write-Host '  3  Run offline broadcaster tests'
     Write-Host '  4  Broadcast to an ALREADY-SET-UP encrypted Icecast source'
     Write-Host '  5  Verify a PUBLIC HTTPS listener URL (read-only)'
+    Write-Host '  6  Test a shared live station through our existing Cloudflare R2 bucket'
     Write-Host '  Q  Quit'
-    $choice = (Read-Host 'Select 1-5 or Q').Trim().ToUpperInvariant()
+    $choice = (Read-Host 'Select 1-6 or Q').Trim().ToUpperInvariant()
     switch ($choice) {
         '1' { Check-Station }
         '2' { Make-Preview }
         '3' { Run-Tests }
         '4' { Start-Broadcast }
         '5' { Check-PublicListener }
+        '6' { Start-R2Hls }
         'Q' { return }
-        default { Write-Host 'No change; choose 1-5 or Q.' }
+        default { Write-Host 'No change; choose 1-6 or Q.' }
     }
 }
 
@@ -263,6 +298,7 @@ try {
         'Preview' { Make-Preview }
         'Test' { Run-Tests }
         'Broadcast' { Start-Broadcast }
+        'R2Hls' { Start-R2Hls }
         'Preflight' { Invoke-PreflightSmoke }
     }
 }
