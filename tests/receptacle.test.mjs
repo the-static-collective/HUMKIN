@@ -6,26 +6,47 @@ import {canonical,inspectSignedRegistry,prepareManifest} from "../tools/receptac
 import {readFileSync} from "node:fs";
 const sample=JSON.parse(readFileSync(new URL("../support-doors.json",import.meta.url),"utf8"));
 const candidates=JSON.parse(readFileSync(new URL("../tools/receptacle/owner-supplied-candidates.json",import.meta.url),"utf8"));
-test("default production asset is strictly disabled preview",()=>{
-  assert.equal(parseReceptacle(sample).mode,"preview");
-  assert.equal(parseReceptacle(sample).doors.length,0);
+test("self-attested public links have no fake signature or settlement proof",()=>{
+  const state=parseReceptacle(sample);
+  assert.equal(state.mode,"owner_confirmed");
+  assert.equal(state.doors.length,3);
+  assert.equal(state.sourceHead,null);
+  assert.equal(state.identityVerifiedExternally,false);
+  assert.equal(sample.ownerApproved,true);
+  assert.equal(sample.identityBasis,"owner_self_attestation");
+  assert.equal(sample.paymentReceived,undefined);
   assert.equal(previewObservation(1).settled,false);
   assert.deepEqual(AMOUNTS,[1,5,25,100,500]);
   assert.equal(amountText(1),"1¢");
   assert.equal(amountText(500),"$5.00");
+  assert.throws(()=>parseReceptacle({...sample,mode:"live"}),/signed/);
+  assert.throws(()=>parseReceptacle({...sample,ownerApproved:false}),/self-attested/);
+  assert.throws(()=>parseReceptacle({...sample,sourceHead:"a".repeat(64)}),/cryptographic/);
+  assert.throws(()=>parseReceptacle({...sample,doors:[...sample.doors,sample.doors[0]]}),/Duplicate/);
+  const emptyPreview={schema:sample.schema,mode:"preview",recipient:"HUMKIN",
+    purposeId:sample.purposeId,ownerApproved:false,doors:[]};
+  assert.equal(parseReceptacle(emptyPreview).mode,"preview");
 });
 test("provider exact-host/path allowlist rejects lookalikes and injections",()=>{
   for(const [p,u] of [
     ["cash_app","https://cash.app/$HUMKIN"],
     ["venmo","https://venmo.com/u/humkin_test"],
-    ["paypal","https://paypal.me/HumkinTest"],\n    ["paypal_qr","https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW"]
+    ["paypal","https://paypal.me/HumkinTest"],
+    ["paypal_qr","https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW"]
   ])assert.equal(safeLink(p,u),u);
   for(const u of ["http://cash.app/$Foo","https://cash.app.evil.test/$Foo",
     "https://cash.app/$Foo?amount=100","https://cash.app/$Foo#hello",
     "https://user@cash.app/$Foo","https://cash.app/%24Foo","https://cash.app:444/$Foo"])
     assert.throws(()=>safeLink("cash_app",u));
   assert.throws(()=>safeLink("bank","https://cash.app/$Foo"));
-  assert.throws(()=>safeLink("venmo","https://paypal.me/Foo"));\n  for(const bad of [\n    "https://www.paypal.com.evil.test/qrcodes/p2pqrc/GKTLBLRSAM5ZW",\n    "https://paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW",\n    "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW?amount=1",\n    "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW#fragment",\n    "https://www.paypal.com/qrcodes/p2pqrc/WRONG"\n  ])assert.throws(()=>safeLink("paypal_qr",bad));
+  assert.throws(()=>safeLink("venmo","https://paypal.me/Foo"));
+  for(const bad of [
+    "https://www.paypal.com.evil.test/qrcodes/p2pqrc/GKTLBLRSAM5ZW",
+    "https://paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW",
+    "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW?amount=1",
+    "https://www.paypal.com/qrcodes/p2pqrc/GKTLBLRSAM5ZW#fragment",
+    "https://www.paypal.com/qrcodes/p2pqrc/WRONG"
+  ])assert.throws(()=>safeLink("paypal_qr",bad));
 });
 const keys=generateKeyPairSync("ed25519");
 const pem=keys.publicKey.export({type:"spki",format:"pem"});
@@ -102,7 +123,8 @@ test("one-cent experiments cannot advertise an ordinary Cash App payment",()=>{
   assert.equal(providerAmountStatus("cash_app",500).available,true);
   assert.equal(providerAmountStatus("venmo",1).available,true);
   assert.match(providerAmountStatus("venmo",1).reason,/not been verified/);
-  assert.equal(providerAmountStatus("paypal",1).available,true);\n  assert.equal(providerAmountStatus("paypal_qr",1).available,true);
+  assert.equal(providerAmountStatus("paypal",1).available,true);
+  assert.equal(providerAmountStatus("paypal_qr",1).available,true);
   assert.throws(()=>providerAmountStatus("bad",1));
 });
 test("synthetic Jubilee-signing fixture accepts exact proposed Cash App and Venmo URLs, but not payment evidence",()=>{
