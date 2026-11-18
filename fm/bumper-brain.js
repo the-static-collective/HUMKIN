@@ -15,7 +15,7 @@ function classify(track,policy={}){
  const seconds=Number(track?.duration??track?.duration_seconds??0);
  // Identity is unique unless two files are proven different-length edits
  // of the SAME master. Voice, series, bells and topic are not an edit group.
- const family=raw.edit_group||id;
+ const family=id; // User-editable ATTRACT/REPEL groups are applied after shuffled bags.
  // A program opening is a scheduled item, not an incidental station ID.
  let role=raw.role||(
    /\b(opener|opening|intro for)\b/.test(title)?"show_opener":
@@ -31,7 +31,7 @@ function classify(track,policy={}){
  const lane=seconds<=shortMax?"short":seconds<mediumMax?"medium":"long";
  // Enabled/published is the eligibility decision. Only an actual owner
  // hold or a technical duration error can exclude an otherwise aired cart.
- const hold=raw.hold===true||seconds>hardMax||seconds<=0;
+ const hold=raw.hold===true||policy.excluded_ids?.includes(id)||seconds>hardMax||seconds<=0;
  return {id,title:track?.title||id,seconds,role,family,lane,hold,
   reason:raw.hold===true?"EXPLICIT PROFILE HOLD":
    seconds>hardMax?"OVERSIZE — requires a show slot":
@@ -164,34 +164,6 @@ function plan(songs,bumpers,every,tracks,policy={}){
  return {sequence,breaks,held,eligible:eligible.length};
 }
 
-// Only verified alternate-length edits of the SAME recording may share a
-// grouping key. Never infer group identity from an artist, voice, series,
-// instrument, title similarity or subject. Reorder within the current lane
-// bag only; the broadcast clock length and fair cart counts stay unchanged.
-function spreadFamilies(breaks,bagSizes,lookback=3){
- const positions={short:[],medium:[],long:[]},seen={short:0,medium:0,long:0};
- for(let i=0;i<breaks.length;i++)if(positions[breaks[i].lane])positions[breaks[i].lane].push(i);
- const fields=["index","id","title","seconds","role","family","rare"];
- for(let i=0;i<breaks.length;i++){
-  const current=breaks[i],lane=current.lane;
-  if(!positions[lane])continue;
-  const slot=seen[lane]++,size=bagSizes[lane]||0;
-  if(size<2||!current.family)continue;
-  const recent=new Set(breaks.slice(Math.max(0,i-lookback),i).map(x=>x.family).filter(Boolean));
-  if(!recent.has(current.family))continue;
-  const laneSlots=positions[lane];
-  const end=Math.min(laneSlots.length,(Math.floor(slot/size)+1)*size);
-  for(let n=slot+1;n<end;n++){
-   const candidate=breaks[laneSlots[n]];
-   if(recent.has(candidate.family))continue;
-   for(const field of fields)
-    [current[field],candidate[field]]=[candidate[field],current[field]];
-   break;
-  }
- }
- return breaks;
-}
-
 // Bumper Bag v2: permute the *same chosen recordings* for each shared-clock
 // rotation. Re-selecting arbitrary cart durations would make cycles longer or
 // shorter, breaking the station-wide epoch calculation. Instead each length
@@ -244,8 +216,8 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
     for(const field of fields)breaks[slots[j]][field]=shuffled[j][field];
   }
  }
- // Space only verified alternate cuts of the same master when a different
- // approved recording remains in this shuffled duration-lane bag.
+ // Explicit ATTRACT and REPEL relationships are programmed by the owner.
+ // Neither title, voice nor subject automatically adds a grouping rule.
  const familyBagSizes={};
  for(const lane of ["short","medium","long"]){
   familyBagSizes[lane]=bumperIndices.filter(i=>Number.isInteger(i)&&tracks[i]&&
@@ -254,7 +226,7 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
       return !c.hold&&c.lane===lane;
     }).length;
  }
- spreadFamilies(breaks,familyBagSizes);
+ window.HUMKIN_BUMPER_RELATIONS?.arrange(breaks,policy.groups,familyBagSizes);
  // Recalculate displayed estimates after the variable-length carts trade
  // places. Total cycle duration remains EXACTLY the same, in milliseconds.
  const songCount=planResult.sequence.length-planResult.breaks.length;
@@ -277,7 +249,7 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
  if(offset!==breaks.length)return planResult; // Fail safe, never break an on-air cycle.
  return {...planResult,sequence,breaks};
 }
-const api=Object.freeze({normalize,classify,cadenceBreaks,plan,remix,spreadFamilies});
+const api=Object.freeze({normalize,classify,cadenceBreaks,plan,remix});
 if(typeof module!=="undefined"&&module.exports)module.exports=api;
 root.HUMKIN_BUMPER_BRAIN=api;
 })(typeof window!=="undefined"?window:globalThis);
