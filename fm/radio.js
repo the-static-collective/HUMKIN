@@ -5,6 +5,8 @@ const $=id=>document.getElementById(id);
 const here=window.HUMKIN_RADIO_BASE?new URL(window.HUMKIN_RADIO_BASE,location.origin):new URL("./",document.baseURI);
 const root=new URL("../",here);
 const audio=$("air");
+const flight=window.HUMKIN_BLACK_BOX;
+const trace=(event,detail={})=>flight?.record(event,detail);
 const status=$("station-status");
 const title=$("current-title");
 const artist=$("current-artist");
@@ -488,6 +490,9 @@ async function preloadNext(){
   }
 }
 function setTrackSource(i,offset,shouldPlay){
+  trace("source_select",{mode,track_id:tracks[i]?.id,kind:tracks[i]?.kind,
+    position_s:Number(offset)||0,cycle:Math.max(0,cycle),
+    reason:shouldPlay?"automatic":"manual"});
   const old=activeBlobUrl;
   let src=tracks[i]?.src;
   if(prepared?.index===i&&prepared.blobUrl){
@@ -575,6 +580,7 @@ function setSource(src,offset,shouldPlay){
     }).catch(()=>{
       if(token!==seekToken)return; // A newer track superseded this attempt.
       switching=false;active=false;
+      trace("play_rejected",{mode,track_id:tracks[index]?.id,reason:"blocked"});
       setPlaybackState("paused");
       setMessage("The browser blocked the next track. Tap TUNE IN to resume.");
       updateListen();
@@ -709,6 +715,7 @@ function changeMode(target){
   if(target!=="clock"&&target!=="shuffle")return;
   const wasPlaying=!audio.paused&&active;
   mode=target;order=[];pendingClockJoin=null;resetRate();
+  trace("mode_change",{mode:target,reason:"mode_change"});
   if(target==="shuffle")warmSignal.setPlayback(false);
   else if(wasPlaying)startStationSound();
   updateModeUI();
@@ -774,15 +781,25 @@ $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 $("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
 $("phone-playlist").addEventListener("click",downloadNativePlaylist);
+const reportButton=$("report-signal");
+if(reportButton)reportButton.addEventListener("click",()=>{
+  trace("report_signal",{mode,track_id:tracks[index]?.id,kind:tracks[index]?.kind,
+    position_s:Number(audio.currentTime)||0});
+  setMessage(flight?.download()?
+    "Signal report saved to this device. Nothing was uploaded.":
+    "Signal report unavailable in this browser.");
+});
 audio.addEventListener("play",()=>{
   lastListenTick=monotonicNow();
   startStationSound();
   active=true;setPlaybackState("playing");updateListen();
+  trace("play",{mode,track_id:tracks[index]?.id});
   setMessage("Playing. Lock your screen if you like; your browser controls background playback.");
   preloadNext();
   rememberShuffleTrack();
 });
 audio.addEventListener("playing",()=>{
+  trace("playing",{mode,track_id:tracks[index]?.id});
   active=true;setPlaybackState("playing");updateListen();
   finishClockJoin();
   gentlyAlignClock();
@@ -793,6 +810,7 @@ audio.addEventListener("pause",()=>{
   // 'ended' event. That is a track boundary, not a listener stop.
   if(!switching&&(!audio.ended||!active)){
     active=false;setPlaybackState("paused");
+    trace("pause",{mode,track_id:tracks[index]?.id});
   }
   updateListen();
 });
@@ -805,29 +823,33 @@ function closeToEnd(tolerance=.25){
   return Number.isFinite(duration)&&duration>0&&Number.isFinite(position)&&
     position>=Math.max(0,duration-tolerance);
 }
-function advanceNaturalEnd(){
+function advanceNaturalEnd(reason="unknown"){
   if(!tracks.length||switching||!active)return;
   // Ignore a queued late 'ended' event from a previous source after the new
   // MP3 has already reset its currentTime to zero.
   if(!remoteStream&&!audio.ended&&!closeToEnd(.85))return;
   if(lastBoundaryToken===seekToken)return;
   lastBoundaryToken=seekToken;
+  trace("boundary",{mode,track_id:tracks[index]?.id,kind:tracks[index]?.kind,
+    position_s:Number(audio.currentTime)||0,cycle:Math.max(0,cycle),reason});
   if(mode==="shuffle")nextShuffle(true);
   else if(mode==="album")nextAlbum(true);
   else if(remoteStream){setMessage("Stream ended. Tune in again to reconnect.");pause();}
   else nextClock(true);
 }
-audio.addEventListener("ended",advanceNaturalEnd);
+audio.addEventListener("ended",()=>advanceNaturalEnd("native_ended"));
 function watchNaturalEnd(){
   if(!active||switching||remoteStream||!tracks.length)return;
   if(!closeToEnd(.85))return;
   // A paused-but-ended track, or a playback head stalled at the final
   // fraction of the song, should not leave the station stuck indefinitely.
-  if(audio.ended||Date.now()-lastPlaybackProgressAt>1700)advanceNaturalEnd();
+  if(audio.ended||Date.now()-lastPlaybackProgressAt>1700)advanceNaturalEnd("watchdog");
 }
 audio.addEventListener("error",()=>{
   if(!tracks.length&&!remoteStream)return;
   failureCount++;
+  trace("audio_error",{mode,track_id:tracks[index]?.id,
+    audio_code:Number(audio.error?.code)||0,reason:"source_error"});
   if(failureCount>2){pause();setMessage("The station lost the audio feed. Check your connection and tune in again.");return}
   setMessage("Couldn't load that recording. Trying to continue…");
   if(mode==="shuffle")nextShuffle(true);
@@ -853,9 +875,11 @@ audio.addEventListener("timeupdate",()=>{
   // can be blocked cross-origin. Do NOT depend on prepared.blobUrl for the
   // near-end handoff; the final 0.25s is safer than an indefinitely silent
   // receiver on phones that suspend the 'ended' event.
-  if(!remoteStream&&closeToEnd(.25))advanceNaturalEnd();
+  if(!remoteStream&&closeToEnd(.25))advanceNaturalEnd("near_end");
   // Never mid-song wall-clock resync; CATCH UP remains listener-controlled.
 });
+audio.addEventListener("stalled",()=>trace("stalled",{mode,track_id:tracks[index]?.id}));
+audio.addEventListener("waiting",()=>trace("waiting",{mode,track_id:tracks[index]?.id}));
 if("mediaSession" in navigator){
   try{
     navigator.mediaSession.setActionHandler("play",()=>{if(audio.paused)startRadio()});
@@ -960,10 +984,13 @@ async function boot(){
           "STATION IDs EVERY "+stationSettings.bumper_every+" SONGS."):"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
     mode="clock";updateModeUI();startClock(false);
+    trace("boot_ready",{mode,clock_calibrated:clockCalibrated,
+      song_count:songCount,bumper_count:stationIds});
     beginHostedMetadata();
     setMessage("Press TUNE IN. No autoplay; you're in control.");
     status.textContent=cloudCatalogHealthy?"✳ THE DIAL IS READY":"✳ LIMITED CATALOG — RETRY";
   }catch(err){
+    trace("boot_error",{mode});
     title.textContent="THE RADIO NEEDS A SIGNAL";
     $("playlist-note").textContent="Couldn't load the rotation right now. Try again online.";
     status.textContent="NO SIGNAL";
