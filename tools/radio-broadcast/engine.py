@@ -157,9 +157,13 @@ def cache_track(item,cache):
     name=hashlib.sha256(url.encode()).hexdigest()+".mp3"
     final=cache/name
     if final.is_file() and final.stat().st_size>1000:return final
-    with tempfile.NamedTemporaryFile(dir=cache,delete=False,suffix=".part") as temp:
-        tmp=Path(temp.name)
-        try:
+    tmp=None
+    try:
+        # Close the temporary MP3 *before* renaming it. On Windows,
+        # NamedTemporaryFile holds an exclusive handle, so os.replace and
+        # unlink raise WinError 32 while this with-block is still open.
+        with tempfile.NamedTemporaryFile(dir=cache,delete=False,suffix=".part") as temp:
+            tmp=Path(temp.name)
             with urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":"HUMKIN-BroadcastKit/0.1"}),timeout=25) as response:
                 total=0
                 while True:
@@ -170,9 +174,12 @@ def cache_track(item,cache):
                     temp.write(chunk)
             if total<1000:raise ValueError("Empty audio download")
             temp.flush();os.fsync(temp.fileno())
-            tmp.replace(final)
-        finally:
-            if tmp.exists():tmp.unlink()
+        # This is intentionally OUTSIDE the with: Windows has closed the handle.
+        tmp.replace(final)
+    finally:
+        if tmp is not None:
+            try:tmp.unlink(missing_ok=True)
+            except OSError:pass  # Never obscure the original download/rename error.
     return final
 
 def decode(path):
