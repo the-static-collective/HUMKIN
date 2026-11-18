@@ -346,6 +346,8 @@ def streaming(catalog,args):
             tail_size=overlap_bytes(current,ahead,args.crossfade)
             try:
                 tail=pump_with_tail(decode_current,write,tail_size)
+                # Completed decoders must not accumulate in long-running radio.
+                prepared_decoders.discard(decode_current)
                 # The opening PCM should already be available: no decoder
                 # startup pause between the tail and this crossfade.
                 head_process,head=ahead_future.result(timeout=45)
