@@ -147,7 +147,8 @@ Deno.serve(async(request:Request)=>{
   if(lookupError||!eligible(row,user.id))return fail("DRAFT_NOT_FOUND",404,origin);
   try{
     const verified=await verifyPrivate(privateAws,row,true);
-    if(!verified.ok||!verified.bytes)return fail(verified.error||"R2_VERIFY_FAILED",409,origin);
+    if(!verified.ok)return fail(verified.error,409,origin);
+    if(!verified.bytes)return fail("R2_VERIFY_FAILED",409,origin);
     if(action==="finalize"){
       const {data,error}=await db.from("humkin_radio_tracks")
         .update({r2_upload_verified_at:new Date().toISOString()})
@@ -173,7 +174,7 @@ Deno.serve(async(request:Request)=>{
     const {data:committed,error:commitError}=await db.from("humkin_radio_tracks")
       .update({storage_provider:"r2",r2_object_key:key,
         r2_synced_at:new Date().toISOString(),r2_staging_key:null,
-        published_at:new Date().toISOString(),enabled:row.kind!=="bumper"})
+        published_at:new Date().toISOString(),enabled:true})
       .eq("id",id).eq("uploaded_by",user.id).eq("storage_provider","r2_private")
       .is("published_at",null).select("id").single();
     if(commitError||!committed)return fail("R2_CATALOG_PUBLICATION_FAILED",503,origin);
