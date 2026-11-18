@@ -1,12 +1,13 @@
 """HUMKIN guest feature: two seasonal songs, interview is not music rotation."""
 import json
 import pathlib
+import random
 import sys
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools" / "radio-broadcast"))
-from scheduler_v2 import featured_extra
+from scheduler_v2 import featured_extra, with_bumpers
 
 FEATURE = next(f for f in json.loads((ROOT / "fm" / "guest-features.json").read_text())["features"]
                if f["id"] == "eno-efia-unshackled-dreams")
@@ -48,6 +49,24 @@ class GuestSeasonals(unittest.TestCase):
         extras = featured_extra(self.song_ids, self.tracks, r)
         self.assertEqual(extras.count("crate-0"), 2)
         self.assertEqual(extras.count("crate-2"), 2)
+
+    def test_long_interview_stays_out_of_automatic_bumper_rotation(self):
+        # Even if a later operator increases the duration threshold, this
+        # explicitly feature-only recording may not be randomly inserted.
+        interview = FEATURE["tracks"][1]
+        config = json.loads((ROOT / "fm" / "rotation.json").read_text())
+        self.assertEqual(config["feature_only_spoken_sha256s"], [interview["sha256"]])
+        tracks = {
+            "song": {"id": "song", "kind": "song", "duration": 180.0},
+            "interview": {"id": "interview", "kind": "bumper",
+                          "sha256": interview["sha256"], "duration": 262.531},
+            "short": {"id": "short", "kind": "bumper", "duration": 12.0},
+        }
+        policy = {"maximum_break_seconds": 500,
+                  "feature_only_spoken_sha256s": config["feature_only_spoken_sha256s"]}
+        sequence = with_bumpers(["song"]*12, tracks, {"bumper_every": 1}, policy, random.Random(42))
+        self.assertNotIn("interview", sequence)
+        self.assertIn("short", sequence)
 
     def test_interview_wrongly_tagged_song_still_has_no_seasonal_bonus(self):
         tracks = dict(self.tracks)
