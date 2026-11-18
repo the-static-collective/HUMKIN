@@ -4,6 +4,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {runInNewContext} from "node:vm";
 const read=f=>readFileSync(f,"utf8");
+const r2CatalogJs=read("fm/r2-catalog.js");
 const html=read("fm/index.html"),css=read("fm/radio.css"),js=read("fm/radio.js"),schedulerJs=read("fm/scheduler.js"),autodjJs=read("fm/autodj.js"),artJs=read("fm/art-library.js"),memoryJs=read("fm/rotation-memory.js"),fairJs=read("fm/fair-rotation.js"),warmJs=read("fm/warm-signal.js"),clockJs=read("fm/clock-sync.js");
 for(const p of ["fm/index.html","fm/radio.css","fm/radio.js","fm/rotation.json","fm/manifest.webmanifest","docs/RADIO-OPERATIONS.md"])assert(existsSync(p),"Missing radio file "+p);
 execFileSync(process.execPath,["--check","fm/radio.js"]);
@@ -56,11 +57,11 @@ assert(read("index.html").includes('href="./fm/"'),"Homepage must link the stand
 assert(read("sitemap.xml").includes("https://humkin.abundent.org/fm/"),"Sitemap entry missing");
 
 class E {
- constructor(name){this.name=name;this.disabled=false;this.hidden=false;this.paused=true;this.readyState=1;this.duration=180;this.currentTime=0;this.src="";this.textContent="";this.alt="";this.listeners={};this.attributes={};this.style={};this.classList={toggle:(k,v)=>{this.attributes["class-"+k]=v}};this.playCount=0;this.playbackRate=1}
+ constructor(name){this.name=name;this.disabled=false;this.hidden=false;this.paused=true;this.ended=false;this.readyState=1;this.duration=180;this.currentTime=0;this.src="";this.textContent="";this.alt="";this.listeners={};this.attributes={};this.style={};this.classList={toggle:(k,v)=>{this.attributes["class-"+k]=v}};this.playCount=0;this.playbackRate=1}
  get src(){return this._src}
- set src(src){this._src=src;this.currentTime=0}
+ set src(src){this._src=src;this.currentTime=0;this.ended=false}
  addEventListener(t,fn){(this.listeners[t]??=[]).push(fn)}
- emit(t){for(const fn of this.listeners[t]||[])fn({type:t,target:this})}
+ emit(t){if(t==="ended"){this.ended=true;this.currentTime=this.duration;this.paused=true}for(const fn of this.listeners[t]||[])fn({type:t,target:this})}
  setAttribute(k,v){this.attributes[k]=v}
  pause(){const was=this.paused;this.paused=true;if(!was)this.emit("pause")}
  load(){this.currentTime=0}
@@ -69,7 +70,7 @@ class E {
 }
 async function flush(){await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve))}
 function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[],serverAheadMs=null,effectClass=null,airCarts=null){
- const elems=new Map(),listeners={},copies=[],downloads=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
+ const elems=new Map(),listeners={},copies=[],downloads=[],intervals=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
  const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn},
  createElement:()=>({href:"",download:"",click(){downloads.push({href:this.href,name:this.download})},remove(){}}),
@@ -110,17 +111,18 @@ function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],
  URLMock.created=0;URLMock.revoked=[];URLMock.blobs=new Map();
  const location=new URL(document.baseURI);
  const context={window,document,navigator,location,URL:URLMock,Blob,Date:Clock,Math,fetch,AbortController,
-   setTimeout:()=>{},clearTimeout:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}};
+   setTimeout:()=>{},clearTimeout:()=>{},setInterval:(fn)=>{intervals.push(fn);return intervals.length},clearInterval:()=>{},MediaMetadata:class{constructor(x){Object.assign(this,x)}}};
  runInNewContext(schedulerJs,context);
  runInNewContext(autodjJs,context);
  runInNewContext(artJs,context);
  runInNewContext(memoryJs,context);
  runInNewContext(fairJs,context);
+  runInNewContext(r2CatalogJs,context);
  runInNewContext(warmJs,context);
  if(effectClass)window.HUMKIN_WARM_SIGNAL={WarmSignal:effectClass};
  runInNewContext(clockJs,context);
  runInNewContext(js,context);
- return {$,time,copies,listeners,session,window,document,requests,URLMock,downloads};
+ return {$,time,copies,listeners,session,window,document,requests,URLMock,downloads,intervals};
 }
 const newTune=fixture();await flush();
 const uuid="10293847-1029-4837-9029-abcdefabcdef";
@@ -263,6 +265,63 @@ assert.equal(delayed.$("air").currentTime,27,
 delayed.$("catch-up").click();await flush();
 assert.notEqual(delayed.$("air").currentTime,27,
   "Explicit CATCH UP remains available for listener-controlled re-sync");
+
+// R2 public MP3s can be playable by the <audio> element while cross-origin
+// JavaScript prefetch is CORS-blocked. A near-end update must still advance.
+const r2CloudUUID="eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const r2Digest="a".repeat(64);
+const cloudR2Fixture=fixture(rotation,[{
+  id:r2CloudUUID,title:"Migrated R2 Record",artist:"HUMKIN",
+  album:"HUMKIN RADIO",kind:"song",enabled:true,duration_seconds:180,
+  storage_provider:"r2",storage_path:r2CloudUUID+"/"+r2Digest+".mp3",
+  r2_object_key:"tracks/"+r2CloudUUID+"/"+r2Digest+".mp3"
+}]);await flush();
+cloudR2Fixture.$("mode-shuffle").click();cloudR2Fixture.$("listen").click();await flush();
+let foundR2=false;
+for(let i=0;i<80;i++){
+  if(cloudR2Fixture.$("air").src.startsWith("https://media.abundent.org/tracks/")){foundR2=true;break}
+  cloudR2Fixture.$("next-song").click();await flush();
+}
+assert(foundR2,"Migrated R2 source must resolve as a Cloudflare public MP3");
+const directR2=cloudR2Fixture.$("air");
+const beforeR2=directR2.src;
+directR2.duration=180;directR2.currentTime=179.91;directR2.emit("timeupdate");await flush();
+assert.notEqual(directR2.src,beforeR2,
+  "Website should advance from R2 even when cross-origin Blob prefetch is denied");
+assert.equal(directR2.paused,false,"R2 handoff must keep music playing");
+const duplicateSource=directR2.src;
+directR2.currentTime=0;directR2.ended=false;directR2.emit("timeupdate");await flush();
+assert.equal(directR2.src,duplicateSource,"New song must not be skipped by a stale end update");
+
+// On a sleeping mobile browser, 'ended' may not dispatch at all. When the
+// playhead stalls in the final fraction, a foreground/timer check recovers.
+const suspended=fixture();await flush();
+suspended.$("mode-shuffle").click();suspended.$("listen").click();await flush();
+const stalledAudio=suspended.$("air"),stalledSrc=stalledAudio.src;
+stalledAudio.duration=180;stalledAudio.currentTime=179.55;
+stalledAudio.emit("timeupdate");await flush();
+assert.equal(stalledAudio.src,stalledSrc,"Don't cut off a recording 0.45s early");
+suspended.time.now+=2200;
+for(const callback of suspended.intervals)callback();
+await flush();
+assert.notEqual(stalledAudio.src,stalledSrc,
+  "A missed ended event must not strand the listener at the end of the song");
+assert.equal(stalledAudio.paused,false,"Stall recovery must continue playing");
+
+// A natural browser 'pause' immediately before 'ended' is not user intent.
+const naturalPause=fixture();await flush();
+naturalPause.$("listen").click();await flush();
+const endingAudio=naturalPause.$("air");
+endingAudio.currentTime=endingAudio.duration;
+endingAudio.ended=true;endingAudio.paused=true;endingAudio.emit("pause");
+const endingSource=endingAudio.src;
+endingAudio.emit("ended");await flush();
+assert.notEqual(endingAudio.src,endingSource,
+  "Natural pause then ended should advance the shared-clock radio");
+assert.equal(endingAudio.paused,false,
+  "A browser's natural end pause must not stop the radio");
+// The native player still may suspend JS completely during screen lock;
+// the site's M3U export provides a durable background alternative.
 
 // A second predownloaded audio file can switch from local Blob without pausing
 // or calling load() during a normal background event. This tests the JS if its
