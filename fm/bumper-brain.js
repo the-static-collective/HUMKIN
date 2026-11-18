@@ -165,7 +165,81 @@ function plan(songs,bumpers,every,tracks,policy={}){
  return {sequence,breaks,held,eligible:eligible.length};
 }
 
-const api=Object.freeze({normalize,classify,cadenceBreaks,plan});
+// Bumper Bag v2: permute the *same chosen recordings* for each shared-clock
+// rotation. Re-selecting arbitrary cart durations would make cycles longer or
+// shorter, breaking the station-wide epoch calculation. Instead each length
+// lane keeps its exact cart multiset and its short/medium/long break slots,
+// while the order changes as the numbered rotation advances.
+//
+// Permuting one complete shuffled-bag at a time preserves the guarantee that
+// no eligible cart repeats before its peers have had a turn within that bag.
+// The seed is a deterministic shared-clock cycle number; Road Shuffle uses
+// its own random rotation seed. A preview with seed=0 stays canonical.
+function remix(planResult,bumperIndices,tracks,policy={},seed=0){
+ if(!planResult||!Array.isArray(planResult.breaks)||
+    !Array.isArray(planResult.sequence)||!Array.isArray(bumperIndices)||
+    !Array.isArray(tracks)||!Number.isSafeInteger(seed)||seed===0||
+    planResult.breaks.length<2)return planResult;
+ const breaks=planResult.breaks.map(entry=>({...entry}));
+ const fields=["index","id","title","seconds","role","family","rare"];
+ for(const lane of ["short","medium","long"]){
+  const bagSize=bumperIndices.filter(i=>Number.isInteger(i)&&tracks[i]&&
+    tracks[i].kind==="bumper").filter(i=>{
+      const c=classify(tracks[i],policy);
+      return !c.hold&&c.lane===lane;
+    }).length;
+  if(bagSize<2)continue;
+  const positions=breaks.map((b,i)=>b.lane===lane?i:-1).filter(i=>i>=0);
+  for(let start=0;start<positions.length;start+=bagSize){
+   const slots=positions.slice(start,start+bagSize);
+   if(slots.length<2)continue;
+   const before=slots.map(i=>planResult.breaks[i]);
+   const shuffled=before.slice();
+   let state=hash("HUMKIN-BUMPER-CYCLE:"+seed+":"+lane+":"+start)||1;
+   const random=()=>{
+    state=(state+0x6d2b79f5)>>>0;
+    let x=state;x=Math.imul(x^(x>>>15),x|1);
+    x^=x+Math.imul(x^(x>>>7),x|61);
+    return ((x^(x>>>14))>>>0)/4294967296;
+   };
+   for(let i=shuffled.length-1;i>0;i--){
+    const j=Math.floor(random()*(i+1));
+    [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+   }
+   if(shuffled.every((entry,i)=>entry.id===before[i].id))
+    shuffled.push(shuffled.shift()); // Nontrivial rearrangement for every full bag.
+   if(start>0&&shuffled[0].id===breaks[positions[start-1]].id){
+    const alternative=shuffled.findIndex(x=>x.id!==shuffled[0].id);
+    if(alternative>0)[shuffled[0],shuffled[alternative]]=
+      [shuffled[alternative],shuffled[0]];
+   }
+   for(let j=0;j<slots.length;j++)
+    for(const field of fields)breaks[slots[j]][field]=shuffled[j][field];
+  }
+ }
+ // Recalculate displayed estimates after the variable-length carts trade
+ // places. Total cycle duration remains EXACTLY the same, in milliseconds.
+ const songCount=planResult.sequence.length-planResult.breaks.length;
+ const totalSongs=planResult.sequence.reduce((sum,i)=>
+   sum+(tracks[i]?.kind==="bumper"?0:Math.max(0,Number(tracks[i]?.duration||0))),0);
+ const mean=songCount>0?totalSongs/songCount:0;
+ let bumperSeconds=0;
+ for(const b of breaks){
+  bumperSeconds+=b.seconds;
+  b.estimatedMinute=Math.round((b.afterSong*mean+bumperSeconds)/60*10)/10;
+ }
+ const sequence=planResult.sequence.slice();
+ let offset=0;
+ for(let i=0;i<sequence.length&&offset<breaks.length;i++){
+  if(sequence[i]===planResult.breaks[offset].index){
+   sequence[i]=breaks[offset].index;
+   offset++;
+  }
+ }
+ if(offset!==breaks.length)return planResult; // Fail safe, never break an on-air cycle.
+ return {...planResult,sequence,breaks};
+}
+const api=Object.freeze({normalize,classify,cadenceBreaks,plan,remix});
 if(typeof module!=="undefined"&&module.exports)module.exports=api;
 root.HUMKIN_BUMPER_BRAIN=api;
 })(typeof window!=="undefined"?window:globalThis);
