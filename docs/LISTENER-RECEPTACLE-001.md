@@ -44,6 +44,20 @@ node tools/receptacle/export-jubilee.mjs \
 
 Do **not** commit private registry signing keys, provider access tokens, bank information, or actual participant records. Review and explicitly approve the manifest's *public* URLs before replacing `support-doors.json` for a future merge. A proper public release should check provider terms, fee/minimum behavior, and identities manually.
 
+## Owner-supplied candidate handles — HOLD
+
+On November 18, 2026 the owner supplied three handles for a HUMKIN contribution test.
+They are recorded as **unverified candidates** in
+`tools/receptacle/owner-supplied-candidates.json`:
+
+- Cash App: `$LuVstudio` → syntactically valid `https://cash.app/$LuVstudio`.
+- Venmo: `@The_Real_Lucas_V` → syntactically valid `https://venmo.com/u/The_Real_Lucas_V`.
+- PayPal: `@thestaticcollective` → **no PayPal.Me link inferred**. The PayPal.Me link must be explicitly obtained from PayPal account settings and reviewed.
+
+Public website `support-doors.json` remains empty and in `preview` mode; this file is a staging candidate inventory, not a live provider configuration or signed registry. The candidate addresses are intentionally human-reviewable and **not proof of ownership, successful settlement or business-account eligibility**.
+
+Cash App documents a **$1 minimum** for ordinary send/request payments (Nov 2026). Consequently, Cash App is hidden from the live-link panel when 1¢, 5¢ or 25¢ is selected. Venmo and PayPal minimums/fees have not been independently verified; the UI must not promise those micro amounts are payable. Venmo's business-use rules must be checked before using a personal profile to receive payments related to music.
+
 ## Testing
 
 ```sh
