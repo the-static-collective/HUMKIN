@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/radio-broadcast/**'
       - 'tests/station-one-v2.test.py'
+      - 'tests/station-lab.test.py'
       - 'tests/radio-broadcast.test.py'
       - '.github/workflows/station-one-v2.yml'
   push:
@@ -11,6 +12,7 @@ on:
     paths:
       - 'tools/radio-broadcast/**'
       - 'tests/station-one-v2.test.py'
+      - 'tests/station-lab.test.py'
       - '.github/workflows/station-one-v2.yml'
   workflow_dispatch:
 permissions:
@@ -36,3 +38,5 @@ jobs:
         run: python tests/station-one-v2.test.py
       - name: Original continuous-source acceptance
         run: python tests/radio-broadcast.test.py
+      - name: Station Desk 0.3 programming lab and private diagnostics
+        run: python tests/station-lab.test.py

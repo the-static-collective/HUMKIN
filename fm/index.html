@@ -23,6 +23,7 @@
 <script defer src="./hosted-nowplaying.js"></script>
 <script defer src="./chart-rotation.js"></script>
 <script defer src="./r2-catalog.js"></script>
+<script defer src="./black-box.js"></script>
 <script defer src="./radio.js"></script>
 <script defer src="./archive/ledger.js"></script>
 <script defer src="./orchard/model.js"></script>
@@ -66,6 +67,7 @@
       <button id="next-song" type="button" hidden disabled>NEXT SONG →</button>
       <button id="share-station" type="button">↗ SHARE STATION</button>
       <button id="phone-playlist" type="button" disabled>⇩ PHONE PLAYER PLAYLIST</button>
+      <button id="report-signal" type="button" title="Download a local, privacy-filtered playback report. Nothing is sent.">? SOMETHING SOUNDED WRONG</button>
     </div>
     <audio id="air" preload="auto" controls aria-label="HUMKIN RADIO audio playback"></audio>
     <div class="status-row"><span id="playback-message" role="status" aria-live="polite">Choose TUNE IN to begin.</span><span id="counter" aria-label="Current rotation progress">✳</span></div>
