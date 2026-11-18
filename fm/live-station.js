@@ -16,6 +16,7 @@
   const LIVE = BASE + "/hls/live.m3u8";
   const BACKUP = BASE + "/live.mp3";
   let mode = "idle", player = null, sequence = 0, failures = 0, checking = false;
+  let wantsAudio = false;
   function show(message) { status.textContent = message; }
   function reset() {
     if (player) { player.destroy(); player = null; }
@@ -27,6 +28,7 @@
     if (oldAudio && !oldAudio.paused) oldAudio.pause();
   }
   function playRequested() {
+    wantsAudio = true;
     pauseOldDial();
     Promise.resolve(liveAudio.play()).catch(() => {
       show("Signal selected. Press Play on the audio control to begin.");
@@ -39,8 +41,11 @@
     retry.hidden = value !== "backup";
   }
   function leaveForOldDial() {
-    if (mode === "idle") return;
+    // Also invalidate an in-flight availability check before the live source
+    // has been selected. Otherwise a late fetch could steal classic playback.
     ++sequence;
+    wantsAudio = false;
+    if (mode === "idle") return;
     reset();
     setMode("idle");
     show("Built-in HUMKIN dial selected. Live and Long Wave are still available.");
@@ -52,6 +57,7 @@
     liveAudio.src = BACKUP;
     liveAudio.load();
     show(reason + " Long Wave is a different, unsynchronized personal rotation.");
+    wantsAudio = Boolean(resume);
     if (resume) playRequested();
   }
   async function isOnAir() {
@@ -71,6 +77,7 @@
     }
   }
   async function tuneLive() {
+    wantsAudio = true;
     const request = ++sequence;
     show("Checking Station One's transmitter…");
     const online = await isOnAir();
@@ -90,7 +97,7 @@
       player.attachMedia(liveAudio);
       player.on(window.Hls.Events.ERROR, (_, event) => {
         if (!event.fatal || mode !== "live") return;
-        useBackup("Shared live playback was interrupted.", !liveAudio.paused);
+        useBackup("Shared live playback was interrupted.", wantsAudio);
       });
     } else {
       useBackup("This browser cannot decode HLS.", true);
@@ -101,6 +108,7 @@
   }
   listen.addEventListener("click", () => {
     if (mode === "live" && !liveAudio.paused) {
+      wantsAudio = false;
       liveAudio.pause();
       show("Live radio paused. Tap LISTEN LIVE to rejoin.");
     } else {
@@ -109,7 +117,11 @@
   });
   backupButton.addEventListener("click", () => useBackup("Long Wave selected.", true));
   retry.addEventListener("click", () => tuneLive());
-  liveAudio.addEventListener("play", pauseOldDial);
+  liveAudio.addEventListener("play", () => { wantsAudio = true; pauseOldDial(); });
+  liveAudio.addEventListener("pause", () => {
+    // Ignore delayed pause events from a source switch after new playback began.
+    if (liveAudio.paused) wantsAudio = false;
+  });
   liveAudio.addEventListener("playing", () => {
     show(mode === "live"
       ? "ON AIR — One shared Station One program, from the Acer."
@@ -119,7 +131,7 @@
     if (mode !== "idle") show("Buffering " + (mode === "live" ? "live radio" : "Long Wave") + "…");
   });
   liveAudio.addEventListener("error", () => {
-    if (mode === "live") useBackup("The live player reported an audio error.", !liveAudio.paused);
+    if (mode === "live") useBackup("The live player reported an audio error.", wantsAudio);
     else if (mode === "backup") show("Long Wave playback failed. Try again or return to the classic dial.");
   });
   // The existing station controls remain usable. A selection on that dial
@@ -138,7 +150,7 @@
       if (request !== sequence || mode !== "live") return;
       failures = online ? 0 : failures + 1;
       if (failures >= 2) {
-        useBackup("Station One stopped updating.", !liveAudio.paused);
+        useBackup("Station One stopped updating.", wantsAudio);
       }
     } finally {
       checking = false;
