@@ -54,7 +54,7 @@ class HlsPublisherTest(unittest.TestCase):
                 (path / ("segment-%012d.ts" % n)).write_bytes(b"\x47" + b"x" * 187)
             (path / "index.m3u8").write_text(playlist(1700000000), encoding="utf-8")
             client = FakeS3()
-            bridge_instance = bridge.Publisher("humkin-radio-media", path, client, session=SESSION)
+            bridge_instance = bridge.Publisher("humkin-radio-live", path, client, session=SESSION)
             self.assertTrue(bridge_instance.publish_once())
             self.assertEqual(len(client.calls), 5)
             self.assertEqual(client.calls[-1], ("put", bridge.PLAYLIST_KEY))
@@ -67,7 +67,7 @@ class HlsPublisherTest(unittest.TestCase):
             path = Path(temporary)
             (path / "index.m3u8").write_text(playlist(1700000000), encoding="utf-8")
             client = FakeS3()
-            publisher = bridge.Publisher("humkin-radio-media", path, client, session=SESSION)
+            publisher = bridge.Publisher("humkin-radio-live", path, client, session=SESSION)
             self.assertFalse(publisher.publish_once())
             self.assertNotIn(bridge.PLAYLIST_KEY, client.objects)
 
@@ -76,7 +76,7 @@ class HlsPublisherTest(unittest.TestCase):
             path = Path(temporary)
             client = FakeS3()
             current = [0.0]
-            publisher = bridge.Publisher("humkin-radio-media", path, client,
+            publisher = bridge.Publisher("humkin-radio-live", path, client,
                                          session=SESSION, now=lambda: current[0])
             for n in range(1700000000, 1700000006):
                 (path / ("segment-%012d.ts" % n)).write_bytes(b"\x47" + b"x" * 187)
