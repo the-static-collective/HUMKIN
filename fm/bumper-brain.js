@@ -13,8 +13,9 @@ function classify(track,policy={}){
  const raw=policy.profiles?.[id]||{};
  const title=normalize(track?.title);
  const seconds=Number(track?.duration??track?.duration_seconds??0);
- let family=raw.family||title.replace(/\b(opener|trains|short|long|radio|edit|remastered)\b/g,"")
-   .replace(/\s+/g," ").trim()||id;
+ // Identity is unique unless two files are proven different-length edits
+ // of the SAME master. Voice, series, bells and topic are not an edit group.
+ const family=id; // User-editable ATTRACT/REPEL groups are applied after shuffled bags.
  // A program opening is a scheduled item, not an incidental station ID.
  let role=raw.role||(
    /\b(opener|opening|intro for)\b/.test(title)?"show_opener":
@@ -24,20 +25,17 @@ function classify(track,policy={}){
    /\b(farm|news|manager|art is|schfwifty)\b/.test(title)?"character":
    seconds<=28?"station_id":"comedy"
  );
- const safetyHold=/\b(top of the hour|bottom of the hour|requests we re taking|we re taking requests)\b/.test(title);
  const hardMax=Number(policy.maximum_break_seconds)||180;
  const shortMax=Number(policy.short_max_seconds)||19;
  const mediumMax=Number(policy.medium_max_seconds)||60;
  const lane=seconds<=shortMax?"short":seconds<mediumMax?"medium":"long";
- // Length alone is no longer an editorial hold: longer approved features
- // now have their own appropriately spaced airtime. Explicit owner holds,
- // scheduled openers and misleading time/request claims remain held.
- const hold=raw.hold===true||role==="show_opener"||
-   seconds>hardMax||seconds<=0||safetyHold;
+ // Enabled/published is the eligibility decision. Only an actual owner
+ // hold or a technical duration error can exclude an otherwise aired cart.
+ const hold=raw.hold===true||policy.excluded_ids?.includes(id)||seconds>hardMax||seconds<=0;
  return {id,title:track?.title||id,seconds,role,family,lane,hold,
-  reason:raw.hold?"OWNER PROFILE HOLD":role==="show_opener"?"SHOW OPENER — scheduled only":
+  reason:raw.hold===true?"EXPLICIT PROFILE HOLD":
    seconds>hardMax?"OVERSIZE — requires a show slot":
-   safetyHold?"TIME/REQUEST CLAIM — requires manual program slot":""};
+   seconds<=0?"INVALID DURATION":""};
 }
 function cadenceBreaks(songCount,every,policy={}){
  const frequency=Number(every);
@@ -62,8 +60,9 @@ function hash(text){
 }
 // Each distinct, published/enabled and routine-eligible bumper gets one
 // turn per shuffled bag, regardless of FIELD / PREVIEW / INBOX filing label,
-// length, fictional voice, or editorial role. Only explicit safety/program
-// holds affect eligibility. The plan remains deterministic across receivers.
+// length, fictional voice, or editorial role. Only an explicitly configured
+// owner hold or invalid technical duration affects eligibility.
+// The plan remains deterministic across receivers.
 function bagOf(eligible,round,lastId){
  const bag=eligible.slice().sort((a,b)=>a.id.localeCompare(b.id));
  let state=hash("HUMKIN-BUMPER-BAG-"+round)||1;
@@ -217,6 +216,17 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
     for(const field of fields)breaks[slots[j]][field]=shuffled[j][field];
   }
  }
+ // Explicit ATTRACT and REPEL relationships are programmed by the owner.
+ // Neither title, voice nor subject automatically adds a grouping rule.
+ const familyBagSizes={};
+ for(const lane of ["short","medium","long"]){
+  familyBagSizes[lane]=bumperIndices.filter(i=>Number.isInteger(i)&&tracks[i]&&
+    tracks[i].kind==="bumper").filter(i=>{
+      const c=classify(tracks[i],policy);
+      return !c.hold&&c.lane===lane;
+    }).length;
+ }
+ root.HUMKIN_BUMPER_RELATIONS?.arrange(breaks,policy.groups,familyBagSizes);
  // Recalculate displayed estimates after the variable-length carts trade
  // places. Total cycle duration remains EXACTLY the same, in milliseconds.
  const songCount=planResult.sequence.length-planResult.breaks.length;

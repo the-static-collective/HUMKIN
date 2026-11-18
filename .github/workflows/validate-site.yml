@@ -23,6 +23,10 @@ jobs:
       - run: python3 scripts/build_dj_pack.py
       - run: node tests/dj.test.mjs
       - run: node tests/radio.test.mjs
+      - run: node tests/bumper-brain.test.cjs
+      - run: node tests/bumper-relations.test.cjs
+      - run: node --check fm/manage/bumper-workbench.js
+      - run: node --check fm/bumper-relations.js
       - run: node tests/station-blackbox.test.cjs
       - run: node tests/radio-loader.test.mjs
       - run: node tests/radio-manager.test.mjs

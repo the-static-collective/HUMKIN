@@ -1,5 +1,6 @@
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
+const relations=require("../fm/bumper-relations.js");
 const brain=require("../fm/bumper-brain.js");
 const rotation=JSON.parse(fs.readFileSync("fm/rotation.json","utf8"));
 assert.equal(rotation.bumper_brain.schema,"humkin.radio.bumper-brain/v1");
@@ -27,19 +28,19 @@ const bumpers=entries.map((_,i)=>songs.length+i),tracks=[
 ];
 const profiles={
  ...policy.profiles,
- "crate-hard-short":{role:"musical",family:"hard-dark"},
- "crate-hard-long":{role:"musical",family:"hard-dark"},
- "crate-taken-teaser":{role:"musical",family:"taken-minute"},
- "crate-opener":{role:"show_opener",family:"taken-minute",hold:true},
- "crate-feature":{role:"feature",family:"taken-minute",hold:true}
+ "crate-hard-short":{role:"musical",edit_group:"hard-dark-master"},
+ "crate-hard-long":{role:"musical",edit_group:"hard-dark-master"},
+ "crate-taken-teaser":{role:"musical"},
+ "crate-opener":{role:"show_opener"},
+ "crate-feature":{role:"feature"}
 };
 const options={...policy,profiles};
 const result=brain.plan(songs,bumpers,4,tracks,options);
 assert(result.breaks.length>20,"Should have many scheduled breaks");
-assert(result.held.some(b=>b.title==="Taken Minute Opener"),"Show opener must be held");
-assert(result.held.some(b=>b.seconds>100),"Full-length music feature held");
-assert(result.held.some(b=>b.title==="Top of the Hour"),"Clock claims held");
-assert(!result.breaks.some(b=>/opener|top of the hour/i.test(b.title)));
+assert.equal(result.held.length,0,"Approved art should not be held for names, format or duration lane");
+for(const id of ["crate-opener","crate-feature","crate-news"])
+ assert.equal(brain.classify(tracks.find(x=>x.id===id),options).hold,false,
+   "Neither opener, full feature nor fictional clock headline is an automatic hold");
 assert(result.breaks.every(b=>b.seconds<=180),"No oversized, unapproved cart can air");
 assert(result.breaks.some(b=>b.lane==="long"),"Approved long features must get ~22-minute slots");
 assert(result.breaks.some(b=>b.lane==="medium"),"Medium segments must get ~11-minute slots");
@@ -85,9 +86,10 @@ const mixedTracks=tracks.map((t,i)=>t.kind==="bumper"?
 const mixed=brain.plan(songs,bumpers,4,mixedTracks,options);
 assert.deepEqual(mixed.breaks,result.breaks,
  "Storage shelf labels must not affect airtime, cadence or priority");
-const manuallyHeld=entries.find(e=>e.id==="crate-feature");
-assert(result.held.some(b=>b.id===manuallyHeld.id),
- "An expressly held long feature must stay held");
+const heldOptions={...options,profiles:{...profiles,
+ "crate-feature":{...profiles["crate-feature"],hold:true}}};
+assert(brain.plan(songs,bumpers,4,tracks,heldOptions).held.some(b=>b.id==="crate-feature"),
+ "Only an expressly configured future hold should exclude a valid recording");
 const altered=brain.plan([...songs].reverse(),bumpers,4,tracks,options);
 assert.deepEqual(altered.breaks,result.breaks,"Same-time recipients get an identical bumper order regardless of shuffled songs");
 assert.equal(altered.sequence.length,result.sequence.length,"Shared-clock cycle length stays stable");
@@ -163,4 +165,29 @@ assert(workflow.includes("workflow_dispatch:")&&workflow.includes("upload-artifa
  "Robot machine should generate review-only packs");
 assert(!workflow.includes("git push")&&!workflow.includes("service_role")&&!workflow.includes("curl -X POST"),
  "Scheduled action must never publish or send recordings to the air");
-console.log("Bumper Brain: "+result.breaks.length+" φ-short / ~11-minute medium / ~22-minute long breaks; "+result.held.length+" editorial holds; deterministic and tier-fair.");
+// All groups are EXPLICIT owner-authored; no title or profile silently groups art.
+const kin=[
+ {index:135,id:"cut-21s",title:"Hard Dark Train 21s",family:"cut-21s",lane:"medium",seconds:21},
+ {index:136,id:"other-voice",title:"Another Work",family:"other-voice",lane:"short",seconds:8},
+ {index:137,id:"cut-42s",title:"Hard Dark Train 42s",family:"cut-42s",lane:"medium",seconds:42},
+ {index:138,id:"other-recording",title:"A Third Work",family:"other-recording",lane:"medium",seconds:30}
+];
+relations.arrange(kin,[{id:"manual",kind:"repel",enabled:true,
+ track_ids:["cut-21s","cut-42s"]}],{short:1,medium:3,long:0},3);
+assert.equal(kin[2].id,"other-recording","Explicit REPEL exchanges an alternate cut");
+assert.equal(kin[3].id,"cut-42s","Displaced cut still gets its scheduled turn");
+assert.deepEqual(new Set(kin.map(x=>x.id)),new Set(["cut-21s","other-voice","cut-42s","other-recording"]));
+assert.deepEqual(kin.map(x=>x.lane),["medium","short","medium","medium"]);
+const ungrouped=brain.classify({id:"same-voice",title:"Robot Radio Days",duration:24},
+ {profiles:{"same-voice":{role:"musical",family:"robot-radio",edit_group:"robot-master"}}});
+assert.equal(ungrouped.family,"same-voice","Profiles never create groups");
+assert.equal(relations.validGroups([]).length,0,"No grouping without explicit action");
+assert(!Object.values(rotation.bumper_brain.profiles).some(x=>x.hold===true),
+ "No assistant-inferred editorial holds");
+assert(!Object.values(rotation.bumper_brain.profiles).some(x=>x.edit_group||x.family),
+ "No family group preset without owner choice");
+assert(html.includes("bumper-relations.js"),"Browser must load owner relation engine");
+assert(manager.includes("bumperGroups")&&manager.includes("editorialRules"),
+ "Owner groups and rules must be loaded into Station Manager");
+
+console.log("Bumper Brain: "+result.breaks.length+" φ-short / ~11-minute medium / ~22-minute long breaks; "+result.held.length+" explicit holds; deterministic, tier-fair, unrelated art independent.");

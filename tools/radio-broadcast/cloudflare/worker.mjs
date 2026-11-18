@@ -10,7 +10,7 @@
 const SUPABASE="https://kbhqacsdvjsstzyplqij.supabase.co";
 const PUBLIC_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
 const PUBLIC_MANIFEST="https://humkin.abundent.org/fm/r2-tracks.json";
-const PUBLIC_ROTATION="https://humkin.abundent.org/fm/rotation.json";
+const PUBLIC_SETTINGS=SUPABASE+"/rest/v1/humkin_radio_settings?select=bumper_groups,bumper_rules&id=eq.main&limit=1";
 const UUID="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const R2_KEY=new RegExp("^tracks/"+UUID+"/[0-9a-f]{64}\\.mp3$","i");
 const MAX_TRACKS=1500;
@@ -65,22 +65,18 @@ async function queryPublicCatalog(fetcher){
  }catch{/* Approved Supabase crate alone is sufficient to stay on air. */}
  const tracks=approvedCatalog(cloud,manual);
  if(!tracks.some(t=>t.kind==="song"))throw Error("No approved music in R2");
- // Honor the browser station's owner-reviewed editorial holds. Do not air
- // scheduled-only openers or outdated time/request announcements as ambient IDs.
+ // Active owner-defined grouping/rules are public read-only programming
+ // metadata. Failure to load optional settings does NOT invent restrictions.
+ tracks.bumper_groups=[];tracks.bumper_rules=[];
  try{
-   const policyResponse=await fetcher(PUBLIC_ROTATION,{cache:"no-store"});
-   if(policyResponse.ok){
-     const rotation=await policyResponse.json();
-     const profiles=rotation?.bumper_brain?.profiles||{};
-     for(const track of tracks){
-       if(track.kind!=="bumper")continue;
-       const profile=profiles[track.id]||{};
-       const normalized=track.title.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
-       track.hold=profile.hold===true||profile.role==="show_opener"||
-         /\b(opener|opening|intro for|top of the hour|bottom of the hour|requests we re taking)\b/.test(normalized);
-     }
+   const response=await fetcher(PUBLIC_SETTINGS,
+     {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
+   if(response.ok){
+     const rows=await response.json(),settings=Array.isArray(rows)?rows[0]||{}:{};
+     tracks.bumper_groups=Array.isArray(settings.bumper_groups)?settings.bumper_groups:[];
+     tracks.bumper_rules=Array.isArray(settings.bumper_rules)?settings.bumper_rules:[];
    }
- }catch{/* Fail closed for likely clock and announcement claims below. */}
+ }catch{/* No owner groups/rules means the unmodified original art plays. */}
  return tracks;
 }
 export async function getCatalog(fetcher=fetch,now=Date.now()){
@@ -106,13 +102,72 @@ function shuffled(items,random){
  for(let i=out.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}
  return out;
 }
+// Continuous stream evaluates opt-in scheduling restrictions on each break.
+function allowedBumper(item,rawRules,at=new Date()){
+ const rules=Array.isArray(rawRules)?rawRules:[];
+ for(const r of rules.slice(0,60)){
+  if(!r||r.enabled!==true||!Array.isArray(r.track_ids)||!r.track_ids.includes(item.id))continue;
+  if(r.kind==="hold")return false;
+  if(r.kind==="daypart"||r.kind==="date"){
+   const parts=Object.fromEntries(new Intl.DateTimeFormat("en-US",{
+    timeZone:"America/Chicago",weekday:"short",year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+   }).formatToParts(at).map(p=>[p.type,p.value]));
+   const minute=Number(parts.hour)*60+Number(parts.minute);
+   const day=["SUN","MON","TUE","WED","THU","FRI","SAT"].indexOf(String(parts.weekday).toUpperCase());
+   const date=parts.year+"-"+parts.month+"-"+parts.day;
+   if(r.kind==="daypart"&&(!Array.isArray(r.days)||!r.days.includes(day)||
+     !(minute>=r.start_minute&&minute<r.end_minute)))return false;
+   if(r.kind==="date"&&(!r.start_date||!r.end_date||date<r.start_date||date>r.end_date))return false;
+  }
+ }
+ return true;
+}
+function arrangeBumperGroups(order,rawGroups,carts){
+ const active=(Array.isArray(rawGroups)?rawGroups:[]).slice(0,60).filter(g=>
+  g&&g.enabled===true&&["attract","repel"].includes(g.kind)&&
+  Array.isArray(g.track_ids)&&new Set(g.track_ids).size>1);
+ if(!active.length)return order;
+ const bp=order.map((t,i)=>t.kind==="bumper"?{i,track:t,lane:t.duration<=19?"short":t.duration<60?"medium":"long"}:null).filter(Boolean);
+ const size={short:carts.filter(x=>x.duration<=19).length,
+  medium:carts.filter(x=>x.duration>19&&x.duration<60).length,
+  long:carts.filter(x=>x.duration>=60).length};
+ const counters={short:0,medium:0,long:0};
+ bp.forEach(x=>x.ordinal=counters[x.lane]++);
+ const sameBag=(a,b)=>a.lane===b.lane&&size[a.lane]>1&&
+  Math.floor(a.ordinal/size[a.lane])===Math.floor(b.ordinal/size[b.lane]);
+ const swap=(a,b)=>{const x=a.track;a.track=b.track;b.track=x};
+ for(let i=0;i<bp.length;i++){
+  for(const g of active){
+   if(g.kind!=="attract"||!g.track_ids.includes(bp[i].track.id))continue;
+   const source=bp.findIndex((x,j)=>j>i&&x.track.id!==bp[i].track.id&&g.track_ids.includes(x.track.id));
+   if(source<0||source-i<=3)continue;
+   const target=bp.findIndex((x,j)=>j>i&&j<=i+3&&sameBag(bp[source],x));
+   if(target>=0)swap(bp[source],bp[target]);
+  }
+ }
+ for(let i=1;i<bp.length;i++){
+  const recent=bp.slice(Math.max(0,i-3),i).map(x=>x.track.id);
+  const conflicts=active.some(g=>g.kind==="repel"&&g.track_ids.includes(bp[i].track.id)&&
+   recent.some(id=>g.track_ids.includes(id)));
+  if(!conflicts)continue;
+  for(let j=i+1;j<bp.length;j++){
+   if(!sameBag(bp[i],bp[j]))continue;
+   if(active.some(g=>g.kind==="repel"&&g.track_ids.includes(bp[j].track.id)&&
+      recent.some(id=>g.track_ids.includes(id))))continue;
+   swap(bp[i],bp[j]);break;
+  }
+ }
+ const adjusted=order.slice();for(const x of bp)adjusted[x.i]=x.track;
+ return adjusted;
+}
 /** A per-listener continuous radio rotation. No clock-sync promises. */
 export function program(tracks,seed){
  const random=prng(seed);
  const songs=tracks.filter(t=>t.kind==="song");
- const carts=tracks.filter(t=>t.kind==="bumper"&&!t.hold&&t.duration<=180&&
-   !/\b(opener|opening|intro for|top of the hour|bottom of the hour|requests we re taking)\b/
-     .test(t.title.toLowerCase().replace(/[^a-z0-9]+/g," ").trim()));
+ const carts=tracks.filter(t=>t.kind==="bumper"&&t.duration<=180&&
+   !(Array.isArray(tracks.bumper_rules)&&tracks.bumper_rules.some(r=>
+     r?.enabled===true&&r.kind==="hold"&&r.track_ids?.includes(t.id))));
  if(!songs.length)return [];
  const slots=[];
  for(const song of songs){slots.push(song);
@@ -148,7 +203,7 @@ export function program(tracks,seed){
    if(i+1>=nextShort)nextShort+=(1+Math.floor(((++pulse)*PHI%1)*4));
    if(choice){out.push(choice);elapsed+=choice.duration}
  }
- return out;
+ return arrangeBumperGroups(out,tracks.bumper_groups,carts);
 }
 /**
  * Strip an ID3v2 header from each MP3 before joining it to the live byte stream.
@@ -199,8 +254,14 @@ export function continuousStream(bucket,tracks,options={}){
  let counter=0,cycle=0,rotation=[],index=0,reader=null,closed=false,errors=0;
  const seed=Number.isInteger(options.seed)?options.seed:(crypto.getRandomValues(new Uint32Array(1))[0]>>>0);
  function nextTrack(){
-   if(index>=rotation.length){rotation=program(tracks,(seed+cycle*7919)>>>0);cycle++;index=0;}
-   return rotation[index++];
+   // Optional date/day restrictions are evaluated at the REAL cart boundary,
+   // not once per potentially multi-hour queue. Music is never interrupted.
+   while(true){
+     if(index>=rotation.length){rotation=program(tracks,(seed+cycle*7919)>>>0);cycle++;index=0;}
+     const chosen=rotation[index++];
+     if(chosen.kind!=="bumper"||allowedBumper(chosen,tracks.bumper_rules||[],new Date()))
+       return chosen;
+   }
  }
  return new ReadableStream({
    async pull(controller){

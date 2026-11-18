@@ -48,6 +48,17 @@ test('program spreads permitted bumper lengths without repeating too early',()=>
  assert.notDeepEqual(p.map(x=>x.key),q.map(x=>x.key));
  for(const x of p)assert(tracks.some(t=>t.key===x.key));
 });
+test('a fictional announcement stays eligible unless an owner rule is ON',()=>{
+ const rows=Array.from({length:35},(_,i)=>song(i+1));
+ rows.push({...song(501,'bumper',36),title:'Top of the Hour'});
+ const catalog=approvedCatalog(rows,null);
+ const id=catalog.find(x=>x.title==='Top of the Hour').id;
+ assert(program(catalog,7).some(t=>t.id===id));
+ catalog.bumper_rules=[{kind:'hold',enabled:true,track_ids:[id]}];
+ assert(!program(catalog,7).some(t=>t.id===id));
+ catalog.bumper_rules[0].enabled=false;
+ assert(program(catalog,7).some(t=>t.id===id));
+});
 test('ID3 headers are stripped even across chunk boundaries',async()=>{
  const input=id3Frame([0xff,0xfb,0x90,0x00,6,7]);
  for(const n of [1,2,7,13,100]){
