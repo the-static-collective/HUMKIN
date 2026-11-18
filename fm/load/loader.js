@@ -259,9 +259,10 @@ async function refreshDirectStatus(){
   const info=await r2Direct(db,"status");
   directReady=info.ready===true;
   $("direct-r2-status").textContent=directReady?
-    "DIRECT PRIVATE R2 READY · 3 simultaneous uploads · no Supabase file staging.":
+    "DIRECT PRIVATE R2 READY · 3 simultaneous uploads · no Supabase file staging · "+(info.credential_mode==="existing"?"existing R2 credentials reused":"separate private R2 credentials")+".":
     "DIRECT PRIVATE R2 NOT READY ("+String(info.reason||"configuration required")+
-    "). Existing private Supabase loader remains available.";
+    "). "+(info.credential_mode==="existing"?"The existing R2 token may be limited to the public bucket. ":"")+
+    "Existing private Supabase loader remains available.";
  }catch(error){
   directReady=false;
   $("direct-r2-status").textContent="DIRECT R2 OFFLINE ("+error.message+"). Existing loader remains available.";
