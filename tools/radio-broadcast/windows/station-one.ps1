@@ -242,8 +242,8 @@ function Start-R2Hls {
     if (-not (Test-Path -LiteralPath $publisher)) {
         throw 'Missing hls_push.py. Update the complete HUMKIN repository before continuing.'
     }
-    Write-Host 'Requires R2 S3 API credentials for your existing humkin-radio-media bucket.'
-    Write-Host 'Use an existing restricted R2 token or create one in Cloudflare.'
+    Write-Host 'Requires R2 S3 API credentials for your dedicated humkin-radio-live bucket.'
+    Write-Host 'Use a bucket-scoped R2 token that cannot modify the permanent music archive.'
     Write-Host 'This test publishes a short rolling HLS stream to R2. Upload operations may be billable.'
     Write-Host 'It will NOT redirect the existing website or Android station.'
     $choice = Read-Host 'Type R2 TEST to publish a supervised 70-second experiment'
