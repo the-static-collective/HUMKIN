@@ -137,6 +137,12 @@ footer{padding:20px;text-align:center}
 <p class="small">MP3 stays original; WAV/M4A → 128 kbps MP3 on this device (if the browser can decode it). WAV/M4A sources are never uploaded. Choose RADIO-ONLY SONG, OFFICIAL SINGLE, or STATION BUMPER / SPOKEN FEATURE for each file and review its title, artist, and album. For the Eno Efia guest feature, upload the interview as spoken audio, not a seasonal song. An official single gets <strong>two plays per rotation cycle</strong> where the station's release weighting applies; radio-only songs get one. Long audio conversion uses memory, so keep this tab open.</p>
 <p id="selection">No files selected.</p>
 <p id="selected-time">0 hours 0 minutes queued</p>
+<div class="folder-controls">
+<div><label for="queue-search">Find a recording in this crate</label><input id="queue-search" type="text" placeholder="Search artist, album, title, or filename"></div>
+<div><label for="queue-sort">Sort preview by</label><select id="queue-sort">
+<option value="path">Folder / filename</option><option value="artist">Artist</option><option value="album">Album</option><option value="title">Title</option></select></div>
+</div>
+<p id="queue-note" class="small">Edit the inferred titles, artists, and albums before staging. Showing up to 150 matching files at once.</p>
 <ul id="queue"></ul>
 <div class="row"><button id="stage" class="accent" disabled>STAGE THIS CRATE ↗</button><button id="cancel" class="warn" disabled>STOP AFTER CURRENT SONG</button><button id="clear">CLEAR SELECTION</button></div>
 <progress class="progress" id="progress" value="0" max="100"></progress>
