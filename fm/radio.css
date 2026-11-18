@@ -60,3 +60,8 @@
 .night-watch-note{font:500 10px/1.4 system-ui,sans-serif;display:block;margin-top:10px;opacity:.8}
 .night-watch-ticket [hidden]{display:none!important}
 @media(max-width:430px){.night-watch-ticket{padding:13px}.night-watch-counts strong{font-size:20px}.night-watch-counts small{font-size:8px}}
+
+/* Optional support entrance. Never a condition for listening. */
+.topline .tip-jar-link{font-size:11px;font-weight:950;letter-spacing:.06em;background:var(--yellow);color:var(--ink);padding:7px 11px;border-radius:99px;text-decoration:none;white-space:nowrap}
+.topline .tip-jar-link:hover{background:#fff4ad}
+@media(max-width:480px){.topline{gap:9px;flex-wrap:wrap}.topline .brand{font-size:20px}.topline .dj-link,.topline .tip-jar-link{font-size:10px}}
