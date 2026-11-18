@@ -31,5 +31,7 @@ jobs:
           node --check tools/radio-broadcast/cloudflare/worker.mjs
           node --check tools/radio-broadcast/cloudflare/hls-routes.mjs
           node --test tools/radio-broadcast/cloudflare/hls-routes.test.mjs tools/radio-broadcast/cloudflare/worker.test.mjs
+      - name: Install FFmpeg on the disposable test runner
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Real FFmpeg synthetic HLS encoding (no network or songs)
         run: python tests/hls-encoder-smoke.py
