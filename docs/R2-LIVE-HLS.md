@@ -83,9 +83,18 @@ Given the actually deployed Worker URL (do not guess a hostname):
   encoded into segment paths, no credentials.
 - The test page is fm/long-wave/hls.html on HUMKIN's GitHub Pages site.
   Enter your deployed Worker https URL ending with /hls/live.m3u8.
+  Its optional **Rescue to Long Wave** setting (checked by default) attempts
+  a switch to the same Worker's /live.mp3 when live HLS fails. Long Wave is
+  a different unsynchronized, per-listener station; rescue is not a seamless
+  continuation of the shared program. No audio automatically starts before
+  the listener presses Play. **Retry live signal** is manual, to avoid
+  unwanted automatic jumps between programs.
   This receiver uses native HLS where supported and hls.js on other browsers.
 - Test 3+ segment changes, listening from mobile cellular, a short disconnect,
-  and reboot/reconnect. Only then discuss a default website/app source switch.
+  and reboot/reconnect. Force a disconnected Acer and verify receiver rescue
+  into Long Wave; then try manual return to HLS. A browser may suspend the
+  20-second status watchdog while the screen is locked, so test that case
+  explicitly. Only then discuss a default website/app source switch.
 
 ## Cost and cleanup guardrails
 
@@ -126,6 +135,8 @@ as unattended 24/7 broadcasting without watchdog and reconnect tests.
 - Audio content is still subject to normal broadcast rights/provenance review.
 - No track-level now-playing metadata, phone background-play guarantee, dynamic
   user submissions, requests or native APK cutover is provided yet.
+- /hls/status is an **ingest freshness indicator**, not proof that a person
+  heard the station. Player fallback does not assert successful listening.
 
 ## Offline verification
 
