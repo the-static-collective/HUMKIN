@@ -165,6 +165,33 @@ function plan(songs,bumpers,every,tracks,policy={}){
  return {sequence,breaks,held,eligible:eligible.length};
 }
 
+// A bag can contain distinct recordings from the same character/series.
+// Reorder only within a lane's CURRENT complete bag, so family spacing does
+// not change eligibility, selected counts, break timing or the clock duration.
+function spreadFamilies(breaks,bagSizes,lookback=3){
+ const positions={short:[],medium:[],long:[]},seen={short:0,medium:0,long:0};
+ for(let i=0;i<breaks.length;i++)if(positions[breaks[i].lane])positions[breaks[i].lane].push(i);
+ const fields=["index","id","title","seconds","role","family","rare"];
+ for(let i=0;i<breaks.length;i++){
+  const current=breaks[i],lane=current.lane;
+  if(!positions[lane])continue;
+  const slot=seen[lane]++,size=bagSizes[lane]||0;
+  if(size<2||!current.family)continue;
+  const recent=new Set(breaks.slice(Math.max(0,i-lookback),i).map(x=>x.family).filter(Boolean));
+  if(!recent.has(current.family))continue;
+  const laneSlots=positions[lane];
+  const end=Math.min(laneSlots.length,(Math.floor(slot/size)+1)*size);
+  for(let n=slot+1;n<end;n++){
+   const candidate=breaks[laneSlots[n]];
+   if(recent.has(candidate.family))continue;
+   for(const field of fields)
+    [current[field],candidate[field]]=[candidate[field],current[field]];
+   break;
+  }
+ }
+ return breaks;
+}
+
 // Bumper Bag v2: permute the *same chosen recordings* for each shared-clock
 // rotation. Re-selecting arbitrary cart durations would make cycles longer or
 // shorter, breaking the station-wide epoch calculation. Instead each length
@@ -217,6 +244,17 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
     for(const field of fields)breaks[slots[j]][field]=shuffled[j][field];
   }
  }
+ // Give related voices/recurring series breathing room when there is a
+ // different approved cart left in the same fair shuffled bag.
+ const familyBagSizes={};
+ for(const lane of ["short","medium","long"]){
+  familyBagSizes[lane]=bumperIndices.filter(i=>Number.isInteger(i)&&tracks[i]&&
+    tracks[i].kind==="bumper").filter(i=>{
+      const c=classify(tracks[i],policy);
+      return !c.hold&&c.lane===lane;
+    }).length;
+ }
+ spreadFamilies(breaks,familyBagSizes);
  // Recalculate displayed estimates after the variable-length carts trade
  // places. Total cycle duration remains EXACTLY the same, in milliseconds.
  const songCount=planResult.sequence.length-planResult.breaks.length;
@@ -239,7 +277,7 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
  if(offset!==breaks.length)return planResult; // Fail safe, never break an on-air cycle.
  return {...planResult,sequence,breaks};
 }
-const api=Object.freeze({normalize,classify,cadenceBreaks,plan,remix});
+const api=Object.freeze({normalize,classify,cadenceBreaks,plan,remix,spreadFamilies});
 if(typeof module!=="undefined"&&module.exports)module.exports=api;
 root.HUMKIN_BUMPER_BRAIN=api;
 })(typeof window!=="undefined"?window:globalThis);
