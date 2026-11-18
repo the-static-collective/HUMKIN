@@ -1,11 +1,11 @@
 // HUMKIN Listener Receptacle — a read-only doorway adapter, not a payment processor.
 export const AMOUNTS=Object.freeze([1,5,25,100,500]);
 export const RAILS=Object.freeze({
-  cash_app:{label:"Cash App",host:"cash.app",path:/^\/\$[A-Za-z0-9_]{1,35}$/},
-  venmo:{label:"Venmo",host:"venmo.com",path:/^\/u\/[A-Za-z0-9_-]{2,40}$/},
-  paypal:{label:"PayPal.Me",host:"paypal.me",path:/^\/[A-Za-z0-9]{1,20}$/}
+  cash_app:{label:"Cash App",knownMinimumCents:100,host:"cash.app",path:/^\/\$[A-Za-z0-9_]{1,35}$/},
+  venmo:{label:"Venmo",knownMinimumCents:null,host:"venmo.com",path:/^\/u\/[A-Za-z0-9_-]{2,40}$/},
+  paypal:{label:"PayPal.Me",knownMinimumCents:null,host:"paypal.me",path:/^\/[A-Za-z0-9]{1,20}$/}
 });
-export function amountText(cents){
+// null means the minimum is not verified, not that pennies are accepted.\nexport function providerAmountStatus(provider,cents){\n  const rail=Object.hasOwn(RAILS,provider)?RAILS[provider]:null;\n  if(!rail||!Number.isSafeInteger(cents)||cents<1)throw Error("Invalid provider or amount");\n  if(rail.knownMinimumCents!==null&&cents<rail.knownMinimumCents)\n    return {available:false,reason:rail.label+" currently requires at least $1 for ordinary payments."};\n  return {available:true,reason:rail.knownMinimumCents===null?\n    "Provider minimum and fees have not been verified; the provider may reject this amount.":\n    "Amount meets the publicly documented ordinary-payment minimum; provider may impose other restrictions."};\n}\nexport function amountText(cents){
   if(!AMOUNTS.includes(cents))throw Error("Unknown suggested amount");
   return cents<100?cents+"¢":"$"+(cents/100).toFixed(2);
 }
