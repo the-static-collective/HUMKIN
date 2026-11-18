@@ -18,6 +18,10 @@ assert(app.includes('link.origin!==API||link.pathname!=="/auth/v1/verify"'),"Mus
 assert(app.includes("input.value=\"\""),"Never retain the one-time token in the DOM after submit");
 assert(app.includes("shouldCreateUser:false"),"Do not let this owner-only loader register arbitrary new auth accounts");
 assert(page.includes('type="file"')&&page.includes("multiple"),"File picker must support many files");
+assert(page.includes('id="pick-folder"')&&page.includes('webkitdirectory'),"Desktop folder picker must preserve relative file paths");
+assert(page.includes('id="folder-layout"')&&page.includes('id="fallback-artist"'),"User must control folder interpretation and artist fallback");
+assert(app.includes("item.file.webkitRelativePath"),"Folder-aware importer must keep directory provenance for inference");
+assert(app.includes('artist:item.artist.trim()')&&app.includes('album:item.album.trim()'),"Persist user-reviewed artist and album; no hard-coded artist");
 assert(page.includes("audio/wav")&&page.includes("audio/mpeg"),"Support WAV and MP3 in browser");
 assert(app.includes("convertWav")&&app.includes("Mp3Encoder")&&app.includes("128"),"WAV browser conversion missing");
 assert(app.includes("crypto.subtle.digest")&&app.includes("SHA-256"),"Need byte-accurate dedup");
