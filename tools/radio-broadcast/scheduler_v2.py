@@ -187,6 +187,106 @@ class ShuffledBag:
         return id_
 
 
+def allowed_bumper(id_, rules, when=None, clock=False):
+    """An owner may explicitly restrict a cart. Titles never create holds.
+
+    Time-varying rules cannot alter Same-Time's fixed epoch: that browser
+    clock only uses manual holds. Streaming evaluates dayparts at each break.
+    """
+    local = (when or datetime.now(timezone.utc)).astimezone(CENTRAL)
+    day = (local.weekday() + 1) % 7
+    minute = local.hour * 60 + local.minute
+    today = local.date().isoformat()
+    for rule in (rules if isinstance(rules, list) else [])[:60]:
+        if not isinstance(rule, dict) or rule.get("enabled") is not True:
+            continue
+        if id_ not in rule.get("track_ids", []):
+            continue
+        kind = rule.get("kind")
+        if kind == "hold":
+            return False
+        if clock:
+            continue
+        if kind == "daypart":
+            if (day not in rule.get("days", []) or
+                    not isinstance(rule.get("start_minute"), int) or
+                    not isinstance(rule.get("end_minute"), int) or
+                    not rule["start_minute"] <= minute < rule["end_minute"]):
+                return False
+        elif kind == "date":
+            first, last = rule.get("start_date"), rule.get("end_date")
+            if not isinstance(first, str) or not isinstance(last, str) or not first <= today <= last:
+                return False
+    return True
+
+
+def arrange_bumpers(sequence, tracks, owner_groups, bag_sizes, near=3):
+    """Best-effort attraction then repulsion, within the current shuffled
+    duration bag. Song order, cart inventory, and lane counts are unchanged."""
+    if not isinstance(owner_groups, list):
+        return sequence
+    groups = [g for g in owner_groups[:60]
+              if isinstance(g, dict) and g.get("enabled") is True
+              and g.get("kind") in ("attract", "repel")
+              and isinstance(g.get("track_ids"), list)
+              and len(set(g["track_ids"])) >= 2]
+    if not groups:
+        return sequence
+    bp = [{"at": i, "id": id_, "lane": bumper_lane(tracks[id_], {})}
+          for i, id_ in enumerate(sequence) if tracks[id_].get("kind") == "bumper"]
+    lane_positions = {"short": [], "medium": [], "long": []}
+    ordinals = {}
+    for i, entry in enumerate(bp):
+        lane = entry["lane"]
+        if lane in lane_positions:
+            ordinals[i] = (lane, len(lane_positions[lane]))
+            lane_positions[lane].append(i)
+
+    def same_bag(a, b):
+        if a not in ordinals or b not in ordinals:
+            return False
+        la, ia = ordinals[a]
+        lb, ib = ordinals[b]
+        size = bag_sizes.get(la, 0)
+        return bool(size >= 2 and la == lb and ia // size == ib // size)
+
+    for i, current in enumerate(bp):
+        for g in groups:
+            members = set(g["track_ids"])
+            if g["kind"] != "attract" or current["id"] not in members:
+                continue
+            source = next((j for j in range(i+1, len(bp))
+                           if bp[j]["id"] in members and bp[j]["id"] != current["id"]), None)
+            if source is None or source - i <= near:
+                continue
+            target = next((j for j in range(i+1, min(len(bp), i+near+1))
+                           if same_bag(source, j)), None)
+            if target is not None:
+                bp[source]["id"], bp[target]["id"] = bp[target]["id"], bp[source]["id"]
+
+    for i, current in enumerate(bp):
+        if i == 0:
+            continue
+        prior = [b["id"] for b in bp[max(0, i-near):i]]
+        conflict = any(g["kind"] == "repel" and current["id"] in g["track_ids"] and
+                       any(x in g["track_ids"] for x in prior) for g in groups)
+        if not conflict:
+            continue
+        for j in range(i+1, len(bp)):
+            if not same_bag(i, j):
+                continue
+            other = bp[j]["id"]
+            if any(g["kind"] == "repel" and other in g["track_ids"] and
+                   any(x in g["track_ids"] for x in prior) for g in groups):
+                continue
+            bp[i]["id"], bp[j]["id"] = bp[j]["id"], bp[i]["id"]
+            break
+    out = sequence[:]
+    for b in bp:
+        out[b["at"]] = b["id"]
+    return out
+
+
 def with_bumpers(songs, tracks, settings, policy, rng):
     """φ short drops; medium ~11m; long substitutes every ~22.5m."""
     freq = int(settings.get("bumper_every", 0) or 0)
@@ -197,18 +297,11 @@ def with_bumpers(songs, tracks, settings, policy, rng):
         if t.get("kind") != "bumper":
             continue
         lane = bumper_lane(t, policy)
-        if lane:
+        if lane and allowed_bumper(id_, settings.get("bumper_rules", []), clock=True):
             groups[lane].append(id_)
     bags = {lane: ShuffledBag(sorted(ids), rng) for lane, ids in groups.items()}
-    recent_families = deque(maxlen=3)
-    def family_of(id_):
-        profile = policy.get("profiles", {}).get(id_, {})
-        return str(profile.get("edit_group") or id_)
     def pick(lane):
-        selected = bags[lane].take(recent_families, family_of)
-        if selected is not None:
-            recent_families.append(family_of(selected))
-        return selected
+        return bags[lane].take()
     if not any(groups.values()):
         return songs[:]
     mean = sum(float(tracks[id_]["duration"]) for id_ in songs) / len(songs)
@@ -257,7 +350,8 @@ def with_bumpers(songs, tracks, settings, policy, rng):
             if selected in groups["medium"] or selected in groups["long"]:
                 last_anchor = nominal
             nominal += float(tracks[selected]["duration"])
-    return sequence
+    return arrange_bumpers(sequence, tracks, settings.get("bumper_groups", []),
+                           {lane:len(ids) for lane, ids in groups.items()})
 
 
 class StationV2:
@@ -301,8 +395,13 @@ class StationV2:
                 self.show_cursor += 1
                 return item
         self.show_id = None
-        if not self.queue:
-            self._new_cycle()
-        if not self.queue:
-            raise RuntimeError("No enabled published songs available")
-        return self.by_id[self.queue.popleft()]
+        while True:
+            if not self.queue:
+                self._new_cycle()
+            if not self.queue:
+                raise RuntimeError("No enabled published songs available")
+            item = self.by_id[self.queue.popleft()]
+            if item.get("kind") == "bumper" and not allowed_bumper(
+                    item["id"], self.catalog.get("settings", {}).get("bumper_rules", []), when):
+                continue  # Never interrupt a song; drop this one optional break.
+            return item
