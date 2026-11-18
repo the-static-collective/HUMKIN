@@ -13,8 +13,9 @@ function classify(track,policy={}){
  const raw=policy.profiles?.[id]||{};
  const title=normalize(track?.title);
  const seconds=Number(track?.duration??track?.duration_seconds??0);
- let family=raw.family||title.replace(/\b(opener|trains|short|long|radio|edit|remastered)\b/g,"")
-   .replace(/\s+/g," ").trim()||id;
+ // Identity is unique unless two files are proven different-length edits
+ // of the SAME master. Voice, series, bells and topic are not an edit group.
+ const family=raw.edit_group||id;
  // A program opening is a scheduled item, not an incidental station ID.
  let role=raw.role||(
    /\b(opener|opening|intro for)\b/.test(title)?"show_opener":
@@ -24,20 +25,17 @@ function classify(track,policy={}){
    /\b(farm|news|manager|art is|schfwifty)\b/.test(title)?"character":
    seconds<=28?"station_id":"comedy"
  );
- const safetyHold=/\b(top of the hour|bottom of the hour|requests we re taking|we re taking requests)\b/.test(title);
  const hardMax=Number(policy.maximum_break_seconds)||180;
  const shortMax=Number(policy.short_max_seconds)||19;
  const mediumMax=Number(policy.medium_max_seconds)||60;
  const lane=seconds<=shortMax?"short":seconds<mediumMax?"medium":"long";
- // Length alone is no longer an editorial hold: longer approved features
- // now have their own appropriately spaced airtime. Explicit owner holds,
- // scheduled openers and misleading time/request claims remain held.
- const hold=raw.hold===true||role==="show_opener"||
-   seconds>hardMax||seconds<=0||safetyHold;
+ // Enabled/published is the eligibility decision. Only an actual owner
+ // hold or a technical duration error can exclude an otherwise aired cart.
+ const hold=raw.hold===true||seconds>hardMax||seconds<=0;
  return {id,title:track?.title||id,seconds,role,family,lane,hold,
-  reason:raw.hold?"OWNER PROFILE HOLD":role==="show_opener"?"SHOW OPENER — scheduled only":
+  reason:raw.hold===true?"EXPLICIT PROFILE HOLD":
    seconds>hardMax?"OVERSIZE — requires a show slot":
-   safetyHold?"TIME/REQUEST CLAIM — requires manual program slot":""};
+   seconds<=0?"INVALID DURATION":""};
 }
 function cadenceBreaks(songCount,every,policy={}){
  const frequency=Number(every);
@@ -62,8 +60,9 @@ function hash(text){
 }
 // Each distinct, published/enabled and routine-eligible bumper gets one
 // turn per shuffled bag, regardless of FIELD / PREVIEW / INBOX filing label,
-// length, fictional voice, or editorial role. Only explicit safety/program
-// holds affect eligibility. The plan remains deterministic across receivers.
+// length, fictional voice, or editorial role. Only an explicitly configured
+// owner hold or invalid technical duration affects eligibility.
+// The plan remains deterministic across receivers.
 function bagOf(eligible,round,lastId){
  const bag=eligible.slice().sort((a,b)=>a.id.localeCompare(b.id));
  let state=hash("HUMKIN-BUMPER-BAG-"+round)||1;
@@ -165,9 +164,10 @@ function plan(songs,bumpers,every,tracks,policy={}){
  return {sequence,breaks,held,eligible:eligible.length};
 }
 
-// A bag can contain distinct recordings from the same character/series.
-// Reorder only within a lane's CURRENT complete bag, so family spacing does
-// not change eligibility, selected counts, break timing or the clock duration.
+// Only verified alternate-length edits of the SAME recording may share a
+// grouping key. Never infer group identity from an artist, voice, series,
+// instrument, title similarity or subject. Reorder within the current lane
+// bag only; the broadcast clock length and fair cart counts stay unchanged.
 function spreadFamilies(breaks,bagSizes,lookback=3){
  const positions={short:[],medium:[],long:[]},seen={short:0,medium:0,long:0};
  for(let i=0;i<breaks.length;i++)if(positions[breaks[i].lane])positions[breaks[i].lane].push(i);
@@ -244,8 +244,8 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
     for(const field of fields)breaks[slots[j]][field]=shuffled[j][field];
   }
  }
- // Give related voices/recurring series breathing room when there is a
- // different approved cart left in the same fair shuffled bag.
+ // Space only verified alternate cuts of the same master when a different
+ // approved recording remains in this shuffled duration-lane bag.
  const familyBagSizes={};
  for(const lane of ["short","medium","long"]){
   familyBagSizes[lane]=bumperIndices.filter(i=>Number.isInteger(i)&&tracks[i]&&
