@@ -73,7 +73,7 @@ function saveForm(){
  if($("seasonal").checked)f.seasonal=true;
  // A newly created station without a filter never broadcasts everything by
  // accident. Source presets are not subject to this special safety default.
- if(s._new===true&&!Object.keys(f).length)f.track_ids=[];
+ if(!Object.keys(f).length&&(s._new===true||s.id==="top-40"))f.track_ids=[];
  s.filter=f;
  const stored=persist();
  updateSelect();
@@ -212,7 +212,8 @@ async function loadNetwork(){
 }
 loadDraft();renderForm();
 $("edit-station").addEventListener("change",()=>{
-  saveForm();current=$("edit-station").value;renderForm();
+  const next=$("edit-station").value;
+  saveForm();current=next;renderForm();
 });
 $("new-station").addEventListener("click",addStation);
 $("save-station").addEventListener("click",saveForm);
