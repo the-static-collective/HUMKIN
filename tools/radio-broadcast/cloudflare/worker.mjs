@@ -3,7 +3,8 @@
  * Source metadata comes only from the public, owner-approved Supabase crate
  * and the owner-reviewed R2 manifest. R2 binding never exposes credentials.
  *
- * Deploy with an R2 binding named RADIO_MEDIA to humkin-radio-media.
+ * Deploy with separate R2 bindings: RADIO_MEDIA to the permanent music
+ * archive and RADIO_LIVE to the short-lived public HLS relay bucket.
  * The `/live.mp3` response stays one continuous HTTP audio stream; no
  * listener-side JS transition is required between songs or station carts.
  */
