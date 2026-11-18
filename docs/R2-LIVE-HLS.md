@@ -17,17 +17,25 @@ over. In particular, fm/rotation.json live_stream_url is still null.
 
 ## One-time deployment and permissions
 
+The isolated live relay must not modify music stored in humkin-radio-media.
+R2 S3 upload credentials are bucket-scoped to humkin-radio-live; the Worker
+uses RADIO_LIVE for live playback and RADIO_MEDIA for existing Long Wave.
+Neither credential nor an R2 account write token is distributed to listeners.
+
 1. Deploy the existing Long Wave Cloudflare Worker **from its whole source folder**
    (now a multi-module Worker): tools/radio-broadcast/cloudflare/. Use
    an authenticated Wrangler CLI, e.g. from that directory:
    npx wrangler@latest deploy
-   The wrangler.toml binds RADIO_MEDIA to the already established
-   humkin-radio-media R2 bucket. An existing Cloudflare deployment may need an
+   The wrangler.toml binds RADIO_MEDIA to two separate buckets: RADIO_MEDIA to the existing
+   humkin-radio-media archive and RADIO_LIVE to a new humkin-radio-live bucket.
+   **Before deployment**, create the new private humkin-radio-live R2 bucket in
+   the same Cloudflare account. The Worker serves only the live playlist and
+   segments from RADIO_LIVE; the old Long Wave continues reading RADIO_MEDIA. An existing Cloudflare deployment may need an
    explicit approval/update; don't paste worker.mjs alone into Dashboard editor
    because it imports hls-routes.mjs.
-2. **Reuse an existing appropriately restricted R2 S3 API token**, or create
-   one with object write and delete access restricted to humkin-radio-media
-   where supported. The token is
+2. **Create a new R2 S3 API token scoped ONLY to the new humkin-radio-live
+   bucket**, with object read/write/delete as needed. Never give the Acer
+   the permanent music archive's S3 write credential. The token is
    entered only on the Acer, never in a browser, issue, or GitHub secret.
    Cloudflare account ID is also required. Do not use the public Supabase key
    as an R2 secret; the services have independent credentials.
@@ -82,8 +90,11 @@ Given the actually deployed Worker URL (do not guess a hostname):
 ## Cost and cleanup guardrails
 
 At 10 seconds per segment, continuous publishing creates about 259,200 media
-objects and 259,200 playlist overwrites per 30 days: roughly 518,400 R2 writes
-before retries, other HUMKIN operations and the separate cleanup actions. Actual
+objects and 259,200 playlist overwrites per 30 days: roughly 518,400 R2 writes,
+plus up to 259,200 deletion operations (approximately 777,600 Class A
+operations total) before retries and other HUMKIN operations. These share the
+account's Cloudflare allowance, even though the live relay uses a separate
+bucket. Actual
 Cloudflare plan allowances and billing must be checked before going 24/7.
 
 The publisher retires segments 180 seconds after they leave the current playlist,
