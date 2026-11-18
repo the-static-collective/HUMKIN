@@ -126,6 +126,55 @@ function Run-Tests {
     finally { Pop-Location }
 }
 
+function Test-SourceTls {
+    param([string]$Hostname, [int]$Port)
+    $client = [System.Net.Sockets.TcpClient]::new()
+    try {
+        $async = $client.BeginConnect($Hostname, $Port, $null, $null)
+        if (-not $async.AsyncWaitHandle.WaitOne(8000)) {
+            throw 'Connection timed out.'
+        }
+        $client.EndConnect($async)
+        $client.ReceiveTimeout = 8000
+        $client.SendTimeout = 8000
+        $network = $client.GetStream()
+        $network.ReadTimeout = 8000
+        $network.WriteTimeout = 8000
+        $tls = [System.Net.Security.SslStream]::new($network, $false)
+        try {
+            # AuthenticateAsClient validates the provider certificate and
+            # hostname before any source password is requested or transmitted.
+            $tls.AuthenticateAsClient($Hostname)
+            if (-not $tls.IsAuthenticated -or -not $tls.IsEncrypted) {
+                throw 'TLS was not authenticated or encrypted.'
+            }
+            Write-Host 'Encrypted source ingest and hostname certificate: verified.' -ForegroundColor Green
+        }
+        finally { $tls.Dispose() }
+    }
+    catch {
+        throw ('Source ingest TLS check failed on ' + $Hostname + ':' + $Port +
+            '. Request an encrypted Icecast SOURCE port from the radio host. ' +
+            'An HTTPS listener URL alone is not sufficient. Details: ' + $_.Exception.Message)
+    }
+    finally { $client.Dispose() }
+}
+
+function Check-PublicListener {
+    Write-Host "`n=== HUMKIN STATION ONE : PUBLIC HTTPS LISTENER CHECK ===" -ForegroundColor Cyan
+    $python = Test-Dependencies
+    if ($null -eq $python) { return }
+    $preflight = Join-Path $RepoRoot 'tools\radio-broadcast\host_preflight.py'
+    if (-not (Test-Path -LiteralPath $preflight)) { throw 'Missing host_preflight.py. Update your HUMKIN ZIP.' }
+    $stream = (Read-Host 'Public HTTPS listener MP3 URL (no passwords)').Trim()
+    if (-not $stream.StartsWith('https://')) { throw 'Use the public HTTPS listener URL, not the private source address.' }
+    $nowPlaying = (Read-Host 'Optional AzuraCast HTTPS now-playing API URL [Enter to skip]').Trim()
+    $arguments = @($preflight,'--stream-url',$stream)
+    if ($nowPlaying) { $arguments += @('--nowplaying-url',$nowPlaying) }
+    Invoke-Python -Python $python -PythonArgs $arguments
+    Write-Host 'Public stream check complete. This does NOT automatically publish a website change.' -ForegroundColor Green
+}
+
 function Start-Broadcast {
     Write-Host "`n=== HUMKIN STATION ONE : EXTERNAL ICECAST SOURCE ===" -ForegroundColor Yellow
     $python = Test-Dependencies
@@ -153,6 +202,13 @@ function Start-Broadcast {
     if ($mount -notmatch '^/[a-zA-Z0-9._/-]+$' -or $mount -match '//') {
         throw 'Enter a simple mount path beginning with /, such as /humkin.mp3.'
     }
+    $bitrateText = (Read-Host 'MP3 bitrate kbps: 96 / 128 / 160 / 192 [96 for free hosts]').Trim()
+    if (-not $bitrateText) { $bitrateText = '96' }
+    if (@('96','128','160','192') -cnotcontains $bitrateText) {
+        throw 'Choose 96, 128, 160 or 192 kbps to match your provider plan.'
+    }
+    Write-Host 'Checking source-side TLS without sending credentials...' -ForegroundColor Cyan
+    Test-SourceTls -Hostname $hostname -Port $port
     $password = Read-Host 'Private Icecast SOURCE password (not shown, not saved)' -AsSecureString
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
     try {
@@ -167,7 +223,7 @@ function Start-Broadcast {
     }
     try {
         Write-Host 'Connecting over TLS only. Press Ctrl+C to stop. Do not share machine process listings.' -ForegroundColor Yellow
-        Invoke-Python -Python $python -PythonArgs @($Engine, '--cache', $CacheDir)
+        Invoke-Python -Python $python -PythonArgs @($Engine, '--cache', $CacheDir, '--bitrate', $bitrateText)
     }
     finally { Remove-Item Env:\HUMKIN_ICECAST_URL -ErrorAction SilentlyContinue }
 }
@@ -180,16 +236,18 @@ function Start-Menu {
     Write-Host '  1  Check dependencies + live catalog (no transmission)'
     Write-Host '  2  Make and play a 45-second local radio preview'
     Write-Host '  3  Run offline broadcaster tests'
-    Write-Host '  4  Broadcast to an ALREADY-SET-UP Icecast source'
+    Write-Host '  4  Broadcast to an ALREADY-SET-UP encrypted Icecast source'
+    Write-Host '  5  Verify a PUBLIC HTTPS listener URL (read-only)'
     Write-Host '  Q  Quit'
-    $choice = (Read-Host 'Select 1-4 or Q').Trim().ToUpperInvariant()
+    $choice = (Read-Host 'Select 1-5 or Q').Trim().ToUpperInvariant()
     switch ($choice) {
         '1' { Check-Station }
         '2' { Make-Preview }
         '3' { Run-Tests }
         '4' { Start-Broadcast }
+        '5' { Check-PublicListener }
         'Q' { return }
-        default { Write-Host 'No change; choose 1-4 or Q.' }
+        default { Write-Host 'No change; choose 1-5 or Q.' }
     }
 }
 
