@@ -1,0 +1,39 @@
+{
+  "schema": "humkin.receptacle-candidates/v0.1",
+  "purposeId": "purpose-humkin-listener-support-001",
+  "publicationStatus": "HOLD_NOT_PUBLISHED",
+  "ownerInputDate": "2026-11-18",
+  "notes": "Handles supplied in chat for configuring HUMKIN listener contributions. These candidate URLs are not recipient ownership evidence or verified payment acceptance.",
+  "doors": [
+    {
+      "id": "humkin-cashapp-luvstudio-001",
+      "provider": "cash_app",
+      "suppliedIdentifier": "$LuVstudio",
+      "candidateUrl": "https://cash.app/$LuVstudio",
+      "identityVerified": false,
+      "providerReady": false,
+      "ownerPublicationApproved": false,
+      "knownMinimumCents": 100
+    },
+    {
+      "id": "humkin-venmo-lucasv-001",
+      "provider": "venmo",
+      "suppliedIdentifier": "@The_Real_Lucas_V",
+      "candidateUrl": "https://venmo.com/u/The_Real_Lucas_V",
+      "identityVerified": false,
+      "providerReady": false,
+      "ownerPublicationApproved": false,
+      "accountType": "unknown"
+    },
+    {
+      "id": "humkin-paypal-staticcollective-001",
+      "provider": "paypal",
+      "suppliedIdentifier": "@thestaticcollective",
+      "candidateUrl": null,
+      "identityVerified": false,
+      "providerReady": false,
+      "ownerPublicationApproved": false,
+      "holdReason": "A PayPal @username does not establish a corresponding PayPal.Me link. Confirm the full link in PayPal settings."
+    }
+  ]
+}
