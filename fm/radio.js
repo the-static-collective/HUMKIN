@@ -303,11 +303,16 @@ function weightedMusic(eligible,rotation){
     ...seasonal.map(i=>eligible[i])]);
   return window.HUMKIN_TOP42_ROTATION?.weave(standard,bonus)||standard;
 }
-function withStationIds(music){
-  const raw=window.HUMKIN_BUMPER_BRAIN?.plan(music,bumperIndices(),
+function withStationIds(music,rotationSeed=0){
+  const bumpers=bumperIndices();
+  const raw=window.HUMKIN_BUMPER_BRAIN?.plan(music,bumpers,
     stationSettings.bumper_every,tracks,config?.bumper_brain);
-  return raw?.sequence||window.HUMKIN_AUTODJ?.insertBumpers(
-    music,bumperIndices(),stationSettings.bumper_every)||music;
+  // A shared-clock cycle must retain a fixed duration, even while the
+  // short/medium/long bumper order is varied across successive cycles.
+  const remixed=raw&&window.HUMKIN_BUMPER_BRAIN?.remix(
+    raw,bumpers,tracks,config?.bumper_brain,rotationSeed);
+  return remixed?.sequence||raw?.sequence||window.HUMKIN_AUTODJ?.insertBumpers(
+    music,bumpers,stationSettings.bumper_every)||music;
 }
 function rememberShuffleTrack(){
   if(mode!=="shuffle"||index<0||tracks[index]?.kind==="bumper")return;
@@ -354,7 +359,7 @@ function tuneAt(ms){
   const elapsed=Math.max(0,ms-base);
   const rotation=Math.floor(elapsed/total);
   const within=elapsed%total;
-  const sequence=withStationIds(weightedMusic(eligible,rotation));
+  const sequence=withStationIds(weightedMusic(eligible,rotation),rotation);
   let soFar=0;
   for(let i=0;i<sequence.length;i++){
     const track=tracks[sequence[i]];
@@ -627,7 +632,7 @@ function buildShuffle(previous=-1){
     const swap=alternative>=0?alternative:1;
     [sorted[0],sorted[swap]]=[sorted[swap],sorted[0]];
   }
-  order=withStationIds(sorted);
+  order=withStationIds(sorted,seed||1);
   cursor=0;
 }
 function startShuffle(shouldPlay){
