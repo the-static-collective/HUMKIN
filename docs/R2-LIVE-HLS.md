@@ -78,6 +78,44 @@ continuous **supervised** run only after verifying the public live receiver.
 You can stop a continuous broadcast with Ctrl+C. A clean stop does NOT
 automatically switch the site or point users to stale HLS.
 
+## Continuous managed Station One on the Acer
+
+After the 70-second R2 test works, download a fresh ZIP of this PR branch.
+Extract the full ZIP; the current-user encrypted R2 credential vault survives
+under `%LOCALAPPDATA%\HUMKIN\StationOne\r2-live-credentials.dpapi` even
+when you use a different checkout folder.
+
+From `tools\radio-broadcast\windows`, double-click:
+
+- `START-HUMKIN-LIVE.cmd` — asks for `ON AIR` confirmation and then
+  launches the Python/FFmpeg R2 publisher in a separate **background process**
+  without adding any credentials to command-line arguments. It uses the
+  already-saved Windows DPAPI vault. The broadcaster keeps running when the
+  launcher window closes, but **will stop if Windows sleeps, shuts down,
+  reboots, loses power, or its connection fails**. No automatic reconnect
+  or startup-after-reboot service is promised yet.
+- `STATUS-HUMKIN-LIVE.cmd` — reports the managed process state and recent
+  local output; logs are stored at
+  `%LOCALAPPDATA%\HUMKIN\StationOne\live-output.log` and
+  `live-errors.log`. Do not mistake this process status for proof of
+  public audio reception.
+- `STOP-HUMKIN-LIVE.cmd` — writes a run-specific stop marker. The engine
+  observes the request while writing audio and closes FFmpeg so the last
+  segment can finish; the publisher waits for completed files. The remote
+  HLS manifest expires as offline at the Worker **within 90 seconds
+  after the last playlist upload**. Use STATUS again to confirm that the
+  background process actually ended.
+
+These commands are also menu choices **8 START**, **9 STOP**, **0 STATUS**
+in `STATION-ONE.cmd`. Option 6 remains the 70-second supervised test;
+option 7 resets the locally saved R2 credentials (not the Cloudflare token).
+
+Only one managed transmitter starts from this launcher at a time. Starting
+an old test ZIP, a separate terminal instance, or another machine could still
+cause competing publications; do not run a second publisher concurrently.
+This experimental managed launch is not yet an unattended, auto-restarting
+24/7 service. Plan operation hours and verify billing/usage before long runs.
+
 ## Verify with a second device
 
 Given the actually deployed Worker URL (do not guess a hostname):
