@@ -163,4 +163,22 @@ assert(workflow.includes("workflow_dispatch:")&&workflow.includes("upload-artifa
  "Robot machine should generate review-only packs");
 assert(!workflow.includes("git push")&&!workflow.includes("service_role")&&!workflow.includes("curl -X POST"),
  "Scheduled action must never publish or send recordings to the air");
+// Distinct clips may share the same voice/series despite fair ID-level picks.
+// Family separation must only rearrange peers still in the current lane bag.
+const kin=[
+ {index:135,id:"robot-a",title:"Robot A",family:"robot-radio",lane:"short",seconds:8},
+ {index:136,id:"bells-a",title:"Bells A",family:"lantern-bells",lane:"medium",seconds:30},
+ {index:137,id:"robot-b",title:"Robot B",family:"robot-radio",lane:"short",seconds:9},
+ {index:138,id:"other",title:"Other",family:"other",lane:"short",seconds:7}
+];
+brain.spreadFamilies(kin,{short:3,medium:1,long:0},3);
+assert.equal(kin[2].id,"other","Choose a different voice when a same-bag peer remains");
+assert.equal(kin[3].id,"robot-b","Displaced recording still gets its fair turn");
+assert.deepEqual(new Set(kin.map(x=>x.id)),new Set(["robot-a","bells-a","robot-b","other"]));
+assert.deepEqual(kin.map(x=>x.lane),["short","medium","short","short"],
+ "Do not move carts to another duration lane");
+assert.equal(rotation.bumper_brain.profiles["air-field-fm-001"].family,"lantern-bells");
+assert.equal(rotation.bumper_brain.profiles["crate-2cd4c3db-2a5b-4ee7-8a5c-bf5de72b4258"].family,"lantern-bells");
+assert.equal(rotation.bumper_brain.profiles["crate-13309e7f-ea07-4847-8b13-2268d277bfef"].family,"robot-radio");
+
 console.log("Bumper Brain: "+result.breaks.length+" φ-short / ~11-minute medium / ~22-minute long breaks; "+result.held.length+" editorial holds; deterministic and tier-fair.");
