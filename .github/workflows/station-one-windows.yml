@@ -29,6 +29,13 @@ jobs:
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'tools/radio-broadcast/windows/station-one.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count -gt 0) { $errors | Format-List | Out-String | Write-Host; exit 1 }
+      - name: Parse managed live PowerShell helper (no execution, no credentials)
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'tools/radio-broadcast/windows/station-one-live.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | Format-List | Out-String | Write-Host; exit 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -61,6 +68,18 @@ jobs:
           }
           $env:PATH = "$tools;$env:PATH"
           & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/radio-broadcast/windows/station-one.ps1 -Action Preflight
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows per-user DPAPI R2 credential vault (fake token, offline)
+        shell: powershell
+        run: |
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'humkin-vault-self-test'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/radio-broadcast/windows/station-one.ps1 -Action VaultSelfTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows managed live start/stop marker self-test (no R2)
+        shell: powershell
+        run: |
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'humkin-live-control-self-test'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/radio-broadcast/windows/station-one.ps1 -Action LiveControlSelfTest
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Python planner and PCM offline unit tests
         shell: powershell

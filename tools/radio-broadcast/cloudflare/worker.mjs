@@ -3,10 +3,12 @@
  * Source metadata comes only from the public, owner-approved Supabase crate
  * and the owner-reviewed R2 manifest. R2 binding never exposes credentials.
  *
- * Deploy with an R2 binding named RADIO_MEDIA to humkin-radio-media.
+ * Deploy with separate R2 bindings: RADIO_MEDIA to the permanent music
+ * archive and RADIO_LIVE to the short-lived public HLS relay bucket.
  * The `/live.mp3` response stays one continuous HTTP audio stream; no
  * listener-side JS transition is required between songs or station carts.
  */
+import {isHlsPath,serveHls} from './hls-routes.mjs';
 const SUPABASE="https://kbhqacsdvjsstzyplqij.supabase.co";
 const PUBLIC_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
 const PUBLIC_MANIFEST="https://humkin.abundent.org/fm/r2-tracks.json";
@@ -306,6 +308,10 @@ export default {
    const path=new URL(request.url).pathname;
    if(request.method==="OPTIONS")return new Response(null,{status:204,headers:basicHeaders()});
    if(request.method!=="GET"&&request.method!=="HEAD")return json({ok:false,error:"METHOD_NOT_ALLOWED"},405);
+   // Route before checking the independent bucket bindings. A missing music
+   // binding must never shadow a working HLS relay or turn unknown paths into 503.
+   if(isHlsPath(path))return serveHls(request,env);
+   if(path.startsWith("/hls/"))return json({ok:false,error:"NOT_FOUND"},404);
    if(!env?.RADIO_MEDIA?.get)return json({ok:false,error:"R2_BINDING_MISSING",expected:"RADIO_MEDIA"},503);
    if(path==="/health"){
      try{const list=await getCatalog();return json({ok:true,service:"HUMKIN LONG WAVE",r2_catalog:list.length,

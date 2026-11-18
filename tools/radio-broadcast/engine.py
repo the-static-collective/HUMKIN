@@ -238,7 +238,26 @@ def equal_power_mix(a,b):
     if sys.byteorder!="little":out.byteswap()
     return out.tobytes()
 
-def output_process(destination,bitrate,realtime=True):
+def output_process(destination,bitrate,realtime=True,hls_dir=None):
+    if hls_dir:
+        # A local HLS encoder; the separate publisher uploads COMPLETE segments.
+        # MPEG-TS/AAC is broadly compatible with standard HLS receivers.
+        target=Path(hls_dir).expanduser().resolve()
+        target.mkdir(parents=True,exist_ok=True)
+        inputs=(["-re"] if realtime else [])+[
+          "-f","s16le","-ar",str(RATE),"-ac","2","-i","pipe:0"]
+        return subprocess.Popen([
+          "ffmpeg","-nostdin","-hide_banner","-loglevel","warning","-y",
+          *inputs,"-af","dynaudnorm=f=250:g=15:p=0.9",
+          "-codec:a","aac","-b:a",str(bitrate)+"k",
+          "-f","hls","-hls_segment_type","mpegts",
+          "-hls_time","10","-hls_list_size","12",
+          "-hls_delete_threshold","12",
+          "-hls_flags","delete_segments+temp_file+program_date_time+omit_endlist",
+          "-hls_start_number_source","epoch",
+          "-hls_segment_filename",str(target/"segment-%012d.ts"),
+          str(target/"index.m3u8")
+        ],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL)
     # -re limits the feed to real time for Icecast. An on-demand file render
     # must run as fast as CPU permits, especially on billed cloud compute.
     inputs=(["-re"] if realtime else [])+[
@@ -267,10 +286,10 @@ def output_process(destination,bitrate,realtime=True):
 def streaming(catalog,args):
     if not shutil.which("ffmpeg"):raise RuntimeError("FFmpeg must be installed")
     url=args.icecast_url or os.environ.get("HUMKIN_ICECAST_URL")
-    if not url and not args.file_output:raise RuntimeError("Set HUMKIN_ICECAST_URL (secret) or --file-output")
+    if not url and not args.file_output and not args.hls_dir:raise RuntimeError("Set HUMKIN_ICECAST_URL (secret), --file-output, or --hls-dir")
     if args.file_output and args.seconds<=0:raise RuntimeError("--file-output requires --seconds, to avoid unlimited file growth")
-    output=str(args.file_output) if args.file_output else url
-    if not args.file_output and not output.startswith("icecast://"):
+    output=str(args.hls_dir) if args.hls_dir else (str(args.file_output) if args.file_output else url)
+    if not args.file_output and not args.hls_dir and not output.startswith("icecast://"):
         raise RuntimeError("HUMKIN_ICECAST_URL must start with icecast://")
     station=StationV2(catalog,seed=args.seed if args.seed is not None else int(time.time())) if catalog.get("policy_version")==2 else Station(catalog)
     journal=BlackBox(args.black_box_file) if getattr(args,"black_box_file",None) else None
@@ -279,29 +298,46 @@ def streaming(catalog,args):
             try:journal.record(event,detail)
             except OSError:pass  # Logging is never allowed to stop the broadcast.
     cache=Path(args.cache).expanduser().resolve()
-    encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output))
+    encoder=output_process(output,args.bitrate,realtime=not bool(args.file_output),hls_dir=args.hls_dir)
     written=0
     maximum=int(args.seconds*RATE*FRAME_BYTES) if args.seconds else None
     def write(chunk):
         nonlocal written
+        # Cooperative managed stop lets FFmpeg close its current segment and
+        # release the temporary playlist before the R2 publisher exits.
+        if args.stop_file and args.run_id:
+            try:
+                if args.stop_file.read_text(encoding="utf-8").strip() == args.run_id:
+                    raise StopIteration()
+            except (OSError, UnicodeError):
+                pass
         if not chunk:return
         if maximum is not None:
             chunk=chunk[:max(0,maximum-written)]
             chunk=chunk[:len(chunk)//FRAME_BYTES*FRAME_BYTES]
         if chunk:
             if encoder.poll() is not None:
-                label=("Icecast source" if not args.file_output else "Local MP3 preview")
+                label=("HLS source" if args.hls_dir else ("Icecast source" if not args.file_output else "Local MP3 preview"))
                 raise RuntimeError(label+" encoder exited before audio was written; check the FFmpeg error above (for local preview, close any audio player locking the file).")
             encoder.stdin.write(chunk);written+=len(chunk)
         if maximum is not None and written>=maximum:raise StopIteration()
     # Download the NEXT public audio copy while the current recording plays.
     # This avoids blocking the encoder after a crossfade on ordinary cache misses.
     fetch_pool=ThreadPoolExecutor(max_workers=1)
+    prepared_decoders=set()
+    def prepare_next(item,reserved_bytes):
+        # Prefetch *and decode* the opening PCM while the preceding song plays.
+        # Previously only the MP3 was downloaded ahead of time. FFmpeg decoder
+        # startup then blocked the encoder exactly at the musical boundary.
+        process=decode(cache_track(item,cache))
+        prepared_decoders.add(process)
+        return process,read_exact(process.stdout,reserved_bytes)
     try:
         current=station.next()
         ahead=station.next()
         decode_current=decode(cache_track(current,cache))
-        ahead_future=fetch_pool.submit(cache_track,ahead,cache)
+        ahead_future=fetch_pool.submit(
+            prepare_next,ahead,overlap_bytes(current,ahead,args.crossfade))
         while True:
             # 'source_select' is a playout decision, never proof a listener heard it.
             trace("source_select",{"mode":"stream","track_id":current["id"],
@@ -310,8 +346,11 @@ def streaming(catalog,args):
             tail_size=overlap_bytes(current,ahead,args.crossfade)
             try:
                 tail=pump_with_tail(decode_current,write,tail_size)
-                head_process=decode(ahead_future.result(timeout=45))
-                head=read_exact(head_process.stdout,tail_size)
+                # Completed decoders must not accumulate in long-running radio.
+                prepared_decoders.discard(decode_current)
+                # The opening PCM should already be available: no decoder
+                # startup pause between the tail and this crossfade.
+                head_process,head=ahead_future.result(timeout=45)
                 n=min(len(head),len(tail))//FRAME_BYTES*FRAME_BYTES
                 if n:
                     write(tail[:-n])
@@ -322,7 +361,8 @@ def streaming(catalog,args):
                       "next_track_id":ahead["id"],"reason":"automatic"})
                 current=ahead
                 ahead=station.next()
-                ahead_future=fetch_pool.submit(cache_track,ahead,cache)
+                ahead_future=fetch_pool.submit(
+                    prepare_next,ahead,overlap_bytes(current,ahead,args.crossfade))
                 decode_current=head_process
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
                 trace("audio_error",{"mode":"stream","track_id":current["id"],
@@ -336,9 +376,18 @@ def streaming(catalog,args):
                 # Leave the single source connection open across a bad song.
                 write(b"\0"*(RATE*FRAME_BYTES))
     except StopIteration:
-        print("Local timed broadcast sample complete.",flush=True)
+        print("Station One stopping; flushing audio segments.",flush=True)
     finally:
-        fetch_pool.shutdown(wait=False,cancel_futures=True)
+        # Let a pending predecode finish before releasing its FFmpeg handle.
+        # This worker only reads a short opening; it cannot stream a whole
+        # recording in the background. A rare bad network source can still
+        # delay teardown, bounded by cache_track's existing HTTP timeout.
+        fetch_pool.shutdown(wait=True,cancel_futures=True)
+        for proc in prepared_decoders:
+            if proc.poll() is None:
+                proc.kill()
+                try:proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:pass
         # An interrupted preview must not leave decoder processes holding pipes.
         for proc in [locals().get("decode_current"),locals().get("head_process")]:
             if proc is not None and proc.poll() is None:
@@ -352,7 +401,7 @@ def streaming(catalog,args):
             encoder.kill();encoder.wait()
         # At this point encoder has terminated; file-output failures should
         # never be reported as a successful preview if FFmpeg failed at flush.
-        if encoder.returncode not in (None,0) and args.file_output and sys.exc_info()[0] is None:
+        if encoder.returncode not in (None,0) and (args.file_output or args.hls_dir) and sys.exc_info()[0] is None:
             raise RuntimeError("Local MP3 preview FFmpeg encoder exited with code "+
                                str(encoder.returncode)+". Check the FFmpeg error above.")
 
@@ -367,10 +416,19 @@ def main():
     p.add_argument("--black-box-file",type=Path,help="optional local private diagnostic JSONL; never uploaded")
     p.add_argument("--icecast-url",help="private Icecast source URL; prefer env HUMKIN_ICECAST_URL")
     p.add_argument("--file-output",type=Path,help="local MP3 test output instead of broadcasting")
+    p.add_argument("--hls-dir",type=Path,help="encode live AAC/HLS to local directory for R2 publisher")
+    p.add_argument("--stop-file",type=Path,help="managed HLS stop marker path (local)")
+    p.add_argument("--run-id",help="managed HLS session identifier")
     p.add_argument("--seconds",type=int,default=0,help="limit local test output duration")
     p.add_argument("--bitrate",type=int,default=128,choices=[96,128,160,192])
     p.add_argument("--crossfade",type=float,default=1.5,help="equal-power crossfade seconds, 0–5")
     args=p.parse_args()
+    if sum(bool(x) for x in (args.hls_dir,args.file_output,args.icecast_url))>1:
+        p.error("Choose only one output: --hls-dir, --file-output, or --icecast-url")
+    if bool(args.stop_file)!=bool(args.run_id) or (args.run_id and not re.fullmatch(r"[0-9a-f]{32}",args.run_id)):
+        p.error("--stop-file and --run-id must be provided together")
+    if args.stop_file and not args.hls_dir:
+        p.error("--stop-file is only supported in HLS mode")
     if not 0<=args.crossfade<=5:p.error("--crossfade must be between 0 and 5")
     if not 0<=args.retry_count<=100:p.error("--retry-count must be between 0 and 100")
     if args.fixture:catalog=json.loads(args.fixture.read_text(encoding="utf-8"))
@@ -388,7 +446,7 @@ def main():
             streaming(catalog,args)
             return
         except (OSError,RuntimeError,subprocess.SubprocessError):
-            if args.file_output or attempt>=args.retry_count:raise
+            if args.file_output or args.hls_dir or attempt>=args.retry_count:raise
             delay=min(60,2**attempt)
             if args.black_box_file:
                 try:BlackBox(args.black_box_file).record("reconnect",{"mode":"stream","reason":"reconnect"})
