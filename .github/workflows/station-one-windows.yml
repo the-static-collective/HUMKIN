@@ -62,6 +62,12 @@ jobs:
           $env:PATH = "$tools;$env:PATH"
           & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/radio-broadcast/windows/station-one.ps1 -Action Preflight
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows per-user DPAPI R2 credential vault (fake token, offline)
+        shell: powershell
+        run: |
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'humkin-vault-self-test'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/radio-broadcast/windows/station-one.ps1 -Action VaultSelfTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Python planner and PCM offline unit tests
         shell: powershell
         run: python tests/radio-broadcast.test.py
