@@ -70,6 +70,7 @@ def optional_catalog(get_json, radio, api):
                     album=str(row.get("album") or "HUMKIN RADIO · R2")[:200],
                     kind="song",duration=duration,source="r2",
                     seasonal=row.get("seasonal") is True,
+                    sha256=row.get("sha256") if re.fullmatch(r"[0-9a-f]{64}",str(row.get("sha256") or "")) else None,
                     url=url))
     except (OSError, ValueError, TypeError, KeyError):
         pass
