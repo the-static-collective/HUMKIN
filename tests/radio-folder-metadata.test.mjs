@@ -17,6 +17,7 @@ assert.deepEqual([d.artist,d.album],["Eno Efia","Unshackled Dreams"]);
 assert.equal(inferFileMetadata("C:\\Music\\Violet\\Track.mp3","artist").artist,"Violet");
 assert.equal(inferFileMetadata("Track.mp3","artist/album").artist,"");
 assert.equal(inferFileMetadata("Music/Untitled.mp3","artist/album").album,"");
+assert.deepEqual([inferFileMetadata("Music/Artist/Track.mp3","artist/album").artist,inferFileMetadata("Music/Artist/Track.mp3","artist/album").album],["",""]);
 const e=inferFileMetadata("Music/Album/Artist/Song.mp3","album/artist");
 assert.deepEqual([e.artist,e.album],["Artist","Album"]);
 const f=inferFileMetadata("Music/Artist/Live/Album/Track.mp3","artist/ignore/album");
