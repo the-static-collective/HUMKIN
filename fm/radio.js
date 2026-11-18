@@ -214,7 +214,7 @@ async function getPublishedCrate(){
     const timer=setTimeout(()=>abort.abort(),7000);
     let rows;
     try{
-      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,art_asset_id,duration_seconds,storage_path,storage_provider,r2_object_key&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
+      const response=await fetch(CRATE_API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,art_asset_id,duration_seconds,storage_path,storage_provider,r2_object_key,sha256&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",
         {headers:{apikey:CRATE_KEY},cache:"no-cache",signal:abort.signal});
       if(!response.ok)throw Error("HTTP "+response.status);
       rows=await response.json();
@@ -237,7 +237,7 @@ async function getPublishedCrate(){
         album:row.kind==="bumper"?"HUMKIN RADIO · STATION BUMPERS":String(row.album||"HUMKIN RADIO"),
         duration,src,kind:row.kind==="bumper"?"bumper":"song",
         is_single:row.kind!=="bumper"&&row.is_single===true,
-        source:"cloud",storage_provider:backend,art_asset_id:row.art_asset_id||null,artwork:fileUrl("cover.jpg",root)};
+        source:"cloud",storage_provider:backend,art_asset_id:row.art_asset_id||null,\n         sha256:/^[0-9a-f]{64}$/.test(row.sha256||"")?row.sha256:"",\n         artwork:fileUrl("cover.jpg",root)};
     }).filter(t=>t?.title);
   }catch(error){console.warn("HUMKIN additional crate unavailable; using original radio rotation.",error);return []}
 }
