@@ -245,6 +245,11 @@ def output_process(destination,bitrate,realtime=True):
       "-f","s16le","-ar",str(RATE),"-ac","2","-i","pipe:0"]
     return subprocess.Popen([
       "ffmpeg","-nostdin","-hide_banner","-loglevel","warning",
+      # FFmpeg defaults to declining an existing filename. A previous failed
+      # preview can leave station-one-preview.mp3 behind; on Windows this makes
+      # every subsequent test exit immediately instead of producing audio.
+      # Overwrite ONLY explicitly requested local file previews.
+      *([] if destination.startswith("icecast://") else ["-y"]),
       *inputs,
       "-af","dynaudnorm=f=250:g=15:p=0.9",
       "-codec:a","libmp3lame","-b:a",str(bitrate)+"k",
@@ -254,7 +259,10 @@ def output_process(destination,bitrate,realtime=True):
       # through FFmpeg argv, so restrict workstation access.
       *(["-tls","1","-ice_name","HUMKIN RADIO"] if destination.startswith("icecast://") else []),
       "-f","mp3",destination
-    ],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    ],stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,
+      # Local preview failures must be visible to diagnose codec/file locks.
+      # NEVER echo source ingest URL / credentials from Icecast stderr.
+      stderr=(subprocess.DEVNULL if destination.startswith("icecast://") else None))
 
 def streaming(catalog,args):
     if not shutil.which("ffmpeg"):raise RuntimeError("FFmpeg must be installed")
@@ -281,7 +289,9 @@ def streaming(catalog,args):
             chunk=chunk[:max(0,maximum-written)]
             chunk=chunk[:len(chunk)//FRAME_BYTES*FRAME_BYTES]
         if chunk:
-            if encoder.poll() is not None:raise RuntimeError("Encoder/Icecast source disconnected; see FFmpeg errors")
+            if encoder.poll() is not None:
+                label=("Icecast source" if not args.file_output else "Local MP3 preview")
+                raise RuntimeError(label+" encoder exited before audio was written; check the FFmpeg error above (for local preview, close any audio player locking the file).")
             encoder.stdin.write(chunk);written+=len(chunk)
         if maximum is not None and written>=maximum:raise StopIteration()
     # Download the NEXT public audio copy while the current recording plays.
@@ -340,6 +350,11 @@ def streaming(catalog,args):
         try:encoder.wait(timeout=45)
         except subprocess.TimeoutExpired:
             encoder.kill();encoder.wait()
+        # At this point encoder has terminated; file-output failures should
+        # never be reported as a successful preview if FFmpeg failed at flush.
+        if encoder.returncode not in (None,0) and args.file_output and sys.exc_info()[0] is None:
+            raise RuntimeError("Local MP3 preview FFmpeg encoder exited with code "+
+                               str(encoder.returncode)+". Check the FFmpeg error above.")
 
 def main():
     p=argparse.ArgumentParser(description="HUMKIN always-on audio source; physical server setup required")

@@ -115,6 +115,15 @@ if __name__=="__main__":
                 raise AssertionError("FFmpeg Icecast-source offline preview failed: "+
                                      run.stderr[-2000:]+"\n"+run.stdout[-1200:])
             assert dest.exists() and dest.stat().st_size>10000,"Encoder did not output continuous MP3"
+            # Regress the real Acer failure: the previous run has already
+            # created the SAME destination MP3. FFmpeg must overwrite it
+            # without prompting or exiting before the next preview.
+            dest.write_bytes(b"PREVIOUS FAILED PREVIEW")
+            rerun=subprocess.run(command,text=True,capture_output=True,timeout=45)
+            if rerun.returncode!=0:
+                raise AssertionError("Second preview to EXISTING file failed: "+
+                                     rerun.stderr[-2000:]+"\n"+rerun.stdout[-1200:])
+            assert dest.stat().st_size>10000,"Repeated preview was not replaced with MP3 audio"
             probe=subprocess.run(["ffprobe","-v","error","-show_entries","format=duration",
                 "-of","default=nw=1:nk=1",str(dest)],capture_output=True,text=True,check=True)
             assert 4.0<float(probe.stdout.strip())<6.5,"Expected approximately five seconds of stream"
