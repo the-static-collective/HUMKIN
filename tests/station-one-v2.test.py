@@ -69,15 +69,15 @@ class ProgrammingTests(unittest.TestCase):
         self.assertEqual(enhanced[:4],baseline[:4])
         self.assertEqual(enhanced[-4:],baseline[-4:])
 
-    def test_bumper_family_guard_never_breaks_fair_bag(self):
+    def test_only_alternate_cuts_spaced_within_fair_bag(self):
         from scheduler_v2 import ShuffledBag
-        bag = ShuffledBag(["robot-a", "robot-b", "bells"], random.Random(24))
-        family = lambda id_: "robot-radio" if id_.startswith("robot") else "bells"
-        first = bag.take({"robot-radio"}, family)
-        self.assertEqual(first, "bells", "A distinct voice is available in the same bag")
-        remaining = [bag.take({"robot-radio"}, family) for _ in range(2)]
-        self.assertEqual(set(remaining), {"robot-a", "robot-b"},
-                         "Avoidance must never skip/duplicate a recording")
+        bag = ShuffledBag(["cut-21s", "cut-42s", "independent"], random.Random(24))
+        edit_group = lambda id_: "same-master" if id_.startswith("cut-") else id_
+        first = bag.take({"same-master"}, edit_group)
+        self.assertEqual(first, "independent", "Different master available in same bag")
+        remaining = [bag.take({"same-master"}, edit_group) for _ in range(2)]
+        self.assertEqual(set(remaining), {"cut-21s", "cut-42s"},
+                         "Spacing cannot skip or duplicate an individual cut")
 
     def test_ffmpeg_icecast_source_requires_tls(self):
         import engine
@@ -104,12 +104,19 @@ class ProgrammingTests(unittest.TestCase):
         self.assertLessEqual(max(0,max(sum(1 for x in out[j:j+5] if int(x[1:])<20)
                          for j in range(56))),5)
 
-    def test_review_hold_and_safety_claim(self):
+    def test_only_explicit_holds_and_invalid_duration_exclude_carts(self):
         policy=self.catalog["rotation"]["bumper_brain"]
         self.assertIsNone(bumper_lane(self.catalog["tracks"][-1],policy))
         announcement=make_track("clock",kind="bumper",duration=8)
         announcement["title"]="Top of the hour!"
-        self.assertIsNone(bumper_lane(announcement,{}))
+        self.assertEqual(bumper_lane(announcement,{}),"short",
+                         "Fictional title must not exclude approved art")
+        opener=make_track("open",kind="bumper",duration=56)
+        opener["title"]="Taken Minute Opener"
+        self.assertEqual(bumper_lane(opener,{}),"medium",
+                         "Show opener title must not create a hold")
+        oversized=make_track("too-long",kind="bumper",duration=181)
+        self.assertIsNone(bumper_lane(oversized,{}))
 
     def test_chart_is_bounded_and_only_published_tracks(self):
         by_id={t["id"]:t for t in self.catalog["tracks"]}
