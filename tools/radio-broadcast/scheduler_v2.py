@@ -172,7 +172,7 @@ class ShuffledBag:
         self.bag = []
         self.last = None
 
-    def take(self):
+    def take(self, avoid=(), family_of=None):
         if not self.ids:
             return None
         if not self.bag:
@@ -180,7 +180,14 @@ class ShuffledBag:
             self.rng.shuffle(self.bag)
             if len(self.bag) > 1 and self.bag[-1] == self.last:
                 self.bag[0], self.bag[-1] = self.bag[-1], self.bag[0]
-        id_ = self.bag.pop()
+        # Prefer a different voice/series among carts still in this fair
+        # bag. Never pull a cart from the next bag to satisfy spacing.
+        if family_of and avoid:
+            position = next((i for i in range(len(self.bag) - 1, -1, -1)
+                             if family_of(self.bag[i]) not in avoid), None)
+            id_ = self.bag.pop(position) if position is not None else self.bag.pop()
+        else:
+            id_ = self.bag.pop()
         self.last = id_
         return id_
 
@@ -198,6 +205,15 @@ def with_bumpers(songs, tracks, settings, policy, rng):
         if lane:
             groups[lane].append(id_)
     bags = {lane: ShuffledBag(sorted(ids), rng) for lane, ids in groups.items()}
+    recent_families = deque(maxlen=3)
+    def family_of(id_):
+        profile = policy.get("profiles", {}).get(id_, {})
+        return str(profile.get("family") or id_)
+    def pick(lane):
+        selected = bags[lane].take(recent_families, family_of)
+        if selected is not None:
+            recent_families.append(family_of(selected))
+        return selected
     if not any(groups.values()):
         return songs[:]
     mean = sum(float(tracks[id_]["duration"]) for id_ in songs) / len(songs)
@@ -228,7 +244,7 @@ def with_bumpers(songs, tracks, settings, policy, rng):
             pulse += 1
         selected = None
         if groups["long"] and nominal >= next_long:
-            selected = bags["long"].take()
+            selected = pick("long")
             while next_long <= nominal:
                 next_long += long_every
             while next_mid <= nominal:
@@ -236,11 +252,11 @@ def with_bumpers(songs, tracks, settings, policy, rng):
         elif groups["medium"] and nominal >= next_mid:
             long_soon = groups["long"] and next_long - nominal <= mid_every * .55
             if not long_soon and nominal - last_anchor >= mid_every * .55:
-                selected = bags["medium"].take()
+                selected = pick("medium")
             while next_mid <= nominal:
                 next_mid += mid_period
         elif short_due:
-            selected = bags["short"].take()
+            selected = pick("short")
         if selected is not None:
             sequence.append(selected)
             if selected in groups["medium"] or selected in groups["long"]:
