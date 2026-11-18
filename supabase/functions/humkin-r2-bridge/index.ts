@@ -73,8 +73,8 @@ Deno.serve(async(request:Request)=>{
    pending_bytes:pending.reduce((s,r)=>s+Number(r.bytes||0),0),
    r2_bytes:r2.reduce((s,r)=>s+Number(r.bytes||0),0),
    private_drafts:all.length-published.length,
-   supabase_copies_remaining:all.filter(r=>!r.supabase_source_removed_at).length,
-   supabase_storage_estimate_bytes:all.filter(r=>!r.supabase_source_removed_at)
+   supabase_copies_remaining:all.filter(r=>r.storage_provider!=="r2_private"&&!r.supabase_source_removed_at).length,
+   supabase_storage_estimate_bytes:all.filter(r=>r.storage_provider!=="r2_private"&&!r.supabase_source_removed_at)
       .reduce((n,r)=>n+Number(r.bytes||0),0),
    reclaimable_copies:r2.filter(r=>!r.supabase_source_removed_at).length,
    reclaimable_bytes:r2.filter(r=>!r.supabase_source_removed_at)
