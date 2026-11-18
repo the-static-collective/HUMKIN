@@ -1,16 +1,16 @@
-import {AMOUNTS,RAILS,amountText,parseReceptacle,previewObservation} from "./support-logic.mjs";
+import {AMOUNTS,RAILS,amountText,parseReceptacle,previewObservation,providerAmountStatus} from "./support-logic.mjs";
 const coins=[...document.querySelectorAll("[data-cents]")];
 const doors=document.getElementById("doors");
 const result=document.getElementById("result");
 const explain=document.getElementById("explain");
-let cents=25;
+let cents=25;\nlet refreshDoors=()=>{};
 for(const coin of coins){
   coin.addEventListener("click",()=>{
     const next=Number(coin.dataset.cents);
     if(!AMOUNTS.includes(next))return;
     cents=next;
     for(const item of coins)item.setAttribute("aria-pressed",String(item===coin));
-    result.textContent="Selected "+amountText(cents)+". Nothing has been sent.";
+    result.textContent="Selected "+amountText(cents)+". Nothing has been sent.";\n    if(typeof refreshDoors==="function")refreshDoors();
   });
 }
 document.getElementById("test-drop").addEventListener("click",()=>{
@@ -32,7 +32,7 @@ try{
     showUnavailable("THE JAR IS IN PRACTICE MODE. NO LIVE PAYMENT DOORS YET.");
   }else{
     doors.replaceChildren();
-    for(const door of manifest.doors){
+    const linkRows=[];\n    for(const door of manifest.doors){
       const a=document.createElement("a");
       a.className="provider";a.textContent=RAILS[door.provider].label+" ↗";
       a.href=door.url;a.target="_blank";a.rel="noopener noreferrer";
@@ -42,7 +42,7 @@ try{
         result.textContent="Opening "+RAILS[door.provider].label+" for a suggested "+amountText(cents)+
           ". Enter the amount in the provider. This page cannot confirm payment.";
       });
-      doors.append(a);
+      doors.append(a);\n      linkRows.push({door,anchor:a});
     }
     explain.textContent="Selected "+amountText(cents)+". The provider link does not prefill or transfer money. Verify the recipient and enter the amount in that app. Provider minimums and fees may apply.";
     for(const coin of coins)coin.addEventListener("click",()=>{
