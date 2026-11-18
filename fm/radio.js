@@ -275,7 +275,12 @@ function musicIndices(){
   return tracks.map((t,i)=>t.kind==="bumper"?-1:i).filter(i=>i!==-1);
 }
 function bumperIndices(){
-  return tracks.map((t,i)=>t.kind==="bumper"?i:-1).filter(i=>i!==-1);
+  // Feature-only spoken recordings stay available in explicit shows, never
+  // in the random bumper lottery, even if its duration cap later changes.
+  const featureOnly=new Set(Array.isArray(config?.feature_only_spoken_sha256s)?
+    config.feature_only_spoken_sha256s:[]);
+  return tracks.map((t,i)=>t.kind==="bumper"&&!featureOnly.has(t.sha256)?i:-1)
+    .filter(i=>i!==-1);
 }
 // The official release list is explicit, not inferred from upload time.
 // Cloud inbox songs remain in normal rotation until declared as a release.
