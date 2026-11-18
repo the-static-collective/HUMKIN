@@ -237,7 +237,9 @@ async function getPublishedCrate(){
         album:row.kind==="bumper"?"HUMKIN RADIO · STATION BUMPERS":String(row.album||"HUMKIN RADIO"),
         duration,src,kind:row.kind==="bumper"?"bumper":"song",
         is_single:row.kind!=="bumper"&&row.is_single===true,
-        source:"cloud",storage_provider:backend,art_asset_id:row.art_asset_id||null,\n         sha256:/^[0-9a-f]{64}$/.test(row.sha256||"")?row.sha256:"",\n         artwork:fileUrl("cover.jpg",root)};
+        source:"cloud",storage_provider:backend,art_asset_id:row.art_asset_id||null,
+         sha256:/^[0-9a-f]{64}$/.test(row.sha256||"")?row.sha256:"",
+         artwork:fileUrl("cover.jpg",root)};
     }).filter(t=>t?.title);
   }catch(error){console.warn("HUMKIN additional crate unavailable; using original radio rotation.",error);return []}
 }
