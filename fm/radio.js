@@ -310,7 +310,7 @@ function weightedMusic(eligible,rotation){
 function withStationIds(music,rotationSeed=0){
   const bumpers=bumperIndices();
   const ruleEngine=window.HUMKIN_BUMPER_RELATIONS;
-  const excluded=bumpers.filter(i=>!ruleEngine?.permitted(
+  const excluded=bumpers.filter(i=>ruleEngine&&!ruleEngine.permitted(
      tracks[i].id,stationSettings.bumper_rules,new Date(stationNow()),
      mode==="clock"?"clock":"shuffle")).map(i=>tracks[i].id);
   const policy={...(config?.bumper_brain||{}),groups:stationSettings.bumper_groups,
