@@ -1,6 +1,7 @@
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import {prepareCover} from "./art-upload.js";
 import {r2Bridge} from "../r2-bridge-client.js";
+import {mountBumperControls} from "./bumper-workbench.js";
 
 // Publishable key only. Every write is checked again by owner-only Postgres RLS.
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
@@ -14,6 +15,7 @@ let artAssets=[];
 let r2Status=null;
 let stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
 let bumperPolicy={};
+let bumperGroups=[],editorialRules=[];
 const selected=new Set();
 function el(tag,value,className){
  const node=document.createElement(tag);
@@ -70,6 +72,8 @@ async function loadDesk(){
    $("logout").classList.add("hidden");
    $("catalog").replaceChildren(el("p","Sign in to manage the library."));
    $("show-list").replaceChildren(el("p","Sign in to manage programming."));
+   $("group-editor-root")?.replaceChildren(el("p","Sign in to edit groups."));
+   $("rule-editor-root")?.replaceChildren(el("p","Sign in to edit optional rules."));
    return;
  }
  $("login-link").classList.add("hidden");
@@ -84,7 +88,7 @@ async function loadDesk(){
    db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind,art_asset_id").limit(1000),
    db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at,art_asset_id")
     .order("start_minute",{ascending:true}).limit(500),
-   db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label").eq("id","main").limit(1),
+   db.from("humkin_radio_settings").select("id,owner_id,bumper_every,station_label,bumper_groups,bumper_rules").eq("id","main").limit(1),
    db.from("humkin_radio_art_assets").select("id,owner_id,sha256,storage_path,label,width,height,bytes,created_at")
     .order("created_at",{ascending:false}).limit(500),
    fetch("../air-carts.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null),
@@ -148,8 +152,14 @@ async function loadDesk(){
     bumper_every:Number(settingsResult.data?.[0]?.bumper_every)||0,
     station_label:settingsResult.data?.[0]?.station_label||"HUMKIN RADIO"
   };
+  bumperGroups=Array.isArray(settingsResult.data?.[0]?.bumper_groups)?
+    settingsResult.data[0].bumper_groups:[];
+  editorialRules=Array.isArray(settingsResult.data?.[0]?.bumper_rules)?
+    settingsResult.data[0].bumper_rules:[];
   for(const id of [...selected])if(!library.find(t=>t.id===id))selected.delete(id);
   renderArtShelf();renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
+  mountBumperControls({db,ownerId:user.id,library,groups:bumperGroups,rules:editorialRules,
+    selected,refresh:loadDesk,authorize:requireOwner});
   await refreshR2VaultStatus();
  }catch(err){note("Could not read station: "+err.message);$("auth-status").textContent="Signed in · data unavailable"}
 }
@@ -334,12 +344,16 @@ function renderBumperPreview(){
  }
  const songs=library.map((t,i)=>trackAvailable(t)&&t.kind==="song"?i:-1).filter(i=>i>=0);
  const bumpers=library.map((t,i)=>trackAvailable(t)&&t.kind==="bumper"?i:-1).filter(i=>i>=0);
- const policy=bumperPolicy;
- const draft=engine.plan(songs,bumpers,stationSettings.bumper_every,library,policy);
+ const controls=window.HUMKIN_BUMPER_RELATIONS;
+ const excluded=library.filter(t=>t.kind==="bumper"&&
+   !controls?.permitted(t.id,editorialRules,new Date(),"clock")).map(t=>t.id);
+ const policy={...bumperPolicy,groups:bumperGroups,excluded_ids:excluded};
+ const raw=engine.plan(songs,bumpers,stationSettings.bumper_every,library,policy);
+ const draft=engine.remix(raw,bumpers,library,policy,17);
  const held=draft.held.map(t=>t.title);
- $("bumper-held").textContent=draft.eligible+" routine-ready · "+
-   draft.held.length+" on program hold (not in routine rotation). "+
-   (held.length?"Held: "+held.slice(0,8).join(" · ")+(held.length>8?" …":""):"");
+ $("bumper-held").textContent=draft.eligible+" eligible · "+
+   draft.held.length+" intentionally held / technically invalid · "+
+   (held.length?"Excluded: "+held.slice(0,8).join(" · ")+(held.length>8?" …":""):"No active editorial holds.");
  if(!draft.breaks.length){
   list.append(el("li","No routine breaks at this cadence or with this inventory."));
   return;
