@@ -90,7 +90,7 @@ class ProgrammingTests(unittest.TestCase):
         by = {x["id"]: x for x in songs+bumpers}
         seq = ["s0","A","s1","X","s2","Y","s3","B","s4","Z","s5","s6"]
         output = arrange_bumpers(seq,by,[{"enabled":True,"kind":"attract",
-            "track_ids":["A","B"]}],{"short":1,"medium":4,"long":0})
+            "track_ids":["A","B"]}],{"short":1,"medium":4,"long":0},near=2)
         self.assertEqual(output[3],"B")
         self.assertEqual({k:output.count(k) for k in seq},
                          {k:seq.count(k) for k in seq})
@@ -99,7 +99,7 @@ class ProgrammingTests(unittest.TestCase):
         self.assertEqual(sum(by[k]["duration"] for k in seq),
                          sum(by[k]["duration"] for k in output))
         quiet = arrange_bumpers(seq,by,[{"enabled":False,"kind":"attract",
-            "track_ids":["A","B"]}],{"short":1,"medium":4,"long":0})
+            "track_ids":["A","B"]}],{"short":1,"medium":4,"long":0},near=2)
         self.assertEqual(quiet,seq, "Disabled groups cannot move recordings")
 
     def test_opt_in_rules_are_disabled_unless_owner_activates(self):
