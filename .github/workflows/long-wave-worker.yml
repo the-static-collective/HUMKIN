@@ -1,0 +1,25 @@
+name: Verify HUMKIN Long Wave Worker
+on:
+  pull_request:
+    paths:
+      - 'tools/radio-broadcast/cloudflare/**'
+      - 'fm/long-wave/**'
+      - 'docs/LONG-WAVE-BACKGROUND-STREAM.md'
+      - '.github/workflows/long-wave-worker.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source syntax checks
+        run: |
+          node --check tools/radio-broadcast/cloudflare/worker.mjs
+          node --check fm/long-wave/receiver.js
+      - name: Long Wave stream and receiver regression tests
+        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs
