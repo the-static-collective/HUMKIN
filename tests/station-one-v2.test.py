@@ -69,6 +69,16 @@ class ProgrammingTests(unittest.TestCase):
         self.assertEqual(enhanced[:4],baseline[:4])
         self.assertEqual(enhanced[-4:],baseline[-4:])
 
+    def test_bumper_family_guard_never_breaks_fair_bag(self):
+        from scheduler_v2 import ShuffledBag
+        bag = ShuffledBag(["robot-a", "robot-b", "bells"], random.Random(24))
+        family = lambda id_: "robot-radio" if id_.startswith("robot") else "bells"
+        first = bag.take({"robot-radio"}, family)
+        self.assertEqual(first, "bells", "A distinct voice is available in the same bag")
+        remaining = [bag.take({"robot-radio"}, family) for _ in range(2)]
+        self.assertEqual(set(remaining), {"robot-a", "robot-b"},
+                         "Avoidance must never skip/duplicate a recording")
+
     def test_ffmpeg_icecast_source_requires_tls(self):
         import engine
         with patch.object(engine.subprocess,"Popen") as popen:
