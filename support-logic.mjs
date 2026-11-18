@@ -60,7 +60,8 @@ export function parseReceptacle(value){
     doors.push({id:door.id,provider:door.provider,url:door.url});
   }
   if(!doors.length)throw Error("No approved payment doors");
-  return {mode:value.mode,doors,sourceHead:value.mode==="live"?value.sourceHead:null,\n    identityVerifiedExternally:false};
+  return {mode:value.mode,doors,sourceHead:value.mode==="live"?value.sourceHead:null,
+    identityVerifiedExternally:false};
 }
 export function previewObservation(cents){
   return Object.freeze({type:"SIMULATED_INTENT",cents,settled:false,verified:false,
