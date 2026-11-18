@@ -23,6 +23,10 @@ PLAYLIST_KEY = PREFIX + "live.m3u8"
 RETIRE_SECONDS = 180
 
 
+class PlaylistNotReady(ValueError):
+    """Valid but incomplete startup playlist; retry when more segments arrive."""
+
+
 def parse_playlist(content):
     """Return safe segment filenames; reject keys, remote URIs, and partial HLS."""
     if not content.startswith("#EXTM3U\n"):
@@ -31,10 +35,12 @@ def parse_playlist(content):
         raise ValueError("Encrypted, initialized or byterange HLS is not supported")
     names = [line.strip() for line in content.splitlines()
              if line.strip() and not line.startswith("#")]
-    if len(names) < 3 or len(names) > 36 or len(set(names)) != len(names):
+    if len(names) > 36 or len(set(names)) != len(names):
         raise ValueError("Live playlist requires 3-36 distinct segments")
     if not all(SEGMENT.fullmatch(name) for name in names):
         raise ValueError("Playlist has an invalid segment name")
+    if len(names) < 3:
+        raise PlaylistNotReady("Waiting for at least three completed HLS segments")
     return names
 
 
@@ -85,7 +91,13 @@ class Publisher:
         if not index.is_file():
             return False
         raw = index.read_text(encoding="utf-8")
-        playlist, names = rewrite_playlist(raw, self.session)
+        try:
+            playlist, names = rewrite_playlist(raw, self.session)
+        except PlaylistNotReady:
+            # FFmpeg publishes a 1- or 2-segment manifest at startup.
+            # Waiting is normal; do not kill the encoder or leak an incomplete
+            # live playlist to R2. All malformed manifests remain fatal.
+            return False
         for name in names:
             if name in self.uploaded:
                 continue
