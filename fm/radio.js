@@ -20,7 +20,7 @@ let localFallbackCount=0,usingLocalFallback=false;
 let lastPlaybackPosition=0,lastPlaybackProgressAt=Date.now(),lastBoundaryToken=-1;
 let albumQueue=[],albumCursor=0; // Optional iOS14 receiver album mode; no extra audio element.
 let remoteStream=null,hostedNowPlayingUrl=null,hostedPollTimer=null;
-let programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
+let programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO",bumper_groups:[],bumper_rules:[]};
 let cloudCatalogHealthy=false;
 let chartAirIds=[],chartStationDay="";
 const LEAGUE_API="https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-league";
@@ -309,12 +309,17 @@ function weightedMusic(eligible,rotation){
 }
 function withStationIds(music,rotationSeed=0){
   const bumpers=bumperIndices();
+  const ruleEngine=window.HUMKIN_BUMPER_RELATIONS;
+  const excluded=bumpers.filter(i=>!ruleEngine?.permitted(
+     tracks[i].id,stationSettings.bumper_rules,new Date(stationNow()),
+     mode==="clock"?"clock":"shuffle")).map(i=>tracks[i].id);
+  const policy={...(config?.bumper_brain||{}),groups:stationSettings.bumper_groups,
+    excluded_ids:excluded};
   const raw=window.HUMKIN_BUMPER_BRAIN?.plan(music,bumpers,
-    stationSettings.bumper_every,tracks,config?.bumper_brain);
-  // A shared-clock cycle must retain a fixed duration, even while the
-  // short/medium/long bumper order is varied across successive cycles.
+    stationSettings.bumper_every,tracks,policy);
+  // Group permutations never change cycle duration; Same-Time stays synced.
   const remixed=raw&&window.HUMKIN_BUMPER_BRAIN?.remix(
-    raw,bumpers,tracks,config?.bumper_brain,rotationSeed);
+    raw,bumpers,tracks,policy,rotationSeed);
   return remixed?.sequence||raw?.sequence||window.HUMKIN_AUTODJ?.insertBumpers(
     music,bumpers,stationSettings.bumper_every)||music;
 }
@@ -656,6 +661,16 @@ function nextShuffle(shouldPlay){
   const previous=order[cursor];
   cursor+=1;
   if(cursor>=order.length)buildShuffle(previous);
+  // Day/date restrictions are evaluated at the actual boundary for Road
+  // Shuffle, not just when the playlist was first built. Same-Time has a
+  // fixed epoch and never applies variable time exclusions.
+  for(let n=0;n<order.length&&tracks[order[cursor]]?.kind==="bumper"&&
+      !window.HUMKIN_BUMPER_RELATIONS?.permitted(
+       tracks[order[cursor]].id,stationSettings.bumper_rules,
+       new Date(stationNow()),"shuffle");n++){
+    cursor++;
+    if(cursor>=order.length)buildShuffle(previous);
+  }
   if(tracks[order[cursor]]?.kind!=="bumper"){
     let chosen=shufflePolicy?.chooseSlot(order,cursor,tracks,lastPlayed,Date.now())??cursor;
     if(chosen>=cursor&&chosen!==cursor)[order[cursor],order[chosen]]=[order[chosen],order[cursor]];
@@ -968,7 +983,7 @@ async function boot(){
       getPublicR2Tracks(),
       fetchExtras("humkin_radio_static_overrides","track_id,title,artist,album,enabled,kind,art_asset_id","&limit=1000"),
       fetchExtras("humkin_radio_programs","id,name,days,start_minute,end_minute,track_ids,is_active,priority,art_asset_id","&is_active=eq.true&limit=100"),
-      fetchExtras("humkin_radio_settings","id,bumper_every,station_label","&id=eq.main&limit=1"),
+      fetchExtras("humkin_radio_settings","id,bumper_every,station_label,bumper_groups,bumper_rules","&id=eq.main&limit=1"),
       fetchExtras("humkin_radio_art_assets","id,storage_path","&limit=1000"),
       window.HUMKIN_CLOCK_SYNC?.calibrate(fetch,CRATE_API,CRATE_KEY,()=>Date.now())
         ||Promise.resolve({offsetMs:0,synced:false}),
@@ -981,7 +996,9 @@ async function boot(){
     chartAirIds=Array.isArray(leagueSnapshot?.ids)?leagueSnapshot.ids:[];
     stationSettings={
       bumper_every:window.HUMKIN_AUTODJ?.cadenceValue(settings[0]?.bumper_every)||0,
-      station_label:String(settings[0]?.station_label||"HUMKIN RADIO")
+      station_label:String(settings[0]?.station_label||"HUMKIN RADIO"),
+      bumper_groups:window.HUMKIN_BUMPER_RELATIONS?.validGroups(settings[0]?.bumper_groups)||[],
+      bumper_rules:window.HUMKIN_BUMPER_RELATIONS?.validRules(settings[0]?.bumper_rules)||[]
     };
     artAssets=window.HUMKIN_ART?.libraryMap(artRows)||new Map();
     const mapped=new Map(overrides.map(o=>[o.track_id,o]));
