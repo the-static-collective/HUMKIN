@@ -553,7 +553,8 @@ function showEditor(show=null){
 function featureMatches(feature){
  return (feature.tracks||[]).map(spec=>{
    const candidates=library.filter(t=>t.sha256===spec.sha256);
-   return {spec,track:candidates.find(trackAvailable)||candidates[0]||null};
+   const expectedKind=spec.catalog_kind|| (spec.kind==="interview"?"bumper":"song");
+   return {spec,expectedKind,track:candidates.find(t=>trackAvailable(t)&&t.kind===expectedKind)||candidates[0]||null};
  });
 }
 function renderGuestFeatures(){
@@ -561,17 +562,19 @@ function renderGuestFeatures(){
  root.replaceChildren();
  if(!guestFeatures.length){root.append(el("p","No guest features registered."));return}
  for(const feature of guestFeatures){
-   const matches=featureMatches(feature),ready=matches.filter(x=>x.track&&trackAvailable(x.track)).length;
+   const matches=featureMatches(feature),ready=matches.filter(x=>x.track&&trackAvailable(x.track)&&x.track.kind===x.expectedKind).length;
    const found=matches.filter(x=>x.track).length;
    const card=el("div",null,"show"+(ready!==matches.length?" inactive":""));
    card.append(el("h3",feature.artist+" · "+feature.title));
    card.append(el("small",found+"/"+matches.length+" recordings located · "+ready+"/"+matches.length+
-     " on air · approved seasonal slots: 3 total per song"));
+     " available for feature · only approved SONGS receive 3× seasonal slots"));
    card.append(el("p",feature.description||"Guest music feature"));
    const list=el("ol");
    for(const x of matches){
-     list.append(el("li",x.spec.title+" · "+duration(x.spec.duration_seconds)+" · "+
-       (!x.track?"NOT UPLOADED":trackAvailable(x.track)?"READY":"PRIVATE / OFF AIR")));
+     const role=x.spec.kind==="interview"?"INTERVIEW · FEATURE ONLY":"SEASONAL SONG";
+     const status=!x.track?"NOT UPLOADED":x.track.kind!==x.expectedKind?
+       "SET TYPE TO "+x.expectedKind.toUpperCase():trackAvailable(x.track)?"READY":"PRIVATE / OFF AIR";
+     list.append(el("li",x.spec.title+" · "+duration(x.spec.duration_seconds)+" · "+role+" · "+status));
    }
    card.append(list);
    const row=el("div",null,"row");
@@ -583,7 +586,7 @@ function renderGuestFeatures(){
        $("show-name").value=feature.default_program_name||feature.title;
        $("show-start").value="19:00";$("show-end").value="19:10";
        $("show-active").checked=false;renderSlots();
-       note("Loaded a PAUSED program draft. Set a cover, days and timing. Scheduled shows loop inside their window; check the boundary before enabling.");
+       note("Loaded a PAUSED program draft: song → interview → My Best Friend. Keep the interview immediately before the short song. The current show clock loops within the time window; review the boundary before enabling.");
      },"primary"));
    }else{
      row.append(el("span","Upload and approve all three recordings to unlock this feature.","sub"));
@@ -600,12 +603,12 @@ async function applyGuestCredits(feature){
    await requireOwner();
    for(const item of matches){
      const fields={title:item.spec.title,artist:feature.artist,album:feature.album,
-       kind:"song",is_single:false,updated_at:new Date().toISOString()};
+       kind:item.expectedKind,is_single:false,updated_at:new Date().toISOString()};
      await checkOne(await db.from("humkin_radio_tracks").update(fields)
        .eq("id",item.track.dbId).eq("uploaded_by",user.id).select("id").single(),"Guest credits");
    }
    setBusy(false);await loadDesk();
-   note("Credited "+matches.length+" guest recordings. No file was published or enabled by this action.");
+   note("Credited "+matches.length+" guest recordings and classified spoken interview as feature-only bumper. No file was published or enabled by this action.");
  }catch(err){setBusy(false);note("Guest credit update failed: "+err.message)}
 }
 function renderShows(){
