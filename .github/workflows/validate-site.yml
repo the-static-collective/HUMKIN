@@ -31,6 +31,7 @@ jobs:
       - run: node --check fm/bumper-relations.js
       - run: node tests/station-blackbox.test.cjs
       - run: node tests/radio-loader.test.mjs
+      - run: node tests/radio-folder-metadata.test.mjs
       - run: node tests/radio-manager.test.mjs
       - run: node tests/radio-studio.test.mjs
       - run: node tests/radio-field-carts.test.mjs
