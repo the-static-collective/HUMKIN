@@ -247,8 +247,11 @@ export default {
    const path=new URL(request.url).pathname;
    if(request.method==="OPTIONS")return new Response(null,{status:204,headers:basicHeaders()});
    if(request.method!=="GET"&&request.method!=="HEAD")return json({ok:false,error:"METHOD_NOT_ALLOWED"},405);
-   if(!env?.RADIO_MEDIA?.get)return json({ok:false,error:"R2_BINDING_MISSING",expected:"RADIO_MEDIA"},503);
+   // Route before checking the independent bucket bindings. A missing music
+   // binding must never shadow a working HLS relay or turn unknown paths into 503.
    if(isHlsPath(path))return serveHls(request,env);
+   if(path.startsWith("/hls/"))return json({ok:false,error:"NOT_FOUND"},404);
+   if(!env?.RADIO_MEDIA?.get)return json({ok:false,error:"R2_BINDING_MISSING",expected:"RADIO_MEDIA"},503);
    if(path==="/health"){
      try{const list=await getCatalog();return json({ok:true,service:"HUMKIN LONG WAVE",r2_catalog:list.length,
        stream:"/live.mp3",mode:"personal_continuous_mp3",source:"Cloudflare R2"});}
