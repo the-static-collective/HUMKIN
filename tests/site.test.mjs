@@ -19,6 +19,18 @@ assert(html.includes('id="album-heading"')&&html.includes('id="play-album"')&&ht
 assert(html.includes('href="./somewhere.html"'),"Home must link to a separate distribution station");
 assert(station.includes("Put HUMKIN Somewhere — Free Music Distribution Station"),"Distribution station must retain its own standalone HTML page");
 assert(station.includes('href="./"'),"The station needs a route back to the main album page");
+// A future listener must be able to find the optional donation doorway without
+// buying music, disturbing playback, or depending on a hidden footer link.
+assert(html.includes('href="./support.html" class="tip-jar-link"'),"Home nav must expose the tip jar");
+assert(html.includes('class="hero-tip-note"'),"Album hero should offer a low-pressure support link");
+assert(text("fm/index.html").includes('href="../support.html" class="tip-jar-link"'),"Radio must expose the tip jar");
+assert(text("somewhere.html").includes('href="./support.html"'),"Distribution station should expose the tip jar");
+assert(existsSync("support.html")&&existsSync("support.js")&&existsSync("support-doors.json"),"The receptacle and provider configuration must exist");
+assert(text("support.html").includes("The songs are free either way."),"Support must be clearly voluntary");
+const supportDoors=JSON.parse(text("support-doors.json"));
+assert.equal(supportDoors.recipient,"HUMKIN");
+assert.equal(supportDoors.mode,"owner_confirmed");
+assert.equal(supportDoors.doors.length,3);
 const album=JSON.parse(text("tracks.json"));
 assert.equal(album.tracks.length,12);
 for(const [i,track] of album.tracks.entries()){
