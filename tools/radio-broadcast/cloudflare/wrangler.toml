@@ -1,0 +1,9 @@
+name = "humkin-long-wave"
+main = "worker.mjs"
+compatibility_date = "2026-11-17"
+workers_dev = true
+
+# The binding is internal; it doesn't use an R2 secret in browser code.
+[[r2_buckets]]
+binding = "RADIO_MEDIA"
+bucket_name = "humkin-radio-media"
