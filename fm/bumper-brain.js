@@ -226,7 +226,7 @@ function remix(planResult,bumperIndices,tracks,policy={},seed=0){
       return !c.hold&&c.lane===lane;
     }).length;
  }
- window.HUMKIN_BUMPER_RELATIONS?.arrange(breaks,policy.groups,familyBagSizes);
+ root.HUMKIN_BUMPER_RELATIONS?.arrange(breaks,policy.groups,familyBagSizes);
  // Recalculate displayed estimates after the variable-length carts trade
  // places. Total cycle duration remains EXACTLY the same, in milliseconds.
  const songCount=planResult.sequence.length-planResult.breaks.length;
