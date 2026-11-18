@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import worker,{approvedCatalog} from "./worker.mjs";
+import worker,{approvedCatalog,continuousStream} from "./worker.mjs";
 import {STATIONS,stationClock,activeSlot,matchFilter,resolveStation,
   describeStations,getStation} from "./stations.mjs";
 
@@ -109,4 +109,31 @@ test("Worker serves multiple bounded station routes without mutating old URLs",a
   const legacyAudio=await worker.fetch(new Request("https://radio.example/live.mp3",{method:"HEAD"}),env);
   assert.equal(legacyAudio.status,200);
  }finally{globalThis.fetch=old}
+});
+
+test("active virtual program switches at an audio boundary without another transmitter",async()=>{
+ const tracks=catalog(),first=tracks[0],second=tracks[1];
+ let selections=0;
+ const objectBytes=new Map([[first.key,11],[second.key,22]]);
+ const output=continuousStream({
+   get:async key=>({body:new ReadableStream({start(c){
+     c.enqueue(Uint8Array.from([255,251,144,0,objectBytes.get(key),0]));c.close();
+   }})})
+ },tracks,{maxObjects:3,seed:1,resolveTracks:()=>{
+   const one=selections++===0;
+   return {key:one?"morning":"evening",tracks:one?[first]:[second]};
+ }});
+ const reader=output.getReader(),parts=[];
+ while(true){const {done,value}=await reader.read();if(done)break;parts.push(...value)}
+ assert.deepEqual([parts[4],parts[10],parts[16]],[11,22,22]);
+ assert(selections>=3);
+});
+test("approved voice carts may be intentional primary talk programming",()=>{
+ const tracks=catalog();
+ const station={id:"talk-test",enabled:true,mode:"personal",include_bumpers:false,
+   filter:{kinds:["bumper"]}};
+ const resolved=resolveStation(station,tracks);
+ assert.equal(resolved.tracks.length,1);
+ assert.equal(resolved.tracks[0].kind,"song");
+ assert.equal(resolved.tracks[0].featured,false);
 });
