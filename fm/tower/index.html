@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#151b26">
+<title>HUMKIN TOWER · Virtual Station Network</title>
+<style>
+:root{color-scheme:dark;--bg:#151b26;--face:#252d36;--edge:#caa66d;--ink:#f2e7d5;--muted:#b8b09f;--ok:#9bd5ad}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top left,#33414d,#151b26 65%);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+main{max-width:1200px;margin:auto;padding:25px 18px 85px}a{color:#f4cb88}header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:.1em}
+h1{font-size:clamp(46px,8vw,96px);line-height:.91;letter-spacing:-.075em;margin:34px 0 17px}h2{font-size:25px;line-height:1.1;margin:0 0 15px}
+.lead{font-size:17px;max-width:780px}.sub,.note{color:var(--muted);font-size:13px}
+.panel{background:var(--face);border:2px solid var(--edge);box-shadow:6px 7px 0 #080d15;border-radius:14px;padding:clamp(15px,3vw,25px);margin:20px 0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}.split .panel{margin:0}
+#stations{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:11px}
+.station{border:1px solid #8f7957;border-radius:9px;background:#202832;padding:14px;min-width:0}
+.station strong{display:block;font-size:17px}.station small{display:block;color:var(--muted);margin:6px 0 10px}
+.pill{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.07em;padding:2px 7px;border:1px solid var(--edge);border-radius:15px;margin-top:8px}
+.pill.off{border-color:#7c8591;color:#bdc4ce}
+button,.button{display:inline-block;border:1px solid var(--edge);border-radius:7px;padding:10px 13px;background:#dcba81;color:#191e25;font-weight:850;cursor:pointer;text-decoration:none;font-size:13px}
+button.ghost,.button.ghost{background:transparent;color:var(--ink)}button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{width:100%;background:#111925;border:1px solid #7b8795;border-radius:7px;color:var(--ink);font:inherit;padding:10px}
+input[type=checkbox]{width:auto;accent-color:#e8c184}label{font-weight:750;font-size:12px;display:block;margin:12px 0 5px}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.inline>button{flex:0 0 auto}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 13px}
+.days{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.days label{font-size:11px;margin:0;padding:5px;border:1px solid #637385;border-radius:5px}
+.days input{vertical-align:middle}.schedule{padding:12px;border:1px solid #6c7b86;border-radius:8px;margin:10px 0}
+.schedule strong{display:block}.schedule small{color:var(--muted)}
+audio{width:100%;margin:10px 0}.status{min-height:22px;color:var(--ok);font-weight:700}
+footer{border-top:1px solid #65717b;margin-top:27px;padding:15px;color:var(--muted);font-size:12px}
+@media(max-width:800px){.split,.form-grid{grid-template-columns:1fr}h1{letter-spacing:-.05em}}
+</style>
+<script type="module" src="./tower.js"></script>
+</head>
+<body>
+<main>
+<header><a href="../">HUMKIN RADIO</a><span>TOWER / NETWORK CONTROL · EXPERIMENTAL</span><a href="../manage/">EXISTING STATION MANAGER</a></header>
+<h1>THE<br>TOWER.</h1>
+<p class="lead">One R2 record library. Many independent stations. Program the network without keeping a transmitter running for every frequency.</p>
+
+<section class="panel">
+<h2>01 · The receiver wall</h2>
+<p class="sub">Read-only live Worker status. Selecting a frequency changes just this local receiver; press Play yourself. These are independent continuous MP3 rotations, not synchronized live audio.</p>
+<p class="status" id="network-status" role="status">Checking network capabilities…</p>
+<div class="inline"><button id="refresh-network" class="ghost">REFRESH SIGNALS</button><span class="sub">Worker: humkin-long-wave</span></div>
+<div id="stations" aria-live="polite"></div>
+<p id="listen-status" class="status" role="status">Select an available station, then press Play.</p>
+<audio id="radio" controls preload="none" aria-label="Selected HUMKIN station"></audio>
+</section>
+
+<div class="split">
+<section class="panel">
+<h2>02 · Station designs</h2>
+<p class="note"><strong>Local workbench, not public controls.</strong> Changes below save only to this browser. Export a programming draft for review; nothing goes on air automatically and no credentials are requested.</p>
+<label for="edit-station">Station to edit</label><select id="edit-station"></select>
+<div class="inline">
+<input id="new-station-id" maxlength="40" placeholder="new-station-id" aria-label="New station ID" style="flex:1;min-width:125px">
+<button id="new-station" type="button">+ STATION</button>
+</div>
+<label for="name">Station name</label><input id="name" maxlength="100">
+<div class="form-grid">
+<div><label for="mode">Mode</label><select id="mode"><option value="personal">Personal rotation</option><option value="virtual">Virtual scheduled</option><option value="live">Live (not wired)</option></select></div>
+<div><label for="kinds">Content lane</label><select id="kinds"><option value="song">Music</option><option value="bumper">Voice carts</option><option value="all">Mixed (explicitly selected)</option></select></div>
+</div>
+<label><input type="checkbox" id="enabled"> Enabled in exported draft</label>
+<label><input type="checkbox" id="bumpers"> Include normal approved bumpers</label>
+<label for="artists">Artist names (comma-separated, optional)</label><input id="artists" placeholder="HUMKIN, Eno Efia">
+<label for="albums">Album names (comma-separated, optional)</label><input id="albums" placeholder="Unshackled Dreams">
+<label for="tags">Approved tags (comma-separated, optional)</label><input id="tags" placeholder="jazz, talk, night">
+<label for="track-ids">Exact catalog track IDs (comma-separated, optional)</label><textarea id="track-ids" rows="2" placeholder="crate-..., r2-blue-at-the-tip"></textarea>
+<label for="featured"><input type="checkbox" id="featured"> Featured / singles only</label>
+<label for="seasonal"><input type="checkbox" id="seasonal"> Seasonals only</label>
+<div class="inline"><button id="save-station" type="button">SAVE LOCAL DRAFT</button><button class="ghost" id="reset-draft" type="button">RESTORE REPO PRESETS</button></div>
+</section>
+<section class="panel">
+<h2>03 · The program clock</h2>
+<p class="note">Programs override a station's default selection during their slot. Overlaps: higher priority wins. Uses America/Chicago. Changes switch on a recording boundary, not in the middle of a song.</p>
+<div id="schedule-list"></div>
+<label for="show-name">New program name</label><input id="show-name" maxlength="100" placeholder="The Midnight Shelf">
+<div class="form-grid">
+<div><label for="show-start">Central start</label><input type="time" id="show-start" value="20:00"></div>
+<div><label for="show-end">Central end</label><input type="time" id="show-end" value="22:00"></div>
+</div>
+<label>Days of week</label><div class="days" id="show-days">
+<label><input type="checkbox" value="0" checked> Sun</label>
+<label><input type="checkbox" value="1" checked> Mon</label>
+<label><input type="checkbox" value="2" checked> Tue</label>
+<label><input type="checkbox" value="3" checked> Wed</label>
+<label><input type="checkbox" value="4" checked> Thu</label>
+<label><input type="checkbox" value="5" checked> Fri</label>
+<label><input type="checkbox" value="6" checked> Sat</label>
+</div>
+<label for="show-ids">Program-specific track IDs (comma-separated)</label><textarea id="show-ids" rows="3" placeholder="Use approved crate-... or r2-... IDs"></textarea>
+<label><input type="checkbox" id="show-singles"> Or select all featured singles</label>
+<label for="show-priority">Priority</label><input id="show-priority" type="number" value="10" min="-100" max="100">
+<div class="inline"><button type="button" id="add-program">+ ADD PROGRAM</button></div>
+<p class="note">The program must reference approved recordings available in R2. An empty or nonmatching slot fails closed rather than broadcasting unrelated audio.</p>
+</section>
+</div>
+<section class="panel">
+<h2>04 · Take the plan with you</h2>
+<p class="note">Export a readable <code>humkin-network-draft.json</code> for review and eventual integration into <code>tools/radio-broadcast/cloudflare/stations.mjs</code>. No Supabase migration is required for this first network. Publishing changes still requires a code review and Worker redeploy.</p>
+<div class="inline"><button id="export" type="button">EXPORT NETWORK DRAFT</button><a class="button ghost" href="https://github.com/the-static-collective/HUMKIN/pull/145" target="_blank" rel="noopener noreferrer">OPEN EXPERIMENTAL PR</a></div>
+<p class="status" id="draft-status" role="status">No public programming changes made.</p>
+</section>
+<footer>HUMKIN TOWER · Experimental network desk · Station definitions are public; owner credentials are never handled here.</footer>
+</main>
+</body></html>
