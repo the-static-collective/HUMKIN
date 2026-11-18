@@ -1,3 +1,4 @@
+import {getStation,resolveStation,describeStations} from "./stations.mjs";
 /**
  * HUMKIN LONG WAVE — Cloudflare Workers + R2 live MP3 connection.
  * Source metadata comes only from the public, owner-approved Supabase crate
@@ -35,7 +36,9 @@ export function approvedCatalog(rows,manual){
    const kind=row.kind==="bumper"?"bumper":"song";
    seen.add(key);
    approved.push({id:"crate-"+id,key,title:String(row.title||"HUMKIN").slice(0,160),
-     duration:secs,kind,featured:row.is_single===true});
+     artist:String(row.artist||"HUMKIN").slice(0,160),
+     album:String(row.album||"HUMKIN RADIO").slice(0,200),
+     tags:[],duration:secs,kind,featured:row.is_single===true});
  }
  if(manual?.schema==="humkin.radio.r2/v1"&&Array.isArray(manual.tracks)){
    for(const row of manual.tracks.slice(0,MAX_TRACKS)){
@@ -46,13 +49,16 @@ export function approvedCatalog(rows,manual){
      if(!/^[a-z0-9][a-z0-9-]{2,79}$/.test(id))continue;
      seen.add(row.object_key);
      approved.push({id:"r2-"+id,key:row.object_key,title:String(row.title||"HUMKIN").slice(0,160),
+       artist:String(row.artist||"HUMKIN").slice(0,160),
+       album:String(row.album||"HUMKIN RADIO").slice(0,200),
+       tags:Array.isArray(row.tags)?row.tags.filter(x=>typeof x==="string"&&x.length<50).slice(0,20):[],
        duration:seconds,kind:"song",featured:row.seasonal===true,seasonal:row.seasonal===true});
    }
  }
  return approved;
 }
 async function queryPublicCatalog(fetcher){
- const query="?select=id,title,kind,enabled,published_at,duration_seconds,is_single,storage_provider,r2_object_key"+
+ const query="?select=id,title,artist,album,kind,enabled,published_at,duration_seconds,is_single,storage_provider,r2_object_key"+
    "&published_at=not.is.null&enabled=eq.true&storage_provider=eq.r2&limit=1500";
  const response=await fetcher(SUPABASE+"/rest/v1/humkin_radio_tracks"+query,
   {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
@@ -252,14 +258,26 @@ export function stripInitialID3(body){
 export function continuousStream(bucket,tracks,options={}){
  const maxObjects=Math.min(900,Math.max(2,Number(options.maxObjects)||900));
  let counter=0,cycle=0,rotation=[],index=0,reader=null,closed=false,errors=0;
+ let currentTracks=tracks,activeProgramKey=null;
  const seed=Number.isInteger(options.seed)?options.seed:(crypto.getRandomValues(new Uint32Array(1))[0]>>>0);
  function nextTrack(){
-   // Optional date/day restrictions are evaluated at the REAL cart boundary,
-   // not once per potentially multi-hour queue. Music is never interrupted.
+   // A virtual station changes programs at the next track boundary without
+   // any transmitter or long-lived scheduler. Legacy Long Wave is unchanged.
    while(true){
-     if(index>=rotation.length){rotation=program(tracks,(seed+cycle*7919)>>>0);cycle++;index=0;}
+     if(typeof options.resolveTracks==="function"){
+       const selection=options.resolveTracks(new Date());
+       if(!selection?.tracks?.some(t=>t.kind==="song"))return null;
+       if(selection.key!==activeProgramKey){
+         activeProgramKey=selection.key;currentTracks=selection.tracks;
+         rotation=[];index=0;cycle=0;
+       }
+     }
+     if(index>=rotation.length){
+       rotation=program(currentTracks,(seed+cycle*7919)>>>0);cycle++;index=0;
+       if(!rotation.length)return null;
+     }
      const chosen=rotation[index++];
-     if(chosen.kind!=="bumper"||allowedBumper(chosen,tracks.bumper_rules||[],new Date()))
+     if(chosen.kind!=="bumper"||allowedBumper(chosen,currentTracks.bumper_rules||[],new Date()))
        return chosen;
    }
  }
@@ -307,6 +325,36 @@ export default {
    if(request.method==="OPTIONS")return new Response(null,{status:204,headers:basicHeaders()});
    if(request.method!=="GET"&&request.method!=="HEAD")return json({ok:false,error:"METHOD_NOT_ALLOWED"},405);
    if(!env?.RADIO_MEDIA?.get)return json({ok:false,error:"R2_BINDING_MISSING",expected:"RADIO_MEDIA"},503);
+   if(path==="/stations"){
+     try{
+       const list=await getCatalog();
+       if(request.method==="HEAD")return new Response(null,{headers:{...basicHeaders(),"Content-Type":"application/json"}});
+       return json({ok:true,timezone:"America/Chicago",transport:"on_demand_continuous_mp3",
+         synchronized:false,stations:describeStations(list)});
+     }catch{return json({ok:false,error:"CATALOG_UNAVAILABLE"},503)}
+   }
+   const stationMatch=path.match(/^\/stations\/([a-z0-9-]+)\/(health|live\.mp3)$/);
+   if(stationMatch){
+     const station=getStation(stationMatch[1]);
+     if(!station)return json({ok:false,error:"STATION_NOT_FOUND"},404);
+     if(station.enabled!==true)return json({ok:false,error:"STATION_NOT_ENABLED"},404);
+     if(station.mode==="live")return json({ok:false,error:"LIVE_TRANSMITTER_NOT_CONFIGURED"},503);
+     let list;
+     try{list=await getCatalog()}catch{return json({ok:false,error:"CATALOG_UNAVAILABLE"},503)}
+     const selected=resolveStation(station,list,new Date());
+     const ready=Boolean(selected?.tracks?.some(t=>t.kind==="song"));
+     if(stationMatch[2]==="health")return json({ok:ready,station:station.id,mode:station.mode,
+       program:selected?.program_name||null,approved_tracks:selected?.tracks?.filter(t=>t.kind==="song").length||0,
+       synchronized:false,stream:"/stations/"+station.id+"/live.mp3"},ready?200:503);
+     if(!ready)return json({ok:false,error:"STATION_UNPROGRAMMED",station:station.id},503);
+     const headers={...basicHeaders(),"Content-Type":"audio/mpeg",
+       "icy-name":station.name,"X-HUMKIN-Station":station.id,
+       "X-HUMKIN-Stream":"virtual-continuous","X-HUMKIN-Synchronized":"false"};
+     if(request.method==="HEAD")return new Response(null,{status:200,headers});
+     return new Response(continuousStream(env.RADIO_MEDIA,list,{
+       resolveTracks:()=>resolveStation(station,list,new Date())
+     }),{status:200,headers});
+   }
    if(path==="/health"){
      try{const list=await getCatalog();return json({ok:true,service:"HUMKIN LONG WAVE",r2_catalog:list.length,
        stream:"/live.mp3",mode:"personal_continuous_mp3",source:"Cloudflare R2"});}
