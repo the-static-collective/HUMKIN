@@ -68,11 +68,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #efbc6c;outline-offse
     });
   }
   function useBackup(reason,resume=false){
+    if(!liveUrl)liveUrl=valid(input.value);
     if(!liveUrl){status.textContent="Enter a Cloudflare Worker live URL first.";return}
     requestId++;
-    if(mode==="backup")return;
-    stopSource();
+    if(mode==="backup"){status.textContent="Long Wave remains selected. Press Play to listen.";return}
     mode="backup";
+    stopSource();
     audio.src=serviceUrl("/live.mp3");
     audio.load();
     status.textContent=reason+" Long Wave is a separate personal rotation, not synchronized live radio.";
@@ -98,6 +99,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #efbc6c;outline-offse
     const online=await isOnAir(url);
     if(attempt!==requestId)return;
     if(!online){
+      if(mode==="backup"){status.textContent="Live transmitter still offline; staying on Long Wave.";return}
       if(rescue.checked)useBackup("Live transmitter unavailable.");
       else status.textContent="Live transmitter is offline. Enable rescue or choose Long Wave.";
       return;
