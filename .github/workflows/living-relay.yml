@@ -5,7 +5,7 @@ on:
     paths:
       - 'living-relic*'
       - 'relics/**'
-      - 'tests/living-relay.test.mjs'
+      - 'tests/living-relay*.test.mjs'
       - 'docs/LIVING-RELAY-001.md'
       - '.github/workflows/living-relay.yml'
   workflow_dispatch:
@@ -22,6 +22,6 @@ jobs:
         with:
           node-version: '22'
       - name: Syntax check
-        run: node --check living-relic.js && node --check living-relic.core.mjs
+        run: node --check living-relic.js && node --check living-relic.core.mjs && node --check living-relic.porch.js && node --check living-relic.contributions.mjs
       - name: Test relic boundaries
-        run: node --test tests/living-relay.test.mjs
+        run: node --test tests/living-relay.test.mjs tests/living-relay-contributions.test.mjs
