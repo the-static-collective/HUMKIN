@@ -13,6 +13,7 @@ const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
+let lastPlaybackPosition=0,lastPlaybackProgressAt=Date.now(),lastBoundaryToken=-1;
 let albumQueue=[],albumCursor=0; // Optional iOS14 receiver album mode; no extra audio element.
 let remoteStream=null,hostedNowPlayingUrl=null,hostedPollTimer=null;
 let programs=[],stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
@@ -535,6 +536,7 @@ function pause(){
 }
 function setSource(src,offset,shouldPlay){
   const token=++seekToken;
+  lastPlaybackPosition=0;lastPlaybackProgressAt=Date.now();
   resetRate();
   // The old code called pause() and load() on every song change, releasing the
   // active media session exactly when a locked phone needed the next song.
@@ -782,17 +784,42 @@ audio.addEventListener("playing",()=>{
 });
 audio.addEventListener("pause",()=>{
   lastListenTick=monotonicNow();
-  // A brief internal pause during a src swap is NOT a user stop.
-  if(!switching){active=false;setPlaybackState("paused")}
+  // Some mobile browsers dispatch 'pause' immediately before the natural
+  // 'ended' event. That is a track boundary, not a listener stop.
+  if(!switching&&(!audio.ended||!active)){
+    active=false;setPlaybackState("paused");
+  }
   updateListen();
 });
-audio.addEventListener("ended",()=>{
-  if(!tracks.length)return;
+// A media element cannot be counted on to dispatch 'ended' while a mobile
+// tab is suspended. Both the native event and near-end/time watchdog share
+// one idempotent handoff. Cross-origin R2 MP3s remain playable even when their
+// speculative JS fetch cannot preload due to missing CORS permission.
+function closeToEnd(tolerance=.25){
+  const duration=Number(audio.duration),position=Number(audio.currentTime);
+  return Number.isFinite(duration)&&duration>0&&Number.isFinite(position)&&
+    position>=Math.max(0,duration-tolerance);
+}
+function advanceNaturalEnd(){
+  if(!tracks.length||switching||!active&&!audio.ended)return;
+  // Ignore a queued late 'ended' event from a previous source after the new
+  // MP3 has already reset its currentTime to zero.
+  if(!remoteStream&&!audio.ended&&!closeToEnd(.85))return;
+  if(lastBoundaryToken===seekToken)return;
+  lastBoundaryToken=seekToken;
   if(mode==="shuffle")nextShuffle(true);
   else if(mode==="album")nextAlbum(true);
   else if(remoteStream){setMessage("Stream ended. Tune in again to reconnect.");pause();}
   else nextClock(true);
-});
+}
+audio.addEventListener("ended",advanceNaturalEnd);
+function watchNaturalEnd(){
+  if(!active||switching||remoteStream||!tracks.length)return;
+  if(!closeToEnd(.85))return;
+  // A paused-but-ended track, or a playback head stalled at the final
+  // fraction of the song, should not leave the station stuck indefinitely.
+  if(audio.ended||Date.now()-lastPlaybackProgressAt>1700)advanceNaturalEnd();
+}
 audio.addEventListener("error",()=>{
   if(!tracks.length&&!remoteStream)return;
   failureCount++;
@@ -810,20 +837,19 @@ document.addEventListener("visibilitychange",()=>{
 });
 audio.addEventListener("timeupdate",()=>{
   countQualifiedRadio();
-  if(!active||audio.paused||switching)return;
-  gentlyAlignClock();
-  // Switch during the last fraction of a second if a background timeupdate
-  // arrives. The ended event remains the fallback if it doesn't.
-  const remaining=audio.duration-audio.currentTime;
-  // If the next MP3 is completely cached, hand off near the natural end. If
-  // not, allow native 'ended' to fire rather than cutting off a song early.
-  if(Number.isFinite(remaining)&&remaining>=0&&remaining<0.25&&
-      prepared?.index===expectedNextIndex()&&prepared.blobUrl){
-    if(mode==="shuffle"){nextShuffle(true);return}
-    if(mode==="clock"&&!remoteStream){nextClock(true);return}
+  if(!active||switching)return;
+  const now=Number(audio.currentTime);
+  if(Number.isFinite(now)&&Math.abs(now-lastPlaybackPosition)>.035){
+    lastPlaybackPosition=now;lastPlaybackProgressAt=Date.now();
   }
-  // The former periodic wall-clock correction force-jumped mid-track (9–20s)
-  // after a slow network transition. The CATCH UP button now owns that action.
+  if(audio.paused)return;
+  gentlyAlignClock();
+  // R2 public MP3s play natively without CORS, but JavaScript Blob prefetch
+  // can be blocked cross-origin. Do NOT depend on prepared.blobUrl for the
+  // near-end handoff; the final 0.25s is safer than an indefinitely silent
+  // receiver on phones that suspend the 'ended' event.
+  if(!remoteStream&&closeToEnd(.25))advanceNaturalEnd();
+  // Never mid-song wall-clock resync; CATCH UP remains listener-controlled.
 });
 if("mediaSession" in navigator){
   try{
@@ -834,7 +860,10 @@ if("mediaSession" in navigator){
     navigator.mediaSession.setActionHandler("previoustrack",()=>{if(mode==="clock")startClock(true);else if(tracks.length)startShuffle(true)});
   }catch{}
 }
-if(typeof setInterval==="function")setInterval(countQualifiedRadio,1000);
+if(typeof setInterval==="function"){
+  setInterval(countQualifiedRadio,1000);
+  setInterval(watchNaturalEnd,1300);
+}
 function validatedSrc(value,base){
   if(typeof value!=="string"||!value.trim())return null;
   const u=new URL(value,base);
