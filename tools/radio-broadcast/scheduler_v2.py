@@ -10,12 +10,9 @@ from collections import Counter, deque
 from datetime import datetime, timezone
 import math
 import random
-import re
 from zoneinfo import ZoneInfo
 
 CENTRAL = ZoneInfo("America/Chicago")
-RISKY_TITLE = re.compile(r"\b(top of the hour|bottom of the hour|requests we re taking|we re taking requests)\b")
-SHOW_OPENER = re.compile(r"\b(opener|opening|intro for)\b")
 
 
 def active_program(catalog, tracks, when):
@@ -152,14 +149,12 @@ def chart_extra(song_ids, by_id, ranked_ids, rng):
 
 def bumper_lane(t, policy):
     id_ = str(t.get("id", ""))
-    title = " ".join(re.findall(r"[a-z0-9]+", t.get("title", "").lower()))
     profile = policy.get("profiles", {}).get(id_, {})
     sec = float(t.get("duration") or 0)
     short_max = float(policy.get("short_max_seconds", 19))
     medium_max = float(policy.get("medium_max_seconds", 60))
-    if (profile.get("hold") is True or profile.get("role") == "show_opener"
-            or (not profile.get("role") and SHOW_OPENER.search(title))
-            or RISKY_TITLE.search(title)
+    # Artistic content, fictional claims and opener titles are not holds.
+    if (profile.get("hold") is True
             or sec <= 0 or sec > float(policy.get("maximum_break_seconds", 180))):
         return None
     return "short" if sec <= short_max else "medium" if sec < medium_max else "long"
@@ -180,8 +175,8 @@ class ShuffledBag:
             self.rng.shuffle(self.bag)
             if len(self.bag) > 1 and self.bag[-1] == self.last:
                 self.bag[0], self.bag[-1] = self.bag[-1], self.bag[0]
-        # Prefer a different voice/series among carts still in this fair
-        # bag. Never pull a cart from the next bag to satisfy spacing.
+        # Space verified alternate cuts of the SAME recording only.
+        # Never pull a cart from the next bag to satisfy spacing.
         if family_of and avoid:
             position = next((i for i in range(len(self.bag) - 1, -1, -1)
                              if family_of(self.bag[i]) not in avoid), None)
@@ -208,7 +203,7 @@ def with_bumpers(songs, tracks, settings, policy, rng):
     recent_families = deque(maxlen=3)
     def family_of(id_):
         profile = policy.get("profiles", {}).get(id_, {})
-        return str(profile.get("family") or id_)
+        return str(profile.get("edit_group") or id_)
     def pick(lane):
         selected = bags[lane].take(recent_families, family_of)
         if selected is not None:
