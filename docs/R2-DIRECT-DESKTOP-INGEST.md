@@ -17,21 +17,17 @@
 In Cloudflare R2 → `humkin-radio-private` → Settings → CORS Policy, apply:
 
 ```json
-{
-  "rules": [
-    {
-      "allowed": {
-        "origins": ["https://humkin.abundent.org"],
-        "methods": ["PUT"],
-        "headers": ["Content-Type"]
-      },
-      "maxAgeSeconds": 3600
-    }
-  ]
-}
+[
+  {
+    "AllowedOrigins": ["https://humkin.abundent.org"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type"],
+    "MaxAgeSeconds": 3600
+  }
+]
 ```
 
-If Cloudflare UI requires `AllowedOrigins/AllowedMethods/AllowedHeaders` instead of the above JSON shape, enter the equivalent values. The browser must send **exactly** `Content-Type: audio/mpeg`. The private bucket must remain nonpublic. For requests from the GitHub Pages preview origin, explicitly add `https://the-static-collective.github.io` to CORS as needed.
+This is the format for Cloudflare's **dashboard JSON tab**, not the Wrangler CLI configuration format. The browser must send **exactly** `Content-Type: audio/mpeg`. Keep the private bucket nonpublic. For testing from the GitHub Pages preview origin, explicitly add `https://the-static-collective.github.io` to `AllowedOrigins` if needed.
 
 ## Database and deployed backend
 
