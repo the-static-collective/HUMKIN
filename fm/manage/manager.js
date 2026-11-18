@@ -11,6 +11,7 @@ const db=createClient(API,KEY,{auth:{persistSession:true,autoRefreshToken:true,d
 const $=id=>document.getElementById(id);
 const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 let user=null,library=[],shows=[],staticList=[],editing=null,editingShow=null,slots=[],busy=false;
+let guestFeatures=[];
 let artAssets=[];
 let r2Status=null;
 let stationSettings={bumper_every:0,station_label:"HUMKIN RADIO"};
@@ -72,6 +73,7 @@ async function loadDesk(){
    $("logout").classList.add("hidden");
    $("catalog").replaceChildren(el("p","Sign in to manage the library."));
    $("show-list").replaceChildren(el("p","Sign in to manage programming."));
+   $("guest-feature-list")?.replaceChildren(el("p","Sign in to manage guest features."));
    $("group-editor-root")?.replaceChildren(el("p","Sign in to edit groups."));
    $("rule-editor-root")?.replaceChildren(el("p","Sign in to edit optional rules."));
    return;
@@ -80,10 +82,10 @@ async function loadDesk(){
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
  try{
-  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts,r2Manifest]=await Promise.all([
+  const [configResponse,cloudResult,staticResult,showsResult,settingsResult,artResult,fieldCarts,r2Manifest,featureManifest]=await Promise.all([
    fetch("../rotation.json",{cache:"no-store"}),
    db.from("humkin_radio_tracks")
-    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,is_single,art_asset_id,published_at,created_at,storage_provider,r2_object_key,supabase_source_removed_at")
+    .select("id,uploaded_by,storage_path,original_name,title,artist,album,duration_seconds,bytes,enabled,kind,is_single,art_asset_id,published_at,created_at,storage_provider,r2_object_key,supabase_source_removed_at,sha256")
     .order("created_at",{ascending:false}).limit(2000),
    db.from("humkin_radio_static_overrides").select("track_id,title,artist,album,enabled,kind,art_asset_id").limit(1000),
    db.from("humkin_radio_programs").select("id,name,days,start_minute,end_minute,track_ids,is_active,priority,owner_id,updated_at,art_asset_id")
@@ -92,7 +94,8 @@ async function loadDesk(){
    db.from("humkin_radio_art_assets").select("id,owner_id,sha256,storage_path,label,width,height,bytes,created_at")
     .order("created_at",{ascending:false}).limit(500),
    fetch("../air-carts.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null),
-   fetch("../r2-tracks.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
+   fetch("../r2-tracks.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null),
+   fetch("../guest-features.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
   ]);
   if(!configResponse.ok)throw Error("Original rotation not reachable");
   for(const [name,result] of [["cloud catalog",cloudResult],["static overrides",staticResult],["shows",showsResult],["station settings",settingsResult],["art shelf",artResult]])
@@ -126,7 +129,7 @@ async function loadDesk(){
    const provider=track.storage_provider==="r2"?"r2":"supabase";
    const r2Url=provider==="r2"?window.HUMKIN_R2_CATALOG?.objectUrl(track.r2_object_key):"";
    return {
-    id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,
+    id:"crate-"+track.id,dbId:track.id,source:"cloud",title:track.title,sha256:track.sha256,
     artist:track.artist,album:track.album,kind:track.kind,is_single:track.is_single===true,
     enabled:track.enabled,published:!!track.published_at,art_asset_id:track.art_asset_id||null,
     artwork:new URL("../../cover.jpg",location.href).href,
@@ -148,6 +151,7 @@ async function loadDesk(){
   }));
   library=[...cloud,...staticList,...r2Static];
   shows=showsResult.data||[];
+  guestFeatures=featureManifest?.schema==="humkin.radio.guest-features/v1"&&Array.isArray(featureManifest.features)?featureManifest.features:[];
   stationSettings={
     bumper_every:Number(settingsResult.data?.[0]?.bumper_every)||0,
     station_label:settingsResult.data?.[0]?.station_label||"HUMKIN RADIO"
@@ -157,7 +161,7 @@ async function loadDesk(){
   editorialRules=Array.isArray(settingsResult.data?.[0]?.bumper_rules)?
     settingsResult.data[0].bumper_rules:[];
   for(const id of [...selected])if(!library.find(t=>t.id===id))selected.delete(id);
-  renderArtShelf();renderLibrary();renderShows();renderSlots();renderNow();renderAutoDj();note("");
+  renderArtShelf();renderLibrary();renderShows();renderGuestFeatures();renderSlots();renderNow();renderAutoDj();note("");
   mountBumperControls({db,ownerId:user.id,library,groups:bumperGroups,rules:editorialRules,
     selected,refresh:loadDesk,authorize:requireOwner});
   await refreshR2VaultStatus();
@@ -544,6 +548,65 @@ function showEditor(show=null){
  });
  $("show-form").classList.remove("hidden");
  renderSlots();$("show-form").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function featureMatches(feature){
+ return (feature.tracks||[]).map(spec=>{
+   const candidates=library.filter(t=>t.sha256===spec.sha256);
+   return {spec,track:candidates.find(trackAvailable)||candidates[0]||null};
+ });
+}
+function renderGuestFeatures(){
+ const root=$("guest-feature-list");if(!root)return;
+ root.replaceChildren();
+ if(!guestFeatures.length){root.append(el("p","No guest features registered."));return}
+ for(const feature of guestFeatures){
+   const matches=featureMatches(feature),ready=matches.filter(x=>x.track&&trackAvailable(x.track)).length;
+   const found=matches.filter(x=>x.track).length;
+   const card=el("div",null,"show"+(ready!==matches.length?" inactive":""));
+   card.append(el("h3",feature.artist+" · "+feature.title));
+   card.append(el("small",found+"/"+matches.length+" recordings located · "+ready+"/"+matches.length+
+     " on air · approved seasonal slots: 3 total per song"));
+   card.append(el("p",feature.description||"Guest music feature"));
+   const list=el("ol");
+   for(const x of matches){
+     list.append(el("li",x.spec.title+" · "+duration(x.spec.duration_seconds)+" · "+
+       (!x.track?"NOT UPLOADED":trackAvailable(x.track)?"READY":"PRIVATE / OFF AIR")));
+   }
+   card.append(list);
+   const row=el("div",null,"row");
+   if(matches.some(x=>x.track?.source==="cloud"))
+     row.append(button("SET GUEST CREDITS",()=>applyGuestCredits(feature)));
+   if(ready===matches.length&&ready>0){
+     row.append(button("LOAD FEATURE INTO SHOW EDITOR",()=>{
+       showEditor(null);slots=matches.map(x=>x.track.id);
+       $("show-name").value=feature.default_program_name||feature.title;
+       $("show-start").value="19:00";$("show-end").value="19:10";
+       $("show-active").checked=false;renderSlots();
+       note("Loaded a PAUSED program draft. Set a cover, days and timing. Scheduled shows loop inside their window; check the boundary before enabling.");
+     },"primary"));
+   }else{
+     row.append(el("span","Upload and approve all three recordings to unlock this feature.","sub"));
+   }
+   card.append(row);root.append(card);
+ }
+}
+async function applyGuestCredits(feature){
+ if(busy)return;
+ const matches=featureMatches(feature).filter(x=>x.track?.source==="cloud");
+ if(!matches.length){note("No cloud recordings are available yet.");return}
+ setBusy(true);
+ try{
+   await requireOwner();
+   for(const item of matches){
+     const fields={title:item.spec.title,artist:feature.artist,album:feature.album,
+       kind:"song",is_single:false,updated_at:new Date().toISOString()};
+     await checkOne(await db.from("humkin_radio_tracks").update(fields)
+       .eq("id",item.track.dbId).eq("uploaded_by",user.id).select("id").single(),"Guest credits");
+   }
+   setBusy(false);await loadDesk();
+   note("Credited "+matches.length+" guest recordings. No file was published or enabled by this action.");
+ }catch(err){setBusy(false);note("Guest credit update failed: "+err.message)}
 }
 function renderShows(){
  const list=$("show-list");list.replaceChildren();
