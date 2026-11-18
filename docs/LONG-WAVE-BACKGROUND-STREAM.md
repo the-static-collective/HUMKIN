@@ -85,12 +85,14 @@ use the R2 binding declared in the TOML. Never commit Cloudflare API tokens.
 ## New: shared Station One HLS is an independent, optional route
 
 This Worker now also serves /hls/status, /hls/live.m3u8 and immutable
-/hls/<session>/segment-<number>.ts from the SAME RADIO_MEDIA R2 binding.
+/hls/<session>/segment-<number>.ts from an independent RADIO_LIVE R2 binding (humkin-radio-live). The
+pre-existing RADIO_MEDIA binding continues serving the permanent audio
+archive to /live.mp3 without sharing live uploader write permissions.
 These routes are independent of /live.mp3: Long Wave still supplies personal
 unsynchronized rotation without the Acer. HLS requires the Acer-side
 tools/radio-broadcast/hls_push.py to upload a real program.
 
 For this multi-module Worker, deploy the complete folder via Wrangler; do
 not paste only worker.mjs into the Cloudflare online editor, because it now
-imports hls-routes.mjs. Full details: docs/R2-LIVE-HLS.md. Neither HLS nor
+imports hls-routes.mjs and requires both R2 buckets to exist. Full details: docs/R2-LIVE-HLS.md. Neither HLS nor
 Long Wave changes the default fm/rotation.json until explicitly selected.
