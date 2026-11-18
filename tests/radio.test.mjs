@@ -509,4 +509,33 @@ synced.$("air").emit("timeupdate");await flush();
 assert.equal(synced.$("air").playbackRate,1,
  "A long buffering gap cannot trigger extreme speed-up or involuntary seek");
 
+// A failed preloaded source must not autoplay before the listener's gesture.
+const unavailableId="bca01010-1111-4222-8333-111111111111";
+const unavailableRow={id:unavailableId,title:"Unavailable Cloud Record",artist:"HUMKIN",
+ album:"CLOUD",kind:"song",duration_seconds:180,
+ storage_provider:"r2",storage_path:unavailableId+"/"+("a".repeat(64))+".mp3",
+ r2_object_key:"tracks/"+unavailableId+"/"+("a".repeat(64))+".mp3"};
+const coldFailure=fixture(rotation,[unavailableRow]);await flush();
+assert.equal(coldFailure.window.HUMKIN_RADIO.state.tracks,22);
+coldFailure.$("air").emit("error");await flush();
+assert.equal(coldFailure.window.HUMKIN_RADIO.state.usingLocalFallback,true,
+ "Pre-play media failures must switch to local MP3s");
+assert.equal(coldFailure.window.HUMKIN_RADIO.state.tracks,21);
+assert.equal(coldFailure.$("air").playCount,0,
+ "An audio error before user interaction may not start unsolicited playback");
+
+// Three consecutive decode/source errors should leave a playable local station.
+const repeatedFailure=fixture(rotation,[unavailableRow]);await flush();
+repeatedFailure.$("listen").click();await flush();
+for(let n=0;n<2;n++){repeatedFailure.$("air").emit("error");await flush()}
+assert.equal(repeatedFailure.window.HUMKIN_RADIO.state.usingLocalFallback,false);
+repeatedFailure.$("air").emit("error");await flush();
+assert.equal(repeatedFailure.window.HUMKIN_RADIO.state.usingLocalFallback,true);
+assert.equal(repeatedFailure.window.HUMKIN_RADIO.state.tracks,21);
+assert.equal(repeatedFailure.window.HUMKIN_RADIO.state.mode,"shuffle");
+assert.equal(repeatedFailure.$("air").paused,false,
+ "Failover should keep playing when the listener was already tuned in");
+assert(repeatedFailure.$("playback-message").textContent.includes("built-in HUMKIN"),
+ "Failover should explain the recovery in plain language");
+
 console.log("Radio tests passed: 21 real tracks (12+7+HaileyLu Bloom+Leave The Kettle On), verified uploaded MP3s, clock, no-repeat shuffle, non-autoplay and media keys.");
