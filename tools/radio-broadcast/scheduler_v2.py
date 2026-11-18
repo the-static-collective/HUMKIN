@@ -297,8 +297,9 @@ def with_bumpers(songs, tracks, settings, policy, rng):
     if not 1 <= freq <= 20 or not songs:
         return songs[:]
     groups = {"short": [], "medium": [], "long": []}
+    feature_only = set(policy.get("feature_only_spoken_sha256s", []))
     for id_, t in tracks.items():
-        if t.get("kind") != "bumper":
+        if t.get("kind") != "bumper" or t.get("sha256") in feature_only:
             continue
         lane = bumper_lane(t, policy)
         if lane and allowed_bumper(id_, settings.get("bumper_rules", []), clock=True):
@@ -380,10 +381,11 @@ class StationV2:
         charts = chart_extra(self.songs + bonus, self.by_id,
                              self.catalog.get("chart_ids", []), self.rng)
         sequence = add_bonus_slots(sequence, charts, self.rng)
+        policy = dict(self.catalog.get("rotation", {}).get("bumper_brain", {}))
+        policy["feature_only_spoken_sha256s"] = self.catalog.get("rotation", {}).get(
+            "feature_only_spoken_sha256s", [])
         sequence = with_bumpers(sequence, self.by_id,
-                                self.catalog.get("settings", {}),
-                                self.catalog.get("rotation", {}).get("bumper_brain", {}),
-                                self.rng)
+                                self.catalog.get("settings", {}), policy, self.rng)
         self.cycle_no += 1
         self.queue = deque(sequence)
 
