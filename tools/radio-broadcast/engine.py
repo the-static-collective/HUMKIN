@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 # Also works when imported by tests from an unrelated working directory.
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from scheduler_v2 import StationV2
-from catalog_sources import optional_catalog
+from catalog_sources import optional_catalog, r2_public_url
 import re
 
 API="https://kbhqacsdvjsstzyplqij.supabase.co"
@@ -47,7 +47,7 @@ def get_json(url,api=False):
 def live_catalog():
     base=get_json(RADIO+"rotation.json")
     static_overrides=get_json(API+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled&limit=1000",True)
-    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",True)
+    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path,storage_provider,r2_object_key&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",True)
     shows=get_json(API+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,track_ids,is_active,priority&is_active=eq.true&limit=100",True)
     settings=get_json(API+"/rest/v1/humkin_radio_settings?select=bumper_every,station_label&id=eq.main&limit=1",True)
     overrides={o["track_id"]:o for o in static_overrides}
@@ -62,18 +62,28 @@ def live_catalog():
                            duration=float(t["duration"]),
                            url=urllib.parse.urljoin(RADIO,t["src"])))
     for t in cloud:
+        # The legacy storage_path remains an identity/integrity key even when
+        # the actual file has migrated to Cloudflare R2.
         path=t.get("storage_path","")
         if not isinstance(path,str) or not re.fullmatch(r"[0-9a-f-]{36}/[0-9a-f]{64}\.mp3",path):continue
         if not t.get("enabled",True):continue
         duration=float(t.get("duration_seconds") or 0)
         if not 0<duration<14400:continue
+        backend="r2" if t.get("storage_provider")=="r2" else "supabase"
+        if backend=="r2":
+            url=r2_public_url(t.get("r2_object_key"))
+        else:
+            url=API+"/storage/v1/object/public/humkin-radio-live/"+path
+        # A missing or invalid R2 key must NEVER silently fall back to the
+        # deleted Supabase bucket, accidentally removing music mid-broadcast.
+        if not url:continue
         kind="bumper" if t.get("kind")=="bumper" else "song"
         tracks.append(dict(id="crate-"+t["id"],title=t.get("title","Untitled"),
                            artist=t.get("artist","HUMKIN"),kind=kind,
-                           album=t.get("album") or "HUMKIN RADIO",
-                           source="cloud",is_single=t.get("is_single") is True,
-                           duration=duration,
-                           url=API+"/storage/v1/object/public/humkin-radio-live/"+path))
+                           album="HUMKIN RADIO · STATION BUMPERS" if kind=="bumper" else (t.get("album") or "HUMKIN RADIO"),
+                           source="cloud",storage_provider=backend,
+                           is_single=(kind!="bumper" and t.get("is_single") is True),
+                           duration=duration,url=url))
     extras,chart_ids=optional_catalog(get_json,RADIO,API)
     known={t["id"] for t in tracks}
     for item in extras:

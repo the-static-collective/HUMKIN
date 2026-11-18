@@ -119,6 +119,58 @@ class ProgrammingTests(unittest.TestCase):
         # November 17 2026 is Tuesday in the station's Central timezone.
         self.assertEqual(station.next(datetime.fromisoformat("2026-11-17T19:30:00+00:00"))["id"],"s07")
 
+    def test_migrated_r2_crate_uses_current_public_file_not_legacy_bucket(self):
+        import engine
+        uid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        sha = "b" * 64
+        path = uid + "/" + sha + ".mp3"
+        def record(id_, provider, key, kind="song", enabled=True):
+            return {"id":id_, "title":"A Migrated Recording","artist":"HUMKIN",
+                    "album":"INBOX","kind":kind,"enabled":enabled,
+                    "is_single":False,"duration_seconds":130,
+                    "storage_path":path,"storage_provider":provider,
+                    "r2_object_key":key}
+        cloud=[
+            record("001","r2","tracks/Blue At The Tip.mp3"),
+            record("002","r2","bad/../secret.mp3"),
+            record("003","r2",None),
+            record("004","supabase",None,kind="bumper"),
+            record("005","r2","tracks/hidden.mp3",enabled=False)
+        ]
+        api=engine.API
+        radio=engine.RADIO
+        fixtures={
+            radio+"rotation.json":{"tracks":[],"featured_rotation":{"multiplier":2}},
+            api+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled&limit=1000":[],
+            api+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,track_ids,is_active,priority&is_active=eq.true&limit=100":[],
+            api+"/rest/v1/humkin_radio_settings?select=bumper_every,station_label&id=eq.main&limit=1":[{"bumper_every":4}],
+            radio+"air-carts.json":{"schema_version":"humkin.radio.air-carts/v1","carts":[]},
+            radio+"r2-tracks.json":{"schema":"humkin.radio.r2/v1","tracks":[]},
+            api+"/functions/v1/humkin-league":{"schema":"humkin.top42/v1","airchart":[]}
+        }
+        def fake_get_json(url, api=False):
+            if "/rest/v1/humkin_radio_tracks?" in url:return cloud
+            return fixtures[url]
+        with patch.object(engine,"get_json",side_effect=fake_get_json):
+            found=engine.live_catalog()
+        self.assertEqual(set(t["id"] for t in found["tracks"]),
+                         {"crate-001","crate-004"})
+        migrated=next(t for t in found["tracks"] if t["id"]=="crate-001")
+        self.assertEqual(migrated["url"],"https://media.abundent.org/tracks/Blue%20At%20The%20Tip.mp3")
+        self.assertEqual(migrated["storage_provider"],"r2")
+        old=next(t for t in found["tracks"] if t["id"]=="crate-004")
+        self.assertTrue(old["url"].startswith(api+"/storage/v1/object/public/humkin-radio-live/"))
+        self.assertEqual(old["kind"],"bumper")
+
+    def test_r2_key_url_validation_rejects_private_path_escape(self):
+        from catalog_sources import r2_public_url
+        self.assertEqual(r2_public_url("tracks/song name.mp3"),
+                         "https://media.abundent.org/tracks/song%20name.mp3")
+        for key in ("tracks/../secret.mp3", "tracks//secret.mp3",
+                    "tracks/secret.mp3?token=abc",
+                    "https://private.example/secret.mp3", "", None):
+            self.assertIsNone(r2_public_url(key),key)
+
     def test_only_approved_public_extras(self):
         longhash="a"*64
         catalog={
