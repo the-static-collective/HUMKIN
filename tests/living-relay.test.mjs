@@ -1,0 +1,64 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { validateRelic, getRevision, deriveConsequences, fixedRelicUrl } from "../living-relic.core.mjs";
+const load = () => JSON.parse(readFileSync(new URL("../relics/field-001.json", import.meta.url), "utf8"));
+const clone = value => structuredClone(value);
+test("3: a fixed printable address survives current revisions", () => {
+  const doc = validateRelic(load());
+  assert.equal(getRevision(doc, "v1").songs[0].href, getRevision(doc, "v2").songs[0].href);
+  assert.equal(getRevision(doc).id, "v2");
+  assert.equal(getRevision(doc, "v1").title, "A little song for the road");
+  assert.equal(fixedRelicUrl(doc.relic_id), "https://humkin.abundent.org/living-relic.html?id=field-001");
+});
+test("revision changes cannot erase or silently reorder history", () => {
+  let doc = load(); doc.revisions[1].parent = "nonexistent";
+  assert.throws(() => validateRelic(doc), /lineage/);
+  doc = load(); doc.revisions[1].id = "v1";
+  assert.throws(() => validateRelic(doc), /duplicate/);
+  doc = load(); doc.current_revision = "v1";
+  assert.throws(() => validateRelic(doc), /current/);
+  doc = load(); doc.revisions[1].songs[0].href = "javascript:alert(1)";
+  assert.throws(() => validateRelic(doc), /unsafe/);
+  assert.throws(() => fixedRelicUrl("../secret"), /invalid/);
+});
+test("1 → 2: confirmed synthetic gift yields distinct HELD game and music proposals", () => {
+  const doc = load(), out = deriveConsequences(doc, doc.demonstration_confirmation_id);
+  assert.equal(out.accepted, true);
+  assert.equal(out.mode, "SYNTHETIC_FIXTURE_ONLY");
+  assert.equal(out.game.status, "HELD_NOT_APPLIED");
+  assert.equal(out.music.status, "HELD_NOT_ON_AIR");
+  assert.equal(out.music.midi_notes.length, 8);
+  assert.deepEqual(out, deriveConsequences(clone(doc), doc.demonstration_confirmation_id));
+});
+test("reported, refused, missing, contradictory, and forged events never produce music", () => {
+  const doc = load();
+  assert.equal(deriveConsequences(doc, "sample-gift-001").accepted, false);
+  assert.equal(deriveConsequences(doc, "sample-confirmation-001", { enableFixtureConfirmation: false }).accepted, false);
+  assert.equal(deriveConsequences(doc, "nonexistent").accepted, false);
+  let copy = clone(doc);
+  copy.events[1].recipient_confirmed = false;
+  assert.equal(deriveConsequences(copy, copy.demonstration_confirmation_id).accepted, false);
+  copy = clone(doc);
+  copy.events[1].publisher_approved = false;
+  assert.equal(deriveConsequences(copy, copy.demonstration_confirmation_id).accepted, false);
+  copy = clone(doc);
+  copy.events[1].report_id = "nonexistent";
+  assert.throws(() => deriveConsequences(copy, copy.demonstration_confirmation_id), /orphan/);
+  copy = clone(doc);
+  copy.events[1].mode = "real";
+  assert.throws(() => deriveConsequences(copy, copy.demonstration_confirmation_id), /synthetic/);
+});
+test("web experience is separate, silent by default, and cannot upload visitor testimony", () => {
+  const html = readFileSync(new URL("../living-relic.html", import.meta.url), "utf8");
+  const client = readFileSync(new URL("../living-relic.js", import.meta.url), "utf8");
+  assert.match(html, /living-relic\.js/);
+  assert.match(html, /id="record"/);
+  assert.match(html, /id="play-motif"/);
+  assert.doesNotMatch(html, /<audio[^>]*autoplay/);
+  assert.match(client, /MediaRecorder/);
+  assert.match(client, /URL\.createObjectURL/);
+  assert.doesNotMatch(client, /\.method\s*=\s*["']POST/);
+  assert.doesNotMatch(client, /\bfetch\s*\([^)]*,\s*\{[^}]*method\s*:\s*["']POST/s);
+  assert.match(html, /NO UPLOAD/);
+});
