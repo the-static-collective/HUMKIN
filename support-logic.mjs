@@ -3,7 +3,8 @@ export const AMOUNTS=Object.freeze([1,5,25,100,500]);
 export const RAILS=Object.freeze({
   cash_app:{label:"Cash App",knownMinimumCents:100,host:"cash.app",path:/^\/\$[A-Za-z0-9_]{1,35}$/},
   venmo:{label:"Venmo",knownMinimumCents:null,host:"venmo.com",path:/^\/u\/[A-Za-z0-9_-]{2,40}$/},
-  paypal:{label:"PayPal.Me",knownMinimumCents:null,host:"paypal.me",path:/^\/[A-Za-z0-9]{1,20}$/}
+  paypal:{label:"PayPal.Me",knownMinimumCents:null,host:"paypal.me",path:/^\/[A-Za-z0-9]{1,20}$/},
+  paypal_qr:{label:"PayPal QR",knownMinimumCents:null,host:"www.paypal.com",path:/^\/qrcodes\/p2pqrc\/[A-Z0-9]{13}$/}
 });
 // null means the minimum is not verified, not that pennies are accepted.
 export function providerAmountStatus(provider,cents){
@@ -33,15 +34,22 @@ export function parseReceptacle(value){
      value.schema!=="humkin.receptacle/v0.1"||
      value.recipient!=="HUMKIN"||
      value.purposeId!=="purpose-humkin-listener-support-001"||
-     !["preview","live"].includes(value.mode)||
+     !["preview","live","owner_confirmed"].includes(value.mode)||
      !Array.isArray(value.doors)||value.doors.length>12)throw Error("Invalid receptacle manifest");
   if(value.mode==="preview"){
     if(value.doors.length||value.ownerApproved!==false)throw Error("Preview must not expose payment doors");
     return {mode:"preview",doors:[],sourceHead:null};
   }
-  if(value.ownerApproved!==true||typeof value.ownerApprovalRef!=="string"||
+  if(value.mode==="owner_confirmed"){
+    if(value.ownerApproved!==true||value.identityBasis!=="owner_self_attestation"||
+       typeof value.ownerApprovalRef!=="string"||
+       !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{2,127}$/.test(value.ownerApprovalRef)||
+       value.sourceHead!==undefined)
+      throw Error("Owner-confirmed links require explicit self-attested publication and no false cryptographic proof");
+  }else if(value.ownerApproved!==true||typeof value.ownerApprovalRef!=="string"||
      !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{2,127}$/.test(value.ownerApprovalRef)||
-     !/^[a-f0-9]{64}$/.test(value.sourceHead))throw Error("Live publication has no signed-source evidence and owner approval");
+     !/^[a-f0-9]{64}$/.test(value.sourceHead))
+     throw Error("Signed live publication requires source-head evidence and owner approval");
   const seen=new Set(),doors=[];
   for(const door of value.doors){
     if(!door||typeof door!=="object"||Array.isArray(door)||
@@ -52,7 +60,7 @@ export function parseReceptacle(value){
     doors.push({id:door.id,provider:door.provider,url:door.url});
   }
   if(!doors.length)throw Error("No approved payment doors");
-  return {mode:"live",doors,sourceHead:value.sourceHead};
+  return {mode:value.mode,doors,sourceHead:value.mode==="live"?value.sourceHead:null,\n    identityVerifiedExternally:false};
 }
 export function previewObservation(cents){
   return Object.freeze({type:"SIMULATED_INTENT",cents,settled:false,verified:false,
