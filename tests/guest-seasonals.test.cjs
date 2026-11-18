@@ -19,6 +19,9 @@ test("seasonal policy lists the two songs, not the interview",()=>{
  assert.equal(rotation.multiplier,3);
  assert.deepEqual(new Set(rotation.sha256s),new Set(songs.map(t=>t.sha256)));
  assert.equal(rotation.sha256s.includes(interview.sha256),false);
+ const config=require("../fm/rotation.json");
+ assert.deepEqual(config.feature_only_spoken_sha256s,[interview.sha256]);
+ assert.equal(songs.some(t=>config.feature_only_spoken_sha256s.includes(t.sha256)),false);
 });
 test("two songs each receive three total positions",()=>{
  const tracks=feature.tracks.map((t,i)=>({id:"crate-"+i,sha256:t.sha256,kind:t.catalog_kind}));
