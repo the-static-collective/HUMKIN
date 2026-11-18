@@ -5,6 +5,8 @@ on:
       - 'tools/radio-broadcast/cloudflare/**'
       - 'fm/long-wave/**'
       - 'docs/LONG-WAVE-BACKGROUND-STREAM.md'
+      - 'docs/VIRTUAL-STATION-NETWORK.md'
+      - 'fm/tower/**'
       - '.github/workflows/long-wave-worker.yml'
   workflow_dispatch:
 permissions:
@@ -20,6 +22,8 @@ jobs:
       - name: Source syntax checks
         run: |
           node --check tools/radio-broadcast/cloudflare/worker.mjs
+          node --check tools/radio-broadcast/cloudflare/stations.mjs
+          node --check fm/tower/tower.js
           node --check fm/long-wave/receiver.js
       - name: Long Wave stream and receiver regression tests
-        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs
+        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/stations.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs
