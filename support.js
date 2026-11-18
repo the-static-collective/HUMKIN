@@ -30,7 +30,7 @@ try{
   const response=await fetch("./support-doors.json",{cache:"no-store"});
   if(!response.ok)throw Error("Manifest unavailable");
   const manifest=parseReceptacle(await response.json());
-  if(manifest.mode!=="live"){
+  if(manifest.mode==="preview"){
     showUnavailable("THE JAR IS IN PRACTICE MODE. NO LIVE PAYMENT DOORS YET.");
   }else{
     doors.replaceChildren();
