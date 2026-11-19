@@ -26,6 +26,9 @@ jobs:
       - run: node --check fm/live-station.js
       - run: node tests/main-live-radio.test.mjs
       - run: node --check fmstudio/dial.js
+      - run: node --check fmstudio/receiver/core.mjs
+      - run: node --check fmstudio/receiver/engine.mjs
+      - run: node --check fmstudio/receiver/view.mjs
       - run: node --check tools/radio-broadcast/cloudflare/station-registry.mjs
       - run: node --test tests/fmstudio-live-dial.test.mjs tests/fmstudio-station-registry.test.mjs
       - run: node tests/radio-primary-layout.test.mjs
