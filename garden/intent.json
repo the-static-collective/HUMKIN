@@ -44,13 +44,20 @@
       "text": "The Acer is the producer/controller: it uploads approved recordings, publishes and revises station programming and can intervene while online; the cloud owns a durable shared playout timeline, so all listeners join one common program and radio continues when the computer is off. Preserve a distinct authentic live audio takeover with explicit return to autonomous cloud programming.",
       "source": "https://github.com/the-static-collective/HUMKIN/pull/171",
       "status": "USER_REPORTED"
+    },
+    {
+      "id": "gambit-progression-agency",
+      "text": "HUMKIN radio game grows from discovering the dial through personal conditional Gambits, contributing music/art/bumper work, proposing show programming, verified station operation, and ultimately operating networks of stations. Gambits are ordered conditional rules whose real powers grow with game experience and station-authorized roles. Local HUM/XP never by itself grants privileged cloud publishing, actual station identity, or ownership; permissions are server-verified and scoped to station and action.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/172",
+      "status": "USER_REPORTED"
     }
   ],
-  "next": "Field-test Cloud Autopilot with a two-track approved R2 crate on phone and computer, including a revision and Acer-off listening. Do not replace the existing live HLS or invisible fallback chain until the autonomous stream and transition behavior are verified; then integrate the existing Tower edit controls and live takeover.",
+  "next": "Field-test the Orchard Gambit Workbench on Android at Level 1 and unlocked Level 3; verify it generates a playable personal Signal without changing public radio. Then design server-scoped Producer/Operator grants compiling reviewed Gambit policies into Cloud Autopilot, after the cloud shared-program stream has been field-proven.",
   "unknowns": [
     "Live minimization behavior on Mac and Android remains unverified in this handoff.",
     "Actual last device field test may be newer than this record; check the user and source receipts.",
     "Newer PRs/merges may change what is already running; never trust the pilot's PR table without refreshing.",
-    "Cloud Autopilot code merged, but the Cloudflare Worker route and R2 program have not been deployed or field-tested; current main listener experience remains unchanged."
+    "Cloud Autopilot code merged, but the Cloudflare Worker route and R2 program have not been deployed or field-tested; current main listener experience remains unchanged.",
+    "Gambit Workbench local three-song Signal preview has merged source and automated checks; real Android in-device behavior and the future authorized station/network permission tier remain unverified/unbuilt."
   ]
 }
