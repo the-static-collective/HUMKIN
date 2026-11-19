@@ -138,7 +138,7 @@ function unlocks(){
 function render(){
  summary();quest();scene();shop();inventory();unlocks();
  const lv=M.level(state.xp);
- [["door-signal",3],["door-guild",3],["door-network",5]].forEach(function(pair){
+ [["door-signal",3],["door-gambit",3],["door-guild",3],["door-network",5]].forEach(function(pair){
    const node=$(pair[0]);if(node)node.hidden=lv<pair[1];
  });
  $("guild-portal").hidden=lv<3;
