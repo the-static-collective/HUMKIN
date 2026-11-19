@@ -355,15 +355,18 @@ export default {
    if(request.method!=="GET"&&request.method!=="HEAD")return json({ok:false,error:"METHOD_NOT_ALLOWED"},405);
    if(!env?.RADIO_MEDIA?.get)return json({ok:false,error:"R2_BINDING_MISSING",expected:"RADIO_MEDIA"},503);
    if(path==="/stations"){
+     let list;
+     try{list=await getCatalog(fetch,Date.now(),false)}
+     catch{return json({ok:false,error:"CATALOG_UNAVAILABLE"},503)}
      try{
-       const list=await getCatalog(fetch,Date.now(),false);
-       if(request.method==="HEAD")return new Response(null,{headers:{...basicHeaders(),"Content-Type":"application/json"}});
+       const stations=describeContractStations(list,new Date(),STATIONS);
+       if(request.method==="HEAD")return new Response(null,{headers:{
+         ...basicHeaders(),"Content-Type":"application/json"}});
        return json({ok:true,timezone:"America/Chicago",transport:"on_demand_continuous_mp3",
          synchronized:false,station_contracts:"versioned_counterpoint_v1",
          mainline_source:list.mainline_programs?.length?
-           "published_programs":"approved_catalog_baseline",
-         stations:describeContractStations(list,new Date(),STATIONS)});
-     }catch{return json({ok:false,error:"CATALOG_UNAVAILABLE"},503)}
+           "published_programs":"approved_catalog_baseline",stations});
+     }catch{return json({ok:false,error:"CONTRACT_INVALID"},503)}
    }
    const stationMatch=path.match(/^\/stations\/([a-z0-9-]+)\/(health|contract|live\.mp3)$/);
    if(stationMatch){
