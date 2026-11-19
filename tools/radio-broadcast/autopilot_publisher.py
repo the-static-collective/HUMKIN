@@ -128,9 +128,8 @@ def next_boundary(previous, earliest_ms):
     positions = [0]
     total = 0
     for track in previous["tracks"]:
-        for duration in track["durations_ms"]:
-            total += duration
-            positions.append(total)
+        total += sum(track["durations_ms"])
+        positions.append(total)
     if total <= 0:
         raise ValueError("Existing program has no duration")
     if earliest_ms <= start:
@@ -171,6 +170,7 @@ def public_program(existing, frequency, tracks, lead_seconds=120):
 
 
 def publish_program(program, cache, client):
+    from botocore.exceptions import ClientError
     # Media first, schedule last: an interrupted upload cannot announce missing audio.
     uploaded = set()
     for revision in program["revisions"][-1:]:
@@ -187,7 +187,7 @@ def publish_program(program, cache, client):
                 try:
                     client.head_object(Bucket=BUCKET, Key=key)
                     continue
-                except client.exceptions.ClientError as exc:
+                except ClientError as exc:
                     if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") not in (403, 404):
                         raise
                 client.upload_file(str(local), BUCKET, key, ExtraArgs={
@@ -197,7 +197,9 @@ def publish_program(program, cache, client):
     # Recheck the latest revision before overwriting the program pointer.
     try:
         existing = json.loads(client.get_object(Bucket=BUCKET, Key=key)["Body"].read())
-    except client.exceptions.NoSuchKey:
+    except ClientError as exc:
+        if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 404:
+            raise
         existing = None
     if existing and existing.get("revisions", []) != program["revisions"][:-1]:
         raise RuntimeError("Cloud program changed while preparing; reload before publishing.")
@@ -227,12 +229,13 @@ def main():
         print("Total cycle seconds:", sum(sum(t["durations_ms"]) for t in tracks) / 1000)
         return
     # Reuse the already installed publisher's boto3 credentials contract.
+    from botocore.exceptions import ClientError
     from hls_push import r2_client
     client = r2_client()
     key = f"autopilot/programs/{station}.json"
     try:
         existing = json.loads(client.get_object(Bucket=BUCKET, Key=key)["Body"].read())
-    except client.exceptions.ClientError as exc:
+    except ClientError as exc:
         status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
         if status not in (404,):
             raise
