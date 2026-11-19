@@ -258,7 +258,7 @@ test("receiver uses the buffered media playhead for titles and artwork, then cle
   const origin = "2026-11-18T23:01:";
   const manifest = ["#EXTM3U",
     cue("1", origin + "00.000Z", {title: "Écho", artist: "Fixture", album: "A", artwork: art}),
-    cue("2", origin + "15.250Z", {title: "Second", artist: "Fixture"}),
+    cue("2", origin + "15.250Z", {title: "Second"}),
     cue("gap", origin + "22.000Z", null),
     "#EXT-X-PROGRAM-DATE-TIME:" + origin + "00.000Z",
     ...[0, 1, 2].flatMap(number => ["#EXTINF:10,", "segment-" + number + ".ts"])
@@ -280,6 +280,7 @@ test("receiver uses the buffered media playhead for titles and artwork, then cle
   assert.match(f.elements.get("current-artist").textContent, /Fixture/);
   movePlayhead(15.3);
   assert.equal(status.textContent, "Second");
+  assert.equal(f.elements.get("current-artist").textContent, "");
   assert.equal(cover.src, "https://humkin.abundent.org/cover.jpg");
   movePlayhead(22);
   assert.equal(status.textContent, "HUMKIN RADIO · LIVE");

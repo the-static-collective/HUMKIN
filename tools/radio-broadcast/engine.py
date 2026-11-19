@@ -370,10 +370,12 @@ def controlled_playout(desk, cache, write, crossfade, trace, cue=lambda _: None)
             trace("audio_error", {"mode": "stream", "track_id": id_, "reason": "source_error"})
             print("Unavailable audio:", item["title"], file=sys.stderr)
             return None
-        if not desk.start(slot):
-            close_decoder(process)
-            return None
-        return process, head, min(reserve, overlap)
+        with desk.lock:
+            requested_skip = desk.skip
+            if not desk.start(slot):
+                close_decoder(process)
+                return None
+        return process, head, min(reserve, overlap), requested_skip
 
     def close_decoder(process):
         if process is None:
@@ -390,7 +392,7 @@ def controlled_playout(desk, cache, write, crossfade, trace, cue=lambda _: None)
                 if not desk.pending(1):
                     raise RuntimeError("No available audio to start the source")
                 time.sleep(.05)
-        decoder, head, _ = replacement
+        decoder, head, _, _ = replacement
         replacement = None
         cue(desk.current)
         write(head)
@@ -422,7 +424,7 @@ def controlled_playout(desk, cache, write, crossfade, trace, cue=lambda _: None)
                 while replacement is None:
                     write(b"\0" * (RATE * FRAME_BYTES // 10))
                     replacement = successor(current, 0)
-            decoder, head, overlap = replacement
+            decoder, head, overlap, requested_skip = replacement
             replacement = None
             n = min(len(tail), len(head), overlap)
             n = n // FRAME_BYTES * FRAME_BYTES
@@ -443,7 +445,7 @@ def controlled_playout(desk, cache, write, crossfade, trace, cue=lambda _: None)
             write(head[n:])
             trace("boundary", {"mode": "stream", "track_id": current["id"],
                                "next_track_id": desk.current["id"],
-                               "reason": "operator_skip" if skipped else "automatic"})
+                               "reason": "operator_skip" if requested_skip else "automatic"})
     finally:
         close_decoder(decoder)
         if replacement is not None:

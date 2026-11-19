@@ -8,7 +8,7 @@ from pathlib import Path
 EVENTS = {"source_select", "boundary", "audio_error", "stream_error", "reconnect"}
 MODES = {"stream", "clock", "shuffle", "album"}
 KINDS = {"song", "bumper", "stream"}
-REASONS = {"automatic", "source_error", "encoder", "reconnect", "unknown"}
+REASONS = {"automatic", "operator_skip", "source_error", "encoder", "reconnect", "unknown"}
 MAX_BYTES = 5 * 1024 * 1024
 
 

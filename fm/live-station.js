@@ -271,17 +271,15 @@
     showVerifiedMetadata(track);
   }
   function showVerifiedMetadata(track) {
-    if (!track || typeof track.title !== "string" ||
-        typeof track.artist !== "string" || !track.title.trim() ||
-        !track.artist.trim()) return;
+    if (!track || typeof track.title !== "string" || !track.title.trim()) return;
     const name = track.title.trim().slice(0, 160);
-    const performer = track.artist.trim().slice(0, 160);
+    const performer = typeof track.artist === "string" ? track.artist.trim().slice(0, 160) : "";
     const album = typeof track.album === "string" ? track.album.slice(0, 180) : "";
     if (JSON.stringify(track) === JSON.stringify(shownTrack)) return;
     shownTrack = track;
     const cover = trustedArt(track.artwork);
     if (title) title.textContent = name;
-    if (artist) artist.textContent = performer + (album ? " · " + album : "");
+    if (artist) artist.textContent = [performer, album].filter(Boolean).join(" · ");
     if (artwork) {
       artwork.src = cover;
       artwork.alt = cover === stationCover ? "HUMKIN Radio station artwork" : name + " artwork";
