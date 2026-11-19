@@ -114,6 +114,9 @@ def main():
                           "duration_seconds":round(seconds,3),"source_sha256":source_hash,
                           "source_path":path.relative_to(args.input).as_posix(),
                           "embedded_genre":tags.get("genre","")[:240],
+                          "embedded_style":next((tags[key] for key in
+                            ("style","style_prompt","txxx:style","suno_style")
+                            if tags.get(key)),"")[:1500],
                           "folder_genre":path.relative_to(args.input).parts[0][:240]
                             if args.folder_genre and len(path.relative_to(args.input).parts)>1 else "",
                           "suno_style":extra.get("style",""),
