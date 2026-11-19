@@ -90,6 +90,13 @@ test("Worker serves multiple bounded station routes without mutating old URLs",a
   const obj=await index.json();
   assert.equal(obj.synchronized,false);
   assert(obj.stations.some(s=>s.id==="eclectic"&&s.ready));
+  const contract=await worker.fetch(
+    new Request("https://radio.example/stations/deep-wave/contract"),env);
+  assert.equal(contract.status,200);
+  const receipt=(await contract.json()).receipt;
+  assert.equal(receipt.schema,"humkin.radio.station-contract/v1");
+  assert.deepEqual(receipt.lineage,["mainline","spotlight","deep-wave"]);
+  assert.equal(receipt.claim,"deterministic_selection_not_proof_of_actual_airplay");
   const gone=await worker.fetch(new Request("https://radio.example/stations/nope/live.mp3"),env);
   assert.equal(gone.status,404);
   const disabled=await worker.fetch(new Request("https://radio.example/stations/talk/live.mp3"),env);
