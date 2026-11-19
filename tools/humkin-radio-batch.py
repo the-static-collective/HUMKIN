@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from humkin_catalog_map import build_candidates, motif_cases, load_notes
 
 EXTS={".wav",".mp3",".m4a",".flac",".aif",".aiff",".ogg"}
 def run(argv):
@@ -24,7 +25,28 @@ def sha256(path):
         for chunk in iter(lambda:handle.read(1024*1024),b""):h.update(chunk)
     return h.hexdigest()
 def probe(path):
-    return json.loads(run(["ffprobe","-v","error","-show_entries","format=duration:format_tags=title,artist,album","-of","json",str(path)]))["format"]
+    # Read actual embedded source tags; downloads do NOT guarantee style text.
+    return json.loads(run(["ffprobe","-v","error","-show_entries","format=duration:format_tags","-of","json",str(path)]))["format"]
+def sidecars(path):
+    """Optional creator-provided sidecars, local only until explicit review."""
+    names=[
+        path.with_name(path.name+".suno.json"),
+        path.with_suffix(".suno.json"),
+    ]
+    data={}
+    for name in names:
+        if name.exists() and name.is_file() and name.stat().st_size<=128*1024:
+            raw=json.loads(name.read_text(encoding="utf-8"))
+            if isinstance(raw,dict):
+                # Only read known fields; no scraping, lyrics or unknown private keys.
+                data={"style":str(raw.get("style") or raw.get("style_prompt") or "")[:2000],
+                      "suno_id":str(raw.get("suno_id") or raw.get("id") or "")[:120]}
+                break
+    description=path.with_name(path.name+".description.txt")
+    if not description.exists():description=path.with_suffix(".description.txt")
+    if description.exists() and description.is_file() and description.stat().st_size<=32*1024:
+        data["description"]=description.read_text(encoding="utf-8")[:2000]
+    return data
 def title(name):
     s=re.sub(r"(?i)\.(wav|mp3|m4a|flac|aif|aiff|ogg)$","",name)
     s=re.sub(r"^\d{1,3}[ ._-]+","",s).replace("_"," ")
@@ -36,6 +58,9 @@ def main():
     p.add_argument("--bitrate",type=int,choices=[96,128,160,192],default=128,help="MP3 kbps (default 128)")
     p.add_argument("--album",default="HUMKIN RADIO · NEW CRATE")
     p.add_argument("--dry-run",action="store_true",help="List tracks without encoding")
+    p.add_argument("--notes",type=Path,help="Optional owner-provided CSV or JSON style/description notes keyed by hash or exact filename")
+    p.add_argument("--folder-genre",action="store_true",help="Treat first directory beneath input as an optional genre hint (not verified)")
+    p.add_argument("--no-map",action="store_true",help="Skip generation of local tagging candidates")
     args=p.parse_args()
     if not args.input.is_dir():p.error("Input must be a directory.")
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
@@ -53,6 +78,7 @@ def main():
                 continue
             seen.add(source_hash)
             info=probe(path)
+            extra=sidecars(path)
             seconds=float(info.get("duration",0))
             if not 1<=seconds<=14400:raise ValueError("Invalid duration")
             tags={str(k).lower():str(v) for k,v in info.get("tags",{}).items()}
@@ -78,6 +104,13 @@ def main():
             items.append({"title":tags.get("title",friendly),"album":tags.get("album",args.album),
                           "artist":tags.get("artist","HUMKIN"),"filename":filename,
                           "duration_seconds":round(seconds,3),"source_sha256":source_hash,
+                          "source_path":path.relative_to(args.input).as_posix(),
+                          "embedded_genre":tags.get("genre","")[:240],
+                          "folder_genre":path.relative_to(args.input).parts[0][:240]
+                            if args.folder_genre and len(path.relative_to(args.input).parts)>1 else "",
+                          "suno_style":extra.get("style",""),
+                          "suno_id":extra.get("suno_id",""),
+                          "human_description":extra.get("description",""),
                           "mp3_sha256":sha256(dest) if not args.dry_run else None,
                           "bytes":dest.stat().st_size if not args.dry_run else None})
         except Exception as error:
@@ -87,10 +120,18 @@ def main():
     print(f"\n{len(items)} tracks · {total/3600:.2f} hours · {sum((x['bytes'] or 0) for x in items)/1024/1024:.1f} MiB · {len(failed)} errors")
     if not args.dry_run:
         path=out/"humkin-crate-manifest.json"
-        path.write_text(json.dumps({"schema_version":1,"bitrate_kbps":args.bitrate,
-                                    "duration_seconds":round(total,3),"tracks":items,"errors":failed},
-                                   indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-        print("Next: open https://humkin.abundent.org/fm/load/ and select MP3s in "+str(out))
+        manifest={"schema_version":1,"bitrate_kbps":args.bitrate,
+                  "duration_seconds":round(total,3),"tracks":items,"errors":failed}
+        path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+        if not args.no_map:
+            pack=build_candidates(manifest,load_notes(args.notes))
+            candidate=out/"humkin-catalog-candidates.json"
+            candidate.write_text(json.dumps(pack,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+            questions=out/"humkin-motif-review-questions.json"
+            cases=motif_cases(pack)
+            questions.write_text(json.dumps({"status":"NOT_RUN","cases":cases},indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+            print(f"Local catalogue candidates: {candidate.name} · {len(cases)} MOTIF-style review questions (NOT RUN)")
+        print("Next: review candidate metadata locally in TOWER, then stage MP3s at https://humkin.abundent.org/fm/load/")
     return 1 if failed else 0
 if __name__=="__main__":
     sys.exit(main())
