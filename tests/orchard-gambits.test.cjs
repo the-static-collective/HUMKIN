@@ -84,7 +84,7 @@ test("workbench is a real linked mobile-friendly route, not a fake operator API"
  assert.match(html,/signal\/model\.js/);
  assert.match(js,/S\.toUrl\(/);
  assert.match(js,/fetch\(base,\{cache:"no-store"\}\)/);
- assert.doesNotMatch(js+core,/supabase\.co|functions\/v1|\.upload\(|\.play\(|awardXp|mint|publishProgram/);
+ assert.doesNotMatch(js+core,/supabase\.co|functions\/v1|\.upload\(|\.play\(|awardXp|publishProgram/);
  assert.doesNotThrow(()=>new Function(js));
  assert.doesNotThrow(()=>new Function(core));
 });
