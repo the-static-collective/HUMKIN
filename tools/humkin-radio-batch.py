@@ -37,7 +37,11 @@ def sidecars(path):
     data={}
     for name in names:
         if name.exists() and name.is_file() and name.stat().st_size<=128*1024:
-            raw=json.loads(name.read_text(encoding="utf-8"))
+            try:
+                raw=json.loads(name.read_text(encoding="utf-8"))
+            except (ValueError,UnicodeError):
+                # Optional sidecar failure must never discard valid source audio.
+                continue
             if isinstance(raw,dict):
                 # Only read known fields; no scraping, lyrics or unknown private keys.
                 data={"style":str(raw.get("style") or raw.get("style_prompt") or "")[:2000],
@@ -46,7 +50,10 @@ def sidecars(path):
     description=path.with_name(path.name+".description.txt")
     if not description.exists():description=path.with_suffix(".description.txt")
     if description.exists() and description.is_file() and description.stat().st_size<=32*1024:
-        data["description"]=description.read_text(encoding="utf-8")[:2000]
+        try:
+            data["description"]=description.read_text(encoding="utf-8")[:2000]
+        except UnicodeError:
+            pass
     return data
 def title(name):
     s=re.sub(r"(?i)\.(wav|mp3|m4a|flac|aif|aiff|ogg)$","",name)
