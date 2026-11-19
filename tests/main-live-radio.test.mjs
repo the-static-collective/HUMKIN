@@ -9,7 +9,7 @@ const script = new vm.Script(
 );
 const BASE = "https://humkin-long-wave.joyvolcanomusic.workers.dev";
 
-function fixture(initialOnline = true) {
+function fixture(initialOnline = true, search = "") {
   const elements = new Map();
   let actualPlayCalls = 0, statusOnline = initialOnline, statusGate = null;
   let clock = Date.now();
@@ -91,17 +91,19 @@ function fixture(initialOnline = true) {
       getElementById: id => elements.get(id) || null
     },
     window: {HUMKIN_RADIO: radio, Hls: FakeHls},
+    location: {search},
     navigator: {},
-    URL, Date: FakeDate, Number, String, Promise, AbortController, TextDecoder, atob,
+    URL, URLSearchParams, Date: FakeDate, Number, String, Promise, AbortController, TextDecoder, atob,
     fetch: async url => {
       fetchRequests.push(url);
-      if (url.endsWith("/hls/status")) {
+      if (url.endsWith("/hls/status") || url.endsWith("/hls/delayed-status")) {
         stationStatusChecks++;
         if (statusGate) await statusGate;
         return {ok: statusOnline, json: async () =>
-          ({on_air: statusOnline, mode: "shared_live_hls", age_seconds: 2})};
+          ({on_air: statusOnline, mode: url.endsWith("/delayed-status")
+            ? "delayed_reservoir_hls" : "shared_live_hls", age_seconds: 2})};
       }
-      if (url.endsWith("/hls/live.m3u8")) {
+      if (url.endsWith("/hls/live.m3u8") || url.endsWith("/hls/delayed.m3u8")) {
         return {ok: Boolean(metadata), text: async () => metadata};
       }
       throw Error("Unexpected network URL: " + url);
@@ -402,4 +404,18 @@ test("a manual Listen Live request overrides the featured single immediately", a
   assert.equal(f.audio.paused, false);
   assert.equal(f.getHls().source, BASE + "/hls/live.m3u8");
   assert.equal(f.finishSpotlight(), false);
+});
+
+
+test("reservoir lab explicit query selects delayed feed without altering regular listen live", async () => {
+  const f = fixture(true, "?reservoir=lab");
+  await f.flush();
+  assert.equal(f.fetchRequests[0], BASE + "/hls/delayed-status");
+  f.click("listen"); await f.flush();
+  assert.equal(f.getHls().source, BASE + "/hls/delayed.m3u8");
+  assert.match(f.elements.get("mode-help").textContent, /RESERVOIR LAB/);
+  const normal = fixture();
+  await normal.flush();
+  normal.click("listen"); await normal.flush();
+  assert.equal(normal.getHls().source, BASE + "/hls/live.m3u8");
 });
