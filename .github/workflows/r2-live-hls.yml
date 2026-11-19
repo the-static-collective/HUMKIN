@@ -7,6 +7,10 @@ on:
       - 'fm/index.html'
       - 'tests/hls-*'
       - 'tests/tower.test.py'
+      - 'tests/catalog-graph.test.py'
+      - 'tests/predictive-clock.test.mjs'
+      - 'tools/radio-broadcast/catalog_graph.py'
+      - 'fm/predictive-clock.mjs'
       - 'tests/station-on-air.test.py'
       - 'tests/main-live-radio.test.mjs'
       - '.github/workflows/r2-live-hls.yml'
@@ -34,8 +38,10 @@ jobs:
           python tests/station-one-v2.test.py
           python tests/station-on-air.test.py
           python tests/tower.test.py
+          python tests/catalog-graph.test.py
       - name: Public receiver and Cloudflare routing
         run: |
           node --check tools/radio-broadcast/on_air.js
+          node --test tests/predictive-clock.test.mjs
           node --test tests/main-live-radio.test.mjs tests/radio-primary-layout.test.mjs tools/radio-broadcast/cloudflare/hls-routes.test.mjs tools/radio-broadcast/cloudflare/worker.test.mjs
 
