@@ -60,6 +60,16 @@ export const STATIONS=Object.freeze([
     include_bumpers:false,programs:[]
   },
   {
+    id:"autodisco-v20", name:"AUTO DISCO V20 · First-Listen Radio",
+    description:"Only owner-approved, published V20-produced broadcast episodes. The DJs, spoken production and episode audio originate in Auto Disco V20; no unrelated music filler.",
+    enabled:true, mode:"personal",
+    contract_version:1,revision:1,parent_id:"mainline",
+    relationship:{kind:"independent",influence:0},
+    // Two exact credits are required for admission; no episodes means NO STREAM.
+    filter:{kinds:["song"],artists:["Auto Disco V20"],albums:["First-Listen Radio"]},
+    include_bumpers:false,programs:[]
+  },
+  {
     id:"talk", name:"HUMKIN · Talk",
     description:"Reserved for original, approved talk recordings and interviews.",
     enabled:false, mode:"virtual", filter:{tags:["talk"]},
