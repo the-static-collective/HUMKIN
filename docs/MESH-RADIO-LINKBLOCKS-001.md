@@ -1,6 +1,6 @@
 # MESH RADIO 001 · Links are the blocks
 
-**Status:** additive, local-first, static browser experiment on \`/fm/mesh-radio/\`. Does not replace the original HUMKIN Crate Loader, the main radio stream, private catalog, or SIA's published permanent URLs.
+**Status:** additive, local-first, static browser experiment on \`/fm/mesh-radio/\`. A new optional R2 upload section reuses the *existing* Supabase owner session, private R2 staging service and public R2 publication machinery. Does not replace the original HUMKIN Crate Loader, the main radio stream, or SIA's published permanent URLs.
 
 ## The idea
 
@@ -27,11 +27,24 @@ This is an exchangeable graph of links, **not a blockchain**, a token, or a cons
 6. For an existing fingerprint, use **LINK ANOTHER SOURCE** to register a permanent public HTTPS audio file address from another host. The exact content must match the fingerprint; **the lab does not currently download/re-hash a third-party public URL**.
 7. Use **EXPORT PORTABLE GRAPH** to move this graph between browsers. Import the exported JSON on another computer. This file contains only allowlisted node labels, recording hashes and metadata, public route URLs, and the station recipe. No private paths, raw audio, cloud credentials, browser blob URLs, or play-history are exported. Review title metadata before sharing it with others.
 
+## Actual Cloudflare R2 intake from Mac / any computer
+
+This is the missing piece after the first local-only Linkblocks experiment. It uses the **existing** server-authorized \`humkin-r2-direct\` Edge Function (no Vercel and no browser-visible R2 API keys). MP3 uploads are catalog entries, not merely links.
+
+1. On \`https://humkin.abundent.org/fm/mesh-radio/\`, select a music folder with MP3s in the local folder picker. The files are hashed and playable in that browser before upload.
+2. Scroll to **04 · Put these songs on R2**. Click **CHECK MY HUMKIN R2 CONNECTION**. The browser reuses the same Supabase owner session as \`/fm/load/\`. There is no new HUMKIN login system.
+3. If the Mac has no owner session, use **EMAIL MY SIGN-IN LINK**. If Supabase's unresolved redirect configuration sends a fresh email link to \`localhost:3000\`, copy the *unopened* link and paste it into the masked **UNLOCK THIS BROWSER FROM EMAIL LINK** field. The token is exchanged directly against the same Supabase Auth API; it is not put in this document, GitHub, or the browser index.
+4. **UPLOAD SELECTED MP3s TO PRIVATE R2** calls \`status\`, then for up to three recordings concurrently runs: \`prepare\` → single presigned R2 PUT of one MP3 → \`finalize\` SHA-256 verification. The private staging bucket remains private. Song metadata comes from existing Linkblocks inventory data or title inferred from file name with HUMKIN / HUMKIN RADIO · INBOX fallbacks. 50 MiB per MP3 max.
+5. The service records verified, unpublished drafts in existing \`humkin_radio_tracks\`. The page can refresh and rediscover those drafts after reopening it. **PUBLISH ALL VERIFIED R2 DRAFTS TO RADIO** requires a second deliberate click and confirmation; after each successful \`publish\`, the verified source is copied to public \`humkin-radio-media\`, registered as a published Supabase radio track, and the Linkblocks catalog refreshes. This bulk action encompasses *all* verified unpublished drafts belonging to the owner, not just currently selected Mac files.
+6. If a recording is already cataloged by exact MP3 SHA-256, the upload skips it. A selected WAV/M4A does **not** upload via the new direct panel; use the existing Crate Loader's local conversion or an offline converter and reselect MP3. If **PRIVATE R2 NOT READY**, check private bucket and permissions, or stage through the old loader's Supabase route.
+
+This feature is still browser-field-test pending. CI checks the code and backend contracts, but does not claim an actual owner session, real Cloudflare write, Mac Safari codec behavior, or CORS success. Files and private keys never travel through Vercel.
+
 ### Reality check
 
 This first step **does** merge metadata from many device inventories and play files available in the current browser or via linked public HTTPS storage.
 
-It **does not yet** transmit a private Mac file over the Internet, create a network daemon, automatically replicate a file, synchronize listeners' clocks, contact an offline peer, or make an unapproved recording public. A metadata-only route cannot be played remotely. The next meaningful node upgrade is a small opt-in HTTPS peer endpoint or a user-authorized cloud mirror; the station resolver itself need not change.
+It **does** upload MP3s selected on a Mac or other computer to owner-authorized private R2 and, after explicit approval, publish them into the existing radio catalog. It **does not yet** transmit arbitrary offline-node files peer-to-peer, create a network daemon, automatically replicate between peers, synchronize listener clocks, or contact an offline machine. A metadata-only route cannot be played remotely. The next meaningful node upgrade is a small opt-in HTTPS peer endpoint or a second host adapter; the station resolver itself need not change.
 
 ## One-person, many free resources
 

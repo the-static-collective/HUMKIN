@@ -78,11 +78,39 @@ label{display:block;font-weight:700;margin-top:12px}.metrics{display:flex;gap:10
 <label for="search">Find music across the whole indexed mesh</label><input id="search" type="search" placeholder="Title, artist, album, or SHA-256">
 <p id="list-note" class="note"></p><ul id="songs" aria-label="Indexed recordings"></ul>
 </section>
+<section class="panel" id="r2-intake">
+<h2>04 · Put these songs on R2</h2>
+<p><strong>Actual cloud upload, not just indexing.</strong> Select MP3s from your Mac with the folder picker above, then send them directly to HUMKIN's private Cloudflare R2 bucket. When you're ready, publish verified recordings to the shared radio catalog with one button. Your original files stay on the computer.</p>
+<p id="r2-login" class="muted" role="status">HUMKIN owner login not yet checked in this browser.</p>
+<p id="r2-connection" class="note">Uses the existing Crate Loader session and the same private R2 service. No Vercel or new account.</p>
+<div class="actions"><button id="r2-check" type="button" class="secondary">CHECK MY HUMKIN R2 CONNECTION</button></div>
+<details>
+<summary>Not signed in on this Mac? Unlock it here.</summary>
+<p class="note">Uses the same verified HUMKIN owner email as the original Crate Loader. The Mac and the other computers may have different browser sessions.</p>
+<div class="actions"><button id="r2-send-link" type="button" class="secondary">EMAIL MY SIGN-IN LINK</button></div>
+<p class="note">If Supabase incorrectly sends the new link to <code>localhost:3000</code>, copy its address <strong>without opening it</strong>. Paste it into the private field below. Never send the link to anyone else.</p>
+<label for="r2-paste-link">Fresh, unopened HUMKIN sign-in email link</label>
+<input id="r2-paste-link" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your private unopened Supabase sign-in URL">
+<div class="actions"><button id="r2-verify-link" type="button" class="secondary">UNLOCK THIS BROWSER FROM EMAIL LINK</button></div>
+</details>
+<div class="actions">
+<button id="r2-upload" type="button" disabled>UPLOAD SELECTED MP3s TO PRIVATE R2</button>
+<button id="r2-refresh" type="button" class="secondary">REFRESH VERIFIED DRAFTS</button>
+</div>
+<progress id="r2-progress" value="0" max="1" style="width:100%;height:14px"></progress>
+<p id="r2-upload-count" class="note">No transfers attempted.</p>
+<p id="r2-message" class="note" role="status" aria-live="polite">Choose a folder above, then check your HUMKIN R2 connection.</p>
+<h3>Uploaded songs awaiting publication</h3>
+<p id="r2-drafts-count" class="note">No draft list loaded.</p>
+<ul id="r2-drafts"><li>Unlock the owner session to see your verified drafts.</li></ul>
+<div class="actions"><button id="r2-publish" type="button" disabled>PUBLISH ALL VERIFIED R2 DRAFTS TO RADIO</button></div>
+<p class="note">Private staging is not broadcast. Publishing copies verified audio to the public HUMKIN R2 bucket, registers it in the existing Supabase radio catalog and makes it available to stations. WAV/M4A conversion is still available in the <a href="../load/">original Crate Loader</a>. For this first direct path, select MP3 files.</p>
+</section>
 <section class="panel">
-<h2>04 · Field notes</h2>
+<h2>05 · Field notes</h2>
 <pre id="messages" role="log" aria-live="polite">MESH RADIO ready. No network changes have been made.</pre>
 <p class="note">This experiment uses existing HUMKIN MESH inventory files, the live public radio catalog, and an editable portable link graph. The main station, original Crate Loader, radio schedules, and existing SIA permanent links remain untouched.</p>
 </section>
-<footer><strong>LINKBLOCKS 001</strong> · A location declaration is not proof of availability. A file hash identifies bytes, not a whole musical work. An export doesn't authorize a broadcast. No login needed for this local experiment.</footer>
+<footer><strong>LINKBLOCKS 001</strong> · A location declaration is not proof of availability. A file hash identifies bytes, not a whole musical work. An export doesn't authorize a broadcast. Local listening needs no login; optional R2 uploads require the existing HUMKIN owner account.</footer>
 </main></body>
 </html>

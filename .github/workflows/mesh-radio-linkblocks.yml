@@ -5,12 +5,14 @@ on:
     paths:
       - 'fm/mesh-radio/**'
       - 'tests/mesh-radio-linkblocks.test.mjs'
+      - 'tests/mesh-radio-r2-intake.test.mjs'
       - '.github/workflows/mesh-radio-linkblocks.yml'
   push:
     branches: [main]
     paths:
       - 'fm/mesh-radio/**'
       - 'tests/mesh-radio-linkblocks.test.mjs'
+      - 'tests/mesh-radio-r2-intake.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -25,4 +27,4 @@ jobs:
         with:
           node-version: '22'
       - name: Link identity, failover, privacy and Compost tests
-        run: node --test tests/mesh-radio-linkblocks.test.mjs
+        run: node --test tests/mesh-radio-linkblocks.test.mjs tests/mesh-radio-r2-intake.test.mjs
