@@ -28,6 +28,7 @@ jobs:
           $tokens = $null
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'tools/radio-broadcast/windows/station-one.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'tools/radio-broadcast/windows/station-one-live.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count -gt 0) { $errors | Format-List | Out-String | Write-Host; exit 1 }
       - uses: actions/setup-python@v5
         with:
