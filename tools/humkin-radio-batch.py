@@ -44,7 +44,9 @@ def sidecars(path):
                 continue
             if isinstance(raw,dict):
                 # Only read known fields; no scraping, lyrics or unknown private keys.
-                data={"style":str(raw.get("style") or raw.get("style_prompt") or "")[:2000],
+                style=raw.get("style") or raw.get("style_prompt") or raw.get("style_tags") or raw.get("tags") or ""
+                if isinstance(style,list):style=", ".join(str(x) for x in style[:30])
+                data={"style":str(style)[:2000],
                       "suno_id":str(raw.get("suno_id") or raw.get("id") or "")[:120]}
                 break
     description=path.with_name(path.name+".description.txt")
