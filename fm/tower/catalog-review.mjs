@@ -52,8 +52,11 @@ export function shortlist(pack,query="",mode="all"){
  return pack.tracks.filter(r=>{
   const reviewed=r.approved_for_tag_publication===true;
   if(mode==="reviewed"&&!reviewed||mode==="unreviewed"&&reviewed)return false;
-  if(mode==="ambiguous"&&!r.possible_family_hashes?.length&&
-     !(r.suggestions||[]).filter(x=>x.tag?.startsWith("genre:")).slice(0,2).every(x=>x.score<=5))return false;
+  if(mode==="ambiguous"){
+   const genres=(r.suggestions||[]).filter(x=>x.tag?.startsWith("genre:"));
+   const closeStyles=genres.length>=2&&Math.abs(Number(genres[0].score)-Number(genres[1].score))<=2;
+   if(!r.possible_family_hashes?.length&&!closeStyles)return false;
+  }
   if(mode==="no-tags"&&candidateTags(r).length)return false;
   if(!q)return true;
   return [r.title,r.artist,r.album,r.suno_style,r.human_description,r.filename,
