@@ -5,6 +5,7 @@ Recording IDs are never generated from mutable names. Artist/album relations
 are explicit pointers, not assumptions made from matching text.
 """
 import json
+from contextlib import contextmanager
 from pathlib import Path
 import sqlite3
 import time
@@ -33,6 +34,7 @@ class CatalogGraph:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._open() as db:
+            db.execute("PRAGMA journal_mode = WAL")
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS graph_clock (
                     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
@@ -58,11 +60,19 @@ class CatalogGraph:
                 CREATE INDEX IF NOT EXISTS edges_target ON edges(dst, predicate);
             """)
 
+    @contextmanager
     def _open(self):
         db = sqlite3.connect(self.path, timeout=5)
-        db.execute("PRAGMA foreign_keys = ON")
-        db.execute("PRAGMA busy_timeout = 5000")
-        return db
+        try:
+            db.execute("PRAGMA foreign_keys = ON")
+            db.execute("PRAGMA busy_timeout = 5000")
+            yield db
+            db.commit()
+        except BaseException:
+            db.rollback()
+            raise
+        finally:
+            db.close()
 
     @staticmethod
     def _id(value):
@@ -87,6 +97,8 @@ class CatalogGraph:
         if kind not in ("recording", "artist", "album", "release", "station"):
             raise ValueError("Unknown node kind.")
         self._id(node_id)
+        if not isinstance(source, dict):
+            raise ValueError("Source must be a JSON object.")
         if kind == "recording" and source.get("id") != node_id:
             raise ValueError("A recording's stable ID must match its source ID.")
         with self._open() as db:
