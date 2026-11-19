@@ -98,7 +98,7 @@ async function queryPublicCatalog(fetcher){
          days:r.days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6),
          start_minute:Number(r.start_minute),end_minute:Number(r.end_minute),
          priority:Number(r.priority)||0,track_ids:r.track_ids.slice(0,1500),
-         enabled:true
+         filter:{track_ids:r.track_ids.slice(0,1500)},enabled:true
        }));
    }
  }catch{/* Continue with the approved catalog baseline if Mainline plans are unreachable. */}
