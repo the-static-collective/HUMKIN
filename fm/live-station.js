@@ -38,6 +38,8 @@
   let wantsAudio = false, metadataGeneration = 0;
   let longWaveLastProgress = 0;
   let cueSheet = null, shownTrack = null;
+  let lastHlsProgress = Date.now(), deferredHlsError = null;
+  let deferNativeHlsRestart = false;
 
   function isLiveLayer() {
     return source === "hls" || source === "longwave" || source === "clock";
@@ -98,6 +100,8 @@
   function clearLiveAudio() {
     cueSheet = null;
     shownTrack = null;
+    deferredHlsError = null;
+    deferNativeHlsRestart = false;
     stopHls();
     liveAudio.pause();
     liveAudio.removeAttribute("src");
@@ -317,6 +321,7 @@
     radio?.stopBrowserAudio?.();
     clearLiveAudio();
     setSource("hls");
+    lastHlsProgress = Date.now();
     genericArt();
     setStatus("Tuning the shared station…", "CONNECTING");
     const on = await checkSignal();
@@ -330,8 +335,14 @@
       hls.loadSource(HLS);
       hls.attachMedia(liveAudio);
       hls.on(window.Hls.Events.ERROR, (_evt, event) => {
-        if (token === operation && source === "hls" && event.fatal)
-          fallbackToLongWave("hls_decoder", token);
+        if (token !== operation || source !== "hls" || !event.fatal) return;
+        // Background throttling is not proof the live broadcast went down.
+        // Recover at the live edge when the tab becomes visible again.
+        if (document.hidden) {
+          deferredHlsError = event;
+          return;
+        }
+        fallbackToLongWave("hls_decoder", token);
       });
     } else {
       fallbackToLongWave("hls_unsupported", token);
@@ -373,7 +384,10 @@
   liveAudio.addEventListener("pause", updateButton);
   liveAudio.addEventListener("timeupdate", () => {
     if (source === "longwave" && !liveAudio.paused) longWaveLastProgress = Date.now();
-    if (source === "hls") syncTitleToPlayhead();
+    if (source === "hls") {
+      lastHlsProgress = Date.now();
+      syncTitleToPlayhead();
+    }
   });
   liveAudio.addEventListener("seeked", syncTitleToPlayhead);
   artwork?.addEventListener("error", () => {
@@ -387,12 +401,16 @@
       setStatus("Buffering the radio signal…", "BUFFERING");
   });
   liveAudio.addEventListener("error", () => {
-    if (source === "hls") fallbackToLongWave("hls_media_error");
-    else if (source === "longwave") fallbackToClock("longwave_media_error");
+    if (source === "hls") {
+      if (document.hidden) deferNativeHlsRestart = true;
+      else fallbackToLongWave("hls_media_error");
+    } else if (source === "longwave" && !document.hidden) fallbackToClock("longwave_media_error");
   });
   liveAudio.addEventListener("ended", () => {
-    if (source === "hls") fallbackToLongWave("hls_ended");
-    else if (source === "longwave") fallbackToClock("longwave_ended");
+    if (source === "hls") {
+      if (document.hidden) deferNativeHlsRestart = true;
+      else fallbackToLongWave("hls_ended");
+    } else if (source === "longwave" && !document.hidden) fallbackToClock("longwave_ended");
   });
   if ("mediaSession" in navigator) {
     try {
@@ -413,23 +431,62 @@
       });
     } catch {}
   }
-  async function monitor() {
-    // A continuous MP3 connection can silently stop producing audio without
-    // firing an error/ended event. Use real decoded playback progress as proof.
-    if (source === "longwave") {
-      if (wantsAudio && !liveAudio.paused &&
-          Date.now() - longWaveLastProgress > 50000)
-        fallbackToClock("longwave_stalled");
+  document.addEventListener?.("visibilitychange", () => {
+    if (document.hidden) {
+      statusFailures = 0;
       return;
     }
-    if (source !== "hls" || checking || !wantsAudio) return;
+    // A suspended tab often resumes with its HLS loader paused. Rejoin
+    // the broadcast without activating the browser's canned playlists.
+    lastHlsProgress = Date.now();
+    longWaveLastProgress = Date.now();
+    statusFailures = 0;
+    if (source !== "hls" || !wantsAudio) return;
+    if (deferNativeHlsRestart) {
+      deferNativeHlsRestart = false;
+      tuneLive();
+      return;
+    }
+    if (deferredHlsError) {
+      const issue = deferredHlsError;
+      deferredHlsError = null;
+      if (issue.type === window.Hls?.ErrorTypes?.MEDIA_ERROR && hls?.recoverMediaError)
+        hls.recoverMediaError();
+      else if (hls?.startLoad) hls.startLoad(-1);
+      else tuneLive();
+    } else if (hls?.startLoad) hls.startLoad(-1);
+    checkMetadata();
+  });
+  async function monitor() {
+    if (!wantsAudio || document.hidden || checking) return;
+    // Recover from the invisible backups when the shared live signal returns.
+    // Long Wave can keep playing independently while the Acer restarts.
+    if (source === "longwave" || source === "clock") {
+      if (source === "longwave" && !liveAudio.paused &&
+          Date.now() - longWaveLastProgress > 50000) {
+        fallbackToClock("longwave_stalled");
+        return;
+      }
+      checking = true;
+      const token = operation;
+      try {
+        const on = await checkSignal();
+        if (on && token === operation && wantsAudio &&
+            (source === "longwave" || source === "clock")) tuneLive();
+      } finally { checking = false; }
+      return;
+    }
+    if (source !== "hls") return;
     checking = true;
     const token = operation;
     try {
       const on = await checkSignal();
-      if (token !== operation || source !== "hls") return;
+      if (token !== operation || source !== "hls" || document.hidden) return;
       statusFailures = on ? 0 : statusFailures + 1;
-      if (statusFailures >= 2) fallbackToLongWave("transmitter_stale", token);
+      // Status probes can fail while sound is still playing. Require both
+      // repeated failures and no recent decoded audio before changing sources.
+      if (statusFailures >= 2 && Date.now() - lastHlsProgress > 30000)
+        fallbackToLongWave("transmitter_stale", token);
     } finally { checking = false; }
   }
   setInterval(monitor, 20000);
