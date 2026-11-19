@@ -15,7 +15,8 @@ function fixture(initialOnline = true) {
   let clock = Date.now();
   class FakeDate extends Date {static now() {return clock;}}
   let stationStatusChecks = 0, metadata = null, hlsPlayer, monitor, pollMetadata;
-  const playing = {clock: 0, shuffle: 0, pauses: 0};
+  const playing = {clock: 0, shuffle: 0, pauses: 0, spotlight: 0};
+  let introFinish = null;
   function element(id) {
     return {
       id, handlers: {}, hidden: id === "air" || id === "mode-clock",
@@ -40,6 +41,7 @@ function fixture(initialOnline = true) {
   for (const id of [
     "listen", "mode-shuffle", "live-air", "air", "station-status", "live-status",
     "live-signal", "live-source", "current-title", "current-artist",
+    "next-song",
     "current-art", "on-deck", "counter", "mode-help", "phone-playlist", "spotlight"
   ]) elements.set(id, element(id));
   const audio = elements.get("live-air");
@@ -55,9 +57,18 @@ function fixture(initialOnline = true) {
   }
   const radio = {
     ready: true,
-    stopBrowserAudio() {playing.pauses++; oldAudio.pause();},
+    stopBrowserAudio() {playing.pauses++; introFinish = null; oldAudio.pause();},
+    playSpotlightToLive(onFinished) {
+      playing.spotlight++;
+      introFinish = onFinished;
+      elements.get("current-title").textContent = "HaileyLu Bloom";
+      elements.get("current-artist").textContent = "HUMKIN";
+      oldAudio.play();
+      return true;
+    },
     startRoadShuffleFromLive() {
       playing.shuffle++;
+      introFinish = null;
       oldAudio.play();
       return true;
     },
@@ -105,6 +116,14 @@ function fixture(initialOnline = true) {
   return {
     elements, audio, oldAudio, radio, playing, flush, fetchRequests,
     click: id => elements.get(id).dispatch("click"),
+    finishSpotlight: () => {
+      if (!introFinish) return false;
+      const finish = introFinish;
+      introFinish = null;
+      oldAudio.pause();
+      finish();
+      return true;
+    },
     setOnline: x => {statusOnline = x;},
     advance: ms => {clock += ms;},
     getHls: () => hlsPlayer,
@@ -261,4 +280,64 @@ test("a connected but stalled Long Wave source eventually falls to Same-Time", a
   assert.equal(f.playing.clock, 1);
   assert.equal(f.oldAudio.paused, false);
   assert.equal(f.audio.paused, true);
+});
+
+test("HEAR THE NEW ONE plays its full single before joining Station One", async () => {
+  const f = fixture();
+  await f.flush();
+  f.click("spotlight");
+  await f.flush();
+  assert.equal(f.playing.spotlight, 1);
+  assert.equal(f.elements.get("current-title").textContent, "HaileyLu Bloom");
+  assert.equal(f.oldAudio.paused, false);
+  assert.equal(f.audio.paused, true);
+  assert.equal(f.oldAudio.hidden, false);
+  assert.equal(f.elements.get("next-song").hidden, true);
+  assert.match(f.elements.get("on-deck").textContent, /STATION ONE LIVE/);
+  assert.equal(f.getHls(), undefined, "A live stream must not start mid-song");
+  assert.equal(f.finishSpotlight(), true);
+  await f.flush();
+  assert.equal(f.oldAudio.paused, true);
+  assert.equal(f.audio.paused, false);
+  assert.equal(f.getHls().source, BASE + "/hls/live.m3u8");
+  assert.equal(f.finishSpotlight(), false, "Handoff only occurs once");
+});
+
+test("a featured single ends into automatic Long Wave when Acer is offline", async () => {
+  const f = fixture(false);
+  await f.flush();
+  f.click("spotlight");
+  assert.equal(f.getHls(), undefined);
+  assert.equal(f.finishSpotlight(), true);
+  await f.flush();
+  assert.equal(f.audio.src, BASE + "/live.mp3");
+  assert.equal(f.audio.paused, false);
+  assert.equal(f.oldAudio.paused, true);
+});
+
+test("switching to Road Shuffle cancels the pending live handoff", async () => {
+  const f = fixture();
+  await f.flush();
+  f.click("spotlight");
+  f.click("mode-shuffle");
+  await f.flush();
+  assert.equal(f.playing.shuffle, 1);
+  assert.equal(f.oldAudio.paused, false);
+  assert.equal(f.audio.paused, true);
+  assert.equal(f.oldAudio.hidden, false);
+  assert.equal(f.elements.get("next-song").hidden, false);
+  assert.equal(f.finishSpotlight(), false);
+  assert.equal(f.getHls(), undefined);
+});
+
+test("a manual Listen Live request overrides the featured single immediately", async () => {
+  const f = fixture();
+  await f.flush();
+  f.click("spotlight");
+  f.click("listen");
+  await f.flush();
+  assert.equal(f.oldAudio.paused, true);
+  assert.equal(f.audio.paused, false);
+  assert.equal(f.getHls().source, BASE + "/hls/live.m3u8");
+  assert.equal(f.finishSpotlight(), false);
 });
