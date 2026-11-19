@@ -1,3 +1,4 @@
+import {danceContenders} from "./feedback-signals.mjs";
 /* HUMKIN Listener Weather — anonymous expression, not Top 42 chart points. */
 (()=>{"use strict";
  const WEATHER="https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-resonance";
@@ -78,6 +79,27 @@
    return response.json();
  }
  let lastBoard=null;
+ function drawDanceContenders(){
+   const target=$("dance-contender-list"),status=$("dance-contender-status");
+   if(!target||!status||!lastBoard)return;
+   target.replaceChildren();
+   const result=danceContenders(catalog,lastBoard,new Date(),3);
+   if(result.status!=="PROVISIONAL"){
+     target.append(text("li","The Listener Weather is incomplete; contenders are on hold.","waiting"));
+     status.textContent="No reliable weekly contender list available.";
+     return;
+   }
+   for(const candidate of result.contenders.slice(0,12)){
+     const li=text("li","","weather-song");
+     li.append(text("strong",candidate.title),
+       text("small",candidate.move_count+" MADE ME MOVE"));
+     target.append(li);
+   }
+   if(!result.contenders.length)
+     target.append(text("li","No songs have received three movement responses yet.","waiting"));
+   status.textContent=result.week_start+" · "+result.contenders.length+
+      " provisional candidates · 0 additional Top 42 votes.";
+ }
  function drawWeather(){
    const list=$("weather-list");
    if(!lastBoard||!list)return;
@@ -91,6 +113,7 @@
        :Number(b.feelings?.[focus]||0)-Number(a.feelings?.[focus]||0)
          ||b.total-a.total||a.id.localeCompare(b.id)).slice(0,12);
    list.replaceChildren();
+   drawDanceContenders();
    if(!rows.length){
      list.append(text("li",focus==="all"
        ?"Nobody has sent a song's feeling yet. The room is listening."

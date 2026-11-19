@@ -1,0 +1,5 @@
+{
+  "schema": "humkin.radio.enrichment/v1",
+  "description": "Owner-reviewed style tags matched to approved MP3 SHA-256. Empty until an explicit catalogue review; source descriptions and Suno prompts remain local.",
+  "tracks": []
+}

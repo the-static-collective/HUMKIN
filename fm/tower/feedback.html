@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#18212a">
+<title>HUMKIN TOWER · Feedback & Vinyl Council</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#151c27;color:#f7ead5;font:15px/1.55 system-ui,sans-serif}
+main{max-width:1160px;margin:auto;padding:26px 18px 85px}
+header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px}
+a{color:#e8c68e}h1{font-size:clamp(42px,7vw,78px);letter-spacing:-.06em;line-height:.98;margin:32px 0 10px}
+h2{font-size:24px;margin:0}section{background:#242e39;border:2px solid #b49362;border-radius:14px;padding:22px;margin:19px 0}
+section p{max-width:800px}.minor{color:#c5bcb0;font-size:13px}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.card{border:1px solid #83919d;border-radius:10px;padding:16px;background:#192530}
+.list{list-style:none;margin:18px 0;padding:0}.list li{padding:10px 12px;border-bottom:1px solid #667581}
+.metric{font-size:12px;color:#eac99b}.status{color:#a9dfbc;font-size:13px;font-weight:700;min-height:20px}
+button{background:#e6be81;border:1px solid #dab97f;border-radius:7px;color:#131c26;font:700 13px system-ui;padding:10px 14px;cursor:pointer}
+button.secondary{background:transparent;color:#f4e7cf}button:disabled{opacity:.5;cursor:not-allowed}
+input,select{background:#121d29;color:#f4e7cf;border:1px solid #8d969e;border-radius:7px;padding:11px;font:inherit;max-width:100%}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.row>label{font-size:13px}
+#month-file{width:100%}
+small{color:#d5c8b6}
+@media(max-width:730px){.columns{grid-template-columns:1fr}}
+</style>
+<script type="module" src="./feedback.js"></script>
+</head>
+<body><main>
+<header><a href="./">← TOWER CONTROL</a><span>RELATIONAL RADIO · FEEDBACK COUNCIL</span><a href="../top42/">THE PUBLIC TOP 42</a></header>
+<h1>THE FEEDBACK<br>ENGINE.</h1>
+<p>What listeners actually do and what they say a record made them feel are distinct signals. Keep them distinct, then let the station contracts listen to both.</p>
+<section>
+<h2>01 · Dance New Contenders</h2>
+<p class="minor">A live read of Listener Weather, not chart votes. At least three device-key responses saying “Made Me Move” qualify an approved recording for a temporary station contender list. Weekly counts are provisional, not verified unique people.</p>
+<div class="row"><label for="threshold">Minimum responses</label><input id="threshold" type="number" min="3" max="500" value="3"><button id="refresh">CHECK THE WEATHER</button></div>
+<p id="weather-status" class="status" role="status">Checking the public Listener Weather…</p>
+<ol id="dance-list" class="list"></ol>
+<p class="minor">The real Dance New Contenders station uses the owner-set threshold in its reviewed station contract. This preview control does not change it.</p>
+</section>
+<section>
+<h2>02 · The Monthly Vinyl Council</h2>
+<p class="minor">Six-track listener-made EPs and twelve-track listener-made albums become monthly nomination candidates. The score combines verified qualifying chart listening (70%), provisional song feelings (20%), and reviewed future participation events (up to 10%). No listeners' feelings are recorded as extra Top 42 plays.</p>
+<div class="row"><label for="month">Month</label><input id="month" type="month"><button id="owner-month" class="secondary">READ OWNER MONTHLY SNAPSHOT</button></div>
+<p class="minor">The owner-only monthly endpoint must be separately deployed and you must already have an authorized station-owner session. If it is unavailable, open a locally exported snapshot below. Files remain on your device.</p>
+<label for="month-file">Or open monthly JSON snapshot (private file, never uploaded)</label>
+<input id="month-file" type="file" accept=".json,application/json">
+<p id="monthly-status" class="status" role="status">No monthly evidence loaded. No winner announced.</p>
+<div class="columns">
+<div class="card"><h2>LP of the Month</h2><p class="minor">12-track weekly community albums</p><ol id="lp-list" class="list"></ol><button id="lp-export" disabled>EXPORT LP PREFLIGHT HOLD</button></div>
+<div class="card"><h2>EP of the Month</h2><p class="minor">6-track daily community EPs</p><ol id="ep-list" class="list"></ol><button id="ep-export" disabled>EXPORT EP PREFLIGHT HOLD</button></div>
+</div>
+</section>
+<section>
+<h2>03 · Production remains a separate act</h2>
+<p>This is a candidate selection machine, not a vinyl manufacturer. A physical edition needs permission from every relevant rightsholder, source masters, side timing, print-safe artwork, pricing, artist copies and independent owner approval. Until then every export is expressly <strong>HOLD · NOT MANUFACTURABLE</strong>.</p>
+<p class="minor">The existing lemonPRESS <a href="https://github.com/the-static-collective/lemonPRESS/pull/58" target="_blank" rel="noopener">PRESS-001 prototype</a> is an experimental preflight, not proof that monthly record nominees are licensed or press-ready.</p>
+</section>
+</main></body></html>
