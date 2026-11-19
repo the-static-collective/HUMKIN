@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from now_playing import write_json
+from archive_catalog import archive_snapshot
 
 
 class Desk:
@@ -30,12 +31,83 @@ class Desk:
         if path.exists():
             self.state = json.loads(path.read_text(encoding="utf-8"))
         self.state.setdefault("lineup", [])
+        self.default_catalog = station.catalog
+        self.default_songs = station.songs[:]
+        self.catalog_revision = 0
         if self.tower:
             self.tower.find_tracks(station.by_id)
             station.songs.extend(id_ for id_ in self.state.get("rotation_uploads", [])
                                  if id_ in station.by_id and id_ not in station.songs)
         station.eligible = self.eligible
         station.weight = lambda id_: self.state["tracks"].get(id_, {}).get("weight", 0)
+        if self.curated:
+            if not any(id_ in self.station.by_id and self.eligible(id_)
+                       for id_ in self.state.get("curated_lineup", [])):
+                self.state["curated"] = False
+            else:
+                self.apply_rotation()
+
+    @property
+    def can_curate(self):
+        return self.tower is not None and self.tower.frequency != "station-one"
+
+    @property
+    def curated(self):
+        return self.can_curate and self.state.get("curated", False)
+
+    def apply_rotation(self):
+        if self.curated:
+            self.station.songs = [id_ for id_ in self.state.get("curated_lineup", [])
+                                  if id_ in self.station.by_id]
+            self.station.catalog = self.default_catalog | {"shows": [], "settings": {}}
+            self.station.show_id = None
+        else:
+            self.station.songs = self.default_songs + [
+                id_ for id_ in self.state.get("rotation_uploads", [])
+                if id_ in self.station.by_id and id_ not in self.default_songs
+            ]
+            self.station.catalog = self.default_catalog
+        self.station.queue.clear()
+        self.move = None
+
+    def edit_archive_lineup(self, action, id_):
+        if not self.can_curate:
+            raise ValueError("Choose a secondary frequency for a curated lineup.")
+        lineup = self.state.get("curated_lineup", [])[:]
+        enabled = self.curated
+        if action == "lineup_enable":
+            enabled = not enabled
+        else:
+            if not isinstance(id_, str) or id_ not in self.station.by_id:
+                raise ValueError("This recording is unavailable.")
+            if action == "lineup_add" and id_ not in lineup:
+                lineup.append(id_)
+            if action == "lineup_remove" and id_ in lineup:
+                lineup.remove(id_)
+        if enabled and not any(id_ in self.station.by_id and self.eligible(id_) for id_ in lineup):
+            raise ValueError("Keep at least one playable recording in the curated lineup.")
+        self.save(self.state | {"curated_lineup": lineup, "curated": enabled})
+        if enabled or action == "lineup_enable":
+            self.apply_rotation()
+        self.changed()
+        if action == "lineup_enable":
+            return "Curated rotation enabled." if enabled else "Standard rotation enabled."
+        return "Added to the lineup." if action == "lineup_add" else "Removed from the lineup."
+
+    def refresh_archive(self):
+        tracks, scores = archive_snapshot()
+        with self.lock:
+            added = set()
+            for track in tracks:
+                if track["id"] not in self.station.by_id:
+                    self.station.by_id[track["id"]] = track
+                    added.add(track["id"])
+            if added:
+                self.catalog_revision += 1
+                if self.curated and added.intersection(self.state.get("curated_lineup", [])):
+                    self.apply_rotation()
+                self.changed()
+        return {"ids": [track["id"] for track in tracks], "scores": scores}
 
     def eligible(self, id_):
         policy = self.state["tracks"].get(id_, {})
@@ -46,6 +118,7 @@ class Desk:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         write_json(self.path, state)
         self.state = state
+        self.catalog_revision += 1
 
     def changed(self):
         self.revision += 1
@@ -85,6 +158,10 @@ class Desk:
     def fail(self, id_):
         with self.lock:
             self.failed.add(id_)
+            if self.curated and not any(self.eligible(song) for song in self.station.songs):
+                self.state = self.state | {"curated": False}
+                self.apply_rotation()
+                self.catalog_revision += 1
             self.changed()
 
     def track(self, id_):
@@ -94,6 +171,8 @@ class Desk:
             "weight": policy.get("weight", 0),
             "rotation": id_ in self.station.songs,
             "uploaded": item.get("source") == "upload",
+            "in_lineup": id_ in self.state.get("curated_lineup", []),
+            "album": item.get("album", ""),
             "disabled": bool(policy.get("disabled")),
             "held": policy.get("hold_until", 0) > time.time(),
         }
@@ -113,14 +192,21 @@ class Desk:
         with self.lock:
             return {"current": self.track(self.current["id"]) if self.current else None}
 
-    def view(self):
+    def view(self, catalog_version=None):
         with self.lock:
             if self.tower:
+                size = len(self.station.by_id)
                 self.tower.find_tracks(self.station.by_id)
+                if len(self.station.by_id) != size:
+                    self.catalog_revision += 1
             pending = self.pending(4000) if self.tower else self.pending()
             move = self.queue_undo()
+            version = f"{self.session}-{self.catalog_revision}"
             return {
                 "preview": self.preview,
+                "catalog_version": version,
+                "can_curate": self.can_curate,
+                "curated": self.curated,
                 "frequency": self.tower.frequency if self.tower else "station-one",
                 "tower": self.tower is not None,
                 "current": self.track(self.current["id"]) if self.current else None,
@@ -131,7 +217,7 @@ class Desk:
                 "queue": [self.track(id_) | {"slot": self.token((key, id_)), "lane": key[0],
                               "movable": key[0] == "rotation" and key[2] < len(self.station.queue) - 1}
                           for key, id_ in pending],
-                "catalog": [self.track(id_) for id_ in self.station.by_id],
+                **({"catalog": [self.track(id_) for id_ in self.station.by_id]} if version != catalog_version else {}),
                 "undo": (move["label"] if move else
                          self.state["history"][-1]["label"] if self.state["history"] else None),
             }
@@ -139,6 +225,8 @@ class Desk:
     def act(self, request):
         with self.lock:
             action = request.get("action")
+            if action in ("lineup_add", "lineup_remove", "lineup_enable"):
+                return self.edit_archive_lineup(action, request.get("id"))
             if action == "skip":
                 view = self.view()
                 if request.get("play") != view["play"] or not view["can_skip"]:
@@ -147,7 +235,7 @@ class Desk:
                 return "Skip requested."
             if action == "move":
                 return self.move_slot(request.get("slot"))
-            if action == "rotation_upload" and self.tower:
+            if action == "rotation_upload" and self.tower and not self.curated:
                 return self.change_rotation(request.get("id"))
             if action in ("queue_next", "queue_end", "reorder", "remove", "use_show_order"):
                 return self.program(action, request)
@@ -341,8 +429,13 @@ def serve(desk, port):
                          "/on_air.css": ("text/css; charset=utf-8", css)}
             if self.path in resources:
                 self.respond(200, *resources[self.path])
-            elif self.path == "/state" and self.authorized():
-                self.result(200, desk.view())
+            elif (self.path == "/state" or self.path.startswith("/state?version=")) and self.authorized():
+                self.result(200, desk.view(self.path.partition("?version=")[2]))
+            elif self.path == "/archive" and self.authorized() and desk.tower:
+                try:
+                    self.result(200, desk.refresh_archive())
+                except (OSError, ValueError, KeyError):
+                    self.result(503, {"message": "The Living Archive could not be refreshed."})
             elif self.path == "/state?summary=1" and self.authorized():
                 self.result(200, desk.summary())
             elif self.path == "/frequencies" and self.authorized() and desk.tower:
@@ -369,9 +462,14 @@ def serve(desk, port):
                 request = json.loads(self.rfile.read(size))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid control request.")
-                if request.get("action") == "route" and desk.tower:
-                    message = desk.tower.route(request.get("frequency"), request.get("id"))
+                action = request.get("action")
+                if action in ("route", "route_lineup") and desk.tower:
+                    message = desk.tower.route(request.get("frequency"), request.get("id"), action == "route_lineup")
                 else:
+                    id_ = request.get("id")
+                    if (action in ("lineup_add", "queue_end") and desk.tower and isinstance(id_, str)
+                            and id_ not in desk.station.by_id and not id_.startswith("upload-")):
+                        desk.refresh_archive()
                     message = desk.act(request)
                 self.result(200, {"message": message, "state": desk.view()})
             except ValueError as exc:

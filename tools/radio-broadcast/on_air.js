@@ -8,6 +8,9 @@ let connected = false;
 let visible = 60;
 let dragging = null;
 let peerList = [];
+let archiveScores = new Map();
+let archiveBusy = false;
+let catalogLimit = 75;
 
 function button(label, action, target, disabled = false) {
   const control = document.createElement("button");
@@ -30,7 +33,13 @@ function trackRow(track, context, index) {
   const lane = {manual: "Queued", show: "Scheduled show", rotation: "Rotation"};
   info.textContent = [track.artist, lane[track.lane], track.disabled ? "Disabled" : track.held ? "Held" : "",
     track.rotation && context !== "queue" ? weight[track.weight] + " rotation" : "",
-    track.kind === "bumper" ? "Bumper" : ""].filter(Boolean).join(" · ");
+    track.kind === "bumper" ? "Bumper" : "", track.in_lineup ? "Curated lineup" : ""].filter(Boolean).join(" · ");
+  if (context === "catalog" && track.score) {
+    const score = track.score;
+    info.textContent += " · " + score.plays + " archive listens";
+    if (score.ratings) info.textContent += " · " + score.stars + " ★ (" + score.ratings + ")";
+    if (score.dance) info.textContent += " · " + score.dance + " dance";
+  }
   const controls = document.createElement("div");
   controls.className = "controls";
   if (context === "current") {
@@ -76,10 +85,14 @@ function trackRow(track, context, index) {
     if (context === "catalog") {
       controls.append(button("Play next", "queue_next", track, track.held || track.disabled));
       controls.append(button("Add to queue", "queue_end", track, track.held || track.disabled));
-      if (track.uploaded) controls.append(button(track.rotation ? "Remove from rotation" : "Add to rotation",
+      if (latest.can_curate) controls.append(button(track.in_lineup ? "Remove from lineup" : "Add to lineup",
+        track.in_lineup ? "lineup_remove" : "lineup_add", track));
+      if (track.uploaded && !latest.curated) controls.append(button(track.rotation ? "Remove from rotation" : "Add to rotation",
         "rotation_upload", track));
       if (peerList.some(peer => peer.id !== latest.frequency))
         controls.append(button("Send to frequency", "route", track));
+      if (byId("route").value && byId("route").value !== "station-one")
+        controls.append(button("Add to destination lineup", "route_lineup", track));
     }
     controls.append(button(track.held ? "Release hold" : "Hold 1 hour", "hold", track));
     controls.append(button(track.disabled ? "Enable" : "Disable", "disable", track));
@@ -114,10 +127,22 @@ function renderRows(id, data, render, extra = null) {
 function renderCatalog() {
   if (!latest) return;
   const query = byId("search").value.trim().toLowerCase();
-  const tracks = latest.catalog.filter(track => (track.title + " " + track.artist).toLowerCase().includes(query));
+  const sort = byId("crate-sort").value;
+  const tracks = latest.catalog.filter(track => (sort !== "lineup" || track.in_lineup) &&
+    [track.title, track.artist, track.album].join(" ").toLowerCase().includes(query));
+  const tally = track => archiveScores.get(track.id);
+  tracks.sort((a, b) => {
+    let difference = 0;
+    if (sort === "plays") difference = (tally(a)?.plays ?? Infinity) - (tally(b)?.plays ?? Infinity);
+    if (sort === "stars") difference = (tally(b)?.stars ?? 0) - (tally(a)?.stars ?? 0);
+    if (sort === "dance") difference = (tally(b)?.dance ?? 0) - (tally(a)?.dance ?? 0);
+    return difference || a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
+  });
+  const shown = tracks.slice(0, catalogLimit).map(track => ({...track, score: tally(track)}));
   const hasPeers = peerList.some(peer => peer.id !== latest.frequency);
-  renderRows("catalog", tracks, () => tracks.length ? tracks.map(track => trackRow(track, "catalog")) :
-    [empty("No matching tracks.")], hasPeers);
+  renderRows("catalog", shown, () => shown.length ? shown.map(track => trackRow(track, "catalog")) :
+    [empty("No matching tracks.")], [hasPeers, byId("route").value, latest.curated]);
+  byId("catalog-more").hidden = tracks.length <= catalogLimit;
 }
 
 function empty(message) {
@@ -132,8 +157,13 @@ function timecode(seconds) {
 }
 
 function render(state) {
-  latest = state;
+  const first = !latest;
+  latest = {...state, catalog: state.catalog || latest?.catalog || []};
   setConnection(true);
+  byId("archive-tools").hidden = !state.tower;
+  byId("lineup-mode").hidden = !state.can_curate;
+  byId("lineup-mode").textContent = state.curated ? "Use standard rotation" : "Use curated lineup";
+  if (first && state.tower) refreshArchive();
   byId("elapsed").textContent = state.current
     ? timecode(state.elapsed) + " / " + timecode(state.current.duration)
     : "Waiting for audio";
@@ -217,7 +247,8 @@ async function refresh() {
   const generation = connectionGeneration;
   try {
     if (busy || dragging) return;
-    const response = await fetch("/state", {headers});
+    const version = latest ? "?version=" + encodeURIComponent(latest.catalog_version) : "";
+    const response = await fetch("/state" + version, {headers});
     if (!response.ok) throw new Error();
     const state = await response.json();
     if (generation === connectionGeneration) render(state);
@@ -261,7 +292,33 @@ byId("more").addEventListener("click", () => {
   visible += 60;
   renderQueue();
 });
+async function refreshArchive() {
+  if (archiveBusy || !latest?.tower) return;
+  archiveBusy = true;
+  const message = byId("archive-status");
+  try {
+    const response = await fetch("/archive", {headers});
+    if (!response.ok) throw new Error();
+    const {ids, scores} = await response.json();
+    archiveScores = new Map(ids.map(id => [id, {plays: 0, ratings: 0, stars: 0, dance: 0}]));
+    for (const score of scores) if (archiveScores.has(score.id)) archiveScores.set(score.id, score);
+    message.textContent = ids.length.toLocaleString() + " published archive recordings";
+    renderCatalog();
+  } catch {
+    message.textContent = "Archive and ratings are temporarily unavailable.";
+  } finally {
+    archiveBusy = false;
+  }
+}
+
 setInterval(refreshFrequencies, 4000);
-byId("search").addEventListener("input", renderCatalog);
+setInterval(refreshArchive, 60000);
+byId("archive-refresh").addEventListener("click", refreshArchive);
+byId("lineup-mode").addEventListener("click", () => act("lineup_enable"));
+byId("catalog-more").addEventListener("click", () => { catalogLimit += 75; renderCatalog(); });
+byId("route").addEventListener("change", renderCatalog);
+for (const [id, event] of [["search", "input"], ["crate-sort", "change"]]) {
+  byId(id).addEventListener(event, () => { catalogLimit = 75; renderCatalog(); });
+}
 byId("undo").addEventListener("click", () => act("undo"));
 refresh();

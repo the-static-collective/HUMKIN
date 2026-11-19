@@ -129,6 +129,22 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
   html { scroll-behavior: auto; }
   .monitor.moving .trace { animation: none; }
 }
+
+.compost { scroll-margin-top: 1.5rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(1.3rem, 4vw, 3rem); padding: clamp(1.15rem, 4vw, 2.75rem); margin-top: 2rem; background: #2a1e32; border: 1px solid var(--line); border-top: 3px solid var(--gold); }
+.compost > div { min-width: 0; }
+.compost h3 { font-size: clamp(2rem, 4vw, 3.6rem); line-height: 1; margin: .35rem 0 .7rem; }
+.compost p + p, #compost-listen { margin-top: .75rem; }
+.compost-console { align-self: center; }
+.compost-current, .compost-controls, .compost-rating { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.compost-current img { object-fit: cover; border: 1px solid var(--line); }
+.compost-current h4 { font-size: 1.25rem; margin: 0; line-height: 1.15; }
+.compost-controls, .compost-rating { margin-top: .85rem; }
+.compost audio { width: min(100%, 25rem); }
+.compost-rating { align-items: end; border-top: 1px solid var(--line); padding-top: .85rem; }
+.compost-rating label { display: grid; gap: .25rem; font-size: .9rem; }
+.compost-rating select { padding: .45rem; border: 1px solid var(--line); background: var(--ink); color: var(--light); font: inherit; }
+.compost-rating [role="status"] { flex-basis: 100%; }
+@media (max-width: 720px) { .compost { grid-template-columns: 1fr; } }
 </style>
   
 </head>
@@ -138,6 +154,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     <a class="wordmark" href="#main" aria-label="HUMKIN Radio and Records home"><span aria-hidden="true">✳</span> HUMKIN<span class="wordmark-tail"> RADIO &amp; RECORDS</span></a>
     <nav aria-label="Main navigation">
       <a href="#dial">The Dial</a>
+      <a href="#compost">Compost Heap</a>
       <a href="#records">Records</a>
       <a href="#screen">Watch</a>
     </nav>
@@ -167,7 +184,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
             <p class="label">Season two</p>
             <h2 id="dial-title">The Dial.</h2>
           </div>
-          <p>Station One is the flagship. The rest of the dial is in development.</p>
+          <p>Start with Station One or tune into The Compost Heap.</p>
         </div>
         <noscript><p><a href="https://humkin.abundent.org/fm/" target="_blank" rel="noopener">Open the classic HUMKIN player</a>.</p></noscript>
         <div class="dial-grid" id="stations" role="group" aria-label="Stations"></div>
@@ -187,6 +204,46 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
           </div>
           <div id="receiver-mount"></div>
           <a id="full-receiver" class="text-link" href="https://humkin.abundent.org/fm/" target="_blank" rel="noopener">Open the full HUMKIN player ↗</a>
+        </section>
+        <section id="compost" class="compost" aria-labelledby="compost-title">
+          <div>
+            <p class="label">The Living Archive</p>
+            <h3 id="compost-title">The Compost Heap.</h3>
+            <p>Everything in the published archive goes into rotation. Recordings with fewer listens get first dibs.</p>
+            <p id="compost-count" class="label"></p>
+            <p>This is your own continuous dial. Your ratings go to the Tower.</p>
+            <button id="compost-listen" class="button primary" type="button" disabled>Listen to the Heap</button>
+            <noscript><p>Enable JavaScript to play the archive.</p></noscript>
+          </div>
+          <div class="compost-console">
+            <div id="compost-current" class="compost-current" hidden>
+              <img id="compost-cover" width="76" height="76" alt="">
+              <div><p class="label">Now playing</p><h4 id="compost-track"></h4><p id="compost-artist"></p></div>
+            </div>
+            <p id="compost-status" role="status">Loading published recordings…</p>
+            <div class="compost-controls">
+              <audio id="compost-audio" controls preload="none" aria-label="The Compost Heap" hidden></audio>
+              <button id="compost-next" class="button quiet" type="button" hidden>Next recording</button>
+            </div>
+            <form id="compost-rating" class="compost-rating" hidden>
+              <label>Rate this recording
+                <select id="compost-stars" required>
+                  <option value="">Choose stars</option>
+                  <option value="5">5 stars</option><option value="4">4 stars</option>
+                  <option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option>
+                </select>
+              </label>
+              <label>How did it land?
+                <select id="compost-reaction">
+                  <option value="">Optional</option><option value="dance">Made me dance</option>
+                  <option value="again">Play it again</option><option value="late">For the late hours</option>
+                  <option value="surprise">Surprised me</option>
+                </select>
+              </label>
+              <button class="button quiet" type="submit">Save rating</button>
+              <p id="compost-feedback" role="status"></p>
+            </form>
+          </div>
         </section>
       </div>
     </section>
@@ -258,7 +315,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     {name: "The Workshop", lane: "Instrumentals", copy: "Instrumentals, beats and long stretches for making things."},
     {name: "Sunday Signal", lane: "Gospel & worship", copy: "Gospel, worship and songs worn smooth by singing together."},
     {name: "Talk & Tape", lane: "Voices", copy: "Interviews, stories and recordings people made to be heard."},
-    {name: "Living Archive", lane: "Historical audio", copy: "Older music and unusual recordings with their sources and credits attached."},
+    {name: "The Compost Heap", lane: "Living Archive", copy: "The long tail of the HUMKIN archive. Less-played recordings go first.", archive: true},
     {name: "The Strange Hour", lane: "Experimental", copy: "Mutant pop, experiments and songs that make their own genre."}
   ];
 
@@ -281,14 +338,16 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     for (const button of grid.children) {
       button.setAttribute("aria-pressed", String(button.dataset.station === station.name));
     }
-    byId("station-status").textContent = station.receiver ? "Receiver available" : "In development";
+    byId("station-status").textContent = station.archive ? "Available" : station.receiver ? "Receiver available" : "In development";
     byId("station-name").textContent = station.name;
     byId("station-copy").textContent = station.copy;
-    link.hidden = !station.receiver;
-    if (station.receiver) link.setAttribute("href", station.receiver);
+    link.hidden = !(station.receiver || station.archive);
+    link.href = station.archive ? "#compost" : station.receiver || "#dial";
+    link.textContent = station.archive ? "Open The Compost Heap ↓" : "Open receiver ↗";
+    link.target = station.archive ? "_self" : "_blank";
     if (announce) {
       byId("station-announcement").textContent =
-        station.name + (station.receiver ? ". Receiver available." : ". In development.");
+        station.name + (station.archive || station.receiver ? ". Available." : ". In development.");
     }
   }
 
@@ -314,7 +373,9 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const trigger = event.currentTarget;
     const target = new URL(trigger.href);
+    if (target.hash === "#compost") return;
     event.preventDefault();
+    document.dispatchEvent(new Event("humkin:station-one"));
     selectStation(stations[0]);
     opener = trigger;
     if (!frame) {
@@ -343,15 +404,17 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     trigger.addEventListener("click", openReceiver);
   }
 
-  byId("close-receiver").addEventListener("click", () => {
+  function closeReceiver(restoreFocus) {
     receiverSize?.disconnect();
     receiverSize = null;
     frame?.remove();
     frame = null;
     room.hidden = true;
-    (opener?.hidden ? grid.firstElementChild : opener)?.focus();
+    if (restoreFocus) (opener?.hidden ? grid.firstElementChild : opener)?.focus();
     opener = null;
-  });
+  }
+  byId("close-receiver").addEventListener("click", () => closeReceiver(true));
+  document.addEventListener("humkin:compost-playing", () => closeReceiver(false));
 
   function stopMotion() {
     byId("monitor").classList.remove("moving");
@@ -372,5 +435,6 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
 })();
 
 </script>
+<script src="./compost.js"></script>
 </body>
 </html>

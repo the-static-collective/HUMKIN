@@ -68,6 +68,40 @@ class TowerTests(unittest.TestCase):
             self.assertIsNone(third[1][1])
             self.assertNotIn("live/station-one/live.m3u8", bucket.objects)
 
+    def test_curated_lineup_routes_persists_and_falls_back(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            library = TowerLibrary(root, "talk")
+            state = root / "talk-programming.json"
+            catalog = {
+                "tracks": [dict(id=id_, title=id_, artist="HUMKIN", kind="song", duration=120)
+                           for id_ in ("archive-a", "other-b")],
+                "settings": {},
+            }
+            desk = Desk(StationV2(catalog), state, tower=library)
+            server, _ = serve(desk, 0)
+            try:
+                with self.assertRaises(ValueError):
+                    desk.act({"action": "lineup_enable"})
+                sender = TowerLibrary(root, "station-one")
+                self.assertEqual(sender.route("talk", "archive-a", recurring=True), "Added to the talk lineup.")
+                self.assertTrue(desk.track("archive-a")["in_lineup"])
+                desk.act({"action": "lineup_enable"})
+                self.assertEqual(desk.pending(1)[0][1], "archive-a")
+                with self.assertRaises(ValueError):
+                    desk.act({"action": "lineup_remove", "id": "archive-a"})
+                rebuilt = Desk(StationV2(catalog), state, tower=library)
+                self.assertEqual(rebuilt.pending(1)[0][1], "archive-a")
+                version = rebuilt.view()["catalog_version"]
+                self.assertNotIn("catalog", rebuilt.view(version))
+                rebuilt.fail("archive-a")
+                self.assertFalse(rebuilt.curated)
+                self.assertEqual(rebuilt.pending(1)[0][1], "other-b")
+            finally:
+                server.unregister_desk()
+                server.shutdown()
+                server.server_close()
+
     @unittest.skipUnless(shutil.which("ffprobe") and shutil.which("ffmpeg"), "FFmpeg required")
     def test_upload_reorder_persistence_and_peer_queue(self):
         with tempfile.TemporaryDirectory() as directory:
