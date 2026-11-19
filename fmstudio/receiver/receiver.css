@@ -1,0 +1,65 @@
+/* CSS-only receiver skin. Drop in a station's art and color tokens; audio stays the same. */
+#receiver-mount { min-width: 0; }
+.humkin-receiver {
+  --receiver-accent: #ffe080;
+  --receiver-background: #251c31;
+  --receiver-foreground: #fbf2e9;
+  --receiver-muted: #d3c4d8;
+  --receiver-frame: #685775;
+  --receiver-background-image: none;
+  background: var(--receiver-background);
+  color: var(--receiver-foreground);
+  border: 1px solid var(--receiver-frame);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(16px, 3vw, 36px);
+  min-height: 280px;
+}
+.receiver-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(120deg, var(--receiver-background) 13%, transparent), var(--receiver-background-image);
+  background-size: cover;
+  background-position: center;
+  opacity: .6;
+  pointer-events: none;
+}
+.receiver-content { display: grid; grid-template-columns: minmax(140px, .6fr) minmax(0, 1fr); gap: clamp(16px, 4vw, 44px); align-items: center; }
+.receiver-artbox { width: 100%; aspect-ratio: 1; position: relative; overflow: hidden; border-radius: 7px; border: 1px solid var(--receiver-frame); background: var(--receiver-background); }
+.receiver-cover, .receiver-overlay { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.receiver-overlay { pointer-events: none; }
+.receiver-readout { min-width: 0; }
+.receiver-station-id { display: flex; align-items: center; gap: 10px; font: 750 .74rem/1.5 ui-monospace, Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; color: var(--receiver-accent); }
+.receiver-badge { width: 35px; height: 35px; object-fit: contain; }
+.receiver-track { font-size: clamp(1.6rem, 3.3vw, 2.8rem); line-height: 1.05; font-weight: 850; margin: 12px 0 6px; overflow-wrap: anywhere; }
+.receiver-artist { color: var(--receiver-muted); font-size: .9rem; }
+.receiver-caption { font-style: italic; color: var(--receiver-muted); margin-top: 12px; }
+.receiver-caption:empty { display: none; }
+.receiver-transport { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 20px; }
+.receiver-play { min-height: 48px; padding: 10px 22px; background: var(--receiver-accent); color: #171122; border: 0; border-radius: 100px; font-weight: 850; }
+.receiver-play:hover { filter: brightness(1.09); }
+.receiver-play:focus-visible { outline: 3px solid var(--receiver-foreground); outline-offset: 3px; }
+.receiver-indicator { width: 10px; height: 10px; border-radius: 50%; background: var(--receiver-frame); box-shadow: 0 0 0 4px #ffffff10; }
+.humkin-receiver[data-playing="true"] .receiver-indicator { background: #8beeab; box-shadow: 0 0 0 4px #8beeab28; }
+.receiver-status { font-size: .8rem; color: var(--receiver-muted); flex: 1 1 150px; }
+.receiver-audio { display: block; width: 100%; margin-top: 15px; accent-color: var(--receiver-accent); color-scheme: dark; }
+.receiver-footnote { color: var(--receiver-muted); margin-top: 14px; font-size: .74rem; }
+.humkin-receiver[data-layout="portrait"] .receiver-content { grid-template-columns: minmax(160px, .85fr) minmax(0, 1fr); }
+.humkin-receiver[data-layout="banner"] .receiver-content { grid-template-columns: minmax(0, 1fr); }
+.humkin-receiver[data-layout="banner"] .receiver-artbox { display: none; }
+.humkin-receiver[data-layout="compact"] { padding: 15px; min-height: 0; }
+.humkin-receiver[data-layout="compact"] .receiver-content { grid-template-columns: 86px minmax(0, 1fr); gap: 15px; }
+.humkin-receiver[data-layout="compact"] .receiver-track { font-size: 1.4rem; }
+.humkin-receiver[data-layout="compact"] .receiver-footnote { display: none; }
+@media (max-width: 650px) {
+  .receiver-content, .humkin-receiver[data-layout="portrait"] .receiver-content { grid-template-columns: minmax(0, 1fr); }
+  .receiver-artbox { max-width: 210px; }
+  .humkin-receiver[data-layout="compact"] .receiver-content { grid-template-columns: 72px minmax(0, 1fr); }
+  .humkin-receiver[data-layout="compact"] .receiver-artbox { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .receiver-indicator { transition: none; animation: none; }
+}

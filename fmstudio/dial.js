@@ -1,5 +1,7 @@
+import {createReceiver} from "./receiver/engine.mjs";
+import {createReceiverView, loadSkins} from "./receiver/view.mjs";
 /* HUMKIN FM Studio network dial.
- * One embedded receiver at a time. A fresh, published Acer HLS manifest is the
+ * One native, swappable-skinned receiver at a time. A fresh published Acer HLS manifest is the
  * only evidence that a secondary frequency is live; proposed shows stay draft.
  */
 (() => {
@@ -48,7 +50,24 @@
   const motion = byId("motion");
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
   let selected = "station-one";
-  let frame = null, activeReceiver = null, opener = null, receiverSize = null;
+  const view = createReceiverView(mount);
+  const receiver = createReceiver(view.audio, view.render);
+  let activeReceiver = null, opener = null, skins = {};
+  void loadSkins().then(loaded => {
+    skins = loaded;
+    if (activeReceiver) {
+      view.applySkin(activeReceiver, known.get(activeReceiver)?.name || stationName(activeReceiver), skins);
+      view.render(receiver.state);
+    }
+  });
+  view.playButton.addEventListener("click", () => receiver.toggle());
+  if ("mediaSession" in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler("play", () => receiver.resume());
+      navigator.mediaSession.setActionHandler("pause", () => receiver.pause());
+      navigator.mediaSession.setActionHandler("stop", () => closeReceiver());
+    } catch { /* Browser does not implement all media controls. */ }
+  }
   let registryReady = false, checking = false;
 
   function stationName(id) {
@@ -123,10 +142,7 @@
   updateSelection();
 
   function closeReceiver(restoreFocus = false) {
-    receiverSize?.disconnect();
-    receiverSize = null;
-    frame?.remove();
-    frame = null;
+    receiver.stop();
     activeReceiver = null;
     room.hidden = true;
     if (restoreFocus) (opener?.hidden ? grid.firstElementChild : opener)?.focus();
@@ -142,37 +158,20 @@
     if (!ID.test(frequency) || (frequency !== "station-one" &&
         states.get(frequency)?.on_air !== true)) return;
     event.preventDefault();
-    document.dispatchEvent(new Event("humkin:station-one")); // Pauses Compost without an alternate audio player.
+    document.dispatchEvent(new Event("humkin:station-one")); // The Compost Heap yields the audio device.
     if (known.has(frequency)) selected = frequency;
     updateSelection();
-    const url = receiverURL(frequency);
-    if (frame && activeReceiver !== url) closeReceiver();
     opener = trigger;
-    if (!frame) {
-      const receiver = document.createElement("iframe");
-      receiver.title = (known.get(frequency)?.name || stationName(frequency)) + " audio player";
-      receiver.src = url;
-      receiver.allow = "autoplay";
-      receiver.addEventListener("load", () => {
-        // Same-origin iframe only. Never access a third-party document.
-        const desk = receiver.contentDocument?.getElementById("receiver");
-        if (!desk || typeof ResizeObserver !== "function") return;
-        receiverSize?.disconnect();
-        receiverSize = new ResizeObserver(() => {
-          receiver.style.height = Math.ceil(desk.getBoundingClientRect().height) + "px";
-        });
-        receiverSize.observe(desk);
-      });
-      mount.append(receiver);
-      frame = receiver;
-      activeReceiver = url;
-    }
-    fullReceiver.href = url;
-    heading.textContent = (known.get(frequency)?.name || stationName(frequency)) + " receiver";
+    activeReceiver = frequency;
+    const station = known.get(frequency);
+    const name = station?.name || stationName(frequency);
+    view.applySkin(frequency, name, skins);
+    fullReceiver.href = receiverURL(frequency);
+    heading.textContent = name + " receiver";
     room.hidden = false;
+    receiver.tune(frequency); // Directly invoked by listener click; no iframe or nested autoplay gate.
     heading.focus({preventScroll: true});
     room.scrollIntoView({block: "start"});
-    // The inner receiver's Listen Live button retains user-gesture control.
   }
   for (const trigger of document.querySelectorAll("[data-tune]"))
     trigger.addEventListener("click", openReceiver);

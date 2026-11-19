@@ -1,0 +1,34 @@
+{
+  "schema": "humkin.fm.receiver-skins/v1",
+  "_guide": "Each station is a skin, not an audio player. Upload images, then fill artwork/backgroundArt/overlayArt/badgeArt with HTTPS same-origin or trusted HUMKIN artwork URLs. Colors are hex values. layout: console, portrait, banner or compact. Undefined stations inherit the default. Never put audio URLs here; live routes come from the station registry.",
+  "stations": {
+    "station-one": {
+      "layout": "console",
+      "accent": "#ffe080",
+      "background": "#251c31",
+      "foreground": "#fbf2e9",
+      "muted": "#d3c4d8",
+      "frame": "#685775",
+      "artwork": "../../cover.jpg",
+      "caption": "Music for the long way home."
+    },
+    "night-drive": {
+      "layout": "banner",
+      "accent": "#9fd6ff",
+      "background": "#101d36",
+      "foreground": "#f5f6ff",
+      "muted": "#bed1e6",
+      "frame": "#466183",
+      "caption": "After dark, still on air."
+    },
+    "porch-field": {
+      "layout": "portrait",
+      "accent": "#ffcc92",
+      "background": "#2e251f",
+      "foreground": "#fff7e9",
+      "muted": "#e1cbb4",
+      "frame": "#79654e",
+      "caption": "Songs, conversations and the room they were made in."
+    }
+  }
+}
