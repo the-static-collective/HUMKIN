@@ -19,7 +19,7 @@
       "id": "background-radio",
       "text": "A minimized or backgrounded browser should remain on the authentic live stream through track transitions, with fallback state observable for troubleshooting.",
       "source": "https://github.com/the-static-collective/HUMKIN/pull/166",
-      "status": "PROPOSED"
+      "status": "USER_REPORTED"
     },
     {
       "id": "whole-library",
@@ -31,7 +31,7 @@
       "id": "tower-edit",
       "text": "Any track can be enabled/disabled, renamed, reassigned, and reordered without losing stable identity or stale move indices.",
       "source": "https://github.com/the-static-collective/HUMKIN/pull/166",
-      "status": "PROPOSED"
+      "status": "USER_REPORTED"
     },
     {
       "id": "operation",
@@ -40,7 +40,7 @@
       "status": "USER_REPORTED"
     }
   ],
-  "next": "Verify PR #166 against main, then field-test the real live radio over consecutive track transitions with the browser minimized; capture timestamped transmitter now-playing and observed fallback states.",
+  "next": "Re-check the current state of radio/Tower PR #166 against main. If functionality is already merged, test authentic live playback through minimized track transitions and verify transmitter-origin now-playing; otherwise complete the fix before claiming it is live.",
   "unknowns": [
     "Live minimization behavior on Mac and Android remains unverified in this handoff.",
     "Actual last device field test may be newer than this record; check the user and source receipts.",
