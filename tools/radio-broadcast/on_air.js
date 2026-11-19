@@ -56,15 +56,21 @@ function trackRow(track, context, index) {
       );
       if (track.lane === "manual") controls.append(button("Remove", "remove", track));
       if (track.movable) controls.append(button("Move to end", "move", track));
-      row.draggable = true;
-      row.addEventListener("dragstart", event => {
+      const handle = document.createElement("span");
+      handle.className = "drag-handle";
+      handle.textContent = "Drag to reorder";
+      handle.draggable = true;
+      handle.setAttribute("aria-label", "Drag " + track.title + " to another position");
+      handle.addEventListener("dragstart", event => {
         dragging = track;
-        event.dataTransfer.setData("text/plain", track.title);
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", track.id);
       });
-      row.addEventListener("dragend", () => {
+      handle.addEventListener("dragend", () => {
         dragging = null;
         row.classList.remove("drop-target");
       });
+      row.prepend(handle);
       row.addEventListener("dragover", event => {
         if (dragging?.lane === track.lane && dragging.slot !== track.slot) {
           event.preventDefault();
@@ -125,6 +131,8 @@ function renderRows(id, data, render, extra = null) {
   const focused = document.activeElement;
   const index = buttons.indexOf(focused);
   const scrollTop = container.scrollTop;
+  // Avoid replacing controls while the operator is dragging the live queue.
+  if (id === "queue" && dragging) return;
   container.replaceChildren(...render());
   container.scrollTop = scrollTop;
   if (index >= 0) {
