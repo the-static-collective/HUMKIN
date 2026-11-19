@@ -76,6 +76,10 @@ There is a bounded **five-minute cache delay, plus the currently playing
 recording**; this is not instantaneous removal or an emergency-broadcast
 interrupt. Source outages stop new derived playback after cache expiry
 rather than silently serving an indefinitely stale selection.
+Derived MP3 listener connections currently end cleanly after at most
+300 recordings or eight hours (whichever comes first) to reserve Worker
+subrequests for metadata checks. Listeners must retune after the stream
+ends; automatic background reconnection is not yet implemented.
 
 **Auditability, not blockchain:** The resolver emits a deterministic
 noncryptographic selection fingerprint and a read-only contract receipt.
