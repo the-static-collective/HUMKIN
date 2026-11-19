@@ -5,6 +5,9 @@ const $=id=>document.getElementById(id);
 const here=window.HUMKIN_RADIO_BASE?new URL(window.HUMKIN_RADIO_BASE,location.origin):new URL("./",document.baseURI);
 const root=new URL("../",here);
 const audio=$("air");
+// The standard /fm/ page uses the original display with the real shared
+// Station One receiver. iOS pocket and embedded receivers keep old behavior.
+const primaryLive=Boolean($("live-air")&&$("listen"));
 const flight=window.HUMKIN_BLACK_BOX;
 const trace=(event,detail={})=>flight?.record(event,detail);
 const status=$("station-status");
@@ -388,8 +391,12 @@ function tuneAt(ms){
 function updateModeUI(){
   $("mode-clock").setAttribute("aria-pressed",String(mode==="clock"));
   $("mode-shuffle").setAttribute("aria-pressed",String(mode==="shuffle"));
-  $("catch-up").hidden=mode!=="clock"||Boolean(remoteStream);
+  if($("catch-up"))$("catch-up").hidden=true;
   $("next-song").hidden=mode!=="shuffle"&&mode!=="album";
+  if(primaryLive&&mode==="clock"){
+    modeHelp.textContent="The live signal plays first. When it cannot, music continues automatically. Road Shuffle remains your personal selection.";
+    return;
+  }
   modeHelp.textContent=mode==="album"
    ?"Playing a complete published album in its recorded order. Tap SAME-TIME or ROAD SHUFFLE to return to radio."
    :mode==="shuffle"
@@ -551,7 +558,7 @@ function setPlaybackState(state){
 }
 function updateListen(){
   const playing=active&&(!audio.paused||switching);
-  $("listen").textContent=playing?"Ⅱ PAUSE RADIO":"▶ TUNE IN";
+  if(!primaryLive)$("listen").textContent=playing?"Ⅱ PAUSE RADIO":"▶ TUNE IN";
   status.textContent=playing?"✳ TUNED IN":"READY TO TUNE IN";
   status.classList.toggle("playing",playing);
   warmSignal.setPlayback(mode==="clock"&&playing);
@@ -802,12 +809,13 @@ async function share(){
   if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(link);setMessage("Station link copied.");return}catch{}}
   setMessage("Share this address: "+link);
 }
-$("listen").addEventListener("click",startRadio);
+if(!primaryLive)$("listen").addEventListener("click",startRadio);
 $("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
-$("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
+// The public website no longer exposes manual clock catch-up.
+if($("catch-up")&&!primaryLive)$("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
 $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused);else if(mode==="album")nextAlbum(!audio.paused)});
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
-$("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
+if(!primaryLive)$("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
 $("share-station").addEventListener("click",share);
 $("phone-playlist").addEventListener("click",downloadNativePlaylist);
 const reportButton=$("report-signal");
@@ -930,7 +938,7 @@ audio.addEventListener("timeupdate",()=>{
   // near-end handoff; the final 0.25s is safer than an indefinitely silent
   // receiver on phones that suspend the 'ended' event.
   if(!remoteStream&&closeToEnd(.25))advanceNaturalEnd("near_end");
-  // Never mid-song wall-clock resync; CATCH UP remains listener-controlled.
+  // Never mid-song wall-clock resync in legacy browser-clock playback.
 });
 audio.addEventListener("stalled",()=>trace("stalled",{mode,track_id:tracks[index]?.id}));
 audio.addEventListener("waiting",()=>trace("waiting",{mode,track_id:tracks[index]?.id}));
@@ -1040,7 +1048,10 @@ async function boot(){
           "φ SHORT DROPS · LONGER BREAKS ~11 / ~22 MIN.":
           "STATION IDs EVERY "+stationSettings.bumper_every+" SONGS."):"");
     for(const id of ["listen","mode-clock","mode-shuffle","catch-up","next-song","spotlight","phone-playlist"])$(id).disabled=false;
-    mode="clock";updateModeUI();startClock(false);
+    mode="clock";updateModeUI();
+    // Avoid a false song title/artwork on the real HLS station. The original
+    // playlist is loaded, but is silent until Road Shuffle or fallback needs it.
+    if(!primaryLive)startClock(false);
     trace("boot_ready",{mode,clock_calibrated:clockCalibrated,
       song_count:songCount,bumper_count:stationIds});
     beginHostedMetadata();
@@ -1054,7 +1065,23 @@ async function boot(){
     setMessage("The radio could not load its songs. Check the connection and refresh.");
   }
 }
+function startRoadShuffleFromLive(){
+  if(!tracks.length)return false;
+  if(mode!=="shuffle")changeMode("shuffle");
+  if(audio.paused)startRadio();
+  else pause();
+  return true;
+}
+function startSameTimeFallback(){
+  if(!tracks.length)return false;
+  pause();
+  mode="clock";order=[];pendingClockJoin=null;resetRate();updateModeUI();
+  startClock(true);
+  return true;
+}
 window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
+  startRoadShuffleFromLive,startSameTimeFallback,stopBrowserAudio:pause,
+  get ready(){return tracks.length>0;},
   playAlbum,albumCatalog,
   get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
     programs:programs.length,bumperEvery:stationSettings.bumper_every,
