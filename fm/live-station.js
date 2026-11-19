@@ -136,6 +136,10 @@
       tuneLive();
       return;
     }
+    const nextSong = byId("next-song");
+    if (nextSong) nextSong.hidden = true;
+    if (onDeck) onDeck.textContent = "ON DECK · STATION ONE LIVE";
+    if (modeHelp) modeHelp.textContent = "The featured single plays in full, then joins the live broadcast.";
     setStatus("Playing the new single. Live radio follows automatically.", "FEATURE SINGLE");
     updateButton();
   }
