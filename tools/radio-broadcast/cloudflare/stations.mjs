@@ -17,12 +17,16 @@ export const STATIONS=Object.freeze([
     id:"eclectic", name:"HUMKIN · Everything Station",
     description:"All approved music and the station's original short radio carts.",
     enabled:true, mode:"personal", filter:{kinds:["song"]},
+    contract_version:1,revision:1,parent_id:"mainline",
+    relationship:{kind:"echo",influence:15},
     include_bumpers:true, programs:[]
   },
   {
     id:"spotlight", name:"HUMKIN · Spotlight",
     description:"A virtual schedule; released singles take the evening shift.",
     enabled:true, mode:"virtual", filter:{kinds:["song"]},
+    contract_version:1,revision:1,parent_id:"mainline",
+    relationship:{kind:"echo",influence:80},
     include_bumpers:true, programs:[
       {id:"evening-singles",name:"Evening Singles",days:[0,1,2,3,4,5,6],
        start_minute:17*60,end_minute:22*60,priority:10,
@@ -33,18 +37,32 @@ export const STATIONS=Object.freeze([
     id:"seasonal", name:"HUMKIN · The Seasonals",
     description:"The approved seasonal record shelf.",
     enabled:true, mode:"personal",
+    contract_version:1,revision:1,parent_id:"mainline",
+    relationship:{kind:"counterpoint",influence:45},
     filter:{kinds:["song"],seasonal:true},include_bumpers:false,programs:[]
+  },
+  {
+    id:"deep-wave", name:"HUMKIN · Deep Wave",
+    description:"Counterprograms Spotlight and Mainline; favors tracks less emphasized by its parent.",
+    enabled:true, mode:"personal",
+    contract_version:1,revision:1,parent_id:"spotlight",
+    relationship:{kind:"counterpoint",influence:90},
+    filter:{kinds:["song"]},include_bumpers:true,programs:[]
   },
   {
     id:"talk", name:"HUMKIN · Talk",
     description:"Reserved for original, approved talk recordings and interviews.",
     enabled:false, mode:"virtual", filter:{tags:["talk"]},
+    contract_version:1,revision:1,parent_id:"mainline",
+    relationship:{kind:"independent",influence:0},
     include_bumpers:false,programs:[]
   },
   {
     id:"top-40", name:"HUMKIN · Top 40",
     description:"Reserved for a human-curated chart, not automatically inferred from likes.",
     enabled:false, mode:"virtual",filter:{track_ids:[]},
+    contract_version:1,revision:1,parent_id:"mainline",
+    relationship:{kind:"echo",influence:50},
     include_bumpers:true,programs:[]
   }
 ]);
