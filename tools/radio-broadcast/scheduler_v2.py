@@ -102,9 +102,6 @@ def featured_extra(song_ids, by_id, rotation):
         }
     seasonal = rotation.get("seasonal_rotation", {})
     explicit = set(seasonal.get("track_ids", []))
-    seasonal_hashes = {h for h in seasonal.get("sha256s", [])
-                       if isinstance(h, str) and len(h) == 64 and
-                       all(c in "0123456789abcdef" for c in h)}
     bonus = []
     for id_ in song_ids:
         release = id_ in featured
@@ -113,7 +110,6 @@ def featured_extra(song_ids, by_id, rotation):
         # A seasonal record receives 3 total plays, not 2+3.
         if seasonal.get("multiplier") == 3 and (
             by_id[id_].get("seasonal") is True or id_ in explicit
-            or by_id[id_].get("sha256") in seasonal_hashes
         ):
             bonus.extend([id_] * (1 if release else 2))
     return bonus
@@ -297,9 +293,8 @@ def with_bumpers(songs, tracks, settings, policy, rng):
     if not 1 <= freq <= 20 or not songs:
         return songs[:]
     groups = {"short": [], "medium": [], "long": []}
-    feature_only = set(policy.get("feature_only_spoken_sha256s", []))
     for id_, t in tracks.items():
-        if t.get("kind") != "bumper" or t.get("sha256") in feature_only:
+        if t.get("kind") != "bumper":
             continue
         lane = bumper_lane(t, policy)
         if lane and allowed_bumper(id_, settings.get("bumper_rules", []), clock=True):
@@ -370,44 +365,75 @@ class StationV2:
         self.queue = deque()
         self.show_id = None
         self.show_cursor = 0
+        self.eligible = lambda id_: True
+        self.weight = lambda id_: 0
 
     def program(self, when=None):
         return active_program(self.catalog, self.by_id, when)
 
     def _new_cycle(self):
-        base = mix_eras(self.songs, self.rng)
-        bonus = featured_extra(self.songs, self.by_id, self.catalog.get("rotation", {}))
+        tracks = {id_: item for id_, item in self.by_id.items() if self.eligible(id_)}
+        songs = [id_ for id_ in self.songs if id_ in tracks]
+        base = mix_eras(songs, self.rng)
+        bonus = featured_extra(songs, tracks, self.catalog.get("rotation", {}))
         sequence = add_bonus_slots(base, bonus, self.rng)
-        charts = chart_extra(self.songs + bonus, self.by_id,
-                             self.catalog.get("chart_ids", []), self.rng)
-        sequence = add_bonus_slots(sequence, charts, self.rng)
-        policy = dict(self.catalog.get("rotation", {}).get("bumper_brain", {}))
-        policy["feature_only_spoken_sha256s"] = self.catalog.get("rotation", {}).get(
-            "feature_only_spoken_sha256s", [])
-        sequence = with_bumpers(sequence, self.by_id,
-                                self.catalog.get("settings", {}), policy, self.rng)
+        charts = chart_extra(songs + bonus, tracks, self.catalog.get("chart_ids", []), self.rng)
+        counts = Counter(base + bonus + charts)
+        # Each step halves/doubles the programmed number of slots. For odd
+        # counts, carry the fractional share between cycles.
+        targets = {}
+        for id_, count in counts.items():
+            step = self.weight(id_)
+            numerator = count * 2 ** max(0, step)
+            denominator = 2 ** max(0, -step)
+            targets[id_] = ((self.cycle_no + 1) * numerator // denominator
+                            - self.cycle_no * numerator // denominator)
+        if songs and not any(targets.values()):
+            # A small catalog must still fill the air.
+            targets[max(base, key=lambda id_: self.weight(id_))] = 1
+        base = [id_ for id_ in base if targets[id_]]
+        extras = [id_ for id_ in base for _ in range(targets[id_] - 1)]
+        # Preserve the existing release then chart insertion passes whenever
+        # nobody has adjusted rotation.
+        if any(self.weight(id_) for id_ in songs):
+            sequence = add_bonus_slots(base, extras, self.rng)
+        else:
+            sequence = add_bonus_slots(sequence, charts, self.rng)
+        self.queue.extend(with_bumpers(sequence, tracks, self.catalog.get("settings", {}),
+                                       self.catalog.get("rotation", {}).get("bumper_brain", {}),
+                                       self.rng))
         self.cycle_no += 1
-        self.queue = deque(sequence)
+
+    def pending(self, when=None, limit=6):
+        """Return scheduler slot keys and track IDs without consuming a slot."""
+        eligible = {id_: item for id_, item in self.by_id.items() if self.eligible(id_)}
+        show = active_program(self.catalog, eligible, when)
+        if show:
+            cursor = self.show_cursor if self.show_id == show["id"] else 0
+            ordered = show["track_ids"]
+            positions = range(cursor, cursor + len(ordered))
+            return [(("show", show["id"], index), ordered[index % len(ordered)])
+                    for index in positions if ordered[index % len(ordered)] in eligible][:limit]
+        if not any(id_ in eligible for id_ in self.queue) and any(id_ in eligible for id_ in self.songs):
+            self.queue.clear()
+            self._new_cycle()
+        return [(("rotation", self.cycle_no, index), id_)
+                for index, id_ in enumerate(self.queue) if id_ in eligible and (eligible[id_].get("kind") != "bumper"
+                    or allowed_bumper(id_, self.catalog.get("settings", {}).get("bumper_rules", []), when))][:limit]
+
+    def take(self, slot):
+        (kind, lane, index), id_ = slot
+        if kind == "show":
+            self.show_id = lane
+            self.show_cursor = index + 1
+        else:
+            self.show_id = None
+            for _ in range(index + 1):
+                self.queue.popleft()
+        return self.by_id[id_]
 
     def next(self, when=None):
-        show = self.program(when)
-        if show:
-            valid = [id_ for id_ in show["track_ids"] if id_ in self.by_id]
-            if self.show_id != show["id"]:
-                self.show_id = show["id"]
-                self.show_cursor = 0
-            if valid:
-                item = self.by_id[valid[self.show_cursor % len(valid)]]
-                self.show_cursor += 1
-                return item
-        self.show_id = None
-        while True:
-            if not self.queue:
-                self._new_cycle()
-            if not self.queue:
-                raise RuntimeError("No enabled published songs available")
-            item = self.by_id[self.queue.popleft()]
-            if item.get("kind") == "bumper" and not allowed_bumper(
-                    item["id"], self.catalog.get("settings", {}).get("bumper_rules", []), when):
-                continue  # Never interrupt a song; drop this one optional break.
-            return item
+        pending = self.pending(when, limit=1)
+        if not pending:
+            raise RuntimeError("No enabled published songs available")
+        return self.take(pending[0])

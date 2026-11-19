@@ -26,13 +26,13 @@ test("original HUMKIN artwork-first receiver is the primary and only audio deck"
 });
 
 test("Live is shared HLS and fallback order is silently managed", () => {
-  assert(js.includes('const HLS = BASE + "/hls/live.m3u8"'));
+  assert(js.includes('const HLS = route + "live.m3u8"'));
   assert(js.includes('const LONG_WAVE = BASE + "/live.mp3"'));
   assert(js.indexOf('fallbackToLongWave("transmitter_offline"') > 0);
   assert(js.includes('fallbackToClock("longwave_media_error")'));
   assert(js.includes('startSameTimeFallback()'));
   assert(js.includes('startRoadShuffleFromLive()'));
-  assert(js.includes('humkin.station-one.now-playing/v1'));
+  assert(js.includes('parseCues'));
   assert(!html.includes('LONG WAVE</button>'));
 });
 
@@ -43,3 +43,4 @@ test("no autoplay and no invented live title or album art", () => {
   assert(html.includes("HEAR THE NEW ONE") && html.includes("current-artist"));
   assert(!html.includes("Now spinning 21 songs:"));
 });
+

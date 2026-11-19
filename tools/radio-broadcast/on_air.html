@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="station-control" content="__CONTROL_TOKEN__">
+  <title>HUMKIN Tower</title>
+  <link rel="stylesheet" href="/on_air.css">
+  <script src="/on_air.js" defer></script>
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <div><p class="station">HUMKIN RADIO</p><h1>Tower</h1></div>
+      <div><p id="frequency" class="station">Station One</p>
+        <p id="connection" role="status">Connecting…</p></div>
+    </header>
+    <nav id="frequencies" aria-label="Running frequencies" hidden>
+      <h2>Frequencies</h2><ul id="frequency-list"></ul>
+    </nav>
+    <div class="studio">
+      <div class="programming">
+        <section class="current-panel" aria-labelledby="current-heading">
+          <div class="section-head"><h2 id="current-heading">Now playing</h2><p id="elapsed"></p></div>
+          <div id="current"></div>
+        </section>
+        <section aria-labelledby="queue-heading">
+          <div class="section-head"><h2 id="queue-heading">Coming up</h2>
+            <button id="undo" type="button" disabled>Undo</button></div>
+          <p class="helper">Drag a row or use the arrow buttons to change its position.</p>
+          <ol id="queue"></ol>
+          <button id="more" type="button" hidden>Show more tracks</button>
+        </section>
+      </div>
+      <div class="crate">
+        <section id="upload-panel" aria-labelledby="upload-heading" hidden>
+          <h2 id="upload-heading">Add tracks</h2>
+          <form id="upload">
+            <label for="files">Audio files to queue on this frequency</label>
+            <input id="files" name="files" type="file" multiple required
+                   accept=".mp3,.wav,.m4a,.aac,.flac,.ogg,.opus,.aiff,.aif">
+            <button type="submit">Upload &amp; queue</button>
+          </form>
+        </section>
+        <section aria-labelledby="crate-heading">
+          <h2 id="crate-heading">Media crate</h2>
+          <label for="search">Find a track</label>
+          <input type="search" id="search">
+          <label for="route" id="route-label" hidden>Send tracks to</label>
+          <select id="route" hidden></select>
+          <ul id="catalog"></ul>
+        </section>
+      </div>
+    </div>
+    <p id="feedback" role="status"></p>
+  </main>
+</body>
+</html>

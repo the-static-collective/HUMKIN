@@ -13,11 +13,14 @@
   if (!liveAudio || !browserAudio || !listen || !shuffle) return;
   const radio = window.HUMKIN_RADIO;
   const BASE = "https://humkin-long-wave.joyvolcanomusic.workers.dev";
-  const HLS = BASE + "/hls/live.m3u8";
+  const requestedFrequency = typeof location === "undefined" ? "" :
+    new URLSearchParams(location.search).get("frequency") || "";
+  const frequency = /^[a-z0-9][a-z0-9-]{0,31}$/.test(requestedFrequency)
+    ? requestedFrequency : "station-one";
+  const channel = frequency === "station-one" ? "Station One" : frequency.replace(/-/g, " ");
+  const route = BASE + "/hls/" + (frequency === "station-one" ? "" : frequency + "/");
+  const HLS = route + "live.m3u8";
   const LONG_WAVE = BASE + "/live.mp3";
-  // Reserved public now-playing contract for a future Acer metadata publisher.
-  // Missing endpoint is expected until that part is deployed.
-  const NOW = BASE + "/hls/now-playing";
   const stationCover = new URL("../cover.jpg", document.baseURI).href;
   const status = byId("station-status");
   const detail = byId("live-status");
@@ -34,6 +37,7 @@
   let hls = null, operation = 0, statusFailures = 0, checking = false;
   let wantsAudio = false, metadataGeneration = 0;
   let longWaveLastProgress = 0;
+  let cueSheet = null, shownTrack = null;
 
   function isLiveLayer() {
     return source === "hls" || source === "longwave" || source === "clock";
@@ -56,14 +60,14 @@
     }
     if (title) title.textContent = "HUMKIN RADIO · LIVE";
     if (artist) artist.textContent = "MUSIC FOR THE LONG WAY HOME";
-    if (onDeck) onDeck.textContent = "ON DECK · Programmed at Station One";
+    if (onDeck) onDeck.textContent = "ON DECK · Programmed at " + channel;
     if (counter) counter.textContent = "ON AIR";
     document.title = "HUMKIN RADIO · LIVE";
     if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: "HUMKIN RADIO · LIVE", artist: "HUMKIN RADIO",
-          album: "Station One", artwork: [{src: stationCover, sizes: "512x512", type: "image/jpeg"}]
+          album: channel, artwork: [{src: stationCover, sizes: "512x512", type: "image/jpeg"}]
         });
       } catch {}
     }
@@ -90,6 +94,8 @@
     if (hls) { hls.destroy(); hls = null; }
   }
   function clearLiveAudio() {
+    cueSheet = null;
+    shownTrack = null;
     stopHls();
     liveAudio.pause();
     liveAudio.removeAttribute("src");
@@ -172,7 +178,7 @@
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 7000);
     try {
-      const response = await fetch(BASE + "/hls/status",
+      const response = await fetch(route + "status",
         {cache: "no-store", signal: controller.signal});
       if (!response.ok) return false;
       const data = await response.json();
@@ -182,32 +188,73 @@
     } catch { return false; }
     finally { clearTimeout(timer); }
   }
+  function parseCues(manifest) {
+    const first = Date.parse(/^#EXT-X-PROGRAM-DATE-TIME:(.+)$/m.exec(manifest)?.[1]);
+    if (!Number.isFinite(first)) return null;
+    const durations = [...manifest.matchAll(/^#EXTINF:([\d.]+),/gm)];
+    if (!durations.length) return null;
+    const end = first + durations.reduce((sum, item) => sum + Number(item[1]) * 1000, 0);
+    const cues = [];
+    for (const [, when, data] of manifest.matchAll(
+      /^#EXT-X-DATERANGE:ID="[^"]+",CLASS="org\.abundent\.humkin\.track",START-DATE="([^"]+)",X-HUMKIN="([A-Za-z0-9_-]{1,5000})"$/gm
+    )) {
+      try {
+        const binary = atob(data.replace(/-/g, "+").replace(/_/g, "/"));
+        const track = JSON.parse(new TextDecoder().decode(Uint8Array.from(binary, char => char.charCodeAt(0))));
+        const at = Date.parse(when);
+        if (Number.isFinite(at) && (track === null || typeof track.title === "string")) cues.push({at, track});
+      } catch { /* A broken metadata entry must never interrupt audio. */ }
+    }
+    return {first, end, cues: cues.sort((a, b) => a.at - b.at)};
+  }
   function trustedArt(raw) {
     if (typeof raw !== "string" || !raw) return stationCover;
     try {
       const url = new URL(raw);
       if (url.protocol === "https:" &&
-          ["humkin.abundent.org", "media.abundent.org"].includes(url.hostname))
+          ["humkin.abundent.org", "media.abundent.org", "kbhqacsdvjsstzyplqij.supabase.co",
+           "humkin-long-wave.joyvolcanomusic.workers.dev"].includes(url.host))
         return url.href;
     } catch {}
     return stationCover;
   }
-  function showVerifiedMetadata(data) {
-    if (source !== "hls" || data?.schema !== "humkin.station-one.now-playing/v1")
+  function syncTitleToPlayhead() {
+    if (source !== "hls" || !wantsAudio || liveAudio.paused) return;
+    const origin = liveAudio.getStartDate?.()?.getTime();
+    const time = hls ? hls.playingDate?.getTime() : origin + liveAudio.currentTime * 1000;
+    let track = null;
+    if (cueSheet && time >= cueSheet.first && time < cueSheet.end) {
+      for (let index = cueSheet.cues.length - 1; index >= 0; index--) {
+        if (cueSheet.cues[index].at <= time) {
+          track = cueSheet.cues[index].track;
+          break;
+        }
+      }
+    }
+    if (track === shownTrack) return;
+    if (!track) {
+      shownTrack = null;
+      genericArt();
       return;
-    const updated = Date.parse(data.updated_at);
-    if (!Number.isFinite(updated) || Math.abs(Date.now() - updated) > 90000) return;
-    const track = data.track;
+    }
+    showVerifiedMetadata(track);
+  }
+  function showVerifiedMetadata(track) {
     if (!track || typeof track.title !== "string" ||
         typeof track.artist !== "string" || !track.title.trim() ||
         !track.artist.trim()) return;
     const name = track.title.trim().slice(0, 160);
     const performer = track.artist.trim().slice(0, 160);
     const album = typeof track.album === "string" ? track.album.slice(0, 180) : "";
-    const cover = trustedArt(track.artwork_url);
+    if (JSON.stringify(track) === JSON.stringify(shownTrack)) return;
+    shownTrack = track;
+    const cover = trustedArt(track.artwork);
     if (title) title.textContent = name;
     if (artist) artist.textContent = performer + (album ? " · " + album : "");
-    if (artwork) { artwork.src = cover; artwork.alt = name + " artwork"; }
+    if (artwork) {
+      artwork.src = cover;
+      artwork.alt = cover === stationCover ? "HUMKIN Radio station artwork" : name + " artwork";
+    }
     if (onDeck) onDeck.textContent = "ON THE ACER · Live program";
     document.title = "HUMKIN RADIO · " + name;
     if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
@@ -222,13 +269,17 @@
   async function checkMetadata() {
     if (source !== "hls" || !wantsAudio) return;
     const token = metadataGeneration;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
     try {
-      const response = await fetch(NOW, {cache: "no-store"});
+      const response = await fetch(HLS, {cache: "no-store", signal: controller.signal});
       if (!response.ok) return;
-      const data = await response.json();
+      const manifest = await response.text();
       if (token !== metadataGeneration || source !== "hls") return;
-      showVerifiedMetadata(data);
-    } catch { /* No metadata feed yet; station cover remains truthful. */ }
+      cueSheet = parseCues(manifest);
+      syncTitleToPlayhead();
+    } catch { /* Audio keeps using the receiver's own fallback logic. */ }
+    finally { clearTimeout(timer); }
   }
   async function tuneLive() {
     const token = ++operation;
@@ -296,6 +347,14 @@
   liveAudio.addEventListener("pause", updateButton);
   liveAudio.addEventListener("timeupdate", () => {
     if (source === "longwave" && !liveAudio.paused) longWaveLastProgress = Date.now();
+    if (source === "hls") syncTitleToPlayhead();
+  });
+  liveAudio.addEventListener("seeked", syncTitleToPlayhead);
+  artwork?.addEventListener("error", () => {
+    if (source === "hls" && artwork.src !== stationCover) {
+      artwork.src = stationCover;
+      artwork.alt = "HUMKIN Radio station artwork";
+    }
   });
   liveAudio.addEventListener("waiting", () => {
     if (source === "hls" || source === "longwave")
@@ -348,7 +407,7 @@
     } finally { checking = false; }
   }
   setInterval(monitor, 20000);
-  setInterval(checkMetadata, 15000);
+  setInterval(checkMetadata, 5000);
   setSource("idle");
   genericArt();
   setStatus("Press Listen Live to join the station.", "READY TO TUNE IN");
@@ -356,8 +415,9 @@
   // Passive status detection does not start audio or change the selection.
   checkSignal().then(on => {
     if (source === "idle")
-      setStatus(on ? "Station One is ready. Press Listen Live." :
+      setStatus(on ? channel + " is ready. Press Listen Live." :
         "Press Listen Live. Music will continue if the transmitter is offline.",
         "READY TO TUNE IN");
   });
 })();
+
