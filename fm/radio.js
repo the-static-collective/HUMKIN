@@ -400,6 +400,9 @@ function updateModeUI(){
 }
 function setMediaInfo(track){
   if(!track)return;
+  // The browser-built dial is a separate playlist. Never announce its title
+  // as Station One's on-air song while the actual live receiver is playing.
+  if(document.getElementById?.("live-air")?.paused===false)return;
   document.title="HUMKIN RADIO · "+track.title;
   if("mediaSession" in navigator&&typeof MediaMetadata!=="undefined"){
     try{
