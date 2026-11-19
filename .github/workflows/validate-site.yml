@@ -32,6 +32,10 @@ jobs:
       - run: node --check tools/radio-broadcast/cloudflare/station-registry.mjs
       - run: node --test tests/fmstudio-live-dial.test.mjs tests/fmstudio-station-registry.test.mjs
       - run: node tests/orchard-gambits.test.cjs
+      - run: node tests/gambit-program-proposals.test.cjs
+      - run: node --check fm/orchard/gambit-proposal.js
+      - run: node --check fm/orchard/gambit-proposal-ui.js
+      - run: python3 -m unittest discover -s tests -p 'test_gambit_program_deck.py' -v
       - run: node tests/radio-primary-layout.test.mjs
       - run: node tests/bumper-brain.test.cjs
       - run: node tests/bumper-relations.test.cjs

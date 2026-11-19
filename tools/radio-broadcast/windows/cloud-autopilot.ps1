@@ -6,6 +6,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Plan,
     [switch]$Publish,
+    [string]$ApprovedPacket = '',
     [ValidateRange(30, 86400)]
     [int]$LeadSeconds = 120
 )
@@ -27,12 +28,17 @@ if (Get-Command py -ErrorAction SilentlyContinue) {
 }
 $arguments = @($Prefix) + @($PythonScript, '--input', [IO.Path]::GetFullPath($Plan),
     '--lead-seconds', [string]$LeadSeconds)
+if ($ApprovedPacket) {
+    if (-not (Test-Path -LiteralPath $ApprovedPacket)) { throw 'Reviewed Gambit packet not found.' }
+    $arguments += @('--approved-packet', [IO.Path]::GetFullPath($ApprovedPacket))
+}
 if ($Publish) {
     if (-not (Test-Path -LiteralPath $VaultFile)) {
         throw 'Station One R2 encrypted vault not found. Set up the existing Tower R2 publisher first.'
     }
     Write-Host 'Cloud Autopilot will upload approved AAC segments and revise the scheduled cloud frequency.' -ForegroundColor Yellow
     Write-Host 'This does NOT change the public listener player or the ordinary live transmitter.'
+    if ($ApprovedPacket) { Write-Host 'A guest Gambit window and an automatic house return will be published, after owner review.' }
     $answer = (Read-Host 'Type PUBLISH AUTOPILOT to commit the schedule').Trim()
     if ($answer -cne 'PUBLISH AUTOPILOT') {
         Write-Host 'No cloud publication made.'

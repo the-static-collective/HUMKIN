@@ -47,6 +47,8 @@
 <script defer src="../signal/model.js"></script>
 <script defer src="./gambit-core.js"></script>
 <script defer src="./gambits-ui.js"></script>
+<script defer src="./gambit-proposal.js"></script>
+<script defer src="./gambit-proposal-ui.js"></script>
 </head>
 <body>
 <header class="mast">
@@ -83,6 +85,61 @@
       <p class="gambit-note">The Signal is an independent, listener-made program. It does not change Station One, the Top 42, Tower, or Cloud Autopilot.</p>
     </section>
   </div>
+  <section class="gambit-path gambit-panel" aria-labelledby="program-proposals-heading" id="daily-program-proposal">
+    <p class="eyebrow">STATION GUILDS · GUEST PROGRAMMING / EDITORIAL QUEUE</p>
+    <h2 id="program-proposals-heading">Offer the station an hour.</h2>
+    <p>Your Gambit deck can propose a real block of programming for a future day.
+       The station owner can review it, check approved music and eventually schedule it in Cloud Autopilot.
+       Proposing and approving a deck are separate from granting airtime.</p>
+    <form id="program-form">
+      <div class="gambit-grid">
+        <div class="gambit-controls">
+          <label for="program-title-input">SHOW NAME
+            <input id="program-title-input" maxlength="80" minlength="3" required
+               placeholder="The Strange Hour" autocomplete="off"></label>
+          <label for="program-day">REQUESTED DAY (CENTRAL TIME)
+            <input id="program-day" type="date" required></label>
+          <label for="program-time">START TIME (CENTRAL TIME)
+            <select id="program-time" required>
+              <option value="08:00">8:00 AM</option>
+              <option value="12:00">12:00 PM</option>
+              <option value="16:00">4:00 PM</option>
+              <option value="20:00" selected>8:00 PM</option>
+              <option value="22:00">10:00 PM</option>
+            </select></label>
+          <label for="program-length">HOW LONG?
+            <select id="program-length" required>
+              <option value="30">30 minutes</option>
+              <option value="60" selected>1 hour</option>
+              <option value="90">90 minutes</option>
+              <option value="120">2 hours</option>
+            </select></label>
+          <label for="program-note">NOTE TO THE PROGRAM DIRECTOR (OPTIONAL)
+            <textarea id="program-note" maxlength="500" rows="4"
+              placeholder="The mood, purpose, special occasion, or why this hour belongs on air."></textarea></label>
+        </div>
+        <div>
+          <p class="eyebrow">YOUR ORDERED DECK</p>
+          <pre id="program-deck" style="white-space:pre-wrap;overflow-wrap:anywhere;padding:15px;background:#f1e4e1;border-radius:8px;font-size:12px"></pre>
+          <button id="program-deck-refresh" type="button" class="secondary">REFRESH FROM MY GAMBIT RULES</button>
+          <p class="gambit-note">The rules are submitted as declarative choices, never executable code. A human must review the musical catalog and the proposed time slot.</p>
+        </div>
+      </div>
+      <label style="display:flex;gap:9px;align-items:flex-start;margin-top:18px">
+        <input id="program-confirm" type="checkbox" required>
+        I am proposing a program for private station review. I understand that this does not earn credits or authorize broadcasting.
+      </label>
+      <div class="gambit-actions">
+        <button type="submit" class="primary" id="program-send">SUBMIT MY GAMBIT HOUR FOR REVIEW</button>
+        <button id="program-refresh" type="button" class="secondary">REFRESH MY RECEIPTS</button>
+      </div>
+      <p role="status" aria-live="polite" id="program-submit-status">A proposal enters the station's private editorial queue.</p>
+    </form>
+    <div id="program-receipts" aria-label="My programming proposals"></div>
+    <p class="gambit-note">This uses the same private participation pass as your Station Guilds desk.
+      Store a backup of the pass if you want these receipts on another device.
+      A local Orchard level is never a station publishing permission.</p>
+  </section>
   <section class="gambit-path gambit-panel" aria-labelledby="gambit-path-title">
     <p class="eyebrow">THE NEVER-ENDING RADIO SKILL TREE</p>
     <h2 id="gambit-path-title">From one receiver to a living network</h2>
