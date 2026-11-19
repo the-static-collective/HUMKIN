@@ -62,7 +62,7 @@ test("content eligibility is local and no parent can approve a withdrawn recordi
  assert(!selected.tracks.some(x=>x.id==="crate-c"));
 });
 test("invalid cycles, missing parents, unsupported revisions and disabled ancestors fail closed",()=>{
- const a=make("a","b"),b=make("b","a");
+ const a=make("alpha","beta"),b=make("beta","alpha");
  assert.throws(()=>validateContractGraph([a,b]),/CONTRACT_CYCLE/);
  assert.throws(()=>validateContractGraph([make("missing","nope")]),/CONTRACT_PARENT_MISSING/);
  assert.throws(()=>validateContractGraph([make("root","mainline","echo",101)]),/RELATIONSHIP_INVALID/);
