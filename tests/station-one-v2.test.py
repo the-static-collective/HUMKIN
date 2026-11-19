@@ -198,8 +198,9 @@ class ProgrammingTests(unittest.TestCase):
         api=engine.API
         radio=engine.RADIO
         fixtures={
+            engine.API+"/rest/v1/humkin_radio_art_assets?select=id,storage_path&limit=1000": [],
             radio+"rotation.json":{"tracks":[],"featured_rotation":{"multiplier":2}},
-            api+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled&limit=1000":[],
+            api+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled,art_asset_id&limit=1000":[],
             api+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,track_ids,is_active,priority&is_active=eq.true&limit=100":[],
             api+"/rest/v1/humkin_radio_settings?select=bumper_every,station_label,bumper_groups,bumper_rules&id=eq.main&limit=1":[{"bumper_every":4}],
             radio+"air-carts.json":{"schema_version":"humkin.radio.air-carts/v1","carts":[]},
@@ -261,3 +262,4 @@ class ProgrammingTests(unittest.TestCase):
 
 if __name__=="__main__":
     unittest.main()
+

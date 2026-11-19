@@ -87,7 +87,7 @@ function fixture(initialOnline = true) {
     },
     window: {HUMKIN_RADIO: radio, Hls: FakeHls},
     navigator: {},
-    URL, Date: FakeDate, Number, String, Promise, AbortController,
+    URL, Date: FakeDate, Number, String, Promise, AbortController, TextDecoder, atob,
     fetch: async url => {
       fetchRequests.push(url);
       if (url.endsWith("/hls/status")) {
@@ -96,15 +96,15 @@ function fixture(initialOnline = true) {
         return {ok: statusOnline, json: async () =>
           ({on_air: statusOnline, mode: "shared_live_hls", age_seconds: 2})};
       }
-      if (url.endsWith("/hls/now-playing")) {
-        return {ok: Boolean(metadata), json: async () => metadata};
+      if (url.endsWith("/hls/live.m3u8")) {
+        return {ok: Boolean(metadata), text: async () => metadata};
       }
       throw Error("Unexpected network URL: " + url);
     },
     setTimeout: () => 1, clearTimeout() {},
     setInterval: (fn, ms) => {
       if (ms === 20000) monitor = fn;
-      if (ms === 15000) pollMetadata = fn;
+      if (ms === 5000) pollMetadata = fn;
       return ms;
     }
   };
@@ -249,26 +249,48 @@ test("stale asynchronous HLS status cannot retune after Road Shuffle was selecte
   assert.equal(f.getHls(), undefined);
 });
 
-test("verified Acer metadata updates live artist and cover; stale data cannot", async () => {
+test("receiver uses the buffered media playhead for titles and artwork, then clears on fallback", async () => {
+  const art = "https://humkin.abundent.org/releases/everywhere-near-you/cover.jpg";
+  function cue(id, at, track) {
+    const encoded = Buffer.from(JSON.stringify(track)).toString("base64url");
+    return '#EXT-X-DATERANGE:ID="' + id + '",CLASS="org.abundent.humkin.track",START-DATE="' + at + '",X-HUMKIN="' + encoded + '"';
+  }
+  const origin = "2026-11-18T23:01:";
+  const manifest = ["#EXTM3U",
+    cue("1", origin + "00.000Z", {title: "Écho", artist: "Fixture", album: "A", artwork: art}),
+    cue("2", origin + "15.250Z", {title: "Second"}),
+    cue("gap", origin + "22.000Z", null),
+    "#EXT-X-PROGRAM-DATE-TIME:" + origin + "00.000Z",
+    ...[0, 1, 2].flatMap(number => ["#EXTINF:10,", "segment-" + number + ".ts"])
+  ].join("\n");
   const f = fixture();
+  f.setMetadata(manifest);
   await f.flush();
-  const meta = {
-    schema: "humkin.station-one.now-playing/v1",
-    updated_at: new Date().toISOString(),
-    track: {
-      title: "True Blue Garden", artist: "Eno Efia", album: "Unshackled Dreams",
-      artwork_url: "https://humkin.abundent.org/cover.jpg"
-    }
-  };
-  f.setMetadata(meta);
-  f.click("listen"); await f.flush();
-  assert.equal(f.elements.get("current-title").textContent, "True Blue Garden");
-  assert.match(f.elements.get("current-artist").textContent, /Eno Efia/);
-  f.setMetadata({...meta, updated_at: "2020-01-01T00:00:00Z",
-    track: {...meta.track, title: "Stale Song"}});
-  await f.pollMetadata(); await f.flush();
-  assert.equal(f.elements.get("current-title").textContent, "True Blue Garden");
+  f.click("listen");
+  await f.flush();
+  function movePlayhead(seconds) {
+    f.getHls().playingDate = new Date(Date.parse(origin + "00.000Z") + seconds * 1000);
+    f.audio.dispatch("timeupdate");
+  }
+  const status = f.elements.get("current-title");
+  const cover = f.elements.get("current-art");
+  movePlayhead(15.2);
+  assert.equal(status.textContent, "Écho");
+  assert.equal(cover.src, art);
+  assert.match(f.elements.get("current-artist").textContent, /Fixture/);
+  movePlayhead(15.3);
+  assert.equal(status.textContent, "Second");
+  assert.equal(f.elements.get("current-artist").textContent, "");
+  assert.equal(cover.src, "https://humkin.abundent.org/cover.jpg");
+  movePlayhead(22);
+  assert.equal(status.textContent, "HUMKIN RADIO · LIVE");
+  movePlayhead(14);
+  assert.equal(status.textContent, "Écho");
+  f.getHls().fail(null, {fatal: true});
+  assert.equal(status.textContent, "HUMKIN RADIO · LIVE");
+  assert.equal(cover.src, "https://humkin.abundent.org/cover.jpg");
 });
+
 
 test("a connected but stalled Long Wave source eventually falls to Same-Time", async () => {
   const f = fixture(false);
