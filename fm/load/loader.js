@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import {installProtonLogin} from "../proton-auth.mjs";
+import {humkinAuthOptions} from "../browser-safe-auth.mjs";
 import * as tus from "https://esm.sh/tus-js-client@4.3.1";
 import {r2Bridge} from "../r2-bridge-client.js";
 import {r2Direct,putPrivateMp3} from "./r2-direct-client.mjs";
@@ -10,7 +11,7 @@ const KEY = "sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public, RLS-sco
 const INBOX = "humkin-radio-inbox", LIVE = "humkin-radio-live";
 const OWNER = "us@abundent.org", BUDGET = 700 * 1024 * 1024;
 const MAX_FILE = 50 * 1024 * 1024;
-const db = createClient(API, KEY, {auth: {persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const db = createClient(API, KEY, {auth: humkinAuthOptions()});
 const $ = id => document.getElementById(id);
 let selected = [], busy = false, stopRequested = false, drafts = [], known = [], activeUser = null;
 let scanPromise=Promise.resolve();
