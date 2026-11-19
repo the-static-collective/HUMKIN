@@ -25,6 +25,7 @@ jobs:
       - run: node tests/radio.test.mjs
       - run: node --check fm/live-station.js
       - run: node tests/main-live-radio.test.mjs
+      - run: node tests/radio-primary-layout.test.mjs
       - run: node tests/bumper-brain.test.cjs
       - run: node tests/bumper-relations.test.cjs
       - run: node --check fm/manage/bumper-workbench.js

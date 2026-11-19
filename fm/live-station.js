@@ -12,12 +12,37 @@
   const backupButton = byId("live-backup");
   const retry = byId("live-retry");
   const status = byId("live-status");
+  const signal = byId("live-signal");
+  const source = byId("live-source");
   const BASE = "https://humkin-long-wave.joyvolcanomusic.workers.dev";
   const LIVE = BASE + "/hls/live.m3u8";
   const BACKUP = BASE + "/live.mp3";
   let mode = "idle", player = null, sequence = 0, failures = 0, checking = false;
   let wantsAudio = false;
   function show(message) { status.textContent = message; }
+  function showSignal(online, age) {
+    if (!signal) return;
+    const fresh = Number.isFinite(age) && age >= 0 && age < 90;
+    signal.textContent = online ? "TRANSMITTER ON AIR" + (fresh ? " · Updated " + age + "s ago" : "") :
+      "NO FRESH TRANSMITTER SIGNAL";
+    signal.classList.toggle("online", Boolean(online));
+  }
+  function listeningMetadata() {
+    // Station One does not yet publish live song titles. A browser-clock
+    // selection must never be passed off as the current broadcast recording.
+    if (mode !== "live" && mode !== "backup") return;
+    const name = mode === "live" ? "HUMKIN · Station One Live" : "HUMKIN · Long Wave";
+    document.title = name;
+    if (typeof navigator !== "undefined" && "mediaSession" in navigator &&
+        typeof MediaMetadata !== "undefined") {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: name, artist: "HUMKIN RADIO", album: mode === "live" ?
+            "Shared Acer Broadcast" : "Independent Long Wave Rotation"
+        });
+      } catch { /* Media Session is optional. */ }
+    }
+  }
   function reset() {
     if (player) { player.destroy(); player = null; }
     liveAudio.pause();
@@ -39,6 +64,10 @@
     listen.setAttribute("aria-pressed", String(value === "live"));
     backupButton.setAttribute("aria-pressed", String(value === "backup"));
     retry.hidden = value !== "backup";
+    if (source) source.textContent = value === "backup" ?
+      "SOURCE · LONG WAVE / PERSONAL MP3 ROTATION" :
+      "SOURCE · STATION ONE / SHARED LIVE HLS";
+    listen.textContent = value === "live" ? "▶ REJOIN STATION ONE" : "▶ TUNE IN · STATION ONE";
   }
   function leaveForOldDial() {
     // Also invalidate an in-flight availability check before the live source
@@ -47,8 +76,10 @@
     wantsAudio = false;
     if (mode === "idle") return;
     reset();
+    document.title = "HUMKIN RADIO · Browser Dial";
     setMode("idle");
-    show("Built-in HUMKIN dial selected. Live and Long Wave are still available.");
+    if (source) source.textContent = "SOURCE · BROWSER DIAL (INDEPENDENT)";
+    show("Browser-built dial selected. Station One and Long Wave remain available above.");
   }
   function useBackup(reason, resume) {
     ++sequence;
@@ -67,10 +98,16 @@
       const response = await fetch(BASE + "/hls/status", {
         cache: "no-store", signal: controller.signal
       });
-      if (!response.ok) return false;
+      if (!response.ok) {
+        showSignal(false);
+        return false;
+      }
       const data = await response.json();
-      return data && data.on_air === true && data.mode === "shared_live_hls";
+      const online = Boolean(data && data.on_air === true && data.mode === "shared_live_hls");
+      showSignal(online, Number(data?.age_seconds));
+      return online;
     } catch {
+      showSignal(false);
       return false;
     } finally {
       clearTimeout(timer);
@@ -110,7 +147,8 @@
     if (mode === "live" && !liveAudio.paused) {
       wantsAudio = false;
       liveAudio.pause();
-      show("Live radio paused. Tap LISTEN LIVE to rejoin.");
+      listen.textContent = "▶ REJOIN STATION ONE";
+      show("Station One paused on this device. Rejoin to hear the current broadcast.");
     } else {
       tuneLive();
     }
@@ -120,11 +158,16 @@
   liveAudio.addEventListener("play", () => { wantsAudio = true; pauseOldDial(); });
   liveAudio.addEventListener("pause", () => {
     // Ignore delayed pause events from a source switch after new playback began.
-    if (liveAudio.paused) wantsAudio = false;
+    if (liveAudio.paused) {
+      wantsAudio = false;
+      if (mode === "live") listen.textContent = "▶ REJOIN STATION ONE";
+    }
   });
   liveAudio.addEventListener("playing", () => {
+    if (mode === "live") listen.textContent = "Ⅱ PAUSE STATION ONE";
+    listeningMetadata();
     show(mode === "live"
-      ? "ON AIR — One shared Station One program, from the Acer."
+      ? "ON AIR — The shared Station One program. Audio may buffer a few seconds behind the transmitter."
       : "Playing Long Wave — independent backup rotation.");
   });
   liveAudio.addEventListener("waiting", () => {

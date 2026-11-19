@@ -15,6 +15,7 @@ function fixture(initialOnline = true) {
     return {
       id, handlers: {}, hidden: id === "live-retry", paused: true,
       value: "", textContent: "", src: "", pressed: "",
+      classList: { toggle() {} },
       addEventListener(event, fn) { (this.handlers[event] ??= []).push(fn); },
       dispatch(event) { for (const fn of this.handlers[event] || []) fn(); },
       setAttribute(key, value) { this[key] = value; },
@@ -32,6 +33,7 @@ function fixture(initialOnline = true) {
   }
   for (const id of [
     "air","live-air","live-listen","live-backup","live-retry","live-status",
+    "live-signal","live-source",
     "listen","spotlight","catch-up","next-song","mode-clock","mode-shuffle"
   ]) elements.set(id, element(id));
   const oldAudio = elements.get("air");
@@ -48,7 +50,7 @@ function fixture(initialOnline = true) {
   }
   let holdFetch = null;
   const context = {
-    document: { getElementById: id => elements.get(id) || null },
+    document: { getElementById: id => elements.get(id) || null, title: "HUMKIN RADIO" },
     window: { Hls: FakeHls },
     fetch: async url => {
       requests.push(url);
@@ -56,7 +58,7 @@ function fixture(initialOnline = true) {
       return {
         ok: online,
         json: async () => ({
-          on_air: online, mode: "shared_live_hls"
+          on_air: online, mode: "shared_live_hls", age_seconds: 2
         })
       };
     },
@@ -169,4 +171,35 @@ test("listener can manually retry live after an offline backup", async () => {
   f.click("live-retry"); await f.flush();
   assert.equal(f.getHls().source, BASE + "/hls/live.m3u8");
   assert.equal(f.elements.get("live-retry").hidden, true);
+});
+
+test("the page displays verified transmitter age without inventing a song title", async () => {
+  const f = fixture();
+  await f.flush();
+  assert.match(f.elements.get("live-signal").textContent, /TRANSMITTER ON AIR/);
+  assert.match(f.elements.get("live-signal").textContent, /Updated 2s ago/);
+  f.click("live-listen"); await f.flush();
+  assert.equal(f.elements.get("live-source").textContent,
+    "SOURCE · STATION ONE / SHARED LIVE HLS");
+  assert.match(f.elements.get("live-listen").textContent, /PAUSE STATION ONE/);
+  assert.doesNotMatch(f.elements.get("live-source").textContent, /Song/);
+});
+
+test("fallback distinctly labels unsynchronized personal radio", async () => {
+  const f = fixture(false);
+  await f.flush();
+  assert.match(f.elements.get("live-signal").textContent, /NO FRESH/);
+  f.click("live-listen"); await f.flush();
+  assert.equal(f.elements.get("live-source").textContent,
+    "SOURCE · LONG WAVE / PERSONAL MP3 ROTATION");
+  assert.equal(f.audio.src, BASE + "/live.mp3");
+});
+
+test("switching to legacy radio labels the source separately", async () => {
+  const f = fixture();
+  await f.flush();
+  f.click("live-listen"); await f.flush();
+  f.click("mode-shuffle");
+  assert.match(f.elements.get("live-source").textContent, /BROWSER DIAL/);
+  assert.equal(f.audio.paused, true);
 });

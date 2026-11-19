@@ -80,3 +80,37 @@
 .live-station audio{display:block;width:100%;margin:12px 0}
 .controls .live-station .live-note{color:#d9cdde;font-size:11px;line-height:1.5;margin:12px 0 0}
 @media(max-width:480px){.live-station{padding:16px 13px;margin-bottom:28px}.live-actions button{font-size:11px;flex-basis:112px}}
+
+
+/* Station One is now the primary listener; the local browser rotation is
+   preserved behind an explicitly labelled, independent dial. */
+.main-station{padding-top:56px;padding-bottom:72px;align-items:center}
+.main-station .controls{background:#29213e;color:#fff9ec;box-shadow:12px 12px 0 #a59ab7;border-color:#352644}
+.main-station .live-station{margin:0;box-shadow:none;border:0;padding:0;background:transparent}
+.main-station .live-station .eyebrow{font-size:11px;color:#ffdf89}
+.main-station .live-station h2{font-size:clamp(32px,4.3vw,59px);line-height:.95;margin:4px 0 22px;color:#fff8e7}
+.main-station .live-station h2 em{color:#ffde81}
+.main-station-poster .seal{background:#ffdf87}
+.live-signal{border:1px solid #b6a8c9;border-radius:999px;padding:9px 14px;display:inline-block;font-weight:900;font-size:11px;letter-spacing:.08em;color:#eee2ef;background:#4c3c62;margin:0 0 15px}
+.live-signal.online{background:#d5eaca;color:#21472d;border-color:#d5eaca}
+.live-source{font-size:12px;letter-spacing:.09em;font-weight:900;color:#ffdc84;margin:0 0 12px}
+.live-program{padding:12px 15px;border-left:4px solid #e3bb76;background:#3b2e50;font-size:15px;font-weight:950;letter-spacing:.035em;margin:0 0 15px}
+.live-program small{display:block;font-size:11px;font-weight:500;letter-spacing:normal;color:#dfd3e4;margin-top:6px}
+.main-station .live-actions button{font-size:13px}
+.main-station .live-actions button:first-child{flex-basis:100%;padding:15px}
+.main-station .live-note{color:#ded3e6}
+.classic-dial{max-width:1200px;margin:0 auto 65px;padding:0 5%}
+.classic-dial>summary{cursor:pointer;border:2px solid #4b3c61;background:#e3d9eb;color:#261c37;border-radius:15px;box-shadow:5px 6px 0 #c2a8b8;padding:17px 22px;list-style:none;display:grid;gap:5px}
+.classic-dial>summary::-webkit-details-marker{display:none}
+.classic-dial>summary:after{content:"OPEN +";font-size:11px;font-weight:950;letter-spacing:.12em;justify-self:end;margin-top:-24px}
+.classic-dial[open]>summary:after{content:"CLOSE −"}
+.classic-dial>summary span{font-size:11px;font-weight:950;letter-spacing:.13em;color:#6b497f}
+.classic-dial>summary strong{font-size:clamp(19px,2.7vw,29px);line-height:1.15;letter-spacing:-.035em}
+.classic-dial>summary small{font-size:12px;line-height:1.4;color:#5a466e;max-width:650px}
+.classic-dial .classic-desk{padding:45px 0 10px;max-width:none}
+.classic-dial .classic-poster{max-width:480px}
+.classic-dial .classic-controls{box-shadow:8px 8px 0 #d9b8ca}
+.classic-dial .classic-controls>.eyebrow{color:#73538b;margin:0 0 16px}
+.classic-dial .classic-poster .seal{background:#c7e4db}
+@media(max-width:900px){.main-station{padding-top:35px;padding-bottom:55px}.classic-dial .classic-desk{padding-top:35px}}
+@media(max-width:480px){.main-station .controls{box-shadow:6px 6px 0 #a59ab7}.main-station .live-station h2{font-size:35px}.classic-dial{padding:0 5%}.classic-dial>summary{padding:16px}.classic-dial>summary:after{margin-top:0}.classic-dial .classic-desk{padding:30px 0 0}}
