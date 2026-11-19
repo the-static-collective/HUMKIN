@@ -19,7 +19,12 @@
     ? requestedFrequency : "station-one";
   const channel = frequency === "station-one" ? "Station One" : frequency.replace(/-/g, " ");
   const route = BASE + "/hls/" + (frequency === "station-one" ? "" : frequency + "/");
-  const HLS = route + "live.m3u8";
+  const reservoirLab = typeof location !== "undefined" &&
+    new URLSearchParams(location.search).get("reservoir") === "lab";
+  const HLS = route + "live.m3u8"; // The public receiver default never moves.
+  const RECEIVER_HLS = reservoirLab ? route + "delayed.m3u8" : HLS;
+  const SIGNAL = route + (reservoirLab ? "delayed-status" : "status");
+  const SIGNAL_MODE = reservoirLab ? "delayed_reservoir_hls" : "shared_live_hls";
   const LONG_WAVE = BASE + "/live.mp3";
   const stationCover = new URL("../cover.jpg", document.baseURI).href;
   const status = byId("station-status");
@@ -87,6 +92,8 @@
     if (sourceLabel) sourceLabel.textContent = name;
     if (modeHelp) modeHelp.textContent = name === "shuffle"
       ? "Your own shuffle mixes the published music, release features and station carts."
+       : reservoirLab
+      ? "RESERVOIR LAB: approximately eight minutes behind hot air. This is experimental, not a cached offline phone stream."
       : "One live station. If the signal drops, the music keeps playing automatically.";
     if (name === "shuffle") {
       listen.textContent = "▶ LISTEN LIVE";
@@ -213,11 +220,11 @@
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 7000);
     try {
-      const response = await fetch(route + "status",
+      const response = await fetch(SIGNAL,
         {cache: "no-store", signal: controller.signal});
       if (!response.ok) return false;
       const data = await response.json();
-      const on = data?.on_air === true && data?.mode === "shared_live_hls";
+      const on = data?.on_air === true && data?.mode === SIGNAL_MODE;
       if (signal) signal.textContent = on ? "fresh" : "offline";
       return on;
     } catch { return false; }
@@ -305,7 +312,7 @@
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000);
     try {
-      const response = await fetch(HLS, {cache: "no-store", signal: controller.signal});
+      const response = await fetch(RECEIVER_HLS, {cache: "no-store", signal: controller.signal});
       if (!response.ok) return;
       const manifest = await response.text();
       if (token !== metadataGeneration || source !== "hls") return;
@@ -329,10 +336,10 @@
     if (!on) { fallbackToLongWave("transmitter_offline", token); return; }
     statusFailures = 0;
     if (liveAudio.canPlayType("application/vnd.apple.mpegurl")) {
-      liveAudio.src = HLS;
+      liveAudio.src = RECEIVER_HLS;
     } else if (window.Hls?.isSupported?.()) {
       hls = new window.Hls({liveSyncDurationCount: 3, enableWorker: true});
-      hls.loadSource(HLS);
+      hls.loadSource(RECEIVER_HLS);
       hls.attachMedia(liveAudio);
       hls.on(window.Hls.Events.ERROR, (_evt, event) => {
         if (token !== operation || source !== "hls" || !event.fatal) return;

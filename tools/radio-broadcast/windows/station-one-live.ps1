@@ -33,6 +33,10 @@ function Show-R2LiveStatus {
     else {
         Write-Host "Managed HUMKIN live transmitter: RUNNING (PID $($state.ProcessId))." -ForegroundColor Green
     }
+    if ($null -ne $state -and $null -ne $state.PSObject.Properties['ReservoirSeconds'] -and
+        [int]$state.ReservoirSeconds -gt 0) {
+        Write-Host ("Reservoir LAB: " + $state.ReservoirSeconds + " seconds behind hot. Public remains on hot.") -ForegroundColor Cyan
+    }
     Write-Host 'This checks the local process, not whether the phone is receiving audio.'
     if (Test-Path -LiteralPath $R2LiveOut) {
         Write-Host 'Recent station output:' -ForegroundColor Cyan
@@ -58,9 +62,13 @@ function Run-R2LiveChild {
         $env:AWS_ACCESS_KEY_ID = $data.AccessKeyId
         $env:AWS_SECRET_ACCESS_KEY = $data.SecretAccessKey
         Write-Host 'HUMKIN LIVE: Continuous R2 transmission starting.' -ForegroundColor Green
+        if ($ReservoirSeconds -gt 0 -and $ReservoirSeconds -lt 60) {
+            throw 'Reservoir requires at least 60 seconds; 0 disables it.'
+        }
         Invoke-Python -Python $python -PythonArgs @(
             $publisher, '--cache', $CacheDir, '--stop-file', $R2LiveStop, '--run-id', $RunId,
-            '--tower-root', $TowerRoot, '--frequency', $Frequency
+            '--tower-root', $TowerRoot, '--frequency', $Frequency,
+            '--reservoir-seconds', [string]$ReservoirSeconds
         )
         Write-Host 'HUMKIN LIVE: Broadcast stopped.' -ForegroundColor Green
     }
@@ -107,13 +115,15 @@ function Start-R2LiveManaged {
     Remove-Item -LiteralPath $R2LiveStop,$R2LiveState -Force -ErrorAction SilentlyContinue
     $identity = [guid]::NewGuid().ToString('N')
     $arguments = @('-NoProfile','-ExecutionPolicy','Bypass',
-                   '-File',('"' + $R2StationScript + '"'),'-Action','RunR2','-RunId',$identity,'-Frequency',$Frequency)
+                   '-File',('"' + $R2StationScript + '"'),'-Action','RunR2','-RunId',$identity,
+                   '-Frequency',$Frequency,'-ReservoirSeconds',[string]$ReservoirSeconds)
     # The child decrypts the Windows user's vault. No secret is passed on CLI.
     $proc = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -WorkingDirectory $RepoRoot -WindowStyle Hidden -RedirectStandardOutput $R2LiveOut -RedirectStandardError $R2LiveErr -PassThru
     $state = [pscustomobject]@{
         RunId = $identity
         ProcessId = $proc.Id
         StartTicks = [string]$proc.StartTime.ToUniversalTime().Ticks
+        ReservoirSeconds = $ReservoirSeconds
     }
     [IO.File]::WriteAllText($R2LiveState, ($state | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding($false)))
     Start-Sleep -Seconds 2

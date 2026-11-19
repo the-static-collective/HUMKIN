@@ -65,7 +65,8 @@ class CueSheet:
             if self.entries and self.entries[-1]["offset"] == cue["offset"]:
                 self.entries.pop()
             self.entries.append(cue)
-            while len(self.entries) > 1 and self.entries[1]["offset"] < seconds - 360:
+            # Retain more than the ten-minute reservoir plus one public window.
+            while len(self.entries) > 1 and self.entries[1]["offset"] < seconds - 1200:
                 self.entries.pop(0)
             try:
                 write_json(self.path, {"sequence": self.first_sequence, "events": self.entries})

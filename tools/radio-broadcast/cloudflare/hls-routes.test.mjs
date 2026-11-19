@@ -102,3 +102,30 @@ test("frequency routes isolate manifests, public artwork and the now-playing fee
   const stale = await serveHls(new Request(origin + "/hls/talk/now-playing"), env, now + 91000);
   assert.equal(stale.status, 503);
 });
+
+test("reservoir paths stay distinct from hot and reject private object lookups", async () => {
+  assert.equal(hlsObjectKey("/hls/delayed.m3u8"), "live/station-one/delayed.m3u8");
+  assert.equal(hlsObjectKey("/hls/delayed-status"), "live/station-one/delayed.m3u8");
+  assert.equal(hlsObjectKey("/hls/delayed-now-playing"), "live/station-one/delayed.m3u8");
+  assert.equal(hlsObjectKey("/hls/talk/delayed.m3u8"), "live/talk/delayed.m3u8");
+  assert.equal(isHlsPath("/hls/private/delayed.m3u8/../secret"), false);
+  const requested = [];
+  const uploaded = new Date(now - 10000);
+  const env = {RADIO_LIVE: {async get(key) {
+    requested.push(key);
+    if (key === "live/station-one/delayed.m3u8") return {
+      uploaded, body: new Blob(["#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:123\n"]).stream(),
+      text: async () => "#EXTM3U\n"
+    };
+    return null;
+  }}};
+  const manifest = await serveHls(new Request("https://humkin.test/hls/delayed.m3u8"), env, now);
+  assert.equal(manifest.status, 200);
+  assert.match(await manifest.text(), /MEDIA-SEQUENCE:123/);
+  const status = await serveHls(new Request("https://humkin.test/hls/delayed-status"), env, now);
+  assert.equal((await status.json()).mode, "delayed_reservoir_hls");
+  assert.equal(requested.every(key => key === "live/station-one/delayed.m3u8"), true);
+  assert.equal((await serveHls(new Request("https://humkin.test/hls/status"), env, now)).status, 503);
+  assert.equal((await serveHls(new Request("https://humkin.test/hls/delayed-status"), env,
+    now + 100000)).status, 503);
+});

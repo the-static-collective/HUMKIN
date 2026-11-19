@@ -20,6 +20,8 @@ from pathlib import Path
 # Also works when loaded as a module by the offline relay tests.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from now_playing import insert_cues
+from hls_reservoir import air_windows, IncompleteHistory
+from keep_awake import keep_awake_during_broadcast
 from tower_library import DIGEST, FREQUENCY
 
 PUBLIC_RELAY = "https://humkin-long-wave.joyvolcanomusic.workers.dev"
@@ -92,7 +94,7 @@ def r2_client():
 
 class Publisher:
     def __init__(self, bucket, directory, client, session=None, now=time.monotonic,
-                 frequency="station-one", tower_root=None):
+                 frequency="station-one", tower_root=None, reservoir_seconds=0):
         self.bucket = bucket
         self.directory = Path(directory)
         self.client = client
@@ -108,6 +110,12 @@ class Publisher:
             raise ValueError("Invalid frequency")
         self.prefix = f"live/{frequency}/"
         self.playlist_key = self.prefix + "live.m3u8"
+        self.delayed_key = self.prefix + "delayed.m3u8"
+        if (not isinstance(reservoir_seconds, int) or reservoir_seconds < 0 or
+                reservoir_seconds > 600 or 0 < reservoir_seconds < 60):
+            raise ValueError("Reservoir must be off or 60-600 seconds")
+        self.reservoir_seconds = reservoir_seconds
+        self.last_delayed_digest = None
         self.tower_root = tower_root
         self.cue_clock = {}
         self.art = {}
@@ -141,8 +149,13 @@ class Publisher:
             return False
         raw = index.read_text(encoding="utf-8")
         try:
-            playlist, names = rewrite_playlist(raw, self.session)
-        except PlaylistNotReady:
+            if self.reservoir_seconds:
+                playlist, delayed, names = air_windows(
+                    raw, self.session, self.reservoir_seconds)
+            else:
+                playlist, names = rewrite_playlist(raw, self.session)
+                delayed = None
+        except (PlaylistNotReady, IncompleteHistory):
             # FFmpeg publishes a 1- or 2-segment manifest at startup.
             # Waiting is normal; do not kill the encoder or leak an incomplete
             # live playlist to R2. All malformed manifests remain fatal.
@@ -162,16 +175,30 @@ class Publisher:
                                    ContentType="video/mp2t",
                                    CacheControl="public, max-age=31536000, immutable")
             self.uploaded.add(name)
-        if raw != self.last_raw:
-            playlist = insert_cues(playlist, self.directory, self.session, self.artwork, self.cue_clock)
+        # Cue-only corrections matter too, even when FFmpeg has not appended a
+        # new segment. Cue timestamps follow the encoded audio on BOTH clocks.
+        playlist = insert_cues(playlist, self.directory, self.session,
+                               self.artwork, self.cue_clock)
         digest = hashlib.sha256(playlist).hexdigest()
-        if raw != self.last_raw and digest != self.last_digest:
+        if digest != self.last_digest:
             # Publish playlist LAST; every referenced segment already exists in R2.
             self.client.put_object(Bucket=self.bucket, Key=self.playlist_key, Body=playlist,
                                    ContentType="application/vnd.apple.mpegurl",
                                    CacheControl="no-store")
             self.last_digest = digest
-            print("R2 LIVE: published", len(names), "segments", flush=True)
+            print("R2 LIVE: published", min(len(names), 12), "hot segments", flush=True)
+        if delayed is not None:
+            delayed = insert_cues(delayed, self.directory, self.session,
+                                  self.artwork, self.cue_clock)
+            delayed_digest = hashlib.sha256(delayed).hexdigest()
+            if delayed_digest != self.last_delayed_digest:
+                # Both manifests reference the SAME uploaded TS files.
+                self.client.put_object(Bucket=self.bucket, Key=self.delayed_key,
+                                       Body=delayed,
+                                       ContentType="application/vnd.apple.mpegurl",
+                                       CacheControl="no-store")
+                self.last_delayed_digest = delayed_digest
+                print("R2 RESERVOIR: delayed playlist updated", flush=True)
         active = set(names)
         for name in self.uploaded:
             if name not in active and name not in self.retired:
@@ -201,12 +228,14 @@ def main(argv=None):
     p.add_argument("--stop-file", type=Path, help="Managed station stop-request file")
     p.add_argument("--run-id", help="Unique managed station run ID (32 hex chars)")
     p.add_argument("--frequency", default="station-one")
+    p.add_argument("--reservoir-seconds", type=int, default=0,
+                   help="LAB: publish additional 60-600s delayed playlist, public hot untouched")
     p.add_argument("--tower-root", type=Path, help="enable the Acer Tower with this shared directory")
     p.add_argument("--poll", type=float, default=1.5)
     args = p.parse_args(argv)
     if not FREQUENCY.fullmatch(args.frequency):
         p.error("Invalid frequency")
-    if not 0.5 <= args.poll <= 10 or args.seconds < 0:
+    if not 0.5 <= args.poll <= 10 or args.seconds < 0 or (args.reservoir_seconds and not 60 <= args.reservoir_seconds <= 600):
         p.error("poll must be 0.5-10 seconds and seconds nonnegative")
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,62}", args.bucket):
         p.error("Invalid bucket name")
@@ -224,13 +253,16 @@ def main(argv=None):
     if (directory / "index.m3u8").exists() and not args.no_launch:
         p.error("Use an empty --dir for a new broadcast, or omit --dir")
     publisher = Publisher(args.bucket, directory, client, frequency=args.frequency,
-                          tower_root=args.tower_root)
+                          tower_root=args.tower_root,
+                          reservoir_seconds=args.reservoir_seconds)
     child = None
     try:
         if not args.no_launch:
             engine = Path(__file__).with_name("engine.py")
             command = [sys.executable, str(engine), "--hls-dir", str(directory),
                        "--cache", str(args.cache), "--bitrate", str(args.bitrate)]
+            if args.reservoir_seconds:
+                command.extend(["--hls-history-segments", "96"])
             if args.tower_root:
                 command.extend(["--tower-root", str(args.tower_root), "--frequency", args.frequency])
             if args.seconds:
@@ -274,7 +306,10 @@ def main(argv=None):
 
 if __name__ == "__main__":
     try:
-        raise SystemExit(main())
+        with keep_awake_during_broadcast() as guarded:
+            if guarded:
+                print("HUMKIN: Windows automatic system sleep blocked while broadcasting.", flush=True)
+            raise SystemExit(main())
     except (OSError, RuntimeError, ValueError) as exc:
         print("HLS publisher stopped:", str(exc), file=sys.stderr)
         raise SystemExit(1)

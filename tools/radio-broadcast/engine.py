@@ -290,7 +290,7 @@ def equal_power_mix(a,b):
     if sys.byteorder!="little":out.byteswap()
     return out.tobytes()
 
-def output_process(destination,bitrate,realtime=True,hls_dir=None,hls_start=None):
+def output_process(destination,bitrate,realtime=True,hls_dir=None,hls_start=None, hls_history_segments=12):
     if hls_dir:
         # A local HLS encoder; the separate publisher uploads COMPLETE segments.
         # MPEG-TS/AAC is broadly compatible with standard HLS receivers.
@@ -303,7 +303,7 @@ def output_process(destination,bitrate,realtime=True,hls_dir=None,hls_start=None
           *inputs,"-af","dynaudnorm=f=250:g=15:p=0.9",
           "-codec:a","aac","-b:a",str(bitrate)+"k",
           "-f","hls","-hls_segment_type","mpegts",
-          "-hls_time","10","-hls_list_size","12",
+          "-hls_time","10","-hls_list_size",str(hls_history_segments),
           "-hls_delete_threshold","12",
           "-hls_flags","delete_segments+temp_file+program_date_time+omit_endlist",
           "-start_number",str(hls_start if hls_start is not None else int(time.time())),
@@ -489,7 +489,8 @@ def streaming(catalog,args):
     server = None
     hls_start = int(time.time())
     encoder=output_process(output,args.bitrate,realtime=bool(desk) or not bool(args.file_output),
-                           hls_dir=args.hls_dir,hls_start=hls_start)
+                           hls_dir=args.hls_dir,hls_start=hls_start,
+                           hls_history_segments=args.hls_history_segments)
     sheet = CueSheet(args.hls_dir, hls_start) if args.hls_dir else None
     written=0
     def cue(item):
@@ -650,6 +651,8 @@ def main():
     p.add_argument("--icecast-url",help="private Icecast source URL; prefer env HUMKIN_ICECAST_URL")
     p.add_argument("--file-output",type=Path,help="local MP3 test output instead of broadcasting")
     p.add_argument("--hls-dir",type=Path,help="encode live AAC/HLS to local directory for R2 publisher")
+    p.add_argument("--hls-history-segments", type=int, default=12,
+                   help="local HLS segment retention (12 standard; 96 for reservoir)")
     p.add_argument("--stop-file",type=Path,help="managed HLS stop marker path (local)")
     p.add_argument("--run-id",help="managed HLS session identifier")
     p.add_argument("--seconds",type=int,default=0,help="limit local test output duration")
@@ -672,6 +675,8 @@ def main():
     if args.stop_file and not args.hls_dir:
         p.error("--stop-file is only supported in HLS mode")
     if not 0<=args.crossfade<=5:p.error("--crossfade must be between 0 and 5")
+    if args.hls_history_segments not in (12, 96):
+        p.error("--hls-history-segments must be 12 or 96")
     if not 0<=args.retry_count<=100:p.error("--retry-count must be between 0 and 100")
     if args.fixture:catalog=json.loads(args.fixture.read_text(encoding="utf-8"))
     else:catalog=live_catalog()
