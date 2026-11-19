@@ -1,0 +1,36 @@
+name: Verify HUMKIN Proton Authenticator
+
+on:
+  pull_request:
+    paths:
+      - 'fm/proton-auth.mjs'
+      - 'fm/load/**'
+      - 'fm/mesh-radio/**'
+      - 'supabase/functions/humkin-proton-login/**'
+      - 'supabase/migrations/*humkin_proton_owner_login.sql'
+      - 'tests/proton-auth.test.mjs'
+      - '.github/workflows/proton-auth.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'fm/proton-auth.mjs'
+      - 'fm/load/**'
+      - 'fm/mesh-radio/**'
+      - 'supabase/functions/humkin-proton-login/**'
+      - 'supabase/migrations/*humkin_proton_owner_login.sql'
+      - 'tests/proton-auth.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authenticate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify TOTP, replay control and owner-only session exchange contracts
+        run: node --test tests/proton-auth.test.mjs
