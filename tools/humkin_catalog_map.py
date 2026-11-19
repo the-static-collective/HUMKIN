@@ -61,7 +61,7 @@ VOCAB={
   "percussive":["percussion","drum solo","rhythmic"]
  }
 }
-SOURCES=(("human_tags",5),("suno_style",3),("embedded_genre",2),("folder_genre",1),("human_description",2))
+SOURCES=(("human_tags",5),("suno_style",3),("embedded_style",2),("embedded_genre",2),("folder_genre",1),("human_description",2))
 MAX_TRACKS=50000
 def bounded(value,limit=2000):
     return re.sub(r"[\x00-\x08\x0b-\x1f]"," ",str(value or ""))[:limit].strip()
@@ -80,6 +80,7 @@ def map_styles(row,notes):
     evidence={
       "human_tags":", ".join(parse_tags(notes.get("tags",""))),
       "suno_style":bounded(notes.get("suno_style") or notes.get("style") or row.get("suno_style"),2000),
+      "embedded_style":bounded(row.get("embedded_style"),1500),
       "embedded_genre":bounded(row.get("embedded_genre"),240),
       "folder_genre":bounded(row.get("folder_genre"),240),
       "human_description":bounded(notes.get("human_description") or notes.get("description") or row.get("human_description"),2000)
