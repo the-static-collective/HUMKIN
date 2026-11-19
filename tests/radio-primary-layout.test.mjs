@@ -2,36 +2,44 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
-const html=readFileSync(new URL("../fm/index.html",import.meta.url),"utf8");
-const legacy=html.indexOf('<details class="classic-dial"');
-const live=html.indexOf('id="live-station-heading"');
+const html = readFileSync(new URL("../fm/index.html", import.meta.url), "utf8");
+const css = readFileSync(new URL("../fm/radio.css", import.meta.url), "utf8");
+const js = readFileSync(new URL("../fm/live-station.js", import.meta.url), "utf8");
 
-test("the true shared live receiver is the primary station and never autoplays",()=>{
-  assert(live>=0 && legacy>live,"Real HLS player must appear before optional browser modes");
-  assert(html.includes('id="live-air" controls preload="none"'));
-  assert(html.includes('id="live-signal"'));
-  assert(html.includes('id="live-source"'));
-  assert(html.includes("Song-level now-playing metadata is not transmitted yet"));
-  assert(!html.includes("not yet a dedicated broadcast stream"));
-});
-
-test("browser-built players remain available behind an explicit separate dial",()=>{
-  const end=html.indexOf("</details>",legacy);
-  assert(end>legacy,"Legacy browser mode should be collapsible");
-  const panel=html.slice(legacy,end);
-  for(const id of ["current-art","station-status","desk-heading","current-title",
-    "current-artist","mode-clock","mode-shuffle","listen","air","on-deck"]) {
-    assert(panel.includes('id="'+id+'"'),"Missing preserved browser dial: "+id);
-    assert.equal([...html.matchAll(new RegExp('id="'+id+'"',"g"))].length,1,
-      "Duplicate browser dial id: "+id);
+test("original HUMKIN artwork-first receiver is the primary and only audio deck", () => {
+  assert(html.includes('<section class="desk unified-radio"'));
+  assert(!html.includes('<details class="classic-dial"'));
+  assert(!html.includes('id="live-backup"'));
+  assert(!html.includes('id="live-retry"'));
+  assert(!html.includes("CATCH UP TO AIR"));
+  assert(!html.includes('id="catch-up"'));
+  for (const id of ["current-art", "current-title", "current-artist",
+     "mode-shuffle", "listen", "live-air", "air", "on-deck", "spotlight"]) {
+    assert.equal([...html.matchAll(new RegExp('id="' + id + '"',"g"))].length, 1,
+      "Missing or duplicate old-player element: " + id);
   }
-  assert(panel.includes("NOT THE ACER BROADCAST"));
-  assert(html.includes('id="station-cover"'));
-  assert(!html.includes("Now spinning 21 songs:"));
+  assert(html.includes('id="listen" class="listen">▶ LISTEN LIVE'));
+  assert(html.includes('id="mode-shuffle"'));
+  assert(html.includes('id="mode-clock" aria-pressed="true" hidden'));
+  assert(html.includes('id="air" preload="auto" controls hidden'));
+  assert(css.includes('.unified-radio audio[hidden]'));
 });
 
-test("the main page does not imply that Long Wave shares the live playlist",()=>{
-  assert(html.includes("Long Wave plays a different, independent rotation"));
-  assert(html.includes("devices may join at different buffered positions"));
-  assert(html.includes("The browser playlist below is a separate program"));
+test("Live is shared HLS and fallback order is silently managed", () => {
+  assert(js.includes('const HLS = BASE + "/hls/live.m3u8"'));
+  assert(js.includes('const LONG_WAVE = BASE + "/live.mp3"'));
+  assert(js.indexOf('fallbackToLongWave("transmitter_offline"') > 0);
+  assert(js.includes('fallbackToClock("longwave_media_error")'));
+  assert(js.includes('startSameTimeFallback()'));
+  assert(js.includes('startRoadShuffleFromLive()'));
+  assert(js.includes('humkin.station-one.now-playing/v1'));
+  assert(!html.includes('LONG WAVE</button>'));
+});
+
+test("no autoplay and no invented live title or album art", () => {
+  assert(!/<audio[^>]*\sautoplay(?:\s|>)/i.test(html));
+  assert(html.includes('src="../cover.jpg"'));
+  assert(html.includes("artist") && html.includes("current-title"));
+  assert(html.includes("Record"));
+  assert(!html.includes("Now spinning 21 songs:"));
 });
