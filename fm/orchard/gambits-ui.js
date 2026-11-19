@@ -10,7 +10,11 @@ const store=(()=>{try{return localStorage}catch{return null}})();
 const level=M.level(M.read(store).xp);
 const maxSlots=G.slotsForLevel(level);
 const base=new URL("../rotation.json",location.href);
-let catalog=[],rules=G.normalizeRules(null,level);
+let catalog=[],rules=G.normalizeRules(null,level),draftCounts={};
+try{
+  const saved=JSON.parse(store?.getItem(G.HISTORY_KEY)||"{}");
+  if(saved&&typeof saved==="object"&&!Array.isArray(saved))draftCounts=saved;
+}catch{}
 try{
   const draft=JSON.parse(store?.getItem(G.KEY)||"null");
   if(draft?.schema===G.SCHEMA)rules=G.normalizeRules(draft.rules,level);
@@ -131,7 +135,7 @@ function simulate(){
   const host=$("gambit-program");host.replaceChildren();
   if(catalog.length<3){status("Three approved songs are needed to build a personal Signal.");return;}
   const result=G.propose(catalog,rules,{level,hour:new Date().getHours(),length:3,
-    reads:{}});
+    reads:draftCounts});
   for(const [i,track] of result.tracks.entries()){
     const receipt=result.receipts[i];
     const item=node("li");
@@ -141,6 +145,13 @@ function simulate(){
     const proof=node("small",receipt.ruleIndex<0?"SAFE CATALOG FALLBACK":
       "GAMBIT "+(receipt.ruleIndex+1)+" · "+receipt.detail);
     item.append(heading,subtitle,proof);host.append(item);
+  }
+  for(const track of result.tracks){
+    const count=Number(draftCounts[track.id]);
+    draftCounts[track.id]=Math.min(1000000,Number.isFinite(count)&&count>=0?Math.floor(count)+1:1);
+  }
+  if(store){
+    try{store.setItem(G.HISTORY_KEY,JSON.stringify(draftCounts));}catch{}
   }
   const link=makeSignal(result);
   if(link){$("gambit-signal").href=link;$("gambit-signal").hidden=false;}
