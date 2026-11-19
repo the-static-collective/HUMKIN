@@ -1,3 +1,8 @@
+import {isHlsPath,serveHls} from "./hls-routes.mjs";
+import {serveStationRegistry} from "./station-registry.mjs";
+import {getStation,resolveStation,describeStations,STATIONS} from "./stations.mjs";
+import {resolveContract,describeContractStations,contractReceipt} from "./contracts.mjs";
+import {attachListenerWeather} from "../../../fm/top42/feedback-signals.mjs";
 /**
  * HUMKIN LONG WAVE — Cloudflare Workers + R2 live MP3 connection.
  * Source metadata comes only from the public, owner-approved Supabase crate
@@ -7,15 +12,19 @@
  * The `/live.mp3` response stays one continuous HTTP audio stream; no
  * listener-side JS transition is required between songs or station carts.
  */
-import {isHlsPath, serveHls} from "./hls-routes.mjs";
-import {serveStationRegistry} from "./station-registry.mjs";
 const SUPABASE="https://kbhqacsdvjsstzyplqij.supabase.co";
 const PUBLIC_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
 const PUBLIC_MANIFEST="https://humkin.abundent.org/fm/r2-tracks.json";
+const PUBLIC_ENRICHMENT="https://humkin.abundent.org/fm/catalog-enrichment.json";
+const PUBLIC_WEATHER=SUPABASE+"/functions/v1/humkin-resonance";
 const PUBLIC_SETTINGS=SUPABASE+"/rest/v1/humkin_radio_settings?select=bumper_groups,bumper_rules&id=eq.main&limit=1";
+const MAINLINE_PROGRAMS=SUPABASE+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,priority,track_ids,is_active&is_active=eq.true&limit=500";
 const UUID="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const R2_KEY=new RegExp("^tracks/"+UUID+"/[0-9a-f]{64}\\.mp3$","i");
-const MAX_TRACKS=1500;
+const MAX_TRACKS=20000;
+const CATALOG_PAGE=1000;
+const HASH=/^[0-9a-f]{64}$/i;
+const STYLE_TAG=/^(genre|mood|texture):[a-z0-9-]{1,48}$/;
 const TTL_MS=5*60*1000;
 const ORIGIN='*'; // Read-only approved radio, no credentials, cookies, or private data.
 let cached=null,cacheUntil=0,loading=null;
@@ -37,6 +46,9 @@ export function approvedCatalog(rows,manual){
    const kind=row.kind==="bumper"?"bumper":"song";
    seen.add(key);
    approved.push({id:"crate-"+id,key,title:String(row.title||"HUMKIN").slice(0,160),
+     artist:String(row.artist||"HUMKIN").slice(0,160),
+     album:String(row.album||"HUMKIN RADIO").slice(0,200),
+     tags:[],sha256:HASH.test(String(row.sha256||""))?String(row.sha256).toLowerCase():null,
      duration:secs,kind,featured:row.is_single===true});
  }
  if(manual?.schema==="humkin.radio.r2/v1"&&Array.isArray(manual.tracks)){
@@ -48,18 +60,77 @@ export function approvedCatalog(rows,manual){
      if(!/^[a-z0-9][a-z0-9-]{2,79}$/.test(id))continue;
      seen.add(row.object_key);
      approved.push({id:"r2-"+id,key:row.object_key,title:String(row.title||"HUMKIN").slice(0,160),
+       artist:String(row.artist||"HUMKIN").slice(0,160),
+       album:String(row.album||"HUMKIN RADIO").slice(0,200),
+       tags:Array.isArray(row.tags)?row.tags.filter(x=>typeof x==="string"&&x.length<50).slice(0,20):[],
+       sha256:HASH.test(String(row.sha256||""))?String(row.sha256).toLowerCase():null,
        duration:seconds,kind:"song",featured:row.seasonal===true,seasonal:row.seasonal===true});
    }
  }
  return approved;
 }
+/**
+ * Reviewed enrichment adds only catalog tags. It cannot create a track,
+ * change an approval, alter R2 pointers, or override owner-supplied credits.
+ */
+export function applyReviewedEnrichment(tracks,manifest){
+ if(manifest?.schema!=="humkin.radio.enrichment/v1"||
+    !Array.isArray(manifest.tracks)||manifest.tracks.length>MAX_TRACKS)return tracks;
+ const approved=new Map();
+ for(const entry of manifest.tracks){
+   if(entry?.reviewed!==true||!HASH.test(String(entry.mp3_sha256||"")))continue;
+   const tags=Array.isArray(entry.tags)?entry.tags.filter(t=>
+     typeof t==="string"&&STYLE_TAG.test(t)).slice(0,32):[];
+   // Duplicate metadata entries for the same object are ambiguous, not authority.
+   const hash=entry.mp3_sha256.toLowerCase();
+   if(approved.has(hash))approved.set(hash,null);
+   else approved.set(hash,tags);
+ }
+ for(const track of tracks){
+   if(!track.sha256||!approved.has(track.sha256))continue;
+   const tags=approved.get(track.sha256);
+   if(!tags)continue;
+   track.tags=[...new Set([...(track.tags||[]),...tags])].slice(0,60);
+   track.enrichment_reviewed=true;
+ }
+ return tracks;
+}
+/**
+ * Supabase recurring shows store original track IDs, while the Worker labels
+ * cloud records crate-<uuid>. Resolve only IDs actually approved in R2; never
+ * turn an unknown program reference into another recording.
+ */
+export function mapApprovedProgramIds(ids,tracks){
+ const eligible=tracks instanceof Set?tracks:new Set(tracks.map(t=>t.id));
+ const found=[];
+ for(const original of Array.isArray(ids)?ids.slice(0,1500):[]){
+   if(typeof original!=="string")continue;
+   const candidate=eligible.has(original)?original:
+      eligible.has("crate-"+original)?"crate-"+original:null;
+   if(candidate)found.push(candidate);
+ }
+ return found;
+}
 async function queryPublicCatalog(fetcher){
- const query="?select=id,title,kind,enabled,published_at,duration_seconds,is_single,storage_provider,r2_object_key"+
-   "&published_at=not.is.null&enabled=eq.true&storage_provider=eq.r2&limit=1500";
- const response=await fetcher(SUPABASE+"/rest/v1/humkin_radio_tracks"+query,
-  {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
- if(!response.ok)throw Error("Public station catalog unavailable: "+response.status);
- const cloud=await response.json();
+ const select="id,title,artist,album,sha256,kind,enabled,published_at,duration_seconds,is_single,storage_provider,r2_object_key";
+ const cloud=[],seenPages=new Set();
+ for(let offset=0;offset<MAX_TRACKS;offset+=CATALOG_PAGE){
+   const query="?select="+select+
+     "&published_at=not.is.null&enabled=eq.true&storage_provider=eq.r2"+
+     "&order=id.asc&limit="+CATALOG_PAGE+"&offset="+offset;
+   const response=await fetcher(SUPABASE+"/rest/v1/humkin_radio_tracks"+query,
+     {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
+   if(!response.ok)throw Error("Public station catalog unavailable: "+response.status);
+   const page=await response.json();
+   if(!Array.isArray(page))throw Error("Invalid public station catalog");
+   if(!page.length)break;
+   const fingerprint=String(page[0]?.id||"")+":"+String(page.at(-1)?.id||"");
+   if(seenPages.has(fingerprint))throw Error("Public catalog pagination stalled");
+   seenPages.add(fingerprint);
+   cloud.push(...page);
+   if(page.length<CATALOG_PAGE)break;
+ }
+ if(cloud.length>=MAX_TRACKS)throw Error("Catalog cap reached; shard pagination before adding more recordings");
  let manual=null;
  try{
    const other=await fetcher(PUBLIC_MANIFEST,{cache:"no-store"});
@@ -67,9 +138,19 @@ async function queryPublicCatalog(fetcher){
  }catch{/* Approved Supabase crate alone is sufficient to stay on air. */}
  const tracks=approvedCatalog(cloud,manual);
  if(!tracks.some(t=>t.kind==="song"))throw Error("No approved music in R2");
+ try{
+   const response=await fetcher(PUBLIC_ENRICHMENT,{cache:"no-store"});
+   if(response.ok)applyReviewedEnrichment(tracks,await response.json());
+ }catch{/* No enrichment means existing editorial programming remains valid. */}
+ // Listener weather is optional, self-reported and changes eligibility only
+ // for stations that explicitly opt in. Missing/partial board fails closed.
+ try{
+   const weather=await fetcher(PUBLIC_WEATHER,{cache:"no-store",headers:{Accept:"application/json"}});
+   if(weather.ok)attachListenerWeather(tracks,await weather.json(),new Date());
+ }catch{/* Never fabricate feedback or change a legacy music rotation. */}
  // Active owner-defined grouping/rules are public read-only programming
  // metadata. Failure to load optional settings does NOT invent restrictions.
- tracks.bumper_groups=[];tracks.bumper_rules=[];
+ tracks.bumper_groups=[];tracks.bumper_rules=[];tracks.mainline_programs=[];
  try{
    const response=await fetcher(PUBLIC_SETTINGS,
      {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
@@ -79,16 +160,37 @@ async function queryPublicCatalog(fetcher){
      tracks.bumper_rules=Array.isArray(settings.bumper_rules)?settings.bumper_rules:[];
    }
  }catch{/* No owner groups/rules means the unmodified original art plays. */}
+ // Approved, published Mainline *plans*, not proof of actual playout.
+ try{
+   const response=await fetcher(MAINLINE_PROGRAMS,
+     {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
+   if(response.ok){
+     const rows=await response.json();
+     const approvedIds=new Set(tracks.map(t=>t.id));
+     tracks.mainline_programs=(Array.isArray(rows)?rows:[]).filter(r=>
+       r?.is_active===true&&Array.isArray(r.days)&&Array.isArray(r.track_ids))
+       .slice(0,500).map(r=>{
+         const ids=mapApprovedProgramIds(r.track_ids,approvedIds);
+         return {
+           id:String(r.id||""),name:String(r.name||"Mainline").slice(0,160),
+           days:r.days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6),
+           start_minute:Number(r.start_minute),end_minute:Number(r.end_minute),
+           priority:Number(r.priority)||0,
+           track_ids:ids,filter:{track_ids:ids},enabled:true
+         };
+       });
+   }
+ }catch{/* Continue with the approved catalog baseline if Mainline plans are unreachable. */}
  return tracks;
 }
-export async function getCatalog(fetcher=fetch,now=Date.now()){
+export async function getCatalog(fetcher=fetch,now=Date.now(),allowStale=true){
  if(cached&&now<cacheUntil)return cached;
  if(!loading)loading=queryPublicCatalog(fetcher).then(list=>{
    cached=list;cacheUntil=Date.now()+TTL_MS;return list;
  }).finally(()=>{loading=null});
  try{return await loading}catch(error){
    // An existing working stream should not fail because metadata briefly went offline.
-   if(cached)return cached;
+   if(cached&&allowStale)return cached;
    throw error;
  }
 }
@@ -172,9 +274,13 @@ export function program(tracks,seed){
      r?.enabled===true&&r.kind==="hold"&&r.track_ids?.includes(t.id))));
  if(!songs.length)return [];
  const slots=[];
- for(const song of songs){slots.push(song);
-   if(song.featured)slots.push(song); // Publicly marked singles/seasonal cuts get additional spins.
-   if(song.seasonal)slots.push(song); // Seasonal = 3 total, not +3.
+ for(const song of songs){
+   // Explicit contract weights override the legacy single/seasonal bonus.
+   // Ordinary Long Wave has no rotation_weight and keeps its old rules.
+   const repeats=Number.isInteger(song.rotation_weight)?
+     Math.max(1,Math.min(5,song.rotation_weight)):
+     1+Number(song.featured===true)+Number(song.seasonal===true);
+   for(let n=0;n<repeats;n++)slots.push(song);
  }
  const music=shuffled(slots,random);
  const buckets={short:shuffled(carts.filter(t=>t.duration<=19),random),
@@ -253,15 +359,30 @@ export function stripInitialID3(body){
  */
 export function continuousStream(bucket,tracks,options={}){
  const maxObjects=Math.min(900,Math.max(2,Number(options.maxObjects)||900));
+ const maxAgeMs=Number.isFinite(options.maxAgeMs)&&options.maxAgeMs>0?
+   Math.min(options.maxAgeMs,24*3600000):null;
+ const started=Date.now();
  let counter=0,cycle=0,rotation=[],index=0,reader=null,closed=false,errors=0;
+ let currentTracks=tracks,activeProgramKey=null;
  const seed=Number.isInteger(options.seed)?options.seed:(crypto.getRandomValues(new Uint32Array(1))[0]>>>0);
- function nextTrack(){
-   // Optional date/day restrictions are evaluated at the REAL cart boundary,
-   // not once per potentially multi-hour queue. Music is never interrupted.
+ async function nextTrack(){
+   // A virtual station changes programs at the next track boundary without
+   // any transmitter or long-lived scheduler. Legacy Long Wave is unchanged.
    while(true){
-     if(index>=rotation.length){rotation=program(tracks,(seed+cycle*7919)>>>0);cycle++;index=0;}
+     if(typeof options.resolveTracks==="function"){
+       const selection=await options.resolveTracks(new Date());
+       if(!selection?.tracks?.some(t=>t.kind==="song"))return null;
+       if(selection.key!==activeProgramKey){
+         activeProgramKey=selection.key;currentTracks=selection.tracks;
+         rotation=[];index=0;cycle=0;
+       }
+     }
+     if(index>=rotation.length){
+       rotation=program(currentTracks,(seed+cycle*7919)>>>0);cycle++;index=0;
+       if(!rotation.length)return null;
+     }
      const chosen=rotation[index++];
-     if(chosen.kind!=="bumper"||allowedBumper(chosen,tracks.bumper_rules||[],new Date()))
+     if(chosen.kind!=="bumper"||allowedBumper(chosen,currentTracks.bumper_rules||[],new Date()))
        return chosen;
    }
  }
@@ -273,8 +394,11 @@ export function continuousStream(bucket,tracks,options={}){
        // buffering instead of a browser-side timer or per-track play() call.
        while(!closed){
          if(!reader){
-           if(counter>=maxObjects){closed=true;controller.close();return;}
-           const track=nextTrack();
+           if(counter>=maxObjects||
+              (maxAgeMs!==null&&Date.now()-started>=maxAgeMs)){
+             closed=true;controller.close();return;
+           }
+           const track=await nextTrack();
            if(!track){closed=true;controller.close();return;}
            counter++;
            const object=await bucket.get(track.key);
@@ -308,10 +432,61 @@ export default {
    const path=new URL(request.url).pathname;
    if(request.method==="OPTIONS")return new Response(null,{status:204,headers:basicHeaders()});
    if(request.method!=="GET"&&request.method!=="HEAD")return json({ok:false,error:"METHOD_NOT_ALLOWED"},405);
+   // Preserve existing HLS and multi-frequency registry routes before the
+   // Long Wave RADIO_MEDIA gate. HLS uses its own source configuration.
    if(path==="/hls/stations")return serveStationRegistry(request,env);
    if(isHlsPath(path))return serveHls(request,env);
    if(path.startsWith("/hls/"))return json({ok:false,error:"NOT_FOUND"},404);
    if(!env?.RADIO_MEDIA?.get)return json({ok:false,error:"R2_BINDING_MISSING",expected:"RADIO_MEDIA"},503);
+   if(path==="/stations"){
+     let list;
+     try{list=await getCatalog(fetch,Date.now(),false)}
+     catch{return json({ok:false,error:"CATALOG_UNAVAILABLE"},503)}
+     try{
+       const stations=describeContractStations(list,new Date(),STATIONS);
+       if(request.method==="HEAD")return new Response(null,{headers:{
+         ...basicHeaders(),"Content-Type":"application/json"}});
+       return json({ok:true,timezone:"America/Chicago",transport:"on_demand_continuous_mp3",
+         synchronized:false,station_contracts:"versioned_counterpoint_v1",
+         mainline_source:list.mainline_programs?.length?
+           "published_programs":"approved_catalog_baseline",stations});
+     }catch{return json({ok:false,error:"CONTRACT_INVALID"},503)}
+   }
+   const stationMatch=path.match(/^\/stations\/([a-z0-9-]+)\/(health|contract|live\.mp3)$/);
+   if(stationMatch){
+     const station=getStation(stationMatch[1]);
+     if(!station)return json({ok:false,error:"STATION_NOT_FOUND"},404);
+     if(station.enabled!==true)return json({ok:false,error:"STATION_NOT_ENABLED"},404);
+     if(station.mode==="live")return json({ok:false,error:"LIVE_TRANSMITTER_NOT_CONFIGURED"},503);
+     let list;
+     try{list=await getCatalog(fetch,Date.now(),false)}
+     catch{return json({ok:false,error:"CATALOG_UNAVAILABLE"},503)}
+     let selected;
+     try{selected=resolveContract(station,list,new Date(),STATIONS)}
+     catch{return json({ok:false,error:"CONTRACT_INVALID"},503)}
+     if(stationMatch[2]==="contract")return json({ok:true,receipt:contractReceipt(selected)});
+     const ready=Boolean(selected?.tracks?.some(t=>t.kind==="song"));
+     if(stationMatch[2]==="health")return json({ok:ready,station:station.id,mode:station.mode,
+       program:selected?.program_name||null,approved_tracks:selected?.tracks?.filter(t=>t.kind==="song").length||0,
+       synchronized:false,stream:"/stations/"+station.id+"/live.mp3",
+       contract:contractReceipt(selected)},ready?200:503);
+     if(!ready)return json({ok:false,error:"STATION_UNPROGRAMMED",station:station.id},503);
+     const headers={...basicHeaders(),"Content-Type":"audio/mpeg",
+       "icy-name":station.name,"X-HUMKIN-Station":station.id,
+       "X-HUMKIN-Stream":"virtual-continuous","X-HUMKIN-Synchronized":"false"};
+     if(request.method==="HEAD")return new Response(null,{status:200,headers});
+     return new Response(continuousStream(env.RADIO_MEDIA,list,{
+       // Reserve Cloudflare internal subrequests for periodic catalog and
+       // Mainline schedule refresh. Listeners must retune after this window.
+       maxObjects:300,maxAgeMs:8*3600000,
+       resolveTracks:async()=>{
+         // Refresh at the next natural recording boundary. Cache keeps this
+         // inexpensive; expired approval metadata failures stop new tracks.
+         const current=await getCatalog(fetch,Date.now(),false);
+         return resolveContract(station,current,new Date(),STATIONS);
+       }
+     }),{status:200,headers});
+   }
    if(path==="/health"){
      try{const list=await getCatalog();return json({ok:true,service:"HUMKIN LONG WAVE",r2_catalog:list.length,
        stream:"/live.mp3",mode:"personal_continuous_mp3",source:"Cloudflare R2"});}

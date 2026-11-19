@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#191f2d">
+<title>HUMKIN TOWER · Catalogue Intelligence Desk</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#f4ead8;background:#181e2a;font:15px/1.55 system-ui,sans-serif}main{max-width:1150px;margin:auto;padding:24px 16px 80px}
+a{color:#e6c287}h1{font-size:clamp(40px,7vw,77px);line-height:1;letter-spacing:-.06em;margin:32px 0 10px}h2{font-size:23px}
+header{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;font-size:13px}
+section{background:#28303d;border:2px solid #be9b62;border-radius:12px;padding:20px;margin:20px 0}
+p{line-height:1.5}.muted,small{color:#c3b8a6}.muted{font-size:13px}
+button{background:#ddbc88;color:#191e2b;border:0;border-radius:6px;padding:9px 13px;font-weight:800;cursor:pointer}button.secondary{background:transparent;color:#f5e9d8;border:1px solid #c3a778}button:disabled{opacity:.4;cursor:not-allowed}
+input,select,textarea{background:#111924;color:#f7eede;border:1px solid #81909e;padding:10px;border-radius:6px;font:inherit}input[type=checkbox]{accent-color:#e9bd7c}input[type=file]{width:100%}
+.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}label{display:block;font-weight:700;font-size:13px;margin:12px 0 6px}
+#search{flex:1;min-width:150px}#items{display:grid;gap:10px}
+.track{background:#1c2531;border:1px solid #708293;border-radius:9px;padding:14px;min-width:0}
+.track strong{font-size:17px;overflow-wrap:anywhere}.track .meta{font-size:12px;color:#b6c3c8}
+.tag{display:inline-block;padding:2px 7px;margin:3px;border:1px solid #ba9970;border-radius:20px;color:#e8d5b5;font-size:12px}
+.track textarea{width:100%;min-height:43px}.note{color:#d0bd9c;font-size:12px}
+details{margin-top:8px}summary{cursor:pointer;font-weight:700}pre{white-space:pre-wrap;word-break:break-word}
+#pager{justify-content:space-between}.status{color:#b1e4bb;font-weight:700}
+</style>
+<script type="module" src="./catalog.js"></script>
+</head>
+<body><main>
+<header><a href="./">← TOWER</a><span>CATALOGUE INTELLIGENCE · LOCAL REVIEW</span><a href="../load/">UPLOAD CRATE</a></header>
+<h1>THE RECORD<br>CONSTELLATION.</h1>
+<p>Use optional Suno style text, embedded tags, folder hints and human descriptions to propose musical relationships. Nothing becomes authoritative or on-air until you review it.</p>
+<section>
+<h2>01 · Open your local map</h2>
+<p class="muted">Run the HUMKIN desktop batch converter; it generates <code>humkin-catalog-candidates.json</code>. Choose that file here. It stays on your machine; this desk does not send it to a server.</p>
+<input id="load" type="file" accept=".json,application/json" aria-label="Open local candidate catalogue JSON">
+<p id="status" class="status" role="status">No catalogue loaded.</p>
+<div class="inline">
+<input id="search" type="search" placeholder="Find title, artist, album, genre or description" aria-label="Search candidates">
+<select id="filter" aria-label="Review filter"><option value="all">ALL RECORDINGS</option><option value="unreviewed">NEEDS REVIEW</option><option value="reviewed">REVIEWED</option><option value="ambiguous">POSSIBLE VERSIONS / CONFLICTS</option><option value="no-tags">NO STYLE SIGNALS</option></select>
+</div>
+</section>
+<section>
+<h2>02 · Review each recording</h2>
+<p class="muted">Suggested tags are evidence-backed possibilities. Edit the comma-separated list or approve the suggestions as-is. This does not publish music, reveal private notes or authorize use of third-party recordings.</p>
+<div class="inline"><button id="approve-page">APPROVE VISIBLE TAGS</button><button class="secondary" id="clear-page">UNREVIEW VISIBLE</button></div>
+<div id="items"></div>
+<div class="inline" id="pager"><button id="prev" class="secondary">PREVIOUS 50</button><span id="page">0 results</span><button id="next" class="secondary">NEXT 50</button></div>
+</section>
+<section>
+<h2>03 · Preserve and publish deliberately</h2>
+<p class="muted"><strong>Save private review state:</strong> includes raw Suno prompts and personal descriptions; do not commit that file to a public repository. <strong>Export public tags:</strong> includes only explicitly reviewed SHA-256 identifiers and sanitized taxonomy tags—never raw descriptions, lyrics, private folder paths or unreleased audio.</p>
+<div class="inline"><button id="save-review">SAVE PRIVATE REVIEW DRAFT</button><button id="export-public">EXPORT REVIEWED PUBLIC TAGS</button></div>
+<p class="note">To activate public tags, separately review the export and replace <code>fm/catalog-enrichment.json</code> in the HUMKIN repository. The Long Wave Worker only joins them to recordings independently approved in R2. No live publication happens in this browser.</p>
+</section>
+</main></body></html>

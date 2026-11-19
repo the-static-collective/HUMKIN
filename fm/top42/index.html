@@ -10,7 +10,7 @@
 <title>THE TOP 42 · HUMKIN RADIO</title>
 <link rel="stylesheet" href="./league.css">
 <script defer src="./league.js"></script>
-<script defer src="./resonance.js"></script>
+<script type="module" src="./resonance.js"></script>
 </head>
 <body>
 <header class="topline">
@@ -89,6 +89,23 @@
     </div>
   </div>
   <p class="footnote">Anonymous, opt-in and provisional. One current response per song per random device key per station week. A reaction is not a qualified listen, a verified person, a vote, or guaranteed airtime. It never alters the official Top 42 score.</p>
+</section>
+
+<section class="weather section" id="dance-contenders" aria-labelledby="dance-contender-heading">
+  <div class="section-header"><div>
+    <p class="eyebrow">NEW FREQUENCIES / AUDIENCE-INSPIRED PROGRAMMING</p>
+    <h2 id="dance-contender-heading">THE <em>DANCE CONTENDERS.</em></h2>
+    <p>Three or more listeners' device-key responses of “It made me move”
+      can put a recording on a temporary Dance New Contenders list.
+      These are independent of Top 42 chart plays and do not certify a genre.</p>
+  </div></div>
+  <p id="dance-contender-status" class="small" role="status">Waiting for the Listener Weather...</p>
+  <ol id="dance-contender-list" class="weather-list" aria-live="polite">
+    <li class="waiting">The floor is open.</li>
+  </ol>
+  <p class="footnote">Provisional weekly self-reports; not verified unique people.
+     Programmatic station eligibility is checked separately against the approved R2 catalog.
+     No automatic vinyl release or guaranteed airtime.</p>
 </section>
 
 <section class="build section" id="make" aria-labelledby="build-heading">
