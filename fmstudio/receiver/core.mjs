@@ -68,7 +68,7 @@ export function safeArt(value, base = DEFAULT_ART) {
 }
 
 export function skinFor(id, definitions = {}, base = DEFAULT_ART) {
-  const entry = Object.hasOwn(definitions, id) ? definitions[id] : {};
+  const entry = Object.prototype.hasOwnProperty.call(definitions, id) ? definitions[id] : {};
   const color = (value, fallback) => typeof value === "string" &&
     /^#[a-f\d]{3}(?:[a-f\d]{3})?(?:[a-f\d]{2})?$/i.test(value) ? value : fallback;
   const art = value => value ? safeArt(value, base) : "";
