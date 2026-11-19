@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#201b38">
-<meta name="description" content="HUMKIN RADIO — Station One broadcasts one real shared live program, with independent Long Wave rescue and optional personal browser dials. No ads or account required to listen.">
+<meta name="description" content="HUMKIN RADIO — the original artwork-first player, one shared live radio broadcast, automatic continuity when offline, and Road Shuffle. No listening account.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="HUMKIN RADIO ✳ Always Something On">
-<meta property="og:description" content="HUMKIN Station One: a real shared live internet broadcast, plus Long Wave and personal listening modes.">
+<meta property="og:description" content="HUMKIN Radio: one shared live broadcast and your own Road Shuffle, in the classic HUMKIN player.">
 <meta property="og:image" content="https://humkin.abundent.org/cover.jpg">
 <meta property="og:url" content="https://humkin.abundent.org/fm/">
 <title>HUMKIN RADIO · Music for the Long Way Home</title>
@@ -48,69 +48,45 @@
   <p class="lead">Music for the long way home.<br>Turn it on. Keep driving. Let the songs find you.</p>
   <div class="little-rule"><span>✳</span><span>ALWAYS SOMETHING ON</span><span>✳</span></div>
 </section>
-<section class="desk main-station" aria-labelledby="live-station-heading">
-  <div class="poster main-station-poster">
-    <img id="station-cover" src="../cover.jpg" width="720" height="720" alt="HUMKIN Radio station artwork">
-    <div class="seal" aria-hidden="true">ONE<br>SHARED<br>SIGNAL</div>
+<section class="desk unified-radio" aria-labelledby="desk-heading">
+  <div class="poster">
+    <img id="current-art" src="../cover.jpg" width="720" height="720" alt="HUMKIN Radio cover artwork">
+    <div class="seal" aria-hidden="true">TAKE THE<br>LONG WAY<br>HOME</div>
   </div>
   <div class="controls">
-    <section class="live-station" aria-labelledby="live-station-heading">
-      <p class="eyebrow">STATION ONE · THE MAIN FREQUENCY</p>
-      <h2 id="live-station-heading">THE REAL<br><em>ON-AIR DIAL.</em></h2>
-      <p id="live-signal" class="live-signal" role="status">Checking the Acer transmitter…</p>
-      <p class="live-source" id="live-source">SOURCE · STATION ONE / LIVE HLS</p>
-      <p class="live-program">ON AIR · ONE SHARED PROGRAM
-        <small>Song-level now-playing metadata is not transmitted yet. The browser playlist below is a separate program.</small>
-      </p>
-      <p id="live-status" role="status" aria-live="polite">Checking the transmitter…</p>
-      <div class="live-actions" role="group" aria-label="Real radio station controls">
-        <button id="live-listen" type="button" aria-pressed="false">▶ TUNE IN · STATION ONE</button>
-        <button id="live-backup" type="button" aria-pressed="false">↪ LONG WAVE</button>
-        <button id="live-retry" type="button" hidden>↻ REJOIN STATION ONE</button>
-      </div>
-      <audio id="live-air" controls preload="none" aria-label="HUMKIN Station One live broadcast"></audio>
-      <p class="live-note">One Acer transmitter, one shared HLS playlist. Different listeners may buffer a few seconds apart. When the transmitter stops, Long Wave plays a different, independent rotation. Playback starts only when you choose it.</p>
-    </section>
-  </div>
-</section>
-<details class="classic-dial" id="classic-dial">
-  <summary><span>EXPLORE THE OTHER DIALS</span><strong>SAME-TIME CLOCK · ROAD SHUFFLE</strong><small>Browser-built listening choices, separate from Station One. Open this panel to use the original radio controls.</small></summary>
-  <section class="desk classic-desk" aria-labelledby="desk-heading">
-    <div class="poster classic-poster">
-      <img id="current-art" src="../cover.jpg" width="720" height="720" alt="Cover of the selected browser-radio recording">
-      <div class="seal" aria-hidden="true">YOUR<br>OWN<br>DIAL</div>
-    </div>
-    <div class="controls classic-controls">
-      <p class="eyebrow">ARCHIVE RECEIVER · NOT THE ACER BROADCAST</p>
-      <p id="station-status" class="status-pill" role="status" aria-live="polite">CONNECTING THE TUNER…</p>
+    <p id="station-status" class="status-pill" role="status" aria-live="polite">CONNECTING THE TUNER…</p>
     <h2 id="desk-heading">THERE'S MUSIC<br>OUT HERE.</h2>
     <p class="eyebrow">NOW ON THE DIAL</p>
     <h3 id="current-title">FINDING A SONG…</h3>
     <p id="current-artist" class="artist">HUMKIN · RADIO</p>
     <div class="mode" role="group" aria-label="Radio listening mode">
-      <button type="button" id="mode-clock" aria-pressed="true" disabled>◉ SAME-TIME RADIO</button>
+      <button type="button" id="mode-clock" aria-pressed="true" hidden disabled aria-label="Automatic Same-Time fallback">SAME-TIME RADIO</button>
       <button type="button" id="mode-shuffle" aria-pressed="false" disabled>⤨ ROAD SHUFFLE</button>
     </div>
-    <p id="mode-help" class="mode-help">This is a separate browser-built station clock, not the real shared Acer broadcast. Road Shuffle creates a personal listening sequence.</p>
-    <button type="button" id="listen" class="listen" disabled>▶ TUNE IN</button>
+    <p id="mode-help" class="mode-help">One shared live broadcast, with automatic continuation if the transmitter is unavailable. Road Shuffle makes your own personal rotation.</p>
+    <button type="button" id="listen" class="listen">▶ LISTEN LIVE</button>
     <button type="button" id="spotlight" class="listen" disabled style="margin-top:12px;background:#f1bfd2">✳ HEAR THE NEW ONE · HAILEYLU BLOOM</button>
     <div class="subcontrols">
-      <button id="catch-up" type="button" disabled>⟳ CATCH UP TO AIR</button>
+      
       <button id="next-song" type="button" hidden disabled>NEXT SONG →</button>
       <button id="share-station" type="button">↗ SHARE STATION</button>
       <button id="phone-playlist" type="button" disabled>⇩ PHONE PLAYER PLAYLIST</button>
       <button id="report-signal" type="button" title="Download a local, privacy-filtered playback report. Nothing is sent.">? SOMETHING SOUNDED WRONG</button>
     </div>
-    <audio id="air" preload="auto" controls aria-label="HUMKIN RADIO audio playback"></audio>
-    <div class="status-row"><span id="playback-message" role="status" aria-live="polite">Choose TUNE IN to begin.</span><span id="counter" aria-label="Current rotation progress">✳</span></div>
+    <audio id="live-air" controls preload="none" aria-label="HUMKIN Radio live or continuous backup"></audio>
+    <audio id="air" preload="auto" controls hidden aria-label="HUMKIN Radio Road Shuffle and automatic Same-Time fallback"></audio>
+    <div class="status-row"><span id="playback-message" role="status" aria-live="polite">Press LISTEN LIVE to begin.</span><span id="counter" aria-label="Current rotation progress">✳</span></div>
 <p id="on-deck" class="preview-note" aria-live="off">ON DECK · The station is getting its records together.</p>
 <p class="mode-help" style="min-height:0;margin:8px 0 15px;font-size:11px"><strong>FROM THE OLD TAPE CABINET:</strong> Some announcers mention the hour, weather, requests, or signing off. Those are recorded station performances—not live clock readings, forecasts, a staffed telephone line, or a real shutdown. The songs keep playing.</p>
 
-<p class="mode-help" style="margin-top:12px"><strong>Screen-off listening:</strong> For browser-built playlist modes, you can export the <strong>PHONE PLAYER PLAYLIST</strong> above and open its .m3u file in VLC or another native playlist-capable music player. This downloads the playlist, not the songs; internet is still needed. It does not carry timed shows. The browser radio may pause when Android suspends its tab.</p>
+<p class="mode-help" style="margin-top:12px"><strong>Screen-off listening:</strong> For ROAD SHUFFLE, you can export the <strong>PHONE PLAYER PLAYLIST</strong> above and open its .m3u file in VLC or another native playlist-capable music player. This downloads the playlist, not the songs; internet is still needed. It does not carry timed shows. The browser radio may pause when Android suspends its tab.</p>
 
-    </div>
-  </section>
-</details>
+
+    <p id="live-status" class="unified-detail" role="status" aria-live="polite">Checking Station One…</p>
+    <p id="live-signal" class="unified-hidden-status" role="status" aria-live="off">Checking the transmitter.</p>
+    <p id="live-source" class="unified-hidden-status" aria-live="off"></p>
+  </div>
+</section>
 <section class="league-passage" aria-labelledby="league-link-heading">
   <div><p class="eyebrow">HUMKIN RADIO · THE RECORD LEAGUE</p>
     <h2 id="league-link-heading">THE <em>TOP 42.</em></h2>
@@ -147,16 +123,16 @@
 <section class="about">
  <div><p class="eyebrow">A STATION YOU CAN CARRY</p><h2>DRIVE.<br><em>LISTEN.</em><br>REPEAT.</h2></div>
  <div class="about-copy">
- <p>Four ways to listen. <strong>Station One Live</strong> carries the Acer's actual shared broadcast when it's running. <strong>Long Wave</strong> is a separate personal rotation when the transmitter is offline. <strong>Same-time radio</strong> uses a shared clock so listeners arriving together hear approximately the same part of the rotation. <strong>Road shuffle</strong> plays continuously in a different, repeat-free order on your own device.</p>
- <p>Same-Time and Road Shuffle are optional browser-built modes. Only Station One shares one live audio program among listeners. It requires the Acer and Cloudflare; Long Wave uses Cloudflare and R2 without the Acer. Browser background playback still depends on the device.</p>
- <p class="preview-note" id="playlist-note">Loading the separate browser-radio catalog…</p>
+ <p>Two ways to listen. <strong>Listen Live</strong> connects to the Acer's shared broadcast and continues automatically if that signal stops. <strong>Road Shuffle</strong> gives you a personal, repeat-aware music rotation with the original song titles, album covers and station carts.</p>
+ <p>The live signal is shared across listeners. Its two automatic backup layers are independent audio programs, not separate buttons. Recording titles and artwork appear when the selected playback source can identify them; the station cover is displayed when live song metadata has not arrived yet.</p>
+ <p class="preview-note" id="playlist-note">Loading the music library for Road Shuffle and backup listening…</p>
  <div class="about-actions"><a href="./top42/" class="button">THE TOP 42 · RECORD LEAGUE ↗</a><a href="../" class="button">MUTANT POP · 12 SONGS ↗</a><a href="../releases/everywhere-near-you/" class="button">EVERYWHERE;NEAR YOU · 7 SONGS ↗</a><a href="../somewhere.html" class="button">PUT HUMKIN SOMEWHERE ↗</a><a href="../dj.html" class="button">THE DJ CRATE ↗</a></div>
  </div>
 </section>
 <section class="road-notes">
  <p class="eyebrow">ONE IMPORTANT DISTINCTION</p>
  <h2>RADIO VIBES,<br><em>REAL ENGINEERING.</em></h2>
- <p>Station One is a shared internet broadcast encoded on the Acer and distributed as HLS via Cloudflare R2. Listeners share the programmed audio, but devices may join at different buffered positions. Long Wave is an independent per-listener MP3 rotation; the browser clock and Road Shuffle are not the same live signal. This is not terrestrial FM or a native Android Auto app. The full-album homepage remains independent.</p>
+ <p>Listen Live starts with Station One: the shared Acer broadcast delivered through Cloudflare R2/HLS. If necessary, it continues through Long Wave, then the original browser-clock rotation. These backups are not synchronized with Station One. Road Shuffle remains a personal rotation. Song and cover details must come from the actual selected source; the Acer now-playing metadata feed is a separate upcoming integration.</p>
  <p>Listening on personal devices is different from playing recordings over a business sound system. Venue, composition and any applicable broadcast permissions remain separate matters. <a href="../docs/RADIO-OPERATIONS.md">How the real broadcast upgrade works ↗</a></p>
 </section>
 </main>

@@ -114,3 +114,19 @@
 .classic-dial .classic-poster .seal{background:#c7e4db}
 @media(max-width:900px){.main-station{padding-top:35px;padding-bottom:55px}.classic-dial .classic-desk{padding-top:35px}}
 @media(max-width:480px){.main-station .controls{box-shadow:6px 6px 0 #a59ab7}.main-station .live-station h2{font-size:35px}.classic-dial{padding:0 5%}.classic-dial>summary{padding:16px}.classic-dial>summary:after{margin-top:0}.classic-dial .classic-desk{padding:30px 0 0}}
+
+
+/* Restore original HUMKIN album-art receiver: one visible audio deck, two
+   selectable experiences. Live / Long Wave / browser-clock are internal
+   transport layers behind LISTEN LIVE; never duplicate player controls. */
+.unified-radio audio[hidden],
+.unified-radio #mode-clock[hidden],
+.unified-radio #catch-up[hidden] {display:none!important}
+.unified-radio .mode {margin-top:14px}
+.unified-radio #mode-shuffle {font-size:12px;padding:10px 16px}
+.unified-radio #listen {margin-top:10px}
+.unified-radio #station-status {margin-bottom:5px}
+.unified-radio .unified-detail {font-size:12px;line-height:1.45;color:#66517a;margin:8px 0 0}
+.unified-radio .unified-hidden-status {position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.unified-radio .mode-help {min-height:0}
+.unified-radio .poster img {transition:opacity .2s ease}
