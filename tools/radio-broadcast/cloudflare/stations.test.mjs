@@ -144,3 +144,32 @@ test("approved voice carts may be intentional primary talk programming",()=>{
  assert.equal(resolved.tracks[0].kind,"song");
  assert.equal(resolved.tracks[0].featured,false);
 });
+
+
+test("Auto Disco V20 is a dedicated independent transmitter with NO unrelated catalog fallback",()=>{
+ const station=getStation("autodisco-v20");
+ assert(station);
+ assert.equal(station.enabled,true);
+ assert.equal(station.mode,"personal");
+ assert.deepEqual(station.filter,{
+   kinds:["song"],artists:["Auto Disco V20"],albums:["First-Listen Radio"]
+ });
+ assert.equal(station.include_bumpers,false);
+ const empty=catalog();
+ const notReady=describeStations(empty).find(item=>item.id==="autodisco-v20");
+ assert.equal(notReady.ready,false);
+ assert.equal(resolveStation(station,empty).tracks.length,0);
+ const onlyV20=approvedCatalog([
+   row(11,"song",{artist:"Auto Disco V20",album:"First-Listen Radio",title:"V20 Episode 001"}),
+   row(12,"song",{artist:"Auto Disco V20",album:"Other Production",title:"Unadmitted Fiction"}),
+   row(13,"song",{artist:"HUMKIN",album:"First-Listen Radio",title:"Ordinary Music"}),
+   row(14,"bumper",{artist:"Auto Disco V20",album:"First-Listen Radio",title:"Unadmitted Bumper"}),
+ ],null);
+ const selected=resolveStation(station,onlyV20);
+ assert.deepEqual(selected.tracks.map(t=>t.title),["V20 Episode 001"]);
+ assert.equal(selected.station.id,"autodisco-v20");
+ const ready=describeStations(onlyV20).find(item=>item.id==="autodisco-v20");
+ assert.equal(ready.ready,true);
+ assert.equal(ready.approved_tracks,1);
+ assert.equal(ready.stream,"/stations/autodisco-v20/live.mp3");
+});
