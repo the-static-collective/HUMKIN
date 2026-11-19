@@ -180,6 +180,22 @@ docs/CATALOG-CONSTELLATION.md.
 MOTIF-inspired reason cases are proposals only (NOT_RUN); no native solver
 execution or audio genre recognition is claimed.
 
+## Audience feedback as temporary station metadata
+
+The optional Listener Weather overlay now joins weekly, provisionally
+aggregated anonymous song feelings to separately approved R2 tracks.
+This is a distinct time-bounded signal, not a permanent genre label
+and not a qualified Top 42 chart play. A reviewed Dance New Contenders
+station contract selects currently approved songs with at least three
+current-week 'move' responses. The public Top 42 page previews that
+new-contender list; incomplete/truncated boards fail closed.
+
+TOWER's feedback council also projects daily EP and weekly album
+creations onto a monthly LP/EP nomination slate. The proposed
+owner-only monthly source is read-only and still deliberately marked
+incomplete until archived month-end evidence and event attribution
+are independently reconciled. See docs/FEEDBACK-VINYL-COUNCIL.md.
+
 ## Boundaries
 
 - No always-on encoder per **virtual** station, but active listening still
