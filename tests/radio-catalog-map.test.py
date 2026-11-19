@@ -74,8 +74,12 @@ class CatalogueTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             audio=Path(directory)/"Example.mp3"
             audio.write_bytes(b"just a sidecar parsing fixture")
-            (Path(directory)/"Example.mp3.suno.json").write_text("{bad json",encoding="utf-8")
+            sidecar=Path(directory)/"Example.mp3.suno.json"
+            sidecar.write_text("{bad json",encoding="utf-8")
             self.assertEqual(module.sidecars(audio),{})
+            sidecar.write_text(json.dumps({"tags":["jazz","warm"],"lyrics":"PRIVATE"}),encoding="utf-8")
+            self.assertEqual(module.sidecars(audio)["style"],"jazz, warm")
+            self.assertNotIn("lyrics",module.sidecars(audio))
     def test_word_boundaries(self):
         self.assertFalse(has_phrase("rocket ship","rock"))
         self.assertTrue(has_phrase("warm indie rock","rock"))
