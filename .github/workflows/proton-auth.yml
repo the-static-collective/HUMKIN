@@ -4,21 +4,25 @@ on:
   pull_request:
     paths:
       - 'fm/proton-auth.mjs'
+      - 'fm/browser-safe-auth.mjs'
       - 'fm/load/**'
       - 'fm/mesh-radio/**'
       - 'supabase/functions/humkin-proton-login/**'
       - 'supabase/migrations/*humkin_proton_owner_login.sql'
       - 'tests/proton-auth.test.mjs'
+      - 'tests/mac-browser-auth-denied.test.mjs'
       - '.github/workflows/proton-auth.yml'
   push:
     branches: [main]
     paths:
       - 'fm/proton-auth.mjs'
+      - 'fm/browser-safe-auth.mjs'
       - 'fm/load/**'
       - 'fm/mesh-radio/**'
       - 'supabase/functions/humkin-proton-login/**'
       - 'supabase/migrations/*humkin_proton_owner_login.sql'
       - 'tests/proton-auth.test.mjs'
+      - 'tests/mac-browser-auth-denied.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -33,4 +37,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verify TOTP, replay control and owner-only session exchange contracts
-        run: node --test tests/proton-auth.test.mjs
+        run: node --test tests/proton-auth.test.mjs tests/mac-browser-auth-denied.test.mjs
