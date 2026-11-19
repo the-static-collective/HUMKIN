@@ -1,3 +1,4 @@
+import {sessionStorageMode} from "./browser-safe-auth.mjs";
 // Shared HUMKIN Proton Authenticator alternate login.
 // Works inside both Crate Loader and Linkblocks R2 desk.
 // Codes go only to Supabase Edge. Never log credentials or bearer tokens.
@@ -102,7 +103,8 @@ export function installProtonLogin({mount,getClient,onSignedIn=async()=>{}}){
       });
       if(error||data?.user?.email?.toLowerCase()!==OWNER)
         throw Error("Supabase rejected the issued session.");
-      say("Unlocked with Proton. Your R2 uploader and catalog are available.");
+      say("Unlocked with Proton. Your R2 uploader and catalog are available."+
+        (sessionStorageMode()==="localStorage"?"":" Browser session storage is restricted; sign-in may need repeating after closing the tab."));
       await onSignedIn();await status();
     }catch(error){
       if(/(?:request was denied|NotAllowedError|SecurityError)/i.test(String(error.message||"")))
