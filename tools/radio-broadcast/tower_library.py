@@ -66,12 +66,13 @@ class TowerLibrary:
         origin = f"http://127.0.0.1:{port}"
         headers = {"X-Station-Control": record["token"], "Origin": origin}
         body = json.dumps(action).encode() if action is not None else None
-        return urlopen(Request(origin + route, body, headers), timeout=0.7 if body is None else 5)
+        return urlopen(Request(origin + route, body, headers), timeout=0.7 if body is None else 12)
 
-    def route(self, frequency, id_):
+    def route(self, frequency, id_, recurring=False):
+        action = "lineup_add" if recurring else "queue_end"
         try:
-            with self.peer(frequency, "/action", {"action": "queue_end", "id": id_}) as response:
-                return f"Queued on {frequency}."
+            with self.peer(frequency, "/action", {"action": action, "id": id_}):
+                return f"Added to the {frequency} lineup." if recurring else f"Queued on {frequency}."
         except HTTPError as exc:
             if exc.code == 409:
                 raise ValueError(json.load(exc)["message"]) from exc

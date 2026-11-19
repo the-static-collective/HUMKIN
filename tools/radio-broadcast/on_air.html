@@ -28,6 +28,7 @@
           <div class="section-head"><h2 id="queue-heading">Coming up</h2>
             <button id="undo" type="button" disabled>Undo</button></div>
           <p class="helper">Drag a row or use the arrow buttons to change its position.</p>
+          <button id="lineup-mode" type="button" hidden>Use curated lineup</button>
           <ol id="queue"></ol>
           <button id="more" type="button" hidden>Show more tracks</button>
         </section>
@@ -48,7 +49,20 @@
           <input type="search" id="search">
           <label for="route" id="route-label" hidden>Send tracks to</label>
           <select id="route" hidden></select>
+          <div id="archive-tools" hidden>
+            <label for="crate-sort">Sort the crate</label>
+            <select id="crate-sort">
+              <option value="title">Title</option>
+              <option value="plays">Fewest archive listens</option>
+              <option value="stars">Highest rating</option>
+              <option value="dance">Most “Made me dance”</option>
+              <option value="lineup">My curated lineup</option>
+            </select>
+            <button id="archive-refresh" type="button">Refresh archive and ratings</button>
+            <p id="archive-status" class="helper" role="status"></p>
+          </div>
           <ul id="catalog"></ul>
+          <button id="catalog-more" type="button" hidden>Show more recordings</button>
         </section>
       </div>
     </div>

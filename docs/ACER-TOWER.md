@@ -11,6 +11,14 @@ Use the complete updated HUMKIN checkout. If the earlier Station One version is 
 - **Play next**, **Skip now**, **Hold**, **Disable**, and rotation weight controls operate while the encoder runs. Use **Add to rotation** to bring an uploaded track into that frequency's recurring mix.
 - **Send to frequency** queues the same crate item on another running frequency. Its current track and queue are independent.
 
+## Program from The Compost Heap
+
+[The Compost Heap](https://humkin.abundent.org/fmstudio/#compost) is a continuous listener-controlled dial over the enabled, published archive. It favors recordings with fewer qualified archive listens and avoids repeats within a browser's rotation. The Tower's **Media crate** can sort by listens, stars, or the **Made me dance** response. These are anonymous listener reports. The Tower makes the programming decision.
+
+Choose a running secondary frequency under **Send tracks to** and click **Add to destination lineup** on a recording. Switch to that frequency and click **Use curated lineup**. Its recurring program will use the saved lineup, while **Send to frequency** still adds a one-off queue entry. The curated selection survives a restart and can be edited from the secondary frequency. **Use standard rotation** switches back if you want the full standard program.
+
+Bring new audio into the private [Crate Loader](https://humkin.abundent.org/fm/load/). When you publish a reviewed recording there, the Heap picks it up automatically. The [MESH inventory](https://humkin.abundent.org/fm/mesh/) tracks private recordings separately from public playout.
+
 ## Start another frequency
 
 Run these PowerShell commands from the checkout. Replace `talk` with the frequency's lowercase name. Each active frequency runs its own encoder and publisher on the Acer.

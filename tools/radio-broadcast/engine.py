@@ -69,7 +69,16 @@ def get_json(url,api=False):
 def live_catalog():
     base=get_json(RADIO+"rotation.json")
     static_overrides=get_json(API+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled,art_asset_id&limit=1000",True)
-    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path,storage_provider,r2_object_key,sha256,art_asset_id&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",True)
+    query = (API + "/rest/v1/humkin_radio_tracks?"
+             "select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path,"
+             "storage_provider,r2_object_key,sha256,art_asset_id&published_at=not.is.null&enabled=eq.true"
+             "&order=published_at.asc,id.asc&limit=500")
+    cloud = []
+    while True:
+        page = get_json(query + "&offset=" + str(len(cloud)), True)
+        cloud.extend(page)
+        if len(page) < 500:
+            break
     shows=get_json(API+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,track_ids,is_active,priority&is_active=eq.true&limit=100",True)
     settings=get_json(API+"/rest/v1/humkin_radio_settings?select=bumper_every,station_label,bumper_groups,bumper_rules&id=eq.main&limit=1",True)
     try:
