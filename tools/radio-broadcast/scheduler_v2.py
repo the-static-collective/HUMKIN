@@ -102,6 +102,9 @@ def featured_extra(song_ids, by_id, rotation):
         }
     seasonal = rotation.get("seasonal_rotation", {})
     explicit = set(seasonal.get("track_ids", []))
+    seasonal_hashes = {h for h in seasonal.get("sha256s", [])
+                       if isinstance(h, str) and len(h) == 64 and
+                       all(c in "0123456789abcdef" for c in h)}
     bonus = []
     for id_ in song_ids:
         release = id_ in featured
@@ -110,6 +113,7 @@ def featured_extra(song_ids, by_id, rotation):
         # A seasonal record receives 3 total plays, not 2+3.
         if seasonal.get("multiplier") == 3 and (
             by_id[id_].get("seasonal") is True or id_ in explicit
+            or by_id[id_].get("sha256") in seasonal_hashes
         ):
             bonus.extend([id_] * (1 if release else 2))
     return bonus
@@ -293,8 +297,9 @@ def with_bumpers(songs, tracks, settings, policy, rng):
     if not 1 <= freq <= 20 or not songs:
         return songs[:]
     groups = {"short": [], "medium": [], "long": []}
+    feature_only = set(policy.get("feature_only_spoken_sha256s", []))
     for id_, t in tracks.items():
-        if t.get("kind") != "bumper":
+        if t.get("kind") != "bumper" or t.get("sha256") in feature_only:
             continue
         lane = bumper_lane(t, policy)
         if lane and allowed_bumper(id_, settings.get("bumper_rules", []), clock=True):
@@ -399,9 +404,11 @@ class StationV2:
             sequence = add_bonus_slots(base, extras, self.rng)
         else:
             sequence = add_bonus_slots(sequence, charts, self.rng)
+        rotation = self.catalog.get("rotation", {})
+        policy = dict(rotation.get("bumper_brain", {}))
+        policy["feature_only_spoken_sha256s"] = rotation.get("feature_only_spoken_sha256s", [])
         self.queue.extend(with_bumpers(sequence, tracks, self.catalog.get("settings", {}),
-                                       self.catalog.get("rotation", {}).get("bumper_brain", {}),
-                                       self.rng))
+                                       policy, self.rng))
         self.cycle_no += 1
 
     def pending(self, when=None, limit=6):

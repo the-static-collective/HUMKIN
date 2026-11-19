@@ -69,7 +69,7 @@ def get_json(url,api=False):
 def live_catalog():
     base=get_json(RADIO+"rotation.json")
     static_overrides=get_json(API+"/rest/v1/humkin_radio_static_overrides?select=track_id,title,artist,album,kind,enabled,art_asset_id&limit=1000",True)
-    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path,storage_provider,r2_object_key,art_asset_id&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",True)
+    cloud=get_json(API+"/rest/v1/humkin_radio_tracks?select=id,title,artist,album,kind,is_single,enabled,duration_seconds,storage_path,storage_provider,r2_object_key,sha256,art_asset_id&published_at=not.is.null&enabled=eq.true&order=published_at.asc&limit=1000",True)
     shows=get_json(API+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,track_ids,is_active,priority&is_active=eq.true&limit=100",True)
     settings=get_json(API+"/rest/v1/humkin_radio_settings?select=bumper_every,station_label,bumper_groups,bumper_rules&id=eq.main&limit=1",True)
     try:
@@ -114,7 +114,8 @@ def live_catalog():
                            album="HUMKIN RADIO · STATION BUMPERS" if kind=="bumper" else (t.get("album") or "HUMKIN RADIO"),
                            source="cloud",storage_provider=backend,
                            is_single=(kind!="bumper" and t.get("is_single") is True),
-                           duration=duration,url=url,artwork=art.get(t.get("art_asset_id"))))
+                           duration=duration,url=url,artwork=art.get(t.get("art_asset_id")),
+                           sha256=t.get("sha256") if re.fullmatch(r"[0-9a-f]{64}",str(t.get("sha256") or "")) else None))
     extras,chart_ids=optional_catalog(get_json,RADIO,API)
     known={t["id"] for t in tracks}
     for item in extras:
@@ -206,8 +207,14 @@ def cache_track(item,cache):
                     temp.write(chunk)
             if total<1000:raise ValueError("Empty audio download")
             temp.flush();os.fsync(temp.fileno())
-        # This is intentionally OUTSIDE the with: Windows has closed the handle.
-        tmp.replace(final)
+        # A second frequency may finish downloading the same object first.
+        # Reuse its complete copy even when Windows has it open for playback.
+        try:
+            if not final.is_file() or final.stat().st_size <= 1000:
+                tmp.replace(final)
+        except OSError:
+            if not final.is_file() or final.stat().st_size <= 1000:
+                raise
     finally:
         if tmp is not None:
             try:tmp.unlink(missing_ok=True)
