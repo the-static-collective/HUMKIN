@@ -102,6 +102,52 @@ class TowerTests(unittest.TestCase):
                 server.shutdown()
                 server.server_close()
 
+    def test_live_metadata_editor_persists_without_changing_source_identity(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "programming.json"
+            catalog = {"tracks": [
+                {"id": "a", "title": "Original", "artist": "Fixture",
+                 "album": "Old", "duration": 120, "kind": "song"},
+                {"id": "b", "title": "Next", "artist": "Fixture",
+                 "duration": 120, "kind": "song"}]}
+            desk = Desk(StationV2(catalog), path)
+            events = []
+            desk.on_metadata_change = lambda item: events.append(item.copy())
+            self.assertTrue(desk.start(desk.pending(1)[0]))
+            self.assertEqual(desk.act({"action": "metadata_edit", "id": "a",
+                "metadata": {"title": "Live correction", "artist": "New Artist",
+                             "album": "New Album", "genre": "Ambient",
+                             "tags": "night, experimental", "notes": "Fade into the next cart"}}),
+                "Metadata saved for this frequency.")
+            self.assertEqual(desk.current["title"], "Live correction")
+            self.assertEqual(events[-1]["title"], "Live correction")
+            self.assertEqual(desk.track("a")["genre"], "Ambient")
+            self.assertEqual(desk.track("a")["tags"], "night, experimental")
+            self.assertEqual(desk.track("a")["notes"], "Fade into the next cart")
+            with self.assertRaises(ValueError):
+                desk.act({"action": "metadata_edit", "id": "a",
+                          "metadata": {"title": "   "}})
+            with self.assertRaises(ValueError):
+                desk.act({"action": "metadata_edit", "id": "a",
+                          "metadata": {"artwork": "https://evil.invalid/image.jpg"}})
+            desk.act({"action": "queue_next", "id": "b"})
+            self.assertEqual(desk.view()["queue"][0]["id"], "b")
+            desk.act({"action": "disable", "id": "b"})
+            self.assertNotIn("b", [item["id"] for item in desk.view()["queue"]])
+            self.assertTrue(next(item for item in desk.view()["catalog"] if item["id"] == "b")["disabled"])
+            desk.act({"action": "disable", "id": "b"})
+            self.assertEqual(desk.view()["queue"][0]["id"], "b")
+            rebuilt = Desk(StationV2({"tracks": [
+                {"id": "a", "title": "Original", "artist": "Fixture",
+                 "album": "Old", "duration": 120, "kind": "song"},
+                {"id": "b", "title": "Next", "artist": "Fixture",
+                 "duration": 120, "kind": "song"}]}), path)
+            self.assertEqual(rebuilt.track("a")["title"], "Live correction")
+            self.assertEqual(rebuilt.track("a")["artist"], "New Artist")
+            self.assertEqual(rebuilt.track("a")["album"], "New Album")
+            self.assertEqual(rebuilt.track("a")["notes"], "Fade into the next cart")
+            self.assertEqual(rebuilt.view()["queue"][0]["id"], "b")
+
     @unittest.skipUnless(shutil.which("ffprobe") and shutil.which("ffmpeg"), "FFmpeg required")
     def test_upload_reorder_persistence_and_peer_queue(self):
         with tempfile.TemporaryDirectory() as directory:
