@@ -155,3 +155,22 @@ test("static FM Studio structure remains complete and uses one dedicated dial sc
   assert.match(html,/<script src="\.\/compost\.js"><\/script>/);
   assert.doesNotMatch(source,/window\.location\.replace|localStorage\.setItem|\.play\(\)/);
 });
+
+test("V20 is a separate dial receiver from the Accident Lab and never masquerades as an Acer live frequency",async()=>{
+  const f=fixture(state(),true);
+  await f.flush();
+  assert.ok(f.station("autodisco-v20"));
+  assert.ok(f.station("accident-lab"));
+  f.station("autodisco-v20").dispatch("click");
+  assert.equal(f.els.get("station-name").textContent,"Auto Disco V20");
+  assert.equal(f.els.get("station-tune").hidden,false);
+  assert.equal(f.els.get("station-tune").href,"https://humkin.abundent.org/fm/v20/");
+  assert.match(f.els.get("station-status").textContent,/approved episodes only/);
+  assert.equal(f.click("station-tune"),false,"V20 must open its own receiver, not an Acer HLS iframe");
+  assert.equal(f.els.get("receiver-mount").children.length,0);
+  f.station("accident-lab").dispatch("click");
+  assert.equal(f.els.get("station-name").textContent,"The Accident Lab");
+  assert.equal(f.els.get("station-tune").href,"https://humkin.abundent.org/fm/autodisco/");
+  assert.equal(f.click("station-tune"),false);
+  assert.equal(f.els.get("receiver-mount").children.length,0);
+});
