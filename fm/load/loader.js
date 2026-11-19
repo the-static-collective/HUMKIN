@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
+import {installProtonLogin} from "../proton-auth.mjs";
 import * as tus from "https://esm.sh/tus-js-client@4.3.1";
 import {r2Bridge} from "../r2-bridge-client.js";
 import {r2Direct,putPrivateMp3} from "./r2-direct-client.mjs";
@@ -537,4 +538,5 @@ async function updateSession(){
  else if(error)log("Authentication: "+error.message);
 }
 db.auth.onAuthStateChange((_event,_session)=>{setTimeout(updateSession,0)});
+installProtonLogin({mount:$("proton-loader"),getClient:async()=>db,onSignedIn:updateSession});
 updateSession();

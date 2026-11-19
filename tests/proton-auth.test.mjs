@@ -1,0 +1,80 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {execFileSync} from "node:child_process";
+import {encodeBase32,decodeBase32,codeAt,matchCode,provisioningUrl} from
+  "../supabase/functions/humkin-proton-login/totp.mjs";
+const read=path=>readFileSync(path,"utf8");
+const seed=encodeBase32(new TextEncoder().encode("12345678901234567890"));
+const A="supabase/functions/humkin-proton-login/index.ts";
+const M="supabase/migrations/20261119091000_humkin_proton_owner_login.sql";
+const U="fm/proton-auth.mjs";
+test("RFC 6238 SHA1 TOTP vectors are correct",async()=>{
+  assert.equal(seed,"GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ");
+  assert.deepEqual([...decodeBase32(seed)],[...new TextEncoder().encode("12345678901234567890")]);
+  assert.equal(await codeAt(seed,Math.floor(59/30),8),"94287082");
+  assert.equal(await codeAt(seed,Math.floor(59/30),6),"287082");
+  assert.equal(await codeAt(seed,Math.floor(1111111109/30),8),"07081804");
+});
+test("Six-digit codes expire, cannot replay and admit a 30-second drift",async()=>{
+  const now=59*1000,step=Math.floor(now/30000);
+  assert.equal(await matchCode(seed,"287082",now),step);
+  assert.equal(await matchCode(seed,"287082",now,step),null);
+  assert.equal(await matchCode(seed,"287082",now+90000),null);
+  assert.equal(await matchCode(seed,"287082",now+30000),step);
+  assert.equal(await matchCode(seed,"nototp",now),null);
+});
+test("Proton enrollment is standard otpauth with independent issuer",()=>{
+  const url=provisioningUrl(seed);
+  assert(url.startsWith("otpauth://totp/"));
+  assert(url.includes("secret="+seed));
+  assert(url.includes("issuer=HUMKIN+Radio"));
+  assert(url.includes("period=30"));
+});
+test("Supabase session is issued only after rate-limited atomic TOTP claim",()=>{
+  const edge=read(A),sql=read(M);
+  assert(edge.includes('db.rpc("humkin_proton_attempt_begin")'));
+  assert(edge.includes('db.rpc("humkin_proton_claim_step"'));
+  assert(edge.includes('db.auth.admin.generateLink({'));
+  assert(edge.includes('type:"magiclink",email:OWNER'));
+  assert(edge.includes('client().auth.verifyOtp({'));
+  assert(edge.includes('token_hash:link.properties.hashed_token,type:"magiclink"'));
+  assert(edge.includes('link.user?.id!==attempt.owner_id'));
+  assert(edge.includes('auth.user?.id!==attempt.owner_id'));
+  assert(edge.includes('!auth.session.refresh_token'));
+  assert(sql.includes('for update')&&sql.includes('attempts>=8'));
+  assert(sql.includes("interval '15 minutes'"));
+  assert(sql.includes('last_used_step<p_step'));
+});
+test("TOTP seed is encrypted and enrollment requires existing confirmed owner",()=>{
+  const edge=read(A),sql=read(M);
+  assert(edge.includes('crypto.subtle.deriveKey('));
+  assert(edge.includes('"AES-GCM"'));
+  assert(edge.includes('const user=await ownerOf(db,request)'));
+  assert(edge.includes('!user.email_confirmed_at'));
+  assert(edge.includes('pending_expires_at:new Date(Date.now()+10*60000)'));
+  assert(edge.includes('if(existing?.enabled_at)'));
+  assert(edge.includes('!ORIGINS.has(origin)'));
+  assert(sql.includes('enable row level security'));
+  assert(sql.includes('revoke all on public.humkin_proton_owner_login from public,anon,authenticated'));
+  assert(sql.includes('grant execute on function public.humkin_proton_attempt_begin() to service_role'));
+});
+test("Existing Crate Loader and Linkblocks both offer Proton or email",()=>{
+  const c=read("fm/load/index.html"),l=read("fm/load/loader.js");
+  const m=read("fm/mesh-radio/index.html"),r=read("fm/mesh-radio/r2-intake.mjs");
+  const ui=read(U);
+  assert(c.includes('id="proton-loader"')&&l.includes("installProtonLogin"));
+  assert(m.includes('id="proton-mesh"')&&r.includes("installProtonLogin"));
+  assert(l.includes('db.auth.signInWithOtp'));
+  assert(r.includes('signInWithOtp'));
+  assert(ui.includes('db.auth.setSession({'));
+  assert(ui.includes('UNLOCK WITH PROTON'));
+  assert(ui.includes('SET UP PROTON ONCE'));
+  assert(ui.includes('email sign-in'));
+  assert(!ui.includes('SERVICE_ROLE_KEY'));
+  assert(!ui.includes('SUPABASE_SERVICE_ROLE_KEY'));
+  assert(!ui.includes('localStorage.setItem'));
+  execFileSync(process.execPath,["--check",U]);
+  execFileSync(process.execPath,["--check","fm/mesh-radio/r2-intake.mjs"]);
+  execFileSync(process.execPath,["--check","fm/mesh-radio/desk.mjs"]);
+});

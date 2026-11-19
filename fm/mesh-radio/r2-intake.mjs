@@ -2,6 +2,7 @@
 // Loaded only on demand. Uses the same verified Supabase owner session and
 // the existing HUMKIN R2 Edge Function as /fm/load/. No R2 keys in the browser.
 // Nothing is made public until the owner presses PUBLISH.
+import {installProtonLogin} from "../proton-auth.mjs";
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // RLS-scoped, public.
 const OWNER="us@abundent.org";
@@ -250,4 +251,7 @@ export function installR2Intake({getFiles,onPublished,log}){
   // The rest of the browser radio works without importing Supabase at all.
   ui(null);
   $("r2-progress").value=0;
+  installProtonLogin({mount:$("proton-mesh"),getClient:client,onSignedIn:async()=>{
+    await refreshLogin();await check();await listDrafts();
+  }});
 }
