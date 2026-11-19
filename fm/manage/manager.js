@@ -75,10 +75,12 @@ async function loadDesk(){
    $("catalog").replaceChildren(el("p","Sign in to manage the library."));
    $("show-list").replaceChildren(el("p","Sign in to manage programming."));
    $("guest-feature-list")?.replaceChildren(el("p","Sign in to manage guest features."));
+   $("signal-relay")?.classList.add("hidden");
    $("group-editor-root")?.replaceChildren(el("p","Sign in to edit groups."));
    $("rule-editor-root")?.replaceChildren(el("p","Sign in to edit optional rules."));
    return;
  }
+ $("signal-relay")?.classList.remove("hidden");
  $("login-link").classList.add("hidden");
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
