@@ -1,7 +1,9 @@
 import {STATIONS} from "../../tools/radio-broadcast/cloudflare/stations.mjs";
+import {CONTRACT_SCHEMA,validateContractGraph,fingerprint} from "../../tools/radio-broadcast/cloudflare/contracts.mjs";
 
 const BASE="https://humkin-long-wave.joyvolcanomusic.workers.dev";
 const STORAGE="humkin-tower-network-draft-v1";
+const JOURNAL="humkin-tower-contract-events-v1";
 const $=id=>document.getElementById(id);
 const clone=x=>JSON.parse(JSON.stringify(x));
 const baseline=clone(STATIONS);
@@ -10,12 +12,91 @@ function message(text){$("draft-status").textContent=text}
 function csv(value){return String(value||"").split(",").map(x=>x.trim()).filter(Boolean)}
 function csvText(value){return Array.isArray(value)?value.join(", "):""}
 function currentStation(){return drafts.find(s=>s.id===current)||null}
+function events(){
+ try{
+   const data=JSON.parse(localStorage.getItem(JOURNAL)||"[]");
+   return Array.isArray(data)?data:[];
+ }catch{return []}
+}
+function renderEvents(){
+ const node=$("contract-events"),items=events().slice(-8).reverse();
+ node.replaceChildren();
+ if(!items.length){node.textContent="No local changes recorded.";return}
+ for(const e of items){
+   const p=document.createElement("p");
+   p.textContent=e.at+" · "+e.type+" · "+e.station_id+
+     " · revision "+e.revision+" · "+e.fingerprint;
+   node.append(p);
+ }
+}
+function appendEvent(type,station){
+ const list=events();
+ if(list.length>=1000){
+   message("Local journal is full. Export your draft before making further changes.");
+   return false;
+ }
+ const entry={schema:"humkin.radio.station-draft-event/v1",
+  type,at:new Date().toISOString(),station_id:station?.id||"network",
+  revision:station?.revision||null,contract_schema:CONTRACT_SCHEMA,
+  fingerprint:fingerprint(station||drafts)};
+ try{
+   localStorage.setItem(JOURNAL,JSON.stringify([...list,entry]));
+   renderEvents();return true;
+ }catch{
+   message("Local event storage unavailable. Export your draft to preserve changes.");
+   return false;
+ }
+}
+function bump(station,action){
+ station.contract_version=1;
+ station.revision=(Number.isSafeInteger(station.revision)?station.revision:0)+1;
+ persist();appendEvent(action,station);renderContract();
+}
+function renderContract(){
+ const s=currentStation();
+ if(!s)return;
+ let lineage=[];
+ try{
+   validateContractGraph(drafts);
+   const lookup=new Map(drafts.map(x=>[x.id,x]));
+   const visited=new Set();let cursor=s.id;
+   while(cursor!=="mainline"){
+     if(visited.has(cursor))throw Error("circular contract");
+     visited.add(cursor);lineage.unshift(cursor);
+     cursor=lookup.get(cursor)?.parent_id||"mainline";
+   }
+   lineage.unshift("MAINLINE");
+   $("contract-lineage").textContent=lineage.join(" → ")+" · revision "+(s.revision||1)+
+     " · "+(s.relationship?.kind||"independent")+" ("+(s.relationship?.influence||0)+"% influence)"+
+     " · draft only";
+ }catch(error){
+   $("contract-lineage").textContent="INVALID DEPENDENCY: "+error.message;
+ }
+}
+function renderParentOptions(){
+ const s=currentStation(),select=$("parent-station");
+ select.replaceChildren();
+ for(const candidate of [{id:"mainline",name:"MAINLINE"},...drafts.filter(x=>x.id!==s.id)]){
+   const option=document.createElement("option");
+   option.value=candidate.id;option.textContent=candidate.name+" ("+candidate.id+")";
+   select.append(option);
+ }
+ select.value=s.parent_id||"mainline";
+}
 function loadDraft(){
  try{
   const data=JSON.parse(localStorage.getItem(STORAGE)||"null");
   if(Array.isArray(data)&&data.length&&data.length<=100&&
     data.every(s=>/^[a-z0-9][a-z0-9-]{1,39}$/.test(s.id||"")&&
-      ["personal","virtual","live"].includes(s.mode)))drafts=data;
+      ["personal","virtual","live"].includes(s.mode))){
+      const migrated=data.map(s=>({
+        ...s,contract_version:s.contract_version||1,revision:s.revision||1,
+        parent_id:s.parent_id||"mainline",
+        relationship:s.relationship||{kind:"independent",influence:0}
+      }));
+      validateContractGraph(migrated);
+      drafts=migrated;
+    }
  }catch{/* Storage may be disabled; no public settings are modified. */}
 }
 function persist(){
@@ -40,6 +121,10 @@ function renderForm(){
  if(!s)return;
  updateSelect();
  setText("name",s.name);
+ renderParentOptions();
+ $("relationship").value=s.relationship?.kind||"independent";
+ $("influence").value=String(s.relationship?.influence||0);
+ $("influence-label").textContent=$("influence").value+"%";
  $("mode").value=s.mode;
  $("kinds").value=Array.isArray(s.filter?.kinds)&&s.filter.kinds.length===1?
     s.filter.kinds[0]:"all";
@@ -51,16 +136,20 @@ function renderForm(){
  setText("track-ids",csvText(s.filter?.track_ids));
  setChecked("featured",s.filter?.featured);
  setChecked("seasonal",s.filter?.seasonal);
- renderPrograms();
+ renderPrograms();renderContract();
 }
 function saveForm(){
  const s=currentStation();
  if(!s)return false;
+ const before=clone(s),beforeFingerprint=fingerprint(s);
  const name=$("name").value.trim();
  if(!name){message("A station needs a name.");return false}
  s.name=name.slice(0,100);
  s.mode=$("mode").value;
  s.enabled=$("enabled").checked;
+ s.parent_id=$("parent-station").value;
+ s.relationship={kind:$("relationship").value,
+   influence:Number($("influence").value)};
  s.include_bumpers=$("bumpers").checked;
  const f={};
  const lane=$("kinds").value;
@@ -75,9 +164,18 @@ function saveForm(){
  // accident. Source presets are not subject to this special safety default.
  if(!Object.keys(f).length&&(s._new===true||s.id==="top-40"))f.track_ids=[];
  s.filter=f;
+ try{validateContractGraph(drafts)}catch(error){
+   Object.assign(s,before);
+   renderForm();
+   message("Contract rejected: "+error.message);
+   return false;
+ }
+ const changed=beforeFingerprint!==fingerprint(s);
+ if(changed)bump(s,"DRAFT_CONTRACT_UPDATED");
  const stored=persist();
- updateSelect();
- message(stored?"LOCAL DRAFT SAVED. Nothing changed on the public Worker.":
+ updateSelect();renderContract();
+ message(stored?"LOCAL DRAFT SAVED"+(changed?" · revision "+s.revision:" · unchanged")+
+   ". Nothing changed on the public Worker.":
     "Browser storage unavailable. Export the network draft to retain these changes.");
  return true;
 }
@@ -103,7 +201,8 @@ function renderPrograms(){
   remove.className="ghost";remove.textContent="REMOVE SLOT";
   remove.addEventListener("click",()=>{
     s.programs=s.programs.filter(x=>x.id!==p.id);
-    persist();renderPrograms();message("Program removed from local draft.");
+    bump(s,"DRAFT_PROGRAM_REMOVED");renderPrograms();
+    message("Program removed from local draft. Public programming unchanged.");
   });
   block.append(heading,meta,details,remove);root.append(block);
  }
@@ -138,8 +237,8 @@ function addProgram(){
  s.programs.push({id:token,name:name.slice(0,100),days,
   start_minute:from,end_minute:to,priority,filter});
  s.mode="virtual";$("mode").value="virtual";
- persist();renderPrograms();
- message("Scheduled program added locally. Save/export the station draft to carry it to production.");
+ bump(s,"DRAFT_PROGRAM_ADDED");renderPrograms();
+ message("Scheduled program added locally. Export for review before production.");
 }
 function addStation(){
  const id=$("new-station-id").value.trim().toLowerCase();
@@ -152,14 +251,19 @@ function addStation(){
  if(drafts.length>=100){message("Maximum of 100 locally designed stations.");return}
  drafts.push({id,name:id.replace(/-/g," ").toUpperCase(),enabled:false,
   mode:"personal",description:"Local draft — not published",filter:{track_ids:[]},
+  contract_version:1,revision:1,parent_id:"mainline",
+  relationship:{kind:"independent",influence:0},
   include_bumpers:false,programs:[],_new:true});
  current=id;$("new-station-id").value="";
- persist();renderForm();message("New station prepared OFF AIR. Select approved content before enabling.");
+ persist();renderForm();appendEvent("DRAFT_STATION_CREATED",currentStation());
+ message("New station prepared OFF AIR. Select approved content before enabling.");
 }
 function exportDraft(){
  if(!saveForm())return;
  const payload={schema:"humkin.radio.virtual-network/v1",
-  note:"TOWER local draft only. Review all programming and rights before publishing.",
+  contract_schema:CONTRACT_SCHEMA,
+  note:"TOWER local draft only. Local journal is not an authoritative or immutable ledger.",
+  exported_at:new Date().toISOString(),events:events(),
   stations:drafts.map(s=>{
    const copy=clone(s);delete copy._new;return copy;
   })};
@@ -222,9 +326,14 @@ $("export").addEventListener("click",exportDraft);
 $("reset-draft").addEventListener("click",()=>{
  if(!confirm("Discard all local station designs and restore source presets?"))return;
  drafts=clone(baseline);current=drafts[0]?.id||null;persist();renderForm();
- message("Source presets restored in this browser only.");
+ appendEvent("DRAFT_NETWORK_RESET");
+ message("Source presets restored in this browser only. Local journal retained.");
 });
 $("refresh-network").addEventListener("click",loadNetwork);
+ $("influence").addEventListener("input",()=>{
+   $("influence-label").textContent=$("influence").value+"%";
+ });
+ renderEvents();
 $("radio").addEventListener("playing",()=>{
  $("listen-status").textContent="NOW PLAYING · "+$("radio").src.split("/stations/")[1]?.split("/")[0];
 });
