@@ -88,10 +88,10 @@ export function projectMainline(catalog,at=new Date()){
     lineage:[MAINLINE_ID],revision:1,
     program_source:programs.length?"published_mainline_schedule":"approved_catalog_baseline"};
 }
-function derivedWeight(child,parent,track){
+function derivedWeight(child,parentWeights,track){
   const r=normalizedRelationship(child),factor=r.influence/100;
   if(!factor||r.kind==="independent")return null;
-  const p=parent.tracks.find(t=>t.key===track.key);
+  const p=parentWeights.get(track.key);
   const strength=p?clamp((p.rotation_weight||baseWeight(p))/5,0,1):0;
   const sign=r.kind==="echo"?1:-1;
   const intensity=r.kind==="counterpoint"?0.75:1;
@@ -120,17 +120,18 @@ export function resolveContract(station,catalog,at=new Date(),stations=[station]
     const parent=visit(item.parent_id||MAINLINE_ID);
     const base=resolveStation(item,catalog,at);
     if(!base)throw Error("CONTRACT_RESOLUTION_FAILED:"+id);
+    const parentWeights=new Map(parent.tracks.map(t=>[t.key,t]));
     const tracks=base.tracks.map(t=>{
       if(t.kind!=="song")return t;
-      const weight=derivedWeight(item,parent,t);
+      const weight=derivedWeight(item,parentWeights,t);
       return weight===null?t:{...t,rotation_weight:weight};
     });
     tracks.bumper_groups=base.tracks.bumper_groups||[];
     tracks.bumper_rules=base.tracks.bumper_rules||[];
     const lineage=[...parent.lineage,id];
     const version=item.contract_version||1,revision=item.revision||1;
-    const selection=tracks.filter(t=>t.kind==="song").map(t=>[
-      t.key,t.rotation_weight||baseWeight(t)]);
+    const selection=tracks.map(t=>[
+      t.key,t.kind,t.rotation_weight||baseWeight(t)]);
     const key=fingerprint({station:id,version,revision,parent:parent.key||MAINLINE_ID,
       program:base.slot?.id||null,selection});
     const result={...base,tracks,key:id+":"+key,lineage,
