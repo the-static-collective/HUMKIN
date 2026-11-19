@@ -85,9 +85,11 @@ export function compileProgram(input) {
     after.baseSeq = last.sequence + 1;
     after.baseDisc = last.discontinuity + 1;
   }
-  return {stationId: input.station_id, revisions,
-    approved: new Map(revisions.flatMap(rev => rev.tracks.map(track =>
-      [track.asset_sha, Math.max(...rev.segments.filter(s => s.asset === track.asset_sha).map(s => s.index)) + 1])))};
+  const approved = new Map();
+  for (const rev of revisions) for (const item of rev.segments) {
+    approved.set(item.asset, Math.max(approved.get(item.asset) || 0, item.index + 1));
+  }
+  return {stationId: input.station_id, revisions, approved};
 }
 export function segmentAt(program, time) {
   if (!Number.isFinite(time)) return null;
@@ -154,9 +156,9 @@ export async function serveAutopilot(request, env, now = Date.now()) {
   const match = PATH_RE.exec(pathname);
   if (!match) return respond({error:"NOT_FOUND"},404);
   if (!["GET","HEAD"].includes(request.method)) return respond({error:"METHOD_NOT_ALLOWED"},405);
-  if (!env?.RADIO_MEDIA?.get) return respond({on_air:false,error:"NO_MEDIA_BINDING"},503);
+  if (!env?.RADIO_LIVE?.get || !env?.RADIO_LIVE?.head) return respond({on_air:false,error:"NO_AUTOPILOT_BINDING"},503);
   try {
-    const snapshot = await env.RADIO_MEDIA.get("autopilot/programs/" + match[1] + ".json");
+    const snapshot = await env.RADIO_LIVE.get("autopilot/programs/" + match[1] + ".json");
     if (!snapshot?.body) return respond({on_air:false,mode:"cloud_autopilot_unpublished"},503);
     const parsed = compileProgram(JSON.parse(await snapshot.text()));
     if (parsed.stationId !== match[1]) return respond({on_air:false,error:"FREQUENCY_MISMATCH"},503);
@@ -167,7 +169,7 @@ export async function serveAutopilot(request, env, now = Date.now()) {
       const permitted = parsed.approved.get(sha);
       if (!Number.isInteger(permitted) || index >= permitted)
         return respond({error:"SEGMENT_NOT_APPROVED"},404);
-      const asset = await env.RADIO_MEDIA.get("autopilot/segments/" + sha + "/segment-" +
+      const asset = await env.RADIO_LIVE.get("autopilot/segments/" + sha + "/segment-" +
         match[4] + ".ts");
       if (!asset?.body) return respond({error:"SEGMENT_MISSING"},503);
       return new Response(request.method === "HEAD" ? null : asset.body,
@@ -177,7 +179,7 @@ export async function serveAutopilot(request, env, now = Date.now()) {
     // If a required window segment is not yet in the durable bucket, do not
     // advertise a ghost broadcast or let the player stall halfway in.
     for (const item of window) {
-      if (!await env.RADIO_MEDIA.head("autopilot/segments/" + item.asset +
+      if (!await env.RADIO_LIVE.head("autopilot/segments/" + item.asset +
           "/segment-" + String(item.index).padStart(6,"0") + ".ts"))
         return respond({on_air:false,error:"PROGRAM_MEDIA_INCOMPLETE"},503);
     }
