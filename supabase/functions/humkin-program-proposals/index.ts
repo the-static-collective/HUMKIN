@@ -81,7 +81,7 @@ async function submit(body:any,req:Request){
  const proposal=validate(body.proposal);
  const actor=await hmac("daily-program-actor:"+body.listener);
  const network=await hmac("daily-program-network:"+
-  (req.headers.get("cf-connecting-ip")||"unavailable").slice(0,128));
+  (req.headers.get("cf-connecting-ip")||("device:"+body.listener)).slice(0,128));
  const now=new Date(),today=localDay();
  const start=today+"T00:00:00Z";
  const week=new Date(now.getTime()-7*86400000).toISOString();
@@ -159,7 +159,7 @@ async function withdraw(body:any){
 }
 Deno.serve(async req=>{
  const origin=req.headers.get("origin")||"";
- if(req.method==="OPTIONS")return response({},204,origin);
+ if(req.method==="OPTIONS")return response({},200,origin);
  if(origin&&!ORIGINS.has(origin))return error("Origin not permitted",403,origin);
  try{
   if(req.method==="GET"){
