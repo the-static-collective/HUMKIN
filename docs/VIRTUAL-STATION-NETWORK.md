@@ -165,6 +165,21 @@ To stage safely:
 6. Release to production only after explicit verification and approval.
    No existing listener is automatically switched.
 
+## Bulk catalog style enrichment
+
+The offline converter and TOWER catalogue desk can now propose and review
+optional Suno style, embedded genre and human-description metadata. Only
+reviewed genre/mood/texture tags are joined by exact MP3 SHA-256 in the
+Long Wave Worker. An enrichment tag cannot publish or enable media.
+
+The approved Supabase radio catalog is retrieved in 1,000-record pages
+up to 20,000 tracks. Long Wave uses a separately reviewed public
+fm/catalog-enrichment.json for tags. Details and operator steps:
+docs/CATALOG-CONSTELLATION.md.
+
+MOTIF-inspired reason cases are proposals only (NOT_RUN); no native solver
+execution or audio genre recognition is claimed.
+
 ## Boundaries
 
 - No always-on encoder per **virtual** station, but active listening still
