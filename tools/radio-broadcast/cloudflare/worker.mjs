@@ -91,6 +91,22 @@ export function applyReviewedEnrichment(tracks,manifest){
  }
  return tracks;
 }
+/**
+ * Supabase recurring shows store original track IDs, while the Worker labels
+ * cloud records crate-<uuid>. Resolve only IDs actually approved in R2; never
+ * turn an unknown program reference into another recording.
+ */
+export function mapApprovedProgramIds(ids,tracks){
+ const eligible=new Set(tracks.map(t=>t.id));
+ const found=[];
+ for(const original of Array.isArray(ids)?ids.slice(0,1500):[]){
+   if(typeof original!=="string")continue;
+   const candidate=eligible.has(original)?original:
+      eligible.has("crate-"+original)?"crate-"+original:null;
+   if(candidate)found.push(candidate);
+ }
+ return found;
+}
 async function queryPublicCatalog(fetcher){
  const select="id,title,artist,album,sha256,kind,enabled,published_at,duration_seconds,is_single,storage_provider,r2_object_key";
  const cloud=[],seenPages=new Set();
@@ -146,8 +162,10 @@ async function queryPublicCatalog(fetcher){
          id:String(r.id||""),name:String(r.name||"Mainline").slice(0,160),
          days:r.days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6),
          start_minute:Number(r.start_minute),end_minute:Number(r.end_minute),
-         priority:Number(r.priority)||0,track_ids:r.track_ids.slice(0,1500),
-         filter:{track_ids:r.track_ids.slice(0,1500)},enabled:true
+         priority:Number(r.priority)||0,
+         track_ids:mapApprovedProgramIds(r.track_ids,tracks),
+         filter:{track_ids:mapApprovedProgramIds(r.track_ids,tracks)},
+         enabled:true
        }));
    }
  }catch{/* Continue with the approved catalog baseline if Mainline plans are unreachable. */}
