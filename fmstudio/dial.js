@@ -26,6 +26,12 @@
       copy: "Gospel, worship and songs worn smooth by singing together."},
     {id: "talk-tape", name: "Talk & Tape", lane: "Voices",
       copy: "Interviews, stories and recordings people made to be heard."},
+    {id: "autodisco-v20", name: "Auto Disco V20", lane: "First-Listen Radio",
+      independentReceiver: "https://humkin.abundent.org/fm/v20/",
+      copy: "Original Auto Disco V20 productions: independent first-listen DJs, sealed dialogues and rendered, owner-approved audio episodes. No unrelated music filler."},
+    {id: "accident-lab", name: "The Accident Lab", lane: "Discovery / backstage",
+      independentReceiver: "https://humkin.abundent.org/fm/autodisco/",
+      copy: "Editorial discovery and MOTIF experiments feeding Auto Disco's future programs. The lab is not the broadcast station."},
     {id: "compost", name: "The Compost Heap", lane: "Living Archive", archive: true,
       copy: "The long tail of the published HUMKIN archive. Less-played recordings go first."},
     {id: "strange-hour", name: "The Strange Hour", lane: "Experimental",
@@ -64,6 +70,8 @@
   }
   function statusFor(station) {
     if (station.archive) return "Available · personal archive rotation";
+    if (station.independentReceiver) return station.id === "autodisco-v20" ?
+      "V20 receiver · approved episodes only" : "Discovery workbench · available";
     if (!registryReady) return "Live status unavailable";
     const state = states.get(station.id);
     if (state?.on_air === true) return "On air · shared live broadcast";
@@ -71,7 +79,7 @@
     return "In development";
   }
   function canTune(station) {
-    if (station.archive || station.id === "station-one") return true;
+    if (station.archive || station.independentReceiver || station.id === "station-one") return true;
     return states.get(station.id)?.on_air === true;
   }
   function updateSelection(announce = false) {
@@ -89,6 +97,10 @@
       link.href = "#compost";
       link.textContent = "Open The Compost Heap";
       link.target = "_self";
+    } else if (station.independentReceiver) {
+      link.href = station.independentReceiver;
+      link.textContent = station.id === "autodisco-v20" ? "Open Auto Disco V20 Radio" : "Open Accident Lab";
+      link.target = "_blank";
     } else if (canTune(station)) {
       link.href = receiverURL(station.id);
       link.textContent = "Tune to " + station.name;
@@ -136,7 +148,8 @@
     if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const trigger = event.currentTarget;
     const target = new URL(trigger.href, document.baseURI);
-    if (target.hash === "#compost") return;
+    if (target.hash === "#compost" ||
+        target.pathname === "/fm/v20/" || target.pathname === "/fm/autodisco/") return;
     if (target.origin !== new URL(RECEIVER).origin || target.pathname !== "/fm/") return;
     const frequency = target.searchParams.get("frequency") || "station-one";
     if (!ID.test(frequency) || (frequency !== "station-one" &&
