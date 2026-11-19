@@ -11,6 +11,19 @@ Use the complete updated HUMKIN checkout. If the earlier Station One version is 
 - **Play next**, **Skip now**, **Hold**, **Disable**, and rotation weight controls operate while the encoder runs. Use **Add to rotation** to bring an uploaded track into that frequency's recurring mix.
 - **Send to frequency** queues the same crate item on another running frequency. Its current track and queue are independent.
 
+## Live-control improvements
+
+- Every visible track (on air, in the upcoming queue or in the media crate) has **Edit metadata**, **Disable / Enable**, **Hold / Release**, and any applicable rotation weight controls.
+- **Edit metadata** changes title, artist, album, genre, searchable tags, programming notes and an approved artwork URL, without modifying the audio file. Edits are persisted **per frequency**, so experimental programming does not overwrite the original crate or another station's credits. Artwork URLs must use an approved HUMKIN HTTPS media host.
+- When an on-air title or cover changes, the transmitter emits a new cue at the live audio position. Listeners see it when their buffer reaches that cue. Previously published HLS segments are not rewritten.
+- Drag from the **Drag to reorder** handle to another row in the same lane, or use the up/down buttons. Track controls remain clickable without accidentally starting a drag. The queue preserves its scroll position during refreshes. If the encoder advances while you move a row, the server rejects an obsolete slot and asks you to try against its refreshed queue rather than moving the wrong recording.
+- The web listener no longer treats status-probe timeouts alone as proof the broadcast has stopped, and defers transient background HLS errors until the page resumes. The fallback sources can reconnect to HLS automatically once the real source returns, while respecting the listener's explicit Play and Pause choices.
+
+**Update safely:** These changes are not active on an existing Acer checkout until you update its files and restart the managed transmitter; do not replace the live program files underneath a running broadcast. Save the running program and review the pull request before cutting over. The published website player must be deployed separately from the Acer transmitter. The Tower editor is a local, authenticated control surface and is not exposed to public listeners.
+
+**Scope:** Editing currently changes per-frequency display and playout metadata, station-specific holds/eligibility and rotation/queue relationships. It does not alter source-file ID3 tags, rewrite the global media archive, or automatically synchronize edits between independent running frequencies.
+
+
 ## Program from The Compost Heap
 
 [The Compost Heap](https://humkin.abundent.org/fmstudio/#compost) is a continuous listener-controlled dial over the enabled, published archive. It favors recordings with fewer qualified archive listens and avoids repeats within a browser's rotation. The Tower's **Media crate** can sort by listens, stars, or the **Made me dance** response. These are anonymous listener reports. The Tower makes the programming decision.
