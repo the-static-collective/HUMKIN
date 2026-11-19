@@ -63,7 +63,7 @@ test("only the existing owner-authorized manager mounts relay and retains explic
   assert.ok(manager.indexOf("await requireOwner()")<manager.indexOf("void mountSignalRelay({library,preparePausedShow})"));
   assert.match(manager,/\$\("show-active"\)\.checked=false; \/\/ Explicit owner activation/);
   assert.match(ui,/preparePausedShow\(row\)/);
-  assert.match(ui,/source:"public humkin-compost aggregate/);
+  assert.match(read("fm/manage/signal-relay-model.mjs"),/source:"public humkin-compost aggregate/);
   assert.match(html,/id="signal-relay-results"/);
   assert.match(html,/id="signal-relay-export"/);
   assert.doesNotMatch(ui,/\.from\("humkin_radio_programs"\).*insert/);
