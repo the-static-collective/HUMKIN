@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {applyReviewedEnrichment,approvedCatalog,getCatalog} from "./worker.mjs";
+import {applyReviewedEnrichment,approvedCatalog,getCatalog,mapApprovedProgramIds} from "./worker.mjs";
 
 const HASH="a".repeat(64);
 function row(i,hash=HASH){
@@ -63,4 +63,11 @@ test("paginates over 1,000 approved tracks and joins published tags to uploaded 
   assert.equal(list.find(x=>x.id==="crate-"+all[0].id).tags.length,0);
   assert(requests.some(x=>x.includes("offset=1000")),"second page requested");
  }finally{globalThis.fetch=old}
+});
+
+test("published Supabase show IDs map to eligible Worker crate IDs without guessing",()=>{
+ const list=approvedCatalog([row(1),row(2)],null);
+ const ids=mapApprovedProgramIds([row(1).id,"crate-"+row(2).id,"missing-id"],list);
+ assert.deepEqual(ids,[list[0].id,list[1].id]);
+ assert.deepEqual(mapApprovedProgramIds(["unknown"],list),[]);
 });
