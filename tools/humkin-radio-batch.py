@@ -4,6 +4,7 @@ Run: python3 tools/humkin-radio-batch.py "/path/to/Suno Downloads" --out "./humk
 Requires FFmpeg and ffprobe in PATH. Does not modify masters or upload anything.
 """
 import argparse
+import csv
 import hashlib
 import json
 import re
@@ -123,6 +124,20 @@ def main():
         manifest={"schema_version":1,"bitrate_kbps":args.bitrate,
                   "duration_seconds":round(total,3),"tracks":items,"errors":failed}
         path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+        # A spreadsheet-friendly source map; never overwrite an owner's
+        # previously edited notes on a subsequent converter run.
+        template=out/"humkin-catalog-notes-template.csv"
+        if not template.exists():
+            with template.open("w",newline="",encoding="utf-8-sig") as handle:
+                writer=csv.DictWriter(handle,fieldnames=[
+                    "mp3_sha256","source_sha256","source_path","filename",
+                    "suno_style","human_description","tags","suno_id"])
+                writer.writeheader()
+                for item in items:
+                    writer.writerow({key:(item.get(key,"") if key not in
+                        ("suno_style","human_description","tags","suno_id") else "")
+                        for key in writer.fieldnames})
+            print("Optional owner notes CSV: "+template.name+" (editable; never published automatically)")
         if not args.no_map:
             pack=build_candidates(manifest,load_notes(args.notes))
             candidate=out/"humkin-catalog-candidates.json"
