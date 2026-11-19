@@ -1,0 +1,39 @@
+/* The compact view is opt-in via the URL fragment. Playback stays in the classic player. */
+body:has(#receiver:target) > :not(main),
+body:has(#receiver:target) main > :not(#receiver),
+#receiver:target .seal,
+#receiver:target #desk-heading {
+  display: none;
+}
+#receiver:target {
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  padding: clamp(15px, 3vw, 30px);
+  grid-template-columns: minmax(0, .65fr) minmax(0, 1fr);
+  gap: clamp(14px, 3vw, 32px);
+}
+#receiver:target .poster {
+  margin: 0;
+}
+#receiver:target .poster img {
+  border-width: 5px;
+  transform: none;
+  box-shadow: none;
+}
+#receiver:target .controls {
+  padding: clamp(15px, 2.7vw, 28px);
+  box-shadow: none;
+}
+#receiver:target .controls audio[hidden] {
+  display: none;
+}
+@media (max-width: 600px) {
+  #receiver:target {
+    grid-template-columns: 1fr;
+  }
+  #receiver:target .poster {
+    width: min(175px, 55vw);
+    justify-self: center;
+  }
+}
