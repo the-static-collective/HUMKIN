@@ -6,7 +6,9 @@ param(
     [string]$Action = 'Menu',
     [string]$RunId = '',
     [ValidatePattern('^[a-z0-9][a-z0-9-]{0,31}$')]
-    [string]$Frequency = 'station-one'
+    [string]$Frequency = 'station-one',
+    [ValidateRange(0,600)]
+    [int]$ReservoirSeconds = 0
 )
 
 Set-StrictMode -Version Latest
