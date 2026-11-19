@@ -30,6 +30,7 @@ export function normalizeTagText(value){
 export function reviewRecord(record,value){
  const tags=normalizeTagText(value);
  record.reviewed_tags=tags;
+ record.pending_tags_text=null;
  record.approved_for_tag_publication=true;
  return record;
 }
