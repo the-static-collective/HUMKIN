@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#191424">
   <meta name="description" content="HUMKIN Radio & Records. Tune to Station One, browse independent records, and visit the after-hours screen.">
   <title>HUMKIN Radio &amp; Records</title>
+  <link rel="stylesheet" href="./receiver/receiver.css">
   <style>
 :root {
   color-scheme: dark;
@@ -80,7 +81,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
 .listening-room { padding-top: 20px; scroll-margin-top: 10px; }
 .receiver-header { margin-bottom: 12px; }
 .text-button { background: transparent; border: 1px solid #786585; border-radius: 4px; padding: 8px 10px; min-height: 44px; }
-#receiver-mount iframe { border: 1px solid var(--line); border-radius: 6px; background: #fff8e9; width: 100%; height: 690px; display: block; }
+#receiver-mount { width: 100%; }
 .listening-room .text-link { margin-top: 10px; }
 .records { padding-block: clamp(45px, 7vw, 90px); }
 .record-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -207,7 +208,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
             <button class="text-button" id="close-receiver" type="button">Close receiver</button>
           </div>
           <div id="receiver-mount"></div>
-          <a id="full-receiver" class="text-link" href="https://humkin.abundent.org/fm/" target="_blank" rel="noopener">Open the full HUMKIN player ↗</a>
+          <a id="full-receiver" class="text-link" href="https://humkin.abundent.org/fm/" target="_blank" rel="noopener">Open classic receiver and Road Shuffle ↗</a>
         </section>
         <section id="compost" class="compost" aria-labelledby="compost-title">
           <div>
@@ -306,7 +307,8 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     <a href="https://humkin.abundent.org/fm/" target="_blank" rel="noopener">Classic player ↗</a>
     <a href="https://humkin.abundent.org/support.html" target="_blank" rel="noopener">Tip jar ↗</a>
   </footer>
-<script src="./dial.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+<script type="module" src="./dial.js"></script>
 <script src="./compost.js"></script>
 </body>
 </html>
