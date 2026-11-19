@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#191424">
+  <meta name="description" content="Open HUMKIN Tower, the private desk for The Compost Heap and HUMKIN station programming.">
+  <title>HUMKIN Tower</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #191424;
+      --ink: #fff4f8;
+      --muted: #d4c5da;
+      --line: #553c5c;
+      --pink: #ff9eb5;
+      --gold: #ffe080;
+      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--bg); }
+    .shell { width: min(880px, calc(100% - 36px)); margin-inline: auto; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+    a { color: inherit; }
+    .brand { text-decoration: none; font-weight: 860; letter-spacing: .10em; }
+    .radio { color: var(--muted); text-underline-offset: 4px; font-size: .9rem; }
+    main { padding-block: clamp(26px, 8vw, 84px) 58px; }
+    .entry { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; padding: clamp(24px, 7vw, 61px); background: radial-gradient(ellipse at 100% 0, #593046, #2c1d38 45%, #241a30 77%); }
+    .entry::after { content: ""; position: absolute; z-index: -1; pointer-events: none; top: -110px; right: -115px; width: 420px; height: 420px; border-radius: 50%; background: repeating-radial-gradient(circle, #ff9eb51c 0 1px, transparent 1px 24px); }
+    .kicker { margin: 0 0 9px; font-size: .75rem; color: var(--gold); font-weight: 780; text-transform: uppercase; letter-spacing: .16em; }
+    h1 { margin: 0; font-size: clamp(2.45rem, 8vw, 5rem); letter-spacing: -.065em; line-height: 1.04; }
+    .intro { margin: 14px 0 24px; max-width: 400px; color: var(--muted); }
+    .open { display: inline-flex; padding: 11px 17px; min-height: 46px; align-items: center; border-radius: 9px; color: #2b1929; background: var(--pink); text-decoration: none; font-weight: 790; }
+    .open:hover { background: #ffc3d0; }
+    :focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+    details { margin: 17px 0 0; border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px; background: #21192b; }
+    summary { cursor: pointer; font-weight: 760; }
+    details p, details ol { color: var(--muted); }
+    details ol { padding-left: 23px; }
+    details li + li { margin-top: 6px; }
+    details a { text-underline-offset: 3px; color: #ffbdca; }
+    details p:last-child { margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="/">HUMKIN</a>
+      <a class="radio" href="/fmstudio/">Radio &amp; Records</a>
+    </header>
+    <main>
+      <section class="entry" aria-labelledby="tower">
+        <p class="kicker">Private operator desk</p>
+        <h1 id="tower">HUMKIN Tower</h1>
+        <p class="intro">Load The Compost Heap, work the catalog, and program the HUMKIN dial.</p>
+        <a class="open" href="https://humkin-compost-tower.theotherlucasv.chatgpt.site/">Open the private Tower</a>
+      </section>
+      <details>
+        <summary>Use your phone as the key</summary>
+        <ol>
+          <li>On your phone, open ChatGPT in the browser. Go to <strong>Settings → Security → Passkeys</strong> and add a passkey if your account offers it.</li>
+          <li>On the Acer, open the Tower and choose <strong>Continue with ChatGPT</strong>.</li>
+          <li>If your browser offers a nearby-device passkey, scan the QR code shown by the sign-in prompt and approve it on your phone.</li>
+        </ol>
+        <p>Your phone or passkey manager saves the credential. On the Acer, use the same browser profile for your saved Tower settings.</p>
+        <p><a href="https://help.openai.com/en/articles/20001039-passkeys-to-secure-your-openai-account">Passkey setup and recovery options</a></p>
+      </details>
+    </main>
+  </div>
+</body>
+</html>
