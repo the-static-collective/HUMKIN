@@ -36,7 +36,7 @@ create table if not exists public.humkin_mesh_copies(
 create index if not exists humkin_mesh_copies_sha_idx
   on public.humkin_mesh_copies(owner_id,sha256);
 create table if not exists public.humkin_mesh_links(
-  slug text primary key check(slug ~ '^[a-z0-9]([a-z0-9-]{2,38}[a-z0-9])),
+  slug text primary key check(slug ~ '^[a-z0-9]([a-z0-9-]{2,38}[a-z0-9])$'),
   owner_id uuid not null references auth.users(id) on delete cascade,
   target_track_id uuid not null references public.humkin_radio_tracks(id) on delete restrict,
   title text not null check(length(title) between 1 and 240),
