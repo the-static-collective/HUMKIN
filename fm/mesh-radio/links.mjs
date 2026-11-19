@@ -121,8 +121,13 @@ export function portable(graph){
   validate(graph);
   // No directory names, relative paths, blob URLs, sessions, keys, playback
   // history, or private storage object names are carried in this format.
-  return clone({schema:SCHEMA,nodes:graph.nodes,recordings:graph.recordings,
-    routes:graph.routes,stations:graph.stations});
+  return clone({schema:SCHEMA,
+    nodes:graph.nodes.map(({id,label,kind})=>({id,label,kind})),
+    recordings:graph.recordings.map(({id,sha256,title,artist,album,duration_seconds})=>
+      ({id,sha256,title,artist,album,duration_seconds})),
+    routes:graph.routes.map(({recording,node,transport,url})=>
+      transport==="https"?{recording,node,transport,url}:{recording,node,transport}),
+    stations:graph.stations.map(({id,name,selection,scope})=>({id,name,selection,scope}))});
 }
 export function validate(input){
   if(!input||input.schema!==SCHEMA||!Array.isArray(input.nodes)||
