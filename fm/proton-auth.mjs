@@ -1,3 +1,4 @@
+import {sessionStorageMode} from "./browser-safe-auth.mjs";
 // Shared HUMKIN Proton Authenticator alternate login.
 // Works inside both Crate Loader and Linkblocks R2 desk.
 // Codes go only to Supabase Edge. Never log credentials or bearer tokens.
@@ -9,6 +10,7 @@ export function installProtonLogin({mount,getClient,onSignedIn=async()=>{}}){
   if(!mount||typeof getClient!=="function")throw Error("Missing HUMKIN authenticator host.");
   mount.innerHTML=[
     '<div class="hk-proton" style="margin:16px 0;padding:13px;border:1px solid currentColor;border-radius:10px">',
+    '<style>.hk-proton [hidden]{display:none!important}</style>',
     '<p style="margin:0 0 8px"><strong>OR · PROTON AUTHENTICATOR</strong></p>',
     '<p class="small note" style="margin:0 0 10px">Six digits instead of an email link. A separate HUMKIN Radio entry in Proton. Existing email sign-in stays available.</p>',
     '<label for="hk-proton-code">Six-digit code from Proton</label>',
@@ -94,15 +96,21 @@ export function installProtonLogin({mount,getClient,onSignedIn=async()=>{}}){
     wait(true);
     try{
       const result=await call("login",{code:takeCode()});
+      say("Proton code accepted. Opening the HUMKIN session on this browser…");
       const db=await getClient();
       const {data,error}=await db.auth.setSession({
         access_token:result.access_token,refresh_token:result.refresh_token
       });
       if(error||data?.user?.email?.toLowerCase()!==OWNER)
         throw Error("Supabase rejected the issued session.");
-      say("Unlocked with Proton. Your R2 uploader and catalog are available.");
+      say("Unlocked with Proton. Your R2 uploader and catalog are available."+
+        (sessionStorageMode()==="localStorage"?"":" Browser session storage is restricted; sign-in may need repeating after closing the tab."));
       await onSignedIn();await status();
-    }catch(error){say(error.message);}
+    }catch(error){
+      if(/(?:request was denied|NotAllowedError|SecurityError)/i.test(String(error.message||"")))
+        say("The Mac browser denied access to its session storage. Enable site data for humkin.abundent.org or try this page in another browser. Your Proton pairing is fine.");
+      else say(error.message);
+    }
     finally{wait(false);}
   });
   $("hk-proton-enroll").addEventListener("click",async()=>{
