@@ -165,6 +165,42 @@ assert.equal(newTune.window.HUMKIN_RADIO.state.index,19,"Spotlight must select H
 assert(newTune.$("current-title").textContent==="HaileyLu Bloom");
 assert(newTune.$("air").src.endsWith("/fm/audio/haileylu-bloom.mp3"));
 assert.equal(newTune.$("air").playCount,1,"One click must actually start HaileyLu Bloom");
+
+const oneShot=fixture();await flush();
+let liveJoins=0;
+assert.equal(oneShot.window.HUMKIN_RADIO.playSpotlightToLive(()=>{liveJoins++;}),true,
+  "Website must be able to arm a one-song spotlight introduction");
+await flush();
+assert.equal(oneShot.$("current-title").textContent,"HaileyLu Bloom");
+assert.equal(oneShot.$("air").playCount,1,"Featured single must begin on the original MP3 deck");
+oneShot.$("air").currentTime=oneShot.$("air").duration-.20;
+oneShot.$("air").emit("timeupdate");await flush();
+assert.equal(liveJoins,0,"The last fraction of the single must not be clipped by near-end prehandoff");
+oneShot.$("air").emit("ended");await flush();
+assert.equal(liveJoins,1,"The complete featured single must join live exactly once");
+assert.equal(oneShot.$("air").paused,true,"Original MP3 must stop before the HLS player begins");
+oneShot.$("air").emit("ended");await flush();
+assert.equal(liveJoins,1,"Repeated ended events must not start the live player again");
+
+const canceledIntro=fixture();await flush();
+let canceledJoins=0;
+canceledIntro.window.HUMKIN_RADIO.playSpotlightToLive(()=>{canceledJoins++;});
+await flush();
+canceledIntro.window.HUMKIN_RADIO.stopBrowserAudio();
+canceledIntro.$("air").emit("ended");await flush();
+assert.equal(canceledJoins,0,"Manual tune to live must cancel any stale spotlight finish callback");
+
+const replacedIntro=fixture();await flush();
+let replacedJoins=0;
+replacedIntro.window.HUMKIN_RADIO.playSpotlightToLive(()=>{replacedJoins++;});
+await flush();
+replacedIntro.window.HUMKIN_RADIO.startRoadShuffleFromLive();
+await flush();
+assert.equal(replacedIntro.$("air").paused,false,
+  "Road Shuffle selection during the featured single must keep music playing");
+replacedIntro.$("air").emit("ended");await flush();
+assert.equal(replacedJoins,0,"Road Shuffle selection must cancel the pending automatic live handoff");
+
 assert(html.includes("HEAR THE NEW ONE · HAILEYLU BLOOM"),"Button label must match its song");
 const spotlightPlayed=new Set([newTune.window.HUMKIN_RADIO.state.index]);
 for(let i=0;i<40;i++){newTune.$("next-song").click();await flush();spotlightPlayed.add(newTune.window.HUMKIN_RADIO.state.index)}

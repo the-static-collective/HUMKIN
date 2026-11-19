@@ -30,7 +30,7 @@
   const counter = byId("counter");
   const modeHelp = byId("mode-help");
   const playlist = byId("phone-playlist");
-  let source = "idle"; // idle, hls, longwave, clock, shuffle
+  let source = "idle"; // idle, hls, longwave, clock, shuffle, spotlight
   let hls = null, operation = 0, statusFailures = 0, checking = false;
   let wantsAudio = false, metadataGeneration = 0;
   let longWaveLastProgress = 0;
@@ -39,7 +39,7 @@
     return source === "hls" || source === "longwave" || source === "clock";
   }
   function paused() {
-    return source === "clock" || source === "shuffle"
+    return source === "clock" || source === "shuffle" || source === "spotlight"
       ? browserAudio.paused : liveAudio.paused;
   }
   function setStatus(message, badge) {
@@ -70,12 +70,14 @@
   }
   function setSource(name) {
     source = name;
-    const browser = name === "clock" || name === "shuffle";
+    const browser = name === "clock" || name === "shuffle" || name === "spotlight";
     liveAudio.hidden = browser;
     browserAudio.hidden = !browser;
     listen.setAttribute("aria-pressed", String(isLiveLayer()));
     shuffle.setAttribute("aria-pressed", String(name === "shuffle"));
     if (playlist) playlist.hidden = name !== "shuffle";
+    const nextSong = byId("next-song");
+    if (nextSong) nextSong.hidden = name !== "shuffle";
     if (sourceLabel) sourceLabel.textContent = name;
     if (modeHelp) modeHelp.textContent = name === "shuffle"
       ? "Your own shuffle mixes the published music, release features and station carts."
@@ -110,6 +112,35 @@
     ++metadataGeneration;
     clearLiveAudio();
     setSource(name);
+    updateButton();
+  }
+  function playFeaturedSingle() {
+    if (!radio?.ready) {
+      setStatus("The new single is still loading. Try again in a moment.", "LOADING");
+      return;
+    }
+    // The listener explicitly requested this exact song. The automatic
+    // handoff can happen only if this uninterrupted one-shot is still active.
+    const token = ++operation;
+    wantsAudio = false;
+    ++metadataGeneration;
+    clearLiveAudio();
+    setSource("spotlight");
+    const started = radio.playSpotlightToLive?.(() => {
+      if (token !== operation || source !== "spotlight") return;
+      // Join the real current broadcast; no song guessing or special cueing.
+      // Station One -> Long Wave -> Same-Time are still the ordinary fallback.
+      tuneLive();
+    });
+    if (!started) {
+      tuneLive();
+      return;
+    }
+    const nextSong = byId("next-song");
+    if (nextSong) nextSong.hidden = true;
+    if (onDeck) onDeck.textContent = "ON DECK · STATION ONE LIVE";
+    if (modeHelp) modeHelp.textContent = "The featured single plays in full, then joins the live broadcast.";
+    setStatus("Playing the new single. Live radio follows automatically.", "FEATURE SINGLE");
     updateButton();
   }
   function switchToShuffle() {
@@ -275,10 +306,7 @@
   });
   shuffle.addEventListener("click", switchToShuffle);
   const spotlight = byId("spotlight");
-  if (spotlight) spotlight.addEventListener("click", () => {
-    // radio.js owns the specific single selection; this only prevents overlap.
-    if (source !== "shuffle") leaveForBrowser("shuffle");
-  }, true);
+  if (spotlight) spotlight.addEventListener("click", playFeaturedSingle);
   browserAudio.addEventListener("play", () => {
     if (source === "hls" || source === "longwave" || source === "idle") {
       leaveForBrowser("shuffle");
