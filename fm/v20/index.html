@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111621">
+<title>Auto Disco V20 · First-Listen Radio</title>
+<meta name="description" content="An original AI DJ radio frequency produced by Auto Disco V20 and transmitted by HUMKIN.">
+<style>
+:root{color-scheme:dark;font:16px/1.58 system-ui,sans-serif;--ink:#f4e9da;--muted:#c3b7bd;--accent:#f8c68c;--line:#65616a;background:#111621;color:var(--ink)}
+*{box-sizing:border-box}body{max-width:980px;padding:clamp(18px,4vw,45px);margin:auto}
+a{color:var(--accent)}nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding-bottom:20px;border-bottom:1px solid var(--line);font-size:.9rem}
+nav strong{margin-right:auto;letter-spacing:.14em}h1{font-size:clamp(3rem,9vw,6.8rem);letter-spacing:-.065em;line-height:.88;margin:.4em 0 .25em}
+.kicker{font:.8rem ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:1.2rem;max-width:42rem;color:var(--muted)}
+.studio{background:radial-gradient(ellipse at top right,#5a3546,#292630 70%);border:1px solid #996b72;border-radius:17px;padding:clamp(22px,4vw,34px);margin:35px 0}
+.needle{width:14px;height:14px;background:var(--accent);border-radius:50%;box-shadow:0 0 0 9px #f8c68c22,0 0 45px #fae6ab}
+.status{min-height:1.5em;color:var(--accent)}audio{width:100%;margin:14px 0}
+button{font:700 1rem system-ui;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#241b27;padding:12px 20px;cursor:pointer;min-height:44px}
+button:disabled{cursor:not-allowed;opacity:.6}
+button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:4px}
+.info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:30px 0}
+.info article{border:1px solid var(--line);padding:20px;border-radius:10px}
+.info h2{font-size:1.2rem}p{max-width:75ch}
+small{color:var(--muted)}footer{border-top:1px solid var(--line);padding-top:25px;margin-top:40px;color:var(--muted);font-size:.86rem}
+@media(max-width:620px){.info{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav><strong>HUMKIN / AUTO DISCO V20</strong><a href="../../fmstudio/">Radio Dial</a><a href="../tower/">Tower</a><a href="../autodisco/">Accident Lab</a></nav>
+<main>
+<p class="kicker">A distinct HUMKIN frequency · Autodiscography</p>
+<h1>The DJs<br>arrive.</h1>
+<p class="lead">First-Listen Radio from Auto Disco V20. The machine listens to a bounded recording. Two separate DJs respond without knowing each other's first impressions. Their sealed exchange becomes an episode. The station remembers; the DJs arrive.</p>
+<section class="studio" aria-labelledby="receiver-head">
+<div class="needle" aria-hidden="true"></div>
+<p class="kicker">V20 · Original transmissions</p>
+<h2 id="receiver-head">The Auto Disco receiver</h2>
+<p id="status" class="status" role="status" aria-live="polite">Checking for approved V20-produced episodes…</p>
+<button id="tune" type="button" disabled>Listen to V20</button>
+<audio id="audio" controls preload="none" aria-label="Auto Disco V20 continuous audio stream" hidden></audio>
+<p><small>Each listener receives an independent continuous MP3 session. This is not a synchronized transmission clock, and the presence of a catalog episode does not prove it aired previously.</small></p>
+</section>
+<section class="info">
+<article>
+<p class="kicker">The production room</p>
+<h2>Where the programs come from</h2>
+<p>Auto Disco's first-listen and episode machinery generates the transcript and bounded audio evidence. Voice rendering creates an actual audio master. Only explicitly approved masters can enter this frequency.</p>
+<p><a href="https://github.com/the-static-collective/The-AutodiscoV.20.-question-marks-" rel="noopener">Inspect Auto Disco V20's production source</a></p>
+</article>
+<article>
+<p class="kicker">The experiment room</p>
+<h2>The Accident Lab remains separate</h2>
+<p>Want to discover overlooked songs and feed new material into V20's listening process? That's the Accident Lab. It isn't this station and does not substitute a random music playlist for V20-generated shows.</p>
+<p><a href="../autodisco/">Open the Accident Lab</a></p>
+</article>
+</section>
+</main>
+<footer>Original first-listen evidence ≠ synthesized voice ≠ editorial approval ≠ on-air receipt. Only approved V20 episodes may enter this channel.</footer>
+<script type="module">
+const endpoint="https://humkin-long-wave.joyvolcanomusic.workers.dev/stations/autodisco-v20";
+const audio=document.getElementById("audio");
+const status=document.getElementById("status");
+const tune=document.getElementById("tune");
+let ready=false;
+async function check(){
+  tune.disabled=true;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),10000);
+  try{
+    const r=await fetch(endpoint+"/health",{cache:"no-store",signal:controller.signal});
+    const payload=await r.json();
+    if(!r.ok||!payload.ok||payload.station!=="autodisco-v20"||
+       payload.approved_tracks<1||payload.synchronized!==false){
+      ready=false;
+      status.textContent=payload.error==="STATION_UNPROGRAMMED"||payload.approved_tracks===0?
+        "The first broadcast master has not yet been admitted. This frequency is reserved for authentic V20 programs.":
+        "The V20 transmitter is not ready. No unrelated music will be played as a fallback.";
+      return;
+    }
+    ready=true;
+    status.textContent=payload.approved_tracks+" approved V20 program recording(s). Receiver ready.";
+    tune.disabled=false;
+  }catch{
+    ready=false;
+    status.textContent="V20's independent stream is not deployed or is currently unreachable. The Accident Lab remains available separately.";
+  }finally{clearTimeout(timeout)}
+}
+tune.addEventListener("click",()=>{
+  if(!ready)return;
+  audio.hidden=false;
+  if(audio.src!==endpoint+"/live.mp3") {
+    audio.src=endpoint+"/live.mp3";
+    audio.load();
+  }
+  audio.play().catch(()=>{status.textContent="Press Play on the audio controls to start V20.";});
+});
+audio.addEventListener("error",()=>{status.textContent="Stream ended or unavailable. Retune when the transmitter is ready.";});
+check();
+</script>
+</body>
+</html>

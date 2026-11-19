@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUMKIN · Station One live HLS laboratory</title>
+<style>
+:root{color-scheme:dark;font-family:Georgia,serif;background:#171b22;color:#f8ecd1}
+body{margin:0;padding:2rem 1rem;display:flex;justify-content:center;min-height:100vh;box-sizing:border-box}
+main{width:min(560px,100%)}h1{font-size:2.2rem;margin:.7rem 0}
+small,.muted{color:#bbbaa9}input,button{font:inherit;border-radius:8px;padding:.8rem;box-sizing:border-box}
+input{width:100%;background:#2a3039;color:#fff;border:1px solid #85877b}
+button{background:#efbc6c;color:#24201a;border:0;cursor:pointer;margin:.65rem 0}
+audio{width:100%;margin-top:1rem}a{color:#eac080}
+.rescue{display:flex;align-items:center;gap:.6rem;margin:.3rem 0;line-height:1.4}
+.rescue input{width:auto;accent-color:#efbc6c}
+.actions{display:flex;gap:.6rem;flex-wrap:wrap}
+.actions button{background:#34475b;color:#fff;border:1px solid #71869a}
+button:focus-visible,input:focus-visible{outline:3px solid #efbc6c;outline-offset:3px}
+.status{padding:.7rem 0;min-height:1.5rem}
+</style>
+</head>
+<body><main>
+<small>HUMKIN RADIO · EXPERIMENTAL RECEIVER</small>
+<h1>Station One · Live</h1>
+<p>One shared broadcast, heard together. This is an isolated test desk; it does not replace the regular radio.</p>
+<label for="url">Deployed Cloudflare Worker HLS URL</label>
+<input id="url" type="url" placeholder="https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/hls/live.m3u8" autocomplete="off">
+<button id="connect">Connect receiver</button>
+<label class="rescue"><input id="auto-rescue" type="checkbox" checked> Rescue to Long Wave if the live signal disappears</label>
+<div class="actions"><button id="backup" type="button">Use Long Wave</button><button id="retry-live" type="button">Retry live signal</button></div>
+<div id="status" class="status" role="status">Not connected.</div>
+<audio id="receiver" controls preload="none"></audio>
+<p class="muted"><small>HLS.js is loaded from a third-party CDN for non-native browsers. Background playback depends on your browser and device. If the Acer goes offline, optional automatic rescue switches to the independent Long Wave rotation. Long Wave is not the same shared broadcast, but its audio continues without the Acer. No automatic playback begins before you press Play.</small></p>
+<a href="./index.html">Back to Long Wave</a>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+<script>
+(() => {
+  const audio=document.querySelector("#receiver");
+  const input=document.querySelector("#url");
+  const status=document.querySelector("#status");
+  const rescue=document.querySelector("#auto-rescue");
+  const backup=document.querySelector("#backup");
+  const retry=document.querySelector("#retry-live");
+  let player=null,liveUrl=null,mode="idle",checksFailed=0,checking=false,requestId=0;
+  function valid(value) {
+    try {
+      const url=new URL(value);
+      if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||
+         url.pathname!=="/hls/live.m3u8")return null;
+      const host=url.hostname.toLowerCase();
+      if(!(host.endsWith(".workers.dev")&&host.split(".").length>=4)&&
+         host!=="stream.abundent.org")return null;
+      return url.href;
+    }catch{return null}
+  }
+  function serviceUrl(path){return liveUrl?new URL(path,liveUrl).href:null}
+  function stopSource(){
+    if(player){player.destroy();player=null}
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+  }
+  function playIfPermitted(resume){
+    if(!resume)return;
+    Promise.resolve(audio.play()).catch(()=>{
+      status.textContent="Signal selected. Press Play on the audio controls to resume.";
+    });
+  }
+  function useBackup(reason,resume=false){
+    if(!liveUrl)liveUrl=valid(input.value);
+    if(!liveUrl){status.textContent="Enter a Cloudflare Worker live URL first.";return}
+    requestId++;
+    if(mode==="backup"){status.textContent="Long Wave remains selected. Press Play to listen.";return}
+    mode="backup";
+    stopSource();
+    audio.src=serviceUrl("/live.mp3");
+    audio.load();
+    status.textContent=reason+" Long Wave is a separate personal rotation, not synchronized live radio.";
+    playIfPermitted(resume);
+  }
+  async function isOnAir(url){
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),7000);
+    try {
+      const response=await fetch(new URL("/hls/status",url),{
+        cache:"no-store",signal:controller.signal
+      });
+      return response.ok;
+    }catch{return false}
+    finally{clearTimeout(timeout)}
+  }
+  async function connect(resume=false){
+    const url=valid(input.value);
+    if(!url){status.textContent="Use a public HTTPS Cloudflare Worker /hls/live.m3u8 URL.";return}
+    const attempt=++requestId;
+    liveUrl=url;
+    status.textContent="Checking the live transmitter…";
+    const online=await isOnAir(url);
+    if(attempt!==requestId)return;
+    if(!online){
+      if(mode==="backup"){status.textContent="Live transmitter still offline; staying on Long Wave.";return}
+      if(rescue.checked)useBackup("Live transmitter unavailable.");
+      else status.textContent="Live transmitter is offline. Enable rescue or choose Long Wave.";
+      return;
+    }
+    stopSource();
+    checksFailed=0;
+    mode="live";
+    if(audio.canPlayType("application/vnd.apple.mpegurl")){
+      audio.src=url;
+    }else if(window.Hls&&window.Hls.isSupported()){
+      player=new window.Hls({liveSyncDurationCount:3,enableWorker:true});
+      player.loadSource(url);
+      player.attachMedia(audio);
+      player.on(window.Hls.Events.ERROR,(_,details)=>{
+        if(!details.fatal||mode!=="live")return;
+        const wasPlaying=!audio.paused;
+        if(rescue.checked)useBackup("Live HLS receiver interrupted.",wasPlaying);
+        else status.textContent="HLS signal interrupted: "+details.type+
+          ". Choose Long Wave or retry the live signal.";
+      });
+    }else{
+      if(rescue.checked)useBackup("This browser cannot decode HLS.");
+      else {mode="idle";status.textContent="No HLS support. Choose Long Wave."}
+      return;
+    }
+    status.textContent="Live signal ready. Press Play to join the shared broadcast.";
+    try{localStorage.setItem("humkin-hls-test-url-v1",url)}catch{}
+    playIfPermitted(resume);
+  }
+  // A fresh playlist proves recent transmitter activity, not that any
+  // particular listener received sound. Two misses prevent noisy failover.
+  async function monitor(){
+    if(mode!=="live"||checking)return;
+    checking=true;
+    const activeRequest=requestId;
+    try {
+      const online=await isOnAir(liveUrl);
+      if(mode!=="live"||activeRequest!==requestId)return;
+      checksFailed=online?0:checksFailed+1;
+      if(checksFailed>=2){
+        const wasPlaying=!audio.paused;
+        if(rescue.checked)useBackup("The live transmitter stopped updating.",wasPlaying);
+        else status.textContent="The live signal stopped updating. Choose Long Wave or retry.";
+      }
+    }finally{checking=false}
+  }
+  document.querySelector("#connect").addEventListener("click",()=>connect(false));
+  retry.addEventListener("click",()=>connect(!audio.paused));
+  backup.addEventListener("click",()=>useBackup("Manual backup selected.",true));
+  audio.addEventListener("playing",()=>{
+    status.textContent=mode==="backup"?
+      "Playing Long Wave · independent, unsynchronized rotation.":
+      "Playing Station One · one shared live program.";
+  });
+  audio.addEventListener("waiting",()=>status.textContent="Buffering "+(mode==="backup"?"Long Wave":"live broadcast")+"…");
+  audio.addEventListener("error",()=>{
+    if(mode==="live"&&rescue.checked)useBackup("Live audio failed.",false);
+    else status.textContent="Audio error. Verify the stream URL or choose Long Wave.";
+  });
+  setInterval(monitor,20000);
+  try{input.value=localStorage.getItem("humkin-hls-test-url-v1")||""}catch{}
+})();
+</script>
+</main></body></html>

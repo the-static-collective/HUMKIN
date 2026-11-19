@@ -44,6 +44,8 @@ jobs:
       - run: node --test tests/humkin-tracer.test.mjs
       - run: node --test tests/daily-slice-crossover.test.mjs
       - run: node --check fmstudio/dial.js
+      - run: node --test tests/v20-station-receiver.test.mjs
+      - run: node --test tools/radio-broadcast/cloudflare/stations.test.mjs
       - run: node --check tools/radio-broadcast/cloudflare/station-registry.mjs
       - run: node --test tests/fmstudio-live-dial.test.mjs tests/fmstudio-station-registry.test.mjs
       - run: python3 -m unittest discover -s tests -p 'test_mesh_inventory.py' -v
@@ -68,3 +70,9 @@ jobs:
       - run: node --check fm/manage/signal-relay-model.mjs
       - run: node --check fmstudio/compost.js
       - run: node --test tests/signal-relay.test.mjs
+      - run: node --check living-relic.js
+      - run: node --check living-relic.core.mjs
+      - run: node --check living-relic.porch.js
+      - run: node --check living-relic.contributions.mjs
+      - run: node --test tests/living-relay.test.mjs tests/living-relay-contributions.test.mjs
+      - run: node --test tests/hls-receiver.test.mjs
