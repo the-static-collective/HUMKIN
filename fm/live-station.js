@@ -33,6 +33,7 @@
   let source = "idle"; // idle, hls, longwave, clock, shuffle
   let hls = null, operation = 0, statusFailures = 0, checking = false;
   let wantsAudio = false, metadataGeneration = 0;
+  let longWaveLastProgress = 0;
 
   function isLiveLayer() {
     return source === "hls" || source === "longwave" || source === "clock";
@@ -161,6 +162,7 @@
     radio?.stopBrowserAudio?.();
     setSource("longwave");
     genericArt();
+    longWaveLastProgress = Date.now();
     liveAudio.src = LONG_WAVE;
     liveAudio.load();
     setStatus("Connecting to HUMKIN Radio…", "CONNECTING");
@@ -286,11 +288,15 @@
   browserAudio.addEventListener("pause", updateButton);
   liveAudio.addEventListener("playing", () => {
     if (!isLiveLayer() || source === "clock") return;
+    if (source === "longwave") longWaveLastProgress = Date.now();
     wantsAudio = true;
     setStatus("Playing HUMKIN Radio.", "ON THE AIR");
     updateButton();
   });
   liveAudio.addEventListener("pause", updateButton);
+  liveAudio.addEventListener("timeupdate", () => {
+    if (source === "longwave" && !liveAudio.paused) longWaveLastProgress = Date.now();
+  });
   liveAudio.addEventListener("waiting", () => {
     if (source === "hls" || source === "longwave")
       setStatus("Buffering the radio signal…", "BUFFERING");
@@ -323,6 +329,14 @@
     } catch {}
   }
   async function monitor() {
+    // A continuous MP3 connection can silently stop producing audio without
+    // firing an error/ended event. Use real decoded playback progress as proof.
+    if (source === "longwave") {
+      if (wantsAudio && !liveAudio.paused &&
+          Date.now() - longWaveLastProgress > 50000)
+        fallbackToClock("longwave_stalled");
+      return;
+    }
     if (source !== "hls" || checking || !wantsAudio) return;
     checking = true;
     const token = operation;
