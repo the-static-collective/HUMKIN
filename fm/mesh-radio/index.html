@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#151c2b"><meta name="robots" content="noindex,nofollow">
+<title>HUMKIN · MESH RADIO 001 · Linkblocks</title>
+<style>
+:root{color-scheme:dark;--bg:#151c2b;--paper:#263148;--edge:#a8bad1;--text:#f6f4ed;--muted:#ccd6df;--mint:#b8f3d2;--gold:#ffe19a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 0 0,#293959,var(--bg) 65%);color:var(--text);font:15px/1.5 system-ui,sans-serif}
+a{color:var(--gold);text-underline-offset:3px}main{max-width:1110px;margin:auto;padding:20px 16px 80px}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-size:clamp(3rem,9vw,6.3rem);letter-spacing:-.075em;line-height:.94;margin:34px 0 13px}
+h2{margin:0 0 12px;font-size:1.4rem}h3{font-size:1rem;margin:0}.muted,.note{color:var(--muted)}
+.deck{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{background:var(--paper);border:1px solid #8397b4;border-radius:13px;padding:20px;margin:18px 0}
+button,input{font:inherit}button,.button{border:1px solid #e7ebf1;border-radius:8px;min-height:43px;padding:9px 13px;color:#172434;background:var(--mint);font-weight:760;cursor:pointer;text-decoration:none;display:inline-block}
+button.secondary{background:#f1dca9}button.ghost{color:var(--text);background:transparent}button:disabled{opacity:.42;cursor:not-allowed}
+input[type="file"],input[type="search"],input[type="text"],input[type="url"]{display:block;width:100%;padding:9px;border-radius:8px;border:1px solid var(--edge);background:#121b2d;color:var(--text);margin:5px 0 10px}
+label{display:block;font-weight:700;margin-top:12px}.metrics{display:flex;gap:10px;flex-wrap:wrap}
+.metrics>div{border:1px solid #677d9e;border-radius:8px;min-width:125px;padding:10px}
+.metrics strong{font-size:1.8rem;display:block;line-height:1.2}.metrics small{color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}audio{width:100%;margin-top:15px}
+#songs{list-style:none;padding:0;max-height:570px;overflow:auto}
+#songs li{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #62758b}
+#songs li small{display:block;color:var(--muted)}#songs li button{flex-shrink:0}
+#messages{white-space:pre-wrap;background:#101827;padding:14px;border-radius:8px;max-height:180px;overflow:auto;font-size:.82rem;line-height:1.7}
+#now{font-size:1.2rem;font-weight:800;margin:8px 0;overflow-wrap:anywhere}
+#source{color:var(--gold);min-height:24px}.note{font-size:.87rem}footer{border-top:1px solid #59718b;margin-top:28px;padding-top:15px;font-size:.85rem;color:var(--muted)}
+@media(max-width:770px){.deck{grid-template-columns:1fr}.panel{padding:15px}h1{margin-top:20px}#songs li{align-items:start}}
+</style>
+<script type="module" src="./desk.mjs"></script>
+</head>
+<body><main>
+<header><a href="../">HUMKIN RADIO</a><span>MESH RADIO · LINKBLOCKS LAB</span><a href="../mesh/">EXISTING MESH REGISTRY</a></header>
+<h1>EVERYTHING<br>SUPPLIES THE<br>RADIO.</h1>
+<p class="muted">One station can discover recordings from many computers and public hosts. Files can stay where they are. This is an experimental browser workbench—not a broadcast transmitter, a cloud uploader, or a new account.</p>
+<div class="metrics" aria-live="polite">
+<div><strong id="rec-count">0</strong><small>Distinct recordings</small></div>
+<div><strong id="node-count">0</strong><small>Source nodes</small></div>
+<div><strong id="route-count">0</strong><small>Location links</small></div>
+<div><strong id="ready-count">0</strong><small>Playable here</small></div>
+</div>
+<div class="deck">
+<section class="panel">
+<h2>01 · Bring the whole scattered library</h2>
+<p class="note">Import inventory JSONs from multiple computers, even if they're currently offline. This indexes recording fingerprints and copy counts. It does not move audio or make remote drives accessible.</p>
+<label for="inventory">HUMKIN MESH inventories or Linkblocks manifests (.json)</label>
+<input id="inventory" type="file" accept=".json,application/json" multiple>
+<div class="actions"><button id="cloud" type="button">ADD PUBLISHED HUMKIN R2 SONGS</button></div>
+<p class="note">R2 is simply one source. Published recordings can become playable immediately; local-only inventory entries stay indexed until a playable source is attached.</p>
+<h3>Listen to music on this device, without uploading</h3>
+<label for="local">Pick individual audio files</label>
+<input id="local" type="file" accept=".mp3,.wav,.m4a,.ogg,.flac,.opus,audio/*" multiple>
+<label for="folder">Or pick a music folder (Chrome / Edge)</label>
+<input id="folder" type="file" accept=".mp3,.wav,.m4a,.ogg,.flac,.opus" webkitdirectory directory multiple>
+<p class="note">Selected files are fingerprinted one at a time and played locally using browser file URLs. No audio upload. You must reselect files after restarting the browser; the catalog of links remains.</p>
+</section>
+<section class="panel">
+<h2>02 · Add another free host</h2>
+<p class="note">Mirror a known recording on R2, Supabase public Storage, a personal HTTPS server, or another host. Its recording fingerprint stays the same. This form registers a playable location; it does not upload the bytes.</p>
+<form id="host-form">
+<label for="hash">Recording SHA-256 (select a song below to fill it)</label><input id="hash" type="text" placeholder="64-character content fingerprint" required pattern="[0-9a-f]{64}">
+<label for="provider">Host label</label><input id="provider" type="text" value="my-mirror" maxlength="63" required>
+<label for="url">Direct public HTTPS audio URL</label><input id="url" type="url" placeholder="https://your-host.example/music.mp3" required>
+<button type="submit">LINK ANOTHER SOURCE</button>
+</form>
+<p class="note">Permanent routes must be public HTTPS URLs without credentials. Local/private files are never exposed by exporting a manifest.</p>
+<h3>Portable linkblocks</h3>
+<div class="actions"><button id="export" type="button" class="secondary">EXPORT PORTABLE GRAPH</button><button id="clear" type="button" class="ghost">CLEAR THIS BROWSER'S INDEX</button></div>
+<p class="note">Exports contain titles, fingerprints, node labels, station recipes, and approved public URLs. No local filenames, passwords, private folder paths, or listening history. Review an export before sharing.</p>
+</section>
+</div>
+<section class="panel">
+<h2>03 · The Compost Heap</h2>
+<p class="muted">Prioritizes the least-played recordings that have a playable source here. Playback tries another linked source if the first audio URL fails. Device-only entries stay in the catalog, but can't stream from an offline machine yet.</p>
+<p id="now">No recording selected.</p><p id="source" role="status"></p>
+<div class="actions"><button id="play-compost" type="button">HEAR THE COMPOST HEAP</button><button id="skip" type="button" class="secondary">NEXT RECORDING</button><button id="stop" type="button" class="ghost">STOP</button></div>
+<audio id="audio" controls preload="none" aria-label="HUMKIN MESH Radio experimental player"></audio>
+<label for="search">Find music across the whole indexed mesh</label><input id="search" type="search" placeholder="Title, artist, album, or SHA-256">
+<p id="list-note" class="note"></p><ul id="songs" aria-label="Indexed recordings"></ul>
+</section>
+<section class="panel">
+<h2>04 · Field notes</h2>
+<pre id="messages" role="log" aria-live="polite">MESH RADIO ready. No network changes have been made.</pre>
+<p class="note">This experiment uses existing HUMKIN MESH inventory files, the live public radio catalog, and an editable portable link graph. The main station, original Crate Loader, radio schedules, and existing SIA permanent links remain untouched.</p>
+</section>
+<footer><strong>LINKBLOCKS 001</strong> · A location declaration is not proof of availability. A file hash identifies bytes, not a whole musical work. An export doesn't authorize a broadcast. No login needed for this local experiment.</footer>
+</main></body>
+</html>

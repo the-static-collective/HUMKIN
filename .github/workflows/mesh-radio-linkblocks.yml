@@ -1,0 +1,28 @@
+name: HUMKIN MESH Radio Linkblocks
+
+on:
+  pull_request:
+    paths:
+      - 'fm/mesh-radio/**'
+      - 'tests/mesh-radio-linkblocks.test.mjs'
+      - '.github/workflows/mesh-radio-linkblocks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'fm/mesh-radio/**'
+      - 'tests/mesh-radio-linkblocks.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-linkblocks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Link identity, failover, privacy and Compost tests
+        run: node --test tests/mesh-radio-linkblocks.test.mjs
