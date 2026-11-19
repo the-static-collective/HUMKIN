@@ -61,6 +61,21 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(questions[0]["schema"],"motif.reason-case/v1")
         self.assertIn("NOT_RUN",questions[0]["context"])
         self.assertEqual(questions[0]["reports"],[])
+    def test_explicit_embedded_style_and_bad_optional_sidecar(self):
+        candidate=build_candidates({"tracks":[{
+            **track(A),"embedded_genre":"","embedded_style":"ambient soundscape"}]})["tracks"][0]
+        self.assertIn("genre:ambient",[x["tag"] for x in candidate["suggestions"]])
+        import importlib.util
+        import tempfile
+        spec=importlib.util.spec_from_file_location("humkin_batch",
+          str(Path(__file__).resolve().parents[1]/"tools"/"humkin-radio-batch.py"))
+        module=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            audio=Path(directory)/"Example.mp3"
+            audio.write_bytes(b"just a sidecar parsing fixture")
+            (Path(directory)/"Example.mp3.suno.json").write_text("{bad json",encoding="utf-8")
+            self.assertEqual(module.sidecars(audio),{})
     def test_word_boundaries(self):
         self.assertFalse(has_phrase("rocket ship","rock"))
         self.assertTrue(has_phrase("warm indie rock","rock"))
