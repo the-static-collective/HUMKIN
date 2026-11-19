@@ -12,11 +12,15 @@ import {resolveContract,describeContractStations,contractReceipt} from "./contra
 const SUPABASE="https://kbhqacsdvjsstzyplqij.supabase.co";
 const PUBLIC_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
 const PUBLIC_MANIFEST="https://humkin.abundent.org/fm/r2-tracks.json";
+const PUBLIC_ENRICHMENT="https://humkin.abundent.org/fm/catalog-enrichment.json";
 const PUBLIC_SETTINGS=SUPABASE+"/rest/v1/humkin_radio_settings?select=bumper_groups,bumper_rules&id=eq.main&limit=1";
 const MAINLINE_PROGRAMS=SUPABASE+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,priority,track_ids,is_active&is_active=eq.true&limit=500";
 const UUID="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const R2_KEY=new RegExp("^tracks/"+UUID+"/[0-9a-f]{64}\\.mp3$","i");
-const MAX_TRACKS=1500;
+const MAX_TRACKS=20000;
+const CATALOG_PAGE=1000;
+const HASH=/^[0-9a-f]{64}$/i;
+const STYLE_TAG=/^(genre|mood|texture):[a-z0-9-]{1,48}$/;
 const TTL_MS=5*60*1000;
 const ORIGIN='*'; // Read-only approved radio, no credentials, cookies, or private data.
 let cached=null,cacheUntil=0,loading=null;
@@ -40,7 +44,8 @@ export function approvedCatalog(rows,manual){
    approved.push({id:"crate-"+id,key,title:String(row.title||"HUMKIN").slice(0,160),
      artist:String(row.artist||"HUMKIN").slice(0,160),
      album:String(row.album||"HUMKIN RADIO").slice(0,200),
-     tags:[],duration:secs,kind,featured:row.is_single===true});
+     tags:[],sha256:HASH.test(String(row.sha256||""))?String(row.sha256).toLowerCase():null,
+     duration:secs,kind,featured:row.is_single===true});
  }
  if(manual?.schema==="humkin.radio.r2/v1"&&Array.isArray(manual.tracks)){
    for(const row of manual.tracks.slice(0,MAX_TRACKS)){
@@ -54,18 +59,58 @@ export function approvedCatalog(rows,manual){
        artist:String(row.artist||"HUMKIN").slice(0,160),
        album:String(row.album||"HUMKIN RADIO").slice(0,200),
        tags:Array.isArray(row.tags)?row.tags.filter(x=>typeof x==="string"&&x.length<50).slice(0,20):[],
+       sha256:HASH.test(String(row.sha256||""))?String(row.sha256).toLowerCase():null,
        duration:seconds,kind:"song",featured:row.seasonal===true,seasonal:row.seasonal===true});
    }
  }
  return approved;
 }
+/**
+ * Reviewed enrichment adds only catalog tags. It cannot create a track,
+ * change an approval, alter R2 pointers, or override owner-supplied credits.
+ */
+export function applyReviewedEnrichment(tracks,manifest){
+ if(manifest?.schema!=="humkin.radio.enrichment/v1"||
+    !Array.isArray(manifest.tracks)||manifest.tracks.length>MAX_TRACKS)return tracks;
+ const approved=new Map();
+ for(const entry of manifest.tracks){
+   if(entry?.reviewed!==true||!HASH.test(String(entry.mp3_sha256||"")))continue;
+   const tags=Array.isArray(entry.tags)?entry.tags.filter(t=>
+     typeof t==="string"&&STYLE_TAG.test(t)).slice(0,32):[];
+   // Duplicate metadata entries for the same object are ambiguous, not authority.
+   const hash=entry.mp3_sha256.toLowerCase();
+   if(approved.has(hash))approved.set(hash,null);
+   else approved.set(hash,tags);
+ }
+ for(const track of tracks){
+   if(!track.sha256||!approved.has(track.sha256))continue;
+   const tags=approved.get(track.sha256);
+   if(!tags)continue;
+   track.tags=[...new Set([...(track.tags||[]),...tags])].slice(0,60);
+   track.enrichment_reviewed=true;
+ }
+ return tracks;
+}
 async function queryPublicCatalog(fetcher){
- const query="?select=id,title,artist,album,kind,enabled,published_at,duration_seconds,is_single,storage_provider,r2_object_key"+
-   "&published_at=not.is.null&enabled=eq.true&storage_provider=eq.r2&limit=1500";
- const response=await fetcher(SUPABASE+"/rest/v1/humkin_radio_tracks"+query,
-  {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
- if(!response.ok)throw Error("Public station catalog unavailable: "+response.status);
- const cloud=await response.json();
+ const select="id,title,artist,album,sha256,kind,enabled,published_at,duration_seconds,is_single,storage_provider,r2_object_key";
+ const cloud=[],seenPages=new Set();
+ for(let offset=0;offset<MAX_TRACKS;offset+=CATALOG_PAGE){
+   const query="?select="+select+
+     "&published_at=not.is.null&enabled=eq.true&storage_provider=eq.r2"+
+     "&order=id.asc&limit="+CATALOG_PAGE+"&offset="+offset;
+   const response=await fetcher(SUPABASE+"/rest/v1/humkin_radio_tracks"+query,
+     {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
+   if(!response.ok)throw Error("Public station catalog unavailable: "+response.status);
+   const page=await response.json();
+   if(!Array.isArray(page))throw Error("Invalid public station catalog");
+   if(!page.length)break;
+   const fingerprint=String(page[0]?.id||"")+":"+String(page.at(-1)?.id||"");
+   if(seenPages.has(fingerprint))throw Error("Public catalog pagination stalled");
+   seenPages.add(fingerprint);
+   cloud.push(...page);
+   if(page.length<CATALOG_PAGE)break;
+ }
+ if(cloud.length>=MAX_TRACKS)throw Error("Catalog cap reached; shard pagination before adding more recordings");
  let manual=null;
  try{
    const other=await fetcher(PUBLIC_MANIFEST,{cache:"no-store"});
@@ -73,6 +118,10 @@ async function queryPublicCatalog(fetcher){
  }catch{/* Approved Supabase crate alone is sufficient to stay on air. */}
  const tracks=approvedCatalog(cloud,manual);
  if(!tracks.some(t=>t.kind==="song"))throw Error("No approved music in R2");
+ try{
+   const response=await fetcher(PUBLIC_ENRICHMENT,{cache:"no-store"});
+   if(response.ok)applyReviewedEnrichment(tracks,await response.json());
+ }catch{/* No enrichment means existing editorial programming remains valid. */}
  // Active owner-defined grouping/rules are public read-only programming
  // metadata. Failure to load optional settings does NOT invent restrictions.
  tracks.bumper_groups=[];tracks.bumper_rules=[];tracks.mainline_programs=[];
