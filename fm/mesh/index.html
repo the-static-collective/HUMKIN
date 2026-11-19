@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#1e1b2e">
+<title>HUMKIN · MESH Living Library</title>
+<link rel="stylesheet" href="../radio.css">
+<style>
+:root{color-scheme:light;font-family:system-ui,sans-serif}
+body{background:#faf2e6;color:#261e35}
+main{max-width:1080px;margin:auto;padding:24px 18px 90px}
+h1{font-size:clamp(3rem,8vw,6rem);line-height:.95;letter-spacing:-.07em;margin:18px 0}
+h2{margin:0 0 14px;font-size:1.35rem}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+.panel{background:#fff;border:2px solid #261e35;border-radius:13px;box-shadow:5px 5px 0 #261e35;padding:20px;margin:10px 0}
+.panel.tint{background:#e5f6ed}
+.metric{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-.06em}
+label{font-weight:700;display:block;margin:10px 0 4px}
+input,select,button{font:inherit}
+input[type=text],input[type=file],select{display:block;box-sizing:border-box;width:100%;padding:10px;border:2px solid #261e35;border-radius:8px;background:#fff}
+button,.button-link{display:inline-block;background:#f6df8d;color:#211b30;padding:11px 14px;border:2px solid #211b30;border-radius:9px;font-weight:800;text-decoration:none;cursor:pointer;margin:4px 4px 4px 0}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.active{background:#c4f5df}
+button.held{background:#fad2d8}
+.small{font-size:.9rem;color:#554b5f;line-height:1.5}
+.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpis>div{border:1px solid #aa9caa;padding:12px;border-radius:9px}
+pre{background:#261e35;color:#fff;border-radius:8px;padding:12px;max-height:210px;overflow:auto;white-space:pre-wrap;font-size:.8rem}
+progress{width:100%;height:16px;accent-color:#261e35}
+ul{padding-left:20px}li{margin:7px 0;overflow-wrap:anywhere}
+.status{font-weight:700;min-height:22px}
+.safety{border-left:4px solid #614891;padding-left:12px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
+</style>
+<script type="module" src="./mesh.js"></script></head><body>
+<header class="topline"><a href="../" class="brand">HUMKIN <span>✳</span></a>
+<span class="station-id">MESH · DISTRIBUTED MUSIC LIBRARY</span><a class="dj-link" href="../manage/">TOWER / STATION MANAGER</a></header>
+<main>
+<p class="eyebrow">MESH-001 · OWNER BACKSTAGE</p>
+<h1>THE LIVING<br><em>LIBRARY.</em></h1>
+<p class="lead">One catalog, many computers, many copies. Every recording gets a verifiable fingerprint; every public reference keeps its identity as storage moves. <strong>Nothing in this tool publishes files merely because you inventoried them.</strong></p>
+<div class="panel tint">
+<h2>01 · Unlock the private mesh</h2>
+<p id="auth" class="status">Checking existing HUMKIN owner session…</p>
+<div class="row"><a class="button-link" href="../load/">SIGN IN THROUGH THE CRATE LOADER</a>
+<button id="refresh" type="button">REFRESH MESH</button></div>
+<p class="small">Uses the same owner sign-in as your Crate Loader, with no additional keys or passwords. Your local filenames and node inventory stay private.</p>
+</div>
+<div class="panel">
+<h2>02 · Storage without duplication</h2>
+<div class="kpis">
+<div><div id="count-objects" class="metric">—</div><div class="small">Unique file hashes</div></div>
+<div><div id="count-copies" class="metric">—</div><div class="small">Known physical copies</div></div>
+<div><div id="count-nodes" class="metric">—</div><div class="small">Storage nodes</div></div>
+</div>
+<p id="bytes" class="status">Scan a node to calculate size.</p>
+<p class="small">A node is a registered place where a copy was <em>observed</em>—not necessarily online now. Public broadcasting still uses independently verified, published radio storage.</p>
+<ul id="nodes"><li>Unlock to view your storage nodes.</li></ul>
+<button id="sync-radio" type="button" disabled>INDEX EXISTING PUBLIC R2 CATALOG</button>
+</div>
+<div class="grid">
+<section class="panel">
+<h2>03 · Inventory a computer</h2>
+<p>From the HUMKIN repository, double-click <code>tools/mesh/SCAN-MY-MUSIC.cmd</code> on Windows. Choose your music root and folder layout; it creates an inventory JSON in Downloads.</p>
+<label for="manifest">Select the generated <code>humkin-mesh-inventory.json</code></label>
+<input id="manifest" type="file" accept=".json,application/json">
+<p id="manifest-info" class="small">No file chosen. Selecting a JSON file will not upload it.</p>
+<ul id="preview"></ul>
+<div class="row"><button id="ingest" type="button" class="active" disabled>REGISTER INVENTORY (METADATA ONLY)</button>
+<button id="stop" disabled>STOP AFTER THIS BATCH</button></div>
+<progress id="progress" max="100" value="0"></progress>
+<p id="ingest-result" class="status"></p>
+<p class="small safety">Manifests list filenames and folders; treat them as private. Uploading a manifest sends <strong>metadata only</strong> to the owner-restricted Supabase registry. The actual MP3s, WAVs and stems stay on the computer.</p>
+</section>
+<section class="panel">
+<h2>04 · Permanent SIA music references</h2>
+<p>Create a stable link for an <strong>already published and enabled</strong> radio recording. The link stays the same when you repoint it to another approved recording. Holding it immediately makes it unavailable, without silently swapping songs.</p>
+<label for="track">Approved public radio recording</label><select id="track"><option value="">Unlock to load approved tracks</option></select>
+<label for="slug">Permanent link ID (letters, numbers and hyphens)</label>
+<input id="slug" type="text" placeholder="warmth-radio-001" maxlength="41" autocomplete="off">
+<label for="link-title">Public display title</label><input id="link-title" type="text" placeholder="The Warmth Recording" maxlength="240">
+<label for="reason">Reason for this decision (historical witness)</label>
+<input id="reason" type="text" placeholder="Approved release / migration / correction" maxlength="240">
+<div class="row">
+<button id="create-link" type="button" class="active" disabled>CREATE STABLE LINK</button>
+<button id="repoint-link" type="button" disabled>REPOINT EXISTING LINK</button>
+<button id="hold-link" type="button" class="held" disabled>HOLD LINK</button>
+</div>
+<p id="link-result" class="status"></p>
+<p class="small">Choose an existing link by entering its ID; repointing and holding preserve the same address and append a history event.</p>
+<h2>Existing references</h2><ul id="links"><li>Unlock to view references.</li></ul>
+<div class="row"><button id="export-sia" type="button" disabled>EXPORT FOR SIA LINKBANK</button>
+<a class="button-link" href="../../p/?id=radio-surprise-001">OPEN SIA PACKET PILOT</a></div>
+</section>
+</div>
+<div class="panel">
+<h2>05 · The next horizon</h2>
+<p>The mesh already separates <strong>song identity</strong>, <strong>physical bytes</strong>, <strong>where copies were last seen</strong>, and <strong>human permission to publish</strong>. This is the foundation for managed replication, storage thresholds, prefetch, and TOWER station programming—not a claim those autonomous movers are running yet.</p>
+<pre id="log" role="log" aria-live="polite">MESH ready.</pre>
+</div>
+</main>
+</body></html>
