@@ -1,0 +1,49 @@
+{
+  "schema": "ghot.garden-intent/v1",
+  "project": "HUMKIN — Radio/Tower/Compost",
+  "purpose": "Make the whole music library playable, editable, distributable, and generative across the Static Collective's radio garden, without losing the correct live listener experience or current tower state.",
+  "foundations": [
+    {
+      "id": "live-fallback",
+      "text": "Primary button listens live; Longwave and Same-Time Radio are invisible fallbacks; Road Shuffle remains separately visible; preserve artwork/title and return-to-live after one-off listening.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/167",
+      "status": "USER_REPORTED"
+    },
+    {
+      "id": "transmitter-truth",
+      "text": "The authoritative now-playing title/artwork comes from the actual transmitter; a stale website playlist must not masquerade as broadcast truth.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/167",
+      "status": "USER_REPORTED"
+    },
+    {
+      "id": "background-radio",
+      "text": "A minimized or backgrounded browser should remain on the authentic live stream through track transitions, with fallback state observable for troubleshooting.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/166",
+      "status": "PROPOSED"
+    },
+    {
+      "id": "whole-library",
+      "text": "Compost Heap is the living all-tracks station, prioritizing the least-played material; shared blobs may belong to multiple radio stations with editable metadata.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/167",
+      "status": "USER_REPORTED"
+    },
+    {
+      "id": "tower-edit",
+      "text": "Any track can be enabled/disabled, renamed, reassigned, and reordered without losing stable identity or stale move indices.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/166",
+      "status": "PROPOSED"
+    },
+    {
+      "id": "operation",
+      "text": "Invent, consolidate, replace and prove. Do not preserve obsolete app architecture for compatibility alone, and do not claim a PR is a field result.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/167",
+      "status": "USER_REPORTED"
+    }
+  ],
+  "next": "Verify PR #166 against main, then field-test the real live radio over consecutive track transitions with the browser minimized; capture timestamped transmitter now-playing and observed fallback states.",
+  "unknowns": [
+    "Live minimization behavior on Mac and Android remains unverified in this handoff.",
+    "Actual last device field test may be newer than this record; check the user and source receipts.",
+    "Newer PRs/merges may change what is already running; never trust the pilot's PR table without refreshing."
+  ]
+}

@@ -1,5 +1,7 @@
 # HUMKIN — MUTANT POP
 
+> **Current-work re-entry (draft):** See [CONTINUE.md](CONTINUE.md) for a dated, source-linked pilot covering the newer radio/Tower/studio work. This is a proposal, not proof of deployed behavior. Re-check live PR status before acting.
+
 Free-to-listen, free-to-download player for the 12-song *MUTANT POP* album, with an on-demand HUMKIN RADIO companion.
 
 **Repository:** the-static-collective/HUMKIN  

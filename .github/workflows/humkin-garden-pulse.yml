@@ -1,0 +1,44 @@
+name: HUMKIN garden pulse — generated CONTINUE
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - AGENTS.md
+      - garden/intent.json
+      - .github/workflows/humkin-garden-pulse.yml
+  schedule:
+    - cron: '27 */2 * * *'
+permissions:
+  contents: write
+jobs:
+  pulse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/checkout@v4
+        with:
+          repository: the-static-collective/GHoT
+          ref: main
+          path: .garden-tools
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate shared generator
+        run: PYTHONPATH=.garden-tools python -m unittest discover -s .garden-tools/garden/tests -v
+      - name: Refresh HUMKIN current-state view
+        run: python .garden-tools/garden/pulse.py pulse --owner the-static-collective --repo HUMKIN --intent garden/intent.json --out CONTINUE.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit only changed source state
+        run: |
+          git add CONTINUE.md
+          if git diff --cached --quiet; then
+            echo "No meaningful source delta."
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore(continuity): refresh source-linked HUMKIN handoff'
+          git push
