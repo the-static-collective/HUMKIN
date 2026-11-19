@@ -26,7 +26,10 @@ function validate(raw,now=Date.now()){
  const day=str(raw.day,10);
  const time=str(raw.time,5);
  const dayMs=dayAsUTC(day);
- const today=Math.floor(now/86400000)*86400000;
+ const pieces=Object.fromEntries(new Intl.DateTimeFormat("en-US",{
+   timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"
+ }).formatToParts(new Date(now)).map(p=>[p.type,p.value]));
+ const today=dayAsUTC(pieces.year+"-"+pieces.month+"-"+pieces.day);
  if(!Number.isFinite(dayMs)||dayMs<today||dayMs>today+31*86400000)
    throw Error("Choose a date within the coming month");
  if(!/^(?:[01]\d|2[0-3]):(?:00|15|30|45)$/.test(time))
