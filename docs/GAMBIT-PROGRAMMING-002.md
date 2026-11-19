@@ -1,6 +1,6 @@
 # GAMBIT PROGRAMMING 002 — contribute a radio hour, review, schedule, return
 
-**Status:** integrated source for a private day-programming queue and controlled
+**Status:** Supabase private proposal table applied and the `humkin-program-proposals` Edge Function deployed on November 19, 2026; integrated source for a review desk and controlled
 Cloud Autopilot guest windows. The main live station's player, Long Wave
 fallbacks and Station One's true Acer transmitter are not changed. The
 Cloudflare Autopilot laboratory still requires its own Worker deployment and
@@ -97,12 +97,14 @@ timezone database is installed.
 
 ## Deployment boundary
 
-Deploy the SQL migration
+The SQL migration
 `supabase/migrations/20261119224500_humkin_program_proposals.sql`
-and Edge Function `humkin-program-proposals` with anonymous invocation
-enabled for proposal intake. All owner-only actions still verify a *real*
+and Edge Function `humkin-program-proposals` have been applied/deployed to
+`pantry-gate`. The separate Edge Function permits anonymous invocation All owner-only actions still verify a *real*
 Supabase Auth user via `getUser` and the approved owner identity.
-No public SQL access to the private queue.
+No public SQL access to the private queue: verified `anon` and `authenticated`
+roles have no table SELECT privilege, and RLS has zero public policies.
+Function deployment and schema verification are not a public browser field test.
 
 This deployment is independent from the older Guild contribution API; do not
 modify its mission types or credit ledger. Do not repoint `/fm/`,
