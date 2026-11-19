@@ -79,7 +79,7 @@ import {makeFeedbackSnapshot} from "./snapshot-core.mjs";
 const ENDPOINT="https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-compost";
 const get=id=>document.getElementById(id);
 const audio=get("audio"),tune=get("tune"),next=get("next"),handoff=get("handoff"),evidence=get("evidence"),status=get("status");
-let snapshot=[],queue=[],current=null,index=0,seed="",cycles=0,reported=false,broken=new Set(),loadTask=null;
+let snapshot=[],queue=[],current=null,index=0,seed="",cycles=0,reported=false,pinned=false,broken=new Set(),loadTask=null;
 let priorIds=[],listenerId;
 function localGet(key){try{return localStorage.getItem(key)}catch{return null}}
 function localSet(key,value){try{localStorage.setItem(key,value)}catch{}}
@@ -124,6 +124,7 @@ async function load(){
 function program(){
   const date=new Date().toISOString().slice(0,10);
   seed=date+"-set-"+cycles++;
+  pinned=false;
   queue=buildAccidentSet(snapshot.filter(t=>!broken.has(t.id)),{size:6,seed,avoidIds:priorIds});
   if(!queue.length)throw Error("No recordings can be played.");
   index=0;
@@ -159,13 +160,13 @@ function report(){
 }
 function playNext(){
   report();
-  if(index>=queue.length)program();
+  if(index>=queue.length){if(pinned)index=0;else program();}
   const track=queue[index++];
   if(!track){status.textContent="No eligible recording available.";return}
   current=track;reported=false;
   show(track);
   audio.pause();audio.src=track.src;audio.hidden=false;
-  next.disabled=false;tune.textContent="Restart the experiment";
+  next.disabled=false;tune.textContent="Start a new six-track experiment";
   status.textContent="Loading "+track.title+"…";
   audio.play().catch(error=>{if(current===track)status.textContent=
     error.name==="NotAllowedError"?"Press play on the audio controls.":"Could not start this recording.";});
@@ -174,7 +175,7 @@ tune.addEventListener("click",async()=>{
   tune.disabled=true;status.textContent="Preparing the next accident…";
   try{
     if(!snapshot.length)await load();
-    audio.pause();priorIds=[];cycles=0;broken.clear();program();playNext();
+    audio.pause();priorIds=[];broken.clear();program();playNext();
   }catch(error){status.textContent="Could not tune: "+error.message}
   finally{tune.disabled=false}
 });
@@ -203,9 +204,10 @@ evidence.addEventListener("click",async()=>{
   try {
     const scores=await request({},"scores");
     const report=makeFeedbackSnapshot(queue,scores.scores,{seed});
+    pinned=true;
     const filename="humkin-feedback-"+seed.replace(/[^a-zA-Z0-9-]/g,"-")+"-"+Date.now()+".json";
     downloadJSON(report,filename);
-    status.textContent="Feedback snapshot saved locally. Export a second snapshot after a listening period to compare changes. Neither file establishes unique listeners.";
+    status.textContent="Feedback snapshot saved. This six-track experiment is now held steady for comparison; tune a new experiment explicitly to replace it. Counts do not establish unique listeners.";
   } catch(error){status.textContent="Could not export feedback: "+error.message}
   finally{evidence.disabled=false}
 });
