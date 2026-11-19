@@ -1,5 +1,6 @@
 import {SCHEMA,blank,validate,portable,merge,ingestInventory,ingestPublishedCrate,
   addBrowserFile,addHosted,sources,nextCompost} from "./links.mjs";
+import {installR2Intake} from "./r2-intake.mjs";
 
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public key, RLS-restricted.
@@ -147,7 +148,7 @@ for(const id of ["local","folder"])$(id).addEventListener("change",async event=>
   const files=event.target.files;
   try{await localBatch(files);}finally{event.target.value="";}
 });
-$("cloud").addEventListener("click",async()=>{
+async function loadPublishedFromR2(){
   busy(true);try{
     // Same public catalog and same public key already used by HUMKIN RADIO.
     const fields="sha256,title,artist,album,kind,enabled,published_at,duration_seconds,storage_provider,r2_object_key";
@@ -158,7 +159,8 @@ $("cloud").addEventListener("click",async()=>{
     const count=ingestPublishedCrate(graph,await response.json());
     save();show();log("Linked "+count+" publicly approved R2 recordings into this workbench.");
   }catch(error){broadcastError(error);}finally{busy(false);}
-});
+}
+$("cloud").addEventListener("click",loadPublishedFromR2);
 $("host-form").addEventListener("submit",event=>{
   event.preventDefault();
   try{
@@ -185,5 +187,13 @@ $("clear").addEventListener("click",()=>{
   try{localStorage.removeItem(STORE);}catch{/* optional */}
   $("now").textContent="No recording selected.";$("source").textContent="";
   log("Browser index cleared. Original files and published catalogs were not touched.");show();
+});
+installR2Intake({
+  getFiles:()=>[...localFiles.entries()].map(([sha256,entry])=>({
+    sha256,file:entry.file,
+    record:graph.recordings.find(record=>record.sha256===sha256)||null
+  })),
+  onPublished:loadPublishedFromR2,
+  log
 });
 show();
