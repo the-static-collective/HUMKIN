@@ -125,14 +125,13 @@ function trackRow(track, context, index) {
 function renderRows(id, data, render, extra = null) {
   const container = byId(id);
   const key = JSON.stringify([data, extra]);
+  if (id === "queue" && dragging) return;
   if (viewKeys.get(id) === key) return;
   viewKeys.set(id, key);
   const buttons = [...container.querySelectorAll("button")];
   const focused = document.activeElement;
   const index = buttons.indexOf(focused);
   const scrollTop = container.scrollTop;
-  // Avoid replacing controls while the operator is dragging the live queue.
-  if (id === "queue" && dragging) return;
   container.replaceChildren(...render());
   container.scrollTop = scrollTop;
   if (index >= 0) {
