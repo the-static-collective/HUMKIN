@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#271b34">
+<meta name="description" content="HUMKIN Gambit Workbench: conditional radio-programming rules you can learn, order and test in your own listening world.">
+<title>HUMKIN · The Gambit Workbench</title>
+<link rel="stylesheet" href="./orchard.css">
+<style>
+.gambit-hero{padding:42px max(5%,calc((100vw - 1150px)/2));background:linear-gradient(120deg,#2a1d3c,#4f3755);color:#fff2e5}
+.gambit-hero h1{font-size:clamp(42px,7vw,84px);margin:12px 0 16px;line-height:1}
+.gambit-hero p{max-width:750px}
+.gambit-shell{max-width:1210px;margin:0 auto;padding:38px 5% 80px}
+.gambit-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.85fr);gap:20px;align-items:start}
+.gambit-panel{background:#fffaf0;border:2px solid #291e37;border-radius:13px;padding:clamp(16px,3vw,28px);box-shadow:5px 6px 0 #d2afb7}
+.gambit-panel h2{font:800 clamp(23px,3vw,35px) Georgia,serif;line-height:1.08}
+.gambit-row{background:#f3e6e1;border:1px solid #987b8b;border-radius:10px;padding:12px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:9px;margin:12px 0}
+.gambit-num{background:#34273f;color:#ffe2a6;border-radius:7px;text-align:center;align-self:start;padding:5px;font-weight:900}
+.gambit-controls{display:grid;gap:7px}
+.gambit-controls label{font-size:12px;font-weight:850;display:grid;gap:4px}
+.gambit-controls select{font:inherit;min-height:40px;min-width:0;width:100%;background:#fffdf7;border:1px solid #8d788b;border-radius:6px;padding:6px}
+.gambit-row-buttons{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gambit-row-buttons button{min-height:36px;padding:4px 9px;border:1px solid #887083;border-radius:6px;background:#fffaf0}
+.gambit-row-buttons label{display:flex;align-items:center;gap:6px}
+.gambit-row-buttons input{width:18px;height:18px}
+.gambit-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.gambit-actions .primary,.gambit-actions .secondary{min-height:44px}
+.gambit-program{list-style:none;padding:0;display:grid;gap:12px}
+.gambit-program li{background:#f5e8d9;border-left:5px solid #a27b96;padding:13px}
+.gambit-program strong{display:block}
+.gambit-program small{display:block;margin-top:6px;color:#605162}
+.gambit-state{font-weight:750;font-size:12px;color:#654a68}
+.gambit-path{margin-top:22px}
+.gambit-path ol{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding:0;list-style:none}
+.gambit-path li{border:1px solid #8a748b;background:#fffaf0;border-radius:10px;padding:14px}
+.gambit-path li[data-state="future"]{opacity:.72}
+.gambit-path li[data-state="ready"]{border:2px solid #517459;background:#e4f0df}
+.gambit-path .meta{font-size:10px;font-weight:950;color:#684d6a;text-transform:uppercase;letter-spacing:.08em}
+.gambit-path h3{font-size:18px;margin:8px 0}
+.gambit-path p{font-size:12px;margin:0}
+.gambit-note{font-size:12px;color:#574d58}
+.gambit-link{display:inline-block;overflow-wrap:anywhere;margin-top:12px;font-weight:850}
+@media(max-width:790px){.gambit-grid{grid-template-columns:1fr}}
+</style>
+<script defer src="./model.js"></script>
+<script defer src="../signal/model.js"></script>
+<script defer src="./gambit-core.js"></script>
+<script defer src="./gambits-ui.js"></script>
+</head>
+<body>
+<header class="mast">
+  <a class="logo" href="./">HUMKIN <span>✳</span> ORCHARD</a>
+  <nav aria-label="Workbench navigation"><a href="./">MY ORCHARD</a><a href="../signal/">MY SIGNAL</a><a href="../participate/">GUILDS</a><a href="../../fmstudio/">THE DIAL</a></nav>
+</header>
+<main>
+<section class="gambit-hero">
+  <p class="eyebrow">THE OUTPOST · PROGRAMMING SCHOOL 001</p>
+  <h1>THE GAMBIT<br><em>WORKBENCH.</em></h1>
+  <p>Build a brain for your little radio. Rules run in priority order: IF something is true, THEN choose how the next recording should be selected. The first applicable rule wins.</p>
+  <p><strong>Nothing here changes public air.</strong> Your local Gambits can make a real three-song shareable Signal from HUMKIN's published rotation. Public station permissions require separate verification.</p>
+</section>
+<section class="gambit-shell">
+  <div class="gambit-grid">
+    <section class="gambit-panel" aria-labelledby="rules-title">
+      <p class="eyebrow">EDIT YOUR STATION'S INSTINCTS</p>
+      <h2 id="rules-title">Ordered radio Gambits</h2>
+      <p id="gambit-level" class="gambit-state" role="status">Checking local Orchard level…</p>
+      <div id="gambit-rules"></div>
+      <div class="gambit-actions">
+        <button type="button" id="gambit-add" class="secondary">+ ADD GAMBIT</button>
+        <button type="button" id="gambit-reset" class="secondary">RESTORE STARTER RULES</button>
+        <button type="button" id="gambit-run" class="primary">▶ BUILD A THREE-SONG PROGRAM</button>
+      </div>
+      <p class="gambit-note">Rules and simulated song choices are saved only on this device. No listening XP, broadcast authority or server credit is awarded for running a simulation.</p>
+    </section>
+    <section class="gambit-panel" aria-labelledby="program-title">
+      <p class="eyebrow">THE NEXT THREE RECORDINGS</p>
+      <h2 id="program-title">Your Gambit setlist</h2>
+      <p id="gambit-status" role="status" aria-live="polite">Loading the published song catalog…</p>
+      <ol id="gambit-program" class="gambit-program"></ol>
+      <a id="gambit-signal" class="gambit-link" hidden href="../signal/">OPEN MY THREE-SONG SIGNAL ↗</a>
+      <p class="gambit-note">The Signal is an independent, listener-made program. It does not change Station One, the Top 42, Tower, or Cloud Autopilot.</p>
+    </section>
+  </div>
+  <section class="gambit-path gambit-panel" aria-labelledby="gambit-path-title">
+    <p class="eyebrow">THE NEVER-ENDING RADIO SKILL TREE</p>
+    <h2 id="gambit-path-title">From one receiver to a living network</h2>
+    <ol id="gambit-stages"></ol>
+    <p class="gambit-note">Local progress unlocks personal creation tools. Community roles, permanent publishing, station ownership and multi-station controls require reviewed work and server-issued permission; browser XP never grants them.</p>
+  </section>
+</section>
+</main>
+<footer><a href="./">← THE ORCHARD</a><span>HUMKIN RADIO · MAKE IT YOURS</span><a href="../signal/">MY LITTLE SIGNAL ↗</a></footer>
+</body>
+</html>
