@@ -8,7 +8,7 @@ const html=readFileSync("fmstudio/index.html","utf8");
 const URL_ROOT="https://humkin.abundent.org/fmstudio/";
 const REGISTRY="https://humkin-long-wave.joyvolcanomusic.workers.dev/hls/stations";
 
-function fixture(payload) {
+function fixture(payload, initiallyOffline=false) {
   const els=new Map(), events=[];
   class Element {
     constructor(tag,id) {
@@ -50,7 +50,7 @@ function fixture(payload) {
   els.get("station-tune").href="https://humkin.abundent.org/fm/";
   const hero=new Element("a","hero-tune");hero.href="https://humkin.abundent.org/fm/";
   const listeners={};
-  let current=payload,networkError=false,fetches=[],interval=null;
+  let current=payload,networkError=initiallyOffline,fetches=[],interval=null;
   const document={
     baseURI:URL_ROOT,
     getElementById:id=>els.get(id)||null,
@@ -80,8 +80,8 @@ const state=(...ids)=>({schema:"humkin.fm.station-registry/v1",
     ...ids.map(id=>({id,on_air:true}))]});
 
 test("FM Studio keeps classic receiver and Compost while live station lookup is absent", async()=>{
-  const f=fixture(state());
-  f.setError(true);await f.flush();
+  const f=fixture(state(),true);
+  await f.flush();
   assert.ok(f.station("station-one"));
   assert.ok(f.station("compost"));
   assert.ok(f.station("night-drive"));
