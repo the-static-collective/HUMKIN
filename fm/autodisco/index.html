@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#171820">
+<title>Auto Disco V20 · HUMKIN Accident Frequency</title>
+<meta name="description" content="An experimental HUMKIN frequency where overlooked recordings get heard before popularity takes over.">
+<style>
+:root{font:16px/1.55 system-ui,sans-serif;color-scheme:dark;background:#171820;color:#f5efe9;--gold:#f6cb83;--line:#5b5665;--muted:#c3b9c8}
+*{box-sizing:border-box}body{max-width:960px;margin:auto;padding:clamp(16px,4vw,42px)}
+a{color:var(--gold)}h1{font-size:clamp(2.65rem,7vw,5rem);line-height:.96;letter-spacing:-.06em;margin:.5em 0 .25em}
+h2{font-size:1.35rem}p{max-width:70ch}header,footer{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+header{border-bottom:1px solid var(--line);padding-bottom:18px}
+.eyebrow{font:700 .72rem ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.lede{color:var(--muted);font-size:1.13rem}
+.panel{background:#26232e;border:1px solid var(--line);border-radius:14px;padding:clamp(17px,3vw,30px);margin:25px 0}
+#cover{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#171820}
+.now{display:grid;grid-template-columns:minmax(120px,220px) 1fr;gap:clamp(15px,4vw,28px);align-items:center}
+#title{font-size:clamp(1.4rem,3vw,2.2rem);line-height:1.12;margin:.2em 0}
+#artist{color:var(--muted)}#meta{font-size:.84rem;color:var(--gold)}
+audio{width:100%;margin:12px 0}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+button{font:inherit;cursor:pointer;min-height:44px;padding:10px 16px;background:#393544;color:#fff5e5;border:1px solid #837a8c;border-radius:6px}
+button.primary{background:var(--gold);color:#251722;border-color:var(--gold);font-weight:800}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+[hidden]{display:none!important}
+#status{min-height:1.5em;color:var(--gold)}
+#rating{border-top:1px solid var(--line);padding-top:16px;margin-top:20px}
+#rating label{display:block;margin-bottom:10px}
+select{font:inherit;margin:6px 0 0;padding:8px;background:#171820;border:1px solid #837a8c;color:white;border-radius:5px}
+ol{padding-left:1.5rem}li{padding:.45rem 0;border-bottom:1px solid #3e3a48}li strong{display:block}li small{color:var(--muted)}
+.note{color:var(--muted);font-size:.9rem}
+footer{border-top:1px solid var(--line);margin-top:35px;padding-top:18px;font-size:.9rem}
+@media(max-width:530px){.now{grid-template-columns:96px 1fr}.now #title{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<header><strong>HUMKIN / RADIO & RECORDS</strong><nav><a href="../../fmstudio/">The Dial</a> · <a href="../../fmstudio/#compost">The Compost Heap</a></nav></header>
+<main>
+<p class="eyebrow">Experimental frequency · Auto Disco V20 × Accident Engine</p>
+<h1>The Accident Frequency.</h1>
+<p class="lede">A station that gives forgotten recordings another chance. Least-heard first. Strange neighbors encouraged. No invented DJ dialogue.</p>
+<section class="panel" aria-labelledby="listen-title">
+<h2 id="listen-title">Tune in</h2>
+<p id="status" role="status" aria-live="polite">Loading the published HUMKIN archive…</p>
+<div class="now" id="current" hidden>
+  <img id="cover" alt="Current recording artwork" src="../../cover.jpg" width="220" height="220">
+  <div><span class="eyebrow" id="slot"></span><h2 id="title"></h2><p id="artist"></p><p id="meta"></p></div>
+</div>
+<audio id="audio" controls preload="none" hidden></audio>
+<div class="actions">
+<button id="tune" type="button" class="primary" disabled>Tune to Auto Disco</button>
+<button id="next" type="button" disabled>Another accident</button>
+<button id="handoff" type="button" disabled>Export V20 editorial handoff</button>
+<button id="evidence" type="button" disabled>Export feedback snapshot</button>
+</div>
+<form id="rating" hidden>
+  <p><strong>What did that do to you?</strong> Responses use the Compost Heap's existing rating service.</p>
+  <label>Rating <select id="stars" required><option value="">Choose 1–5</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+  <label>Reaction <select id="reaction"><option value="">No reaction tag</option><option value="dance">Made me dance</option><option value="again">Play it again</option><option value="late">For the late hours</option><option value="surprise">Surprised me</option></select></label>
+  <button type="submit">Save response</button>
+  <span id="rating-status" role="status"></span>
+</form>
+</section>
+<section class="panel">
+<p class="eyebrow">Today's proposed experiments</p>
+<h2>A six-record collision</h2>
+<p class="note">This is a published-audio selection, not a sealed V20 first-listen. Fewest reported plays are prioritized; artist and album variety break ties. The exact program changes as listening counts change.</p>
+<ol id="queue"></ol>
+<p class="note">The handoff JSON is an editorial shortlist only. Auto Disco V20 must obtain authorized source audio, verify it, and make independent blind listening packets before the DJs can speak about it.</p>
+</section>
+</main>
+<footer><span>HUMKIN × <a href="https://github.com/the-static-collective/The-AutodiscoV.20.-question-marks-" rel="noopener">Auto Disco V20</a></span><span>On-demand browser radio · not a synchronized live stream</span></footer>
+<script type="module">
+import {normalizeCatalog,buildAccidentSet,makeV20Handoff} from "./accident-core.mjs";
+import {makeFeedbackSnapshot} from "./snapshot-core.mjs";
+const ENDPOINT="https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-compost";
+const get=id=>document.getElementById(id);
+const audio=get("audio"),tune=get("tune"),next=get("next"),handoff=get("handoff"),evidence=get("evidence"),status=get("status");
+let snapshot=[],queue=[],current=null,index=0,seed="",cycles=0,reported=false,pinned=false,broken=new Set(),loadTask=null;
+let priorIds=[],listenerId;
+function localGet(key){try{return localStorage.getItem(key)}catch{return null}}
+function localSet(key,value){try{localStorage.setItem(key,value)}catch{}}
+function listener(){
+  if(listenerId)return listenerId;
+  const key=localGet("humkin.compost.listener");
+  if(/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(key||""))return listenerId=key;
+  listenerId=crypto.randomUUID ? crypto.randomUUID() : makeUUID();
+  localSet("humkin.compost.listener",listenerId);
+  return listenerId;
+}
+function makeUUID(){
+  const bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  const h=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+  return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join("-");
+}
+async function request(options={},view=""){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  try{
+    const response=await fetch(ENDPOINT+(view?"?view="+encodeURIComponent(view):""),{signal:controller.signal,...options});
+    const body=await response.json();
+    if(!response.ok)throw Error(body.error||"Compost archive unavailable.");
+    return body;
+  }finally{clearTimeout(timer)}
+}
+async function load(){
+  if(loadTask)return loadTask;
+  loadTask=request().then(data=>{
+    snapshot=normalizeCatalog(data);
+    if(!snapshot.length)throw Error("No playable published recordings in the archive.");
+    tune.disabled=false;
+    if(!current)status.textContent=snapshot.length+" recordings available. Tune in to begin.";
+    return snapshot;
+  }).catch(error=>{
+    status.textContent="Archive unavailable: "+error.message+". Try tuning again.";
+    tune.disabled=false;
+    throw error;
+  }).finally(()=>{loadTask=null});
+  return loadTask;
+}
+function program(){
+  const date=new Date().toISOString().slice(0,10);
+  seed=date+"-set-"+cycles++;
+  pinned=false;
+  queue=buildAccidentSet(snapshot.filter(t=>!broken.has(t.id)),{size:6,seed,avoidIds:priorIds});
+  if(!queue.length)throw Error("No recordings can be played.");
+  index=0;
+  priorIds=queue.map(t=>t.id);
+  handoff.disabled=false;evidence.disabled=false;
+  const list=get("queue");list.replaceChildren();
+  for(const track of queue){
+    const li=document.createElement("li"),title=document.createElement("strong"),meta=document.createElement("small");
+    title.textContent=track.title;meta.textContent=track.artist+" · "+(track.album||"Unfiled")+
+      " · "+(track.plays===null?"No recorded play-count row":track.plays+" recorded plays");
+    li.append(title,meta);list.append(li);
+  }
+}
+function show(track){
+  get("title").textContent=track.title;
+  get("artist").textContent=track.artist+(track.album?" · "+track.album:"");
+  get("meta").textContent=track.plays===null?"No recorded play-count row":track.plays+" recorded plays";
+  get("cover").src=track.artwork||"../../cover.jpg";
+  get("slot").textContent="Selection "+index+" / "+queue.length;
+  get("current").hidden=false;
+  get("rating").hidden=false;get("rating").reset();get("rating-status").textContent="";
+}
+function report(){
+  if(!current||reported)return;
+  let seconds=0;
+  for(let i=0;i<audio.played.length;i++)seconds+=audio.played.end(i)-audio.played.start(i);
+  const duration=Number.isFinite(audio.duration)?audio.duration:current.duration;
+  if(seconds+.25<Math.min(30,duration*.8))return;
+  reported=true;
+  const recording=current;
+  request({method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action:"play",track_id:recording.id,listener:listener()})}).catch(()=>{});
+}
+function playNext(){
+  report();
+  if(index>=queue.length){if(pinned)index=0;else program();}
+  const track=queue[index++];
+  if(!track){status.textContent="No eligible recording available.";return}
+  current=track;reported=false;
+  show(track);
+  audio.pause();audio.src=track.src;audio.hidden=false;
+  next.disabled=false;tune.textContent="Start a new six-track experiment";
+  status.textContent="Loading "+track.title+"…";
+  audio.play().catch(error=>{if(current===track)status.textContent=
+    error.name==="NotAllowedError"?"Press play on the audio controls.":"Could not start this recording.";});
+}
+tune.addEventListener("click",async()=>{
+  tune.disabled=true;status.textContent="Preparing the next accident…";
+  try{
+    if(!snapshot.length)await load();
+    audio.pause();priorIds=[];broken.clear();program();playNext();
+  }catch(error){status.textContent="Could not tune: "+error.message}
+  finally{tune.disabled=false}
+});
+next.addEventListener("click",playNext);
+audio.addEventListener("playing",()=>{status.textContent="On this receiver · "+current.title});
+audio.addEventListener("timeupdate",report);
+audio.addEventListener("ended",playNext);
+audio.addEventListener("error",()=>{
+  if(!current)return;
+  broken.add(current.id);
+  if(broken.size<3&&broken.size<snapshot.length)playNext();
+  else{audio.pause();status.textContent="Recordings could not load. Restart or retry later.";next.disabled=true;}
+});
+function downloadJSON(packet,filename){
+  const url=URL.createObjectURL(new Blob([JSON.stringify(packet,null,2)+"\n"],{type:"application/json"}));
+  const anchor=document.createElement("a");anchor.href=url;anchor.download=filename;
+  document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+handoff.addEventListener("click",()=>{
+  if(!queue.length)return;
+  downloadJSON(makeV20Handoff(queue,{seed}),"humkin-v20-editorial-handoff.json");
+});
+evidence.addEventListener("click",async()=>{
+  if(!queue.length)return;
+  evidence.disabled=true;status.textContent="Reading the current public response totals…";
+  try {
+    const scores=await request({},"scores");
+    const report=makeFeedbackSnapshot(queue,scores.scores,{seed});
+    pinned=true;
+    const filename="humkin-feedback-"+seed.replace(/[^a-zA-Z0-9-]/g,"-")+"-"+Date.now()+".json";
+    downloadJSON(report,filename);
+    status.textContent="Feedback snapshot saved. This six-track experiment is now held steady for comparison; tune a new experiment explicitly to replace it. Counts do not establish unique listeners.";
+  } catch(error){status.textContent="Could not export feedback: "+error.message}
+  finally{evidence.disabled=false}
+});
+get("rating").addEventListener("submit",async event=>{
+  event.preventDefault();if(!current)return;
+  const track=current,stars=Number(get("stars").value),reaction=get("reaction").value||null;
+  if(!Number.isInteger(stars)||stars<1||stars>5)return;
+  const button=get("rating").querySelector("button");button.disabled=true;
+  get("rating-status").textContent="Saving…";
+  try{
+    await request({method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action:"rate",track_id:track.id,listener:listener(),stars,reaction})});
+    if(current===track)get("rating-status").textContent="Response saved in the Compost Heap.";
+  }catch(error){if(current===track)get("rating-status").textContent=error.message}
+  finally{button.disabled=false}
+});
+load().catch(()=>{});
+</script>
+</body>
+</html>
