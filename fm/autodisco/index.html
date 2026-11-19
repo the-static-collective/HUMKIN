@@ -54,6 +54,7 @@ footer{border-top:1px solid var(--line);margin-top:35px;padding-top:18px;font-si
 <button id="tune" type="button" class="primary" disabled>Tune to Auto Disco</button>
 <button id="next" type="button" disabled>Another accident</button>
 <button id="handoff" type="button" disabled>Export V20 editorial handoff</button>
+<button id="evidence" type="button" disabled>Export feedback snapshot</button>
 </div>
 <form id="rating" hidden>
   <p><strong>What did that do to you?</strong> Responses use the Compost Heap's existing rating service.</p>
@@ -74,9 +75,10 @@ footer{border-top:1px solid var(--line);margin-top:35px;padding-top:18px;font-si
 <footer><span>HUMKIN × <a href="https://github.com/the-static-collective/The-AutodiscoV.20.-question-marks-" rel="noopener">Auto Disco V20</a></span><span>On-demand browser radio · not a synchronized live stream</span></footer>
 <script type="module">
 import {normalizeCatalog,buildAccidentSet,makeV20Handoff} from "./accident-core.mjs";
+import {makeFeedbackSnapshot} from "./snapshot-core.mjs";
 const ENDPOINT="https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-compost";
 const get=id=>document.getElementById(id);
-const audio=get("audio"),tune=get("tune"),next=get("next"),handoff=get("handoff"),status=get("status");
+const audio=get("audio"),tune=get("tune"),next=get("next"),handoff=get("handoff"),evidence=get("evidence"),status=get("status");
 let snapshot=[],queue=[],current=null,index=0,seed="",cycles=0,reported=false,broken=new Set(),loadTask=null;
 let priorIds=[],listenerId;
 function localGet(key){try{return localStorage.getItem(key)}catch{return null}}
@@ -95,10 +97,10 @@ function makeUUID(){
   const h=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
   return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join("-");
 }
-async function request(options={}){
+async function request(options={},view=""){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
   try{
-    const response=await fetch(ENDPOINT,{signal:controller.signal,...options});
+    const response=await fetch(ENDPOINT+(view?"?view="+encodeURIComponent(view):""),{signal:controller.signal,...options});
     const body=await response.json();
     if(!response.ok)throw Error(body.error||"Compost archive unavailable.");
     return body;
@@ -126,7 +128,7 @@ function program(){
   if(!queue.length)throw Error("No recordings can be played.");
   index=0;
   priorIds=queue.map(t=>t.id);
-  handoff.disabled=false;
+  handoff.disabled=false;evidence.disabled=false;
   const list=get("queue");list.replaceChildren();
   for(const track of queue){
     const li=document.createElement("li"),title=document.createElement("strong"),meta=document.createElement("small");
@@ -186,12 +188,26 @@ audio.addEventListener("error",()=>{
   if(broken.size<3&&broken.size<snapshot.length)playNext();
   else{audio.pause();status.textContent="Recordings could not load. Restart or retry later.";next.disabled=true;}
 });
+function downloadJSON(packet,filename){
+  const url=URL.createObjectURL(new Blob([JSON.stringify(packet,null,2)+"\n"],{type:"application/json"}));
+  const anchor=document.createElement("a");anchor.href=url;anchor.download=filename;
+  document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 handoff.addEventListener("click",()=>{
   if(!queue.length)return;
-  const packet=makeV20Handoff(queue,{seed});
-  const url=URL.createObjectURL(new Blob([JSON.stringify(packet,null,2)+"\n"],{type:"application/json"}));
-  const anchor=document.createElement("a");anchor.href=url;anchor.download="humkin-v20-editorial-handoff.json";
-  document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  downloadJSON(makeV20Handoff(queue,{seed}),"humkin-v20-editorial-handoff.json");
+});
+evidence.addEventListener("click",async()=>{
+  if(!queue.length)return;
+  evidence.disabled=true;status.textContent="Reading the current public response totals…";
+  try {
+    const scores=await request({},"scores");
+    const report=makeFeedbackSnapshot(queue,scores.scores,{seed});
+    const filename="humkin-feedback-"+seed.replace(/[^a-zA-Z0-9-]/g,"-")+"-"+Date.now()+".json";
+    downloadJSON(report,filename);
+    status.textContent="Feedback snapshot saved locally. Export a second snapshot after a listening period to compare changes. Neither file establishes unique listeners.";
+  } catch(error){status.textContent="Could not export feedback: "+error.message}
+  finally{evidence.disabled=false}
 });
 get("rating").addEventListener("submit",async event=>{
   event.preventDefault();if(!current)return;
