@@ -33,11 +33,11 @@ async function signedIn(){
  if(error||!data.session||data.session.user?.email?.toLowerCase()!==OWNER){
   session=null;
   $("auth").textContent="LOCKED · Sign in using the Crate Loader, then return here.";
-  setWork(false);return null;
+  if(!working)setWork(false);return null;
  }
  session=data.session;
  $("auth").textContent="UNLOCKED · "+session.user.email+" · metadata-only private registry";
- setWork(false);return session;
+ if(!working)setWork(false);return session;
 }
 async function call(action,data={},publicAccess=false){
  const current=publicAccess?null:await signedIn();
