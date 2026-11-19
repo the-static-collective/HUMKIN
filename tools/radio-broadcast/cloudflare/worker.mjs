@@ -1,5 +1,6 @@
 import {getStation,resolveStation,describeStations,STATIONS} from "./stations.mjs";
 import {resolveContract,describeContractStations,contractReceipt} from "./contracts.mjs";
+import {attachListenerWeather} from "../../../fm/top42/feedback-signals.mjs";
 /**
  * HUMKIN LONG WAVE — Cloudflare Workers + R2 live MP3 connection.
  * Source metadata comes only from the public, owner-approved Supabase crate
@@ -13,6 +14,7 @@ const SUPABASE="https://kbhqacsdvjsstzyplqij.supabase.co";
 const PUBLIC_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
 const PUBLIC_MANIFEST="https://humkin.abundent.org/fm/r2-tracks.json";
 const PUBLIC_ENRICHMENT="https://humkin.abundent.org/fm/catalog-enrichment.json";
+const PUBLIC_WEATHER=SUPABASE+"/functions/v1/humkin-resonance";
 const PUBLIC_SETTINGS=SUPABASE+"/rest/v1/humkin_radio_settings?select=bumper_groups,bumper_rules&id=eq.main&limit=1";
 const MAINLINE_PROGRAMS=SUPABASE+"/rest/v1/humkin_radio_programs?select=id,name,days,start_minute,end_minute,priority,track_ids,is_active&is_active=eq.true&limit=500";
 const UUID="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
@@ -138,6 +140,12 @@ async function queryPublicCatalog(fetcher){
    const response=await fetcher(PUBLIC_ENRICHMENT,{cache:"no-store"});
    if(response.ok)applyReviewedEnrichment(tracks,await response.json());
  }catch{/* No enrichment means existing editorial programming remains valid. */}
+ // Listener weather is optional, self-reported and changes eligibility only
+ // for stations that explicitly opt in. Missing/partial board fails closed.
+ try{
+   const weather=await fetcher(PUBLIC_WEATHER,{cache:"no-store",headers:{Accept:"application/json"}});
+   if(weather.ok)attachListenerWeather(tracks,await weather.json(),new Date());
+ }catch{/* Never fabricate feedback or change a legacy music rotation. */}
  // Active owner-defined grouping/rules are public read-only programming
  // metadata. Failure to load optional settings does NOT invent restrictions.
  tracks.bumper_groups=[];tracks.bumper_rules=[];tracks.mainline_programs=[];
