@@ -38,7 +38,8 @@ if(!slug.test(id))unavailable();
 else {
  try{
   const response=await fetch("https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-mesh",{
-   method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},
+   method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",
+    "apikey":"sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"},
    body:JSON.stringify({action:"resolve",slug:id})});
   if(!response.ok)throw Error("Unavailable");
   const record=await response.json();
