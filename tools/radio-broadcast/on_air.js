@@ -33,7 +33,8 @@ function trackRow(track, context, index) {
   const lane = {manual: "Queued", show: "Scheduled show", rotation: "Rotation"};
   info.textContent = [track.artist, lane[track.lane], track.disabled ? "Disabled" : track.held ? "Held" : "",
     track.rotation && context !== "queue" ? weight[track.weight] + " rotation" : "",
-    track.kind === "bumper" ? "Bumper" : "", track.in_lineup ? "Curated lineup" : ""].filter(Boolean).join(" · ");
+    track.kind === "bumper" ? "Bumper" : "", track.in_lineup ? "Curated lineup" : "",
+    track.genre || "", track.tags ? "Tags: " + track.tags : ""].filter(Boolean).join(" · ");
   if (context === "catalog" && track.score) {
     const score = track.score;
     info.textContent += " · " + score.plays + " archive listens";
@@ -102,8 +103,13 @@ function trackRow(track, context, index) {
     controls.append(button("Less often", "less", track, track.weight === -2));
     controls.append(button("More often", "more", track, track.weight === 2));
   }
-  const edit = button("Edit metadata", "metadata_edit", track);
-  edit.addEventListener("click", event => { event.stopImmediatePropagation(); openEditor(track); });
+  const edit = document.createElement("button");
+  edit.type = "button";
+  edit.textContent = "Edit metadata";
+  edit.dataset.action = "metadata_edit";
+  edit.dataset.track = track.id;
+  edit.setAttribute("aria-label", "Edit metadata · " + track.title);
+  edit.addEventListener("click", () => openEditor(track));
   controls.append(edit);
   row.dataset.track = track.id;
   row.append(title, info, controls);
