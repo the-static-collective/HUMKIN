@@ -1,209 +1,349 @@
-/* HUMKIN Station One — optional real shared live receiver on the main radio desk.
- * No autoplay. The existing #air Same-Time / Shuffle player remains independent.
- * Only the public Worker URL is embedded; there are NO R2 credentials in this file.
+/* HUMKIN /fm/ unified receiver.
+ * One original art-first interface; two visible choices; three behind-the-scenes
+ * playback layers: real HLS -> per-listener Long Wave -> browser Same-Time.
+ * No station credentials or browser-based guesses about Acer track selection.
  */
 (() => {
   "use strict";
   const byId = id => document.getElementById(id);
   const liveAudio = byId("live-air");
-  if (!liveAudio) return;
-  const oldAudio = byId("air");
-  const listen = byId("live-listen");
-  const backupButton = byId("live-backup");
-  const retry = byId("live-retry");
-  const status = byId("live-status");
-  const signal = byId("live-signal");
-  const source = byId("live-source");
+  const browserAudio = byId("air");
+  const listen = byId("listen");
+  const shuffle = byId("mode-shuffle");
+  if (!liveAudio || !browserAudio || !listen || !shuffle) return;
+  const radio = window.HUMKIN_RADIO;
   const BASE = "https://humkin-long-wave.joyvolcanomusic.workers.dev";
-  const LIVE = BASE + "/hls/live.m3u8";
-  const BACKUP = BASE + "/live.mp3";
-  let mode = "idle", player = null, sequence = 0, failures = 0, checking = false;
-  let wantsAudio = false;
-  function show(message) { status.textContent = message; }
-  function showSignal(online, age) {
-    if (!signal) return;
-    const fresh = Number.isFinite(age) && age >= 0 && age < 90;
-    signal.textContent = online ? "TRANSMITTER ON AIR" + (fresh ? " · Updated " + age + "s ago" : "") :
-      "NO FRESH TRANSMITTER SIGNAL";
-    signal.classList.toggle("online", Boolean(online));
+  const HLS = BASE + "/hls/live.m3u8";
+  const LONG_WAVE = BASE + "/live.mp3";
+  // Reserved public now-playing contract for a future Acer metadata publisher.
+  // Missing endpoint is expected until that part is deployed.
+  const NOW = BASE + "/hls/now-playing";
+  const stationCover = new URL("../cover.jpg", document.baseURI).href;
+  const status = byId("station-status");
+  const detail = byId("live-status");
+  const signal = byId("live-signal");
+  const sourceLabel = byId("live-source");
+  const title = byId("current-title");
+  const artist = byId("current-artist");
+  const artwork = byId("current-art");
+  const onDeck = byId("on-deck");
+  const counter = byId("counter");
+  const modeHelp = byId("mode-help");
+  const playlist = byId("phone-playlist");
+  let source = "idle"; // idle, hls, longwave, clock, shuffle
+  let hls = null, operation = 0, statusFailures = 0, checking = false;
+  let wantsAudio = false, metadataGeneration = 0;
+
+  function isLiveLayer() {
+    return source === "hls" || source === "longwave" || source === "clock";
   }
-  function listeningMetadata() {
-    // Station One does not yet publish live song titles. A browser-clock
-    // selection must never be passed off as the current broadcast recording.
-    if (mode !== "live" && mode !== "backup") return;
-    const name = mode === "live" ? "HUMKIN · Station One Live" : "HUMKIN · Long Wave";
-    document.title = name;
-    if (typeof navigator !== "undefined" && "mediaSession" in navigator &&
-        typeof MediaMetadata !== "undefined") {
-      try {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: name, artist: "HUMKIN RADIO", album: mode === "live" ?
-            "Shared Acer Broadcast" : "Independent Long Wave Rotation"
-        });
-      } catch { /* Media Session is optional. */ }
+  function paused() {
+    return source === "clock" || source === "shuffle"
+      ? browserAudio.paused : liveAudio.paused;
+  }
+  function setStatus(message, badge) {
+    if (detail) detail.textContent = message;
+    if (status) {
+      status.textContent = badge || (isLiveLayer() ? "ON THE AIR" : "READY TO TUNE IN");
+      status.classList.toggle("playing", isLiveLayer() && !paused());
     }
   }
-  function reset() {
-    if (player) { player.destroy(); player = null; }
+  function genericArt() {
+    if (artwork) {
+      artwork.src = stationCover;
+      artwork.alt = "HUMKIN Radio station artwork";
+    }
+    if (title) title.textContent = "HUMKIN RADIO · LIVE";
+    if (artist) artist.textContent = "MUSIC FOR THE LONG WAY HOME";
+    if (onDeck) onDeck.textContent = "ON DECK · Programmed at Station One";
+    if (counter) counter.textContent = "ON AIR";
+    document.title = "HUMKIN RADIO · LIVE";
+    if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: "HUMKIN RADIO · LIVE", artist: "HUMKIN RADIO",
+          album: "Station One", artwork: [{src: stationCover, sizes: "512x512", type: "image/jpeg"}]
+        });
+      } catch {}
+    }
+  }
+  function setSource(name) {
+    source = name;
+    const browser = name === "clock" || name === "shuffle";
+    liveAudio.hidden = browser;
+    browserAudio.hidden = !browser;
+    listen.setAttribute("aria-pressed", String(isLiveLayer()));
+    shuffle.setAttribute("aria-pressed", String(name === "shuffle"));
+    if (playlist) playlist.hidden = name !== "shuffle";
+    if (sourceLabel) sourceLabel.textContent = name;
+    if (modeHelp) modeHelp.textContent = name === "shuffle"
+      ? "Your own shuffle mixes the published music, release features and station carts."
+      : "One live station. If the signal drops, the music keeps playing automatically.";
+    if (name === "shuffle") {
+      listen.textContent = "▶ LISTEN LIVE";
+    } else {
+      listen.textContent = "▶ LISTEN LIVE";
+    }
+  }
+  function stopHls() {
+    if (hls) { hls.destroy(); hls = null; }
+  }
+  function clearLiveAudio() {
+    stopHls();
     liveAudio.pause();
     liveAudio.removeAttribute("src");
     liveAudio.load();
   }
-  function pauseOldDial() {
-    if (oldAudio && !oldAudio.paused) oldAudio.pause();
+  function updateButton() {
+    listen.textContent = isLiveLayer() && !paused()
+      ? "Ⅱ PAUSE RADIO" : "▶ LISTEN LIVE";
+    if (source === "shuffle") {
+      shuffle.textContent = browserAudio.paused ? "⤨ ROAD SHUFFLE · PLAY" : "Ⅱ PAUSE ROAD SHUFFLE";
+    } else {
+      shuffle.textContent = "⤨ ROAD SHUFFLE";
+    }
+  }
+  function leaveForBrowser(name) {
+    ++operation;
+    wantsAudio = false;
+    ++metadataGeneration;
+    clearLiveAudio();
+    setSource(name);
+    updateButton();
+  }
+  function switchToShuffle() {
+    if (source === "shuffle") {
+      const changed = radio?.startRoadShuffleFromLive?.();
+      if (!changed) setStatus("Loading the music catalog…", "LOADING");
+      updateButton();
+      return;
+    }
+    if (!radio?.ready) {
+      setStatus("The music catalog is still loading. Try Road Shuffle again.", "LOADING");
+      return;
+    }
+    leaveForBrowser("shuffle");
+    radio.startRoadShuffleFromLive();
+    updateButton();
+  }
+  function fallbackToClock(reason, token = operation) {
+    if (token !== operation || source === "shuffle") return;
+    ++metadataGeneration;
+    clearLiveAudio();
+    setSource("clock");
+    const run = () => {
+      if (token !== operation || source !== "clock") return;
+      if (!radio?.ready) {
+        setStatus("Getting the next recording ready…", "BUFFERING");
+        setTimeout(run, 1200);
+        return;
+      }
+      if (!radio.startSameTimeFallback()) {
+        setStatus("The station needs a connection. Press Listen Live to retry.", "NO SIGNAL");
+        return;
+      }
+      setStatus("Playing HUMKIN Radio.", "PLAYING");
+      updateButton();
+    };
+    run();
   }
   function playRequested() {
-    wantsAudio = true;
-    pauseOldDial();
-    Promise.resolve(liveAudio.play()).catch(() => {
-      show("Signal selected. Press Play on the audio control to begin.");
-    });
+    // The sound starts only after the listener has expressly pressed Play.
+    if (!wantsAudio) return;
+    const result = liveAudio.play();
+    if (result?.catch) result.catch(() =>
+      setStatus("Press Play in the audio controls to start listening.", "READY TO PLAY"));
   }
-  function setMode(value) {
-    mode = value;
-    listen.setAttribute("aria-pressed", String(value === "live"));
-    backupButton.setAttribute("aria-pressed", String(value === "backup"));
-    retry.hidden = value !== "backup";
-    if (source) source.textContent = value === "backup" ?
-      "SOURCE · LONG WAVE / PERSONAL MP3 ROTATION" :
-      "SOURCE · STATION ONE / SHARED LIVE HLS";
-    listen.textContent = value === "live" ? "▶ REJOIN STATION ONE" : "▶ TUNE IN · STATION ONE";
-  }
-  function leaveForOldDial() {
-    // Also invalidate an in-flight availability check before the live source
-    // has been selected. Otherwise a late fetch could steal classic playback.
-    ++sequence;
-    wantsAudio = false;
-    if (mode === "idle") return;
-    reset();
-    document.title = "HUMKIN RADIO · Browser Dial";
-    setMode("idle");
-    if (source) source.textContent = "SOURCE · BROWSER DIAL (INDEPENDENT)";
-    show("Browser-built dial selected. Station One and Long Wave remain available above.");
-  }
-  function useBackup(reason, resume) {
-    ++sequence;
-    reset();
-    setMode("backup");
-    liveAudio.src = BACKUP;
+  function fallbackToLongWave(reason, token = operation) {
+    if (token !== operation || source === "shuffle") return;
+    ++metadataGeneration;
+    clearLiveAudio();
+    radio?.stopBrowserAudio?.();
+    setSource("longwave");
+    genericArt();
+    liveAudio.src = LONG_WAVE;
     liveAudio.load();
-    show(reason + " Long Wave is a different, unsynchronized personal rotation.");
-    wantsAudio = Boolean(resume);
-    if (resume) playRequested();
+    setStatus("Connecting to HUMKIN Radio…", "CONNECTING");
+    playRequested();
   }
-  async function isOnAir() {
+  async function checkSignal() {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 7000);
     try {
-      const response = await fetch(BASE + "/hls/status", {
-        cache: "no-store", signal: controller.signal
-      });
-      if (!response.ok) {
-        showSignal(false);
-        return false;
-      }
+      const response = await fetch(BASE + "/hls/status",
+        {cache: "no-store", signal: controller.signal});
+      if (!response.ok) return false;
       const data = await response.json();
-      const online = Boolean(data && data.on_air === true && data.mode === "shared_live_hls");
-      showSignal(online, Number(data?.age_seconds));
-      return online;
-    } catch {
-      showSignal(false);
-      return false;
-    } finally {
-      clearTimeout(timer);
+      const on = data?.on_air === true && data?.mode === "shared_live_hls";
+      if (signal) signal.textContent = on ? "fresh" : "offline";
+      return on;
+    } catch { return false; }
+    finally { clearTimeout(timer); }
+  }
+  function trustedArt(raw) {
+    if (typeof raw !== "string" || !raw) return stationCover;
+    try {
+      const url = new URL(raw);
+      if (url.protocol === "https:" &&
+          ["humkin.abundent.org", "media.abundent.org"].includes(url.hostname))
+        return url.href;
+    } catch {}
+    return stationCover;
+  }
+  function showVerifiedMetadata(data) {
+    if (source !== "hls" || data?.schema !== "humkin.station-one.now-playing/v1")
+      return;
+    const updated = Date.parse(data.updated_at);
+    if (!Number.isFinite(updated) || Math.abs(Date.now() - updated) > 90000) return;
+    const track = data.track;
+    if (!track || typeof track.title !== "string" ||
+        typeof track.artist !== "string" || !track.title.trim() ||
+        !track.artist.trim()) return;
+    const name = track.title.trim().slice(0, 160);
+    const performer = track.artist.trim().slice(0, 160);
+    const album = typeof track.album === "string" ? track.album.slice(0, 180) : "";
+    const cover = trustedArt(track.artwork_url);
+    if (title) title.textContent = name;
+    if (artist) artist.textContent = performer + (album ? " · " + album : "");
+    if (artwork) { artwork.src = cover; artwork.alt = name + " artwork"; }
+    if (onDeck) onDeck.textContent = "ON THE ACER · Live program";
+    document.title = "HUMKIN RADIO · " + name;
+    if ("mediaSession" in navigator && typeof MediaMetadata !== "undefined") {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: name, artist: performer, album: album || "HUMKIN RADIO",
+          artwork: [{src: cover, sizes: "512x512", type: "image/jpeg"}]
+        });
+      } catch {}
     }
+  }
+  async function checkMetadata() {
+    if (source !== "hls" || !wantsAudio) return;
+    const token = metadataGeneration;
+    try {
+      const response = await fetch(NOW, {cache: "no-store"});
+      if (!response.ok) return;
+      const data = await response.json();
+      if (token !== metadataGeneration || source !== "hls") return;
+      showVerifiedMetadata(data);
+    } catch { /* No metadata feed yet; station cover remains truthful. */ }
   }
   async function tuneLive() {
+    const token = ++operation;
     wantsAudio = true;
-    const request = ++sequence;
-    show("Checking Station One's transmitter…");
-    const online = await isOnAir();
-    if (request !== sequence) return;
-    if (!online) {
-      useBackup("Station One is offline. Rescuing your listening session.", true);
-      return;
-    }
-    reset();
-    failures = 0;
-    setMode("live");
+    ++metadataGeneration;
+    radio?.stopBrowserAudio?.();
+    clearLiveAudio();
+    setSource("hls");
+    genericArt();
+    setStatus("Tuning the shared station…", "CONNECTING");
+    const on = await checkSignal();
+    if (token !== operation || source !== "hls") return;
+    if (!on) { fallbackToLongWave("transmitter_offline", token); return; }
+    statusFailures = 0;
     if (liveAudio.canPlayType("application/vnd.apple.mpegurl")) {
-      liveAudio.src = LIVE;
-    } else if (window.Hls && window.Hls.isSupported()) {
-      player = new window.Hls({ liveSyncDurationCount: 3, enableWorker: true });
-      player.loadSource(LIVE);
-      player.attachMedia(liveAudio);
-      player.on(window.Hls.Events.ERROR, (_, event) => {
-        if (!event.fatal || mode !== "live") return;
-        useBackup("Shared live playback was interrupted.", wantsAudio);
+      liveAudio.src = HLS;
+    } else if (window.Hls?.isSupported?.()) {
+      hls = new window.Hls({liveSyncDurationCount: 3, enableWorker: true});
+      hls.loadSource(HLS);
+      hls.attachMedia(liveAudio);
+      hls.on(window.Hls.Events.ERROR, (_evt, event) => {
+        if (token === operation && source === "hls" && event.fatal)
+          fallbackToLongWave("hls_decoder", token);
       });
     } else {
-      useBackup("This browser cannot decode HLS.", true);
+      fallbackToLongWave("hls_unsupported", token);
       return;
     }
-    show("Connected to the shared live station. If audio does not start, press Play.");
+    setStatus("Playing the shared broadcast.", "ON THE AIR");
     playRequested();
+    checkMetadata();
   }
+
   listen.addEventListener("click", () => {
-    if (mode === "live" && !liveAudio.paused) {
+    if (isLiveLayer() && !paused()) {
       wantsAudio = false;
-      liveAudio.pause();
-      listen.textContent = "▶ REJOIN STATION ONE";
-      show("Station One paused on this device. Rejoin to hear the current broadcast.");
-    } else {
-      tuneLive();
+      if (source === "clock") radio?.stopBrowserAudio?.();
+      else liveAudio.pause();
+      setStatus("Radio paused. Press Listen Live to rejoin.", "PAUSED");
+      updateButton();
+      return;
     }
+    tuneLive();
   });
-  backupButton.addEventListener("click", () => useBackup("Long Wave selected.", true));
-  retry.addEventListener("click", () => tuneLive());
-  liveAudio.addEventListener("play", () => { wantsAudio = true; pauseOldDial(); });
-  liveAudio.addEventListener("pause", () => {
-    // Ignore delayed pause events from a source switch after new playback began.
-    if (liveAudio.paused) {
-      wantsAudio = false;
-      if (mode === "live") listen.textContent = "▶ REJOIN STATION ONE";
+  shuffle.addEventListener("click", switchToShuffle);
+  const spotlight = byId("spotlight");
+  if (spotlight) spotlight.addEventListener("click", () => {
+    // radio.js owns the specific single selection; this only prevents overlap.
+    if (source !== "shuffle") leaveForBrowser("shuffle");
+  }, true);
+  browserAudio.addEventListener("play", () => {
+    if (source === "hls" || source === "longwave" || source === "idle") {
+      leaveForBrowser("shuffle");
     }
+    updateButton();
   });
+  browserAudio.addEventListener("pause", updateButton);
   liveAudio.addEventListener("playing", () => {
-    if (mode === "live") listen.textContent = "Ⅱ PAUSE STATION ONE";
-    listeningMetadata();
-    show(mode === "live"
-      ? "ON AIR — The shared Station One program. Audio may buffer a few seconds behind the transmitter."
-      : "Playing Long Wave — independent backup rotation.");
+    if (!isLiveLayer() || source === "clock") return;
+    wantsAudio = true;
+    setStatus("Playing HUMKIN Radio.", "ON THE AIR");
+    updateButton();
   });
+  liveAudio.addEventListener("pause", updateButton);
   liveAudio.addEventListener("waiting", () => {
-    if (mode !== "idle") show("Buffering " + (mode === "live" ? "live radio" : "Long Wave") + "…");
+    if (source === "hls" || source === "longwave")
+      setStatus("Buffering the radio signal…", "BUFFERING");
   });
   liveAudio.addEventListener("error", () => {
-    if (mode === "live") useBackup("The live player reported an audio error.", wantsAudio);
-    else if (mode === "backup") show("Long Wave playback failed. Try again or return to the classic dial.");
+    if (source === "hls") fallbackToLongWave("hls_media_error");
+    else if (source === "longwave") fallbackToClock("longwave_media_error");
   });
-  // The existing station controls remain usable. A selection on that dial
-  // must not leave a second (possibly hidden) audio stream playing.
-  if (oldAudio) oldAudio.addEventListener("play", leaveForOldDial);
-  for (const id of ["listen","spotlight","catch-up","next-song","mode-clock","mode-shuffle"]) {
-    const button = byId(id);
-    if (button) button.addEventListener("click", leaveForOldDial);
+  liveAudio.addEventListener("ended", () => {
+    if (source === "hls") fallbackToLongWave("hls_ended");
+    else if (source === "longwave") fallbackToClock("longwave_ended");
+  });
+  if ("mediaSession" in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler("play", () => {
+        if (source === "shuffle") {
+          if (browserAudio.paused) switchToShuffle();
+        } else if (paused()) tuneLive();
+      });
+      navigator.mediaSession.setActionHandler("pause", () => {
+        if (source === "shuffle" || source === "clock")
+          radio?.stopBrowserAudio?.();
+        else { wantsAudio = false; liveAudio.pause(); }
+      });
+      navigator.mediaSession.setActionHandler("stop", () => {
+        if (source === "shuffle" || source === "clock")
+          radio?.stopBrowserAudio?.();
+        else { wantsAudio = false; liveAudio.pause(); }
+      });
+    } catch {}
   }
   async function monitor() {
-    if (mode !== "live" || checking) return;
+    if (source !== "hls" || checking || !wantsAudio) return;
     checking = true;
-    const request = sequence;
+    const token = operation;
     try {
-      const online = await isOnAir();
-      if (request !== sequence || mode !== "live") return;
-      failures = online ? 0 : failures + 1;
-      if (failures >= 2) {
-        useBackup("Station One stopped updating.", wantsAudio);
-      }
-    } finally {
-      checking = false;
-    }
+      const on = await checkSignal();
+      if (token !== operation || source !== "hls") return;
+      statusFailures = on ? 0 : statusFailures + 1;
+      if (statusFailures >= 2) fallbackToLongWave("transmitter_stale", token);
+    } finally { checking = false; }
   }
   setInterval(monitor, 20000);
-  // Check on page load, but NEVER autoplay or alter the existing radio.
-  isOnAir().then(on => {
-    if (mode === "idle") show(on
-      ? "Station One is on air. Tap LISTEN LIVE to join the shared broadcast."
-      : "Station One is offline. LISTEN LIVE will use Long Wave until it returns.");
+  setInterval(checkMetadata, 15000);
+  setSource("idle");
+  genericArt();
+  setStatus("Press Listen Live to join the station.", "READY TO TUNE IN");
+  updateButton();
+  // Passive status detection does not start audio or change the selection.
+  checkSignal().then(on => {
+    if (source === "idle")
+      setStatus(on ? "Station One is ready. Press Listen Live." :
+        "Press Listen Live. Music will continue if the transmitter is offline.",
+        "READY TO TUNE IN");
   });
 })();
