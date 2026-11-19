@@ -34,6 +34,7 @@
   const known = new Map(templates.map(station => [station.id, station]));
   const displayed = new Map();
   const states = new Map();
+  const everLive = new Set();
   const grid = byId("stations");
   const link = byId("station-tune");
   const detail = byId("station-detail");
@@ -66,7 +67,7 @@
     if (!registryReady) return "Live status unavailable";
     const state = states.get(station.id);
     if (state?.on_air === true) return "On air · shared live broadcast";
-    if (station.id === "station-one" || displayed.has(station.id)) return "Not broadcasting";
+    if (station.id === "station-one" || everLive.has(station.id)) return "Not broadcasting";
     return "In development";
   }
   function canTune(station) {
@@ -144,9 +145,9 @@
     document.dispatchEvent(new Event("humkin:station-one")); // Pauses Compost without an alternate audio player.
     if (known.has(frequency)) selected = frequency;
     updateSelection();
-    opener = trigger;
     const url = receiverURL(frequency);
     if (frame && activeReceiver !== url) closeReceiver();
+    opener = trigger;
     if (!frame) {
       const receiver = document.createElement("iframe");
       receiver.title = (known.get(frequency)?.name || stationName(frequency)) + " audio player";
@@ -197,6 +198,7 @@
             typeof item.on_air !== "boolean" || next.has(item.id)) continue;
         if (item.id !== "station-one" && item.on_air !== true) continue;
         next.set(item.id, {on_air: item.on_air});
+        if (item.on_air) everLive.add(item.id);
         if (!known.has(item.id)) {
           known.set(item.id, {id: item.id, name: stationName(item.id),
             lane: "Acer frequency", copy: "Independent frequency programmed in the HUMKIN Tower."});
