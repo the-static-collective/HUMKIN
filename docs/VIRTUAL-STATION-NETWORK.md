@@ -23,7 +23,8 @@ to the source catalog. Existing recordings are not copied or transcoded.
 | --- | --- | --- |
 | eclectic | Yes | Approved songs and approved station carts |
 | spotlight | Yes | Music; featured singles 17:00–22:00 Central |
-| seasonal | Yes | Approved seasonal recordings |
+| seasonal | Yes | Approved seasonal recordings, counterpoint Mainline |
+| deep-wave | Yes | Counterprogramming against Spotlight's inherited Mainline preferences |
 | talk | No | Placeholder until talk material is tagged and approved |
 | top-40 | No | Placeholder until chart IDs and editorial rules are selected |
 
@@ -33,10 +34,67 @@ and tags are not inferred by AI or automatically assigned. Manifest tags
 are supported; Supabase's current public catalog includes artist and
 album, but not genre tags.
 
+## COUNTERPOINT — versioned station contracts (second slice)
+
+The station definitions now have `contract_version: 1`, a monotonically
+incremented **draft** `revision`, a `parent_id` and a bounded relationship
+`{kind, influence}`. Supported kinds are `echo`, `counterpoint`,
+`inverse` and `independent` (influence 0–100%). Mainline is a
+read-only conceptual root, not another transmitter.
+
+**Response rule:** Each enabled station selects its own records only from
+the approved R2 catalog, then computes bounded relative rotation weights
+from its parent's current selected records and weights. It inherits
+*preference signals*, never permission or exclusive membership.
+
+Example dependency graph:
+
+    MAINLINE (approved catalog + published Supabase weekly show)
+      ├── Eclectic (weak echo)
+      ├── Spotlight (strong echo)
+      │      └── Deep Wave (strong counterpoint)
+      └── Seasonals (counterpoint, seasonal-only eligible content)
+
+The shipped contracts use the published, active
+`humkin_radio_programs` schedule if readable under the existing public
+Supabase RLS policy. This is **planned Mainline programming**, not actual
+play history or the Acer's live playout log. When schedule metadata is
+unavailable, the resolver uses only the approved music baseline and
+explicitly labels that fallback. We do not invent what actually aired.
+
+**Safety:** The dependency graph is validated before resolving.
+Duplicate IDs, missing parents, cycles, unsupported versions and
+disabled parents fail closed. Each child has its own approved filter.
+The parent cannot authorize a recording or override a withdrawn item.
+No AI model or opaque audio-genre inference is used to determine weights.
+
+**Automatic updates:** The Worker reevaluates the station's lineage at
+each recording boundary and refreshes public Mainline programming/catalog
+metadata after its five-minute cache lifetime. Program selections and
+recording approvals propagate without manually editing each child station.
+There is a bounded **five-minute cache delay, plus the currently playing
+recording**; this is not instantaneous removal or an emergency-broadcast
+interrupt. Source outages stop new derived playback after cache expiry
+rather than silently serving an indefinitely stale selection.
+
+**Auditability, not blockchain:** The resolver emits a deterministic
+noncryptographic selection fingerprint and a read-only contract receipt.
+It does not constitute a cryptographic signature, immutable history,
+independently verified play log or on-chain consensus. The TOWER editor
+records draft edits in a browser-local event journal, included with
+`humkin-network-draft.json`; browser data can be changed or deleted.
+A persistent append-only ledger would require a separately authorized
+server-side schema, identity policy, and retention rules.
+
+A read-only GET at `/stations/{id}/contract` explains the resolved
+lineage, parent, relationship, source and selection fingerprint.
+Contract metadata is public programming information, never a credential.
+
 ## New Worker routes
 
 - GET /stations — read-only station listing with program, count, ready state.
-- GET /stations/{id}/health — one enabled station's status.
+- GET /stations/{id}/health — one enabled station's status and contract receipt.
+- GET /stations/{id}/contract — deterministic read-only explanation of the selection.
 - GET /stations/{id}/live.mp3 — continuous R2-based personal MP3 stream.
 - HEAD /stations/{id}/live.mp3 — stream metadata.
 - GET /live.mp3 and GET /health — original Long Wave unchanged.
@@ -60,7 +118,11 @@ is deployed.
 
 - The receiver wall reads the deployed Worker; tuning requires a user click,
   and playback never auto-starts.
-- The local station designer edits modes, names, filters and weekly schedules.
+- The local station designer edits modes, names, inherited parent,
+  relationship, influence strength, filters and weekly schedules.
+- An explicit parent/dependency check rejects cycles before saving.
+  Local contract revisions and the browser-only change journal are
+  included in the exported draft.
 - Drafts save only to this browser and can be downloaded as
   humkin-network-draft.json for review. **Export does not publish.**
 - A reviewed draft must be integrated into
