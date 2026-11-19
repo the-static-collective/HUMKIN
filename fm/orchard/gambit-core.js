@@ -8,16 +8,16 @@
   root.HumkinGambits=api;
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
 "use strict";
-const KEY="humkin-orchard-gambits-v1",SCHEMA="humkin.gambits.local/v1";
+const KEY="humkin-orchard-gambits-v1",HISTORY_KEY="humkin-orchard-gambit-draft-history-v1",SCHEMA="humkin.gambits.local/v1";
 const CONDITIONS=Object.freeze([
-  ["unheard","If an unplayed recording is available"],
+  ["unheard","If a song has not appeared in a prior Gambit draft"],
   ["new-album","If another album is available"],
   ["night","If it is evening or night"],
   ["short","If a short recording is available"],
   ["always","Otherwise (fallback)"]
 ]);
 const ACTIONS=Object.freeze([
-  ["least-played","Choose the least heard"],
+  ["least-played","Choose the least used in my Gambit drafts"],
   ["different-album","Choose another album"],
   ["shortest","Choose the shortest"],
   ["longest","Choose the longest"],
@@ -132,6 +132,6 @@ function propose(rawCatalog,rawRules,opts={}){
  }
  return {tracks:history,receipts,mode:"personal-signal-preview",authority:"local-only"};
 }
-return Object.freeze({KEY,SCHEMA,CONDITIONS,ACTIONS,STAGES,STARTER,
+return Object.freeze({KEY,HISTORY_KEY,SCHEMA,CONDITIONS,ACTIONS,STAGES,STARTER,
   slotsForLevel,cleanRule,normalizeRules,safeCatalog,propose});
 });
