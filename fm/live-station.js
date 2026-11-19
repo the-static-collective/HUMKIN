@@ -21,7 +21,8 @@
   const route = BASE + "/hls/" + (frequency === "station-one" ? "" : frequency + "/");
   const reservoirLab = typeof location !== "undefined" &&
     new URLSearchParams(location.search).get("reservoir") === "lab";
-  const HLS = route + (reservoirLab ? "delayed.m3u8" : "live.m3u8");
+  const HLS = route + "live.m3u8"; // The public receiver default never moves.
+  const RECEIVER_HLS = reservoirLab ? route + "delayed.m3u8" : HLS;
   const SIGNAL = route + (reservoirLab ? "delayed-status" : "status");
   const SIGNAL_MODE = reservoirLab ? "delayed_reservoir_hls" : "shared_live_hls";
   const LONG_WAVE = BASE + "/live.mp3";
@@ -311,7 +312,7 @@
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000);
     try {
-      const response = await fetch(HLS, {cache: "no-store", signal: controller.signal});
+      const response = await fetch(RECEIVER_HLS, {cache: "no-store", signal: controller.signal});
       if (!response.ok) return;
       const manifest = await response.text();
       if (token !== metadataGeneration || source !== "hls") return;
@@ -335,10 +336,10 @@
     if (!on) { fallbackToLongWave("transmitter_offline", token); return; }
     statusFailures = 0;
     if (liveAudio.canPlayType("application/vnd.apple.mpegurl")) {
-      liveAudio.src = HLS;
+      liveAudio.src = RECEIVER_HLS;
     } else if (window.Hls?.isSupported?.()) {
       hls = new window.Hls({liveSyncDurationCount: 3, enableWorker: true});
-      hls.loadSource(HLS);
+      hls.loadSource(RECEIVER_HLS);
       hls.attachMedia(liveAudio);
       hls.on(window.Hls.Events.ERROR, (_evt, event) => {
         if (token !== operation || source !== "hls" || !event.fatal) return;
