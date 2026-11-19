@@ -120,6 +120,8 @@ class Desk:
         for key in ids:
             if key in self.station.by_id and isinstance(overrides.get(key), dict):
                 self.station.by_id[key].update(overrides[key])
+                if overrides[key].get("artwork"):
+                    self.station.by_id[key].pop("local_art", None)
 
     def edit_metadata(self, id_, values):
         if not isinstance(id_, str) or id_ not in self.station.by_id:
