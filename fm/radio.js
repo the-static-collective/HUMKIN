@@ -391,7 +391,7 @@ function tuneAt(ms){
 function updateModeUI(){
   $("mode-clock").setAttribute("aria-pressed",String(mode==="clock"));
   $("mode-shuffle").setAttribute("aria-pressed",String(mode==="shuffle"));
-  if($("catch-up"))$("catch-up").hidden=true;
+  if(document.getElementById("catch-up"))document.getElementById("catch-up").hidden=true;
   $("next-song").hidden=mode!=="shuffle"&&mode!=="album";
   if(primaryLive&&mode==="clock"){
     modeHelp.textContent="The live signal plays first. When it cannot, music continues automatically. Road Shuffle remains your personal selection.";
@@ -812,7 +812,7 @@ async function share(){
 if(!primaryLive)$("listen").addEventListener("click",startRadio);
 $("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
 // The public website no longer exposes manual clock catch-up.
-if($("catch-up")&&!primaryLive)$("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
+if(document.getElementById("catch-up")&&!primaryLive)document.getElementById("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
 $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused);else if(mode==="album")nextAlbum(!audio.paused)});
 $("mode-clock").addEventListener("click",()=>changeMode("clock"));
 if(!primaryLive)$("mode-shuffle").addEventListener("click",()=>changeMode("shuffle"));
