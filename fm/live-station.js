@@ -455,6 +455,7 @@
       else if (hls?.startLoad) hls.startLoad(-1);
       else tuneLive();
     } else if (hls?.startLoad) hls.startLoad(-1);
+    if (liveAudio.paused) playRequested();
     checkMetadata();
   });
   async function monitor() {
