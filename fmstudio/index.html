@@ -315,6 +315,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     {name: "The Workshop", lane: "Instrumentals", copy: "Instrumentals, beats and long stretches for making things."},
     {name: "Sunday Signal", lane: "Gospel & worship", copy: "Gospel, worship and songs worn smooth by singing together."},
     {name: "Talk & Tape", lane: "Voices", copy: "Interviews, stories and recordings people made to be heard."},
+    {name: "Auto Disco V20", lane: "Accident Frequency", copy: "Blind-first-listen intake over neglected catalog tracks. A playable experimental frequency with editorial handoffs for V20.", receiver: "https://humkin.abundent.org/fm/autodisco/", independent: true},
     {name: "The Compost Heap", lane: "Living Archive", copy: "The long tail of the HUMKIN archive. Less-played recordings go first.", archive: true},
     {name: "The Strange Hour", lane: "Experimental", copy: "Mutant pop, experiments and songs that make their own genre."}
   ];
@@ -343,7 +344,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     byId("station-copy").textContent = station.copy;
     link.hidden = !(station.receiver || station.archive);
     link.href = station.archive ? "#compost" : station.receiver || "#dial";
-    link.textContent = station.archive ? "Open The Compost Heap ↓" : "Open receiver ↗";
+    link.textContent = station.archive ? "Open The Compost Heap ↓" : station.independent ? "Open Auto Disco ↗" : "Open receiver ↗";
     link.target = station.archive ? "_self" : "_blank";
     if (announce) {
       byId("station-announcement").textContent =
@@ -373,7 +374,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const trigger = event.currentTarget;
     const target = new URL(trigger.href);
-    if (target.hash === "#compost") return;
+    if (target.hash === "#compost" || target.pathname === "/fm/autodisco/") return;
     event.preventDefault();
     document.dispatchEvent(new Event("humkin:station-one"));
     selectStation(stations[0]);

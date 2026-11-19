@@ -15,6 +15,11 @@ jobs:
         run: node scripts/assemble-everywhere-near-you.mjs
       - run: node tests/record-shelf.test.mjs
       - run: node tests/site.test.mjs
+      - run: node --check fm/autodisco/accident-core.mjs
+      - run: node --test tests/autodisco-accident.test.mjs
+      - run: node --check fm/autodisco/snapshot-core.mjs
+      - run: node --test tests/autodisco-feedback-snapshot.test.mjs
+      - run: node --test tests/season-network.test.mjs
       - run: node tests/postcard-buttons.test.mjs
       - run: node tests/distribution.test.mjs
       - run: node tests/surprise.test.mjs
@@ -34,6 +39,10 @@ jobs:
       - run: node tests/radio-loader.test.mjs
       - run: node tests/radio-r2-direct.test.mjs
       - run: node tests/mesh.test.mjs
+      - run: node --check scripts/humkin-tracer-core.mjs
+      - run: node --check scripts/humkin-tracer.mjs
+      - run: node --test tests/humkin-tracer.test.mjs
+      - run: node --test tests/daily-slice-crossover.test.mjs
       - run: python3 -m unittest discover -s tests -p 'test_mesh_inventory.py' -v
       - run: node tests/radio-folder-metadata.test.mjs
       - run: node tests/radio-manager.test.mjs
@@ -51,3 +60,8 @@ jobs:
       - run: python3 tests/radio-house-host.test.py
       - run: python3 tests/radio-house-bridge.test.py
       - run: python3 tests/radio-convert.test.py
+      - run: node --check fm/manage/manager.js
+      - run: node --check fm/manage/signal-relay-ui.js
+      - run: node --check fm/manage/signal-relay-model.mjs
+      - run: node --check fmstudio/compost.js
+      - run: node --test tests/signal-relay.test.mjs
