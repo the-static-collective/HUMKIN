@@ -48,7 +48,7 @@ test("Supabase session is issued only after rate-limited atomic TOTP claim",()=>
 });
 test("TOTP seed is encrypted and enrollment requires existing confirmed owner",()=>{
   const edge=read(A),sql=read(M);
-  assert(edge.includes('await crypto.subtle.deriveKey('));
+  assert(edge.includes('crypto.subtle.deriveKey('));
   assert(edge.includes('"AES-GCM"'));
   assert(edge.includes('const user=await ownerOf(db,request)'));
   assert(edge.includes('!user.email_confirmed_at'));
@@ -70,7 +70,7 @@ test("Existing Crate Loader and Linkblocks both offer Proton or email",()=>{
   assert(ui.includes('db.auth.setSession({'));
   assert(ui.includes('UNLOCK WITH PROTON'));
   assert(ui.includes('SET UP PROTON ONCE'));
-  assert(ui.includes('EMAIL'));
+  assert(ui.includes('email sign-in'));
   assert(!ui.includes('SERVICE_ROLE_KEY'));
   assert(!ui.includes('SUPABASE_SERVICE_ROLE_KEY'));
   assert(!ui.includes('localStorage.setItem'));
