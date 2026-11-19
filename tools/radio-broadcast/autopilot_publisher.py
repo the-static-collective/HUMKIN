@@ -169,11 +169,13 @@ def public_program(existing, frequency, tracks, lead_seconds=120):
     return {"schema": SCHEMA, "station_id": frequency, "revisions": revisions}
 
 
-def publish_program(program, cache, client):
+def publish_program(program, cache, client, new_revision_count=1):
     from botocore.exceptions import ClientError
     # Media first, schedule last: an interrupted upload cannot announce missing audio.
+    if not 1 <= new_revision_count <= len(program["revisions"]):
+        raise ValueError("Invalid publication revision count")
     uploaded = set()
-    for revision in program["revisions"][-1:]:
+    for revision in program["revisions"][-new_revision_count:]:
         for track in revision["tracks"]:
             sha = track["asset_sha"]
             for index in range(len(track["durations_ms"])):
@@ -182,14 +184,14 @@ def publish_program(program, cache, client):
                     continue
                 uploaded.add(key)
                 local = cache / sha / f"segment-{index:06d}.ts"
-                if not local.is_file():
-                    raise FileNotFoundError(str(local))
                 try:
                     client.head_object(Bucket=BUCKET, Key=key)
                     continue
                 except ClientError as exc:
-                    if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") not in (403, 404):
+                    if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 404:
                         raise
+                if not local.is_file():
+                    raise FileNotFoundError("Approved R2 segment missing from both cache and cloud: "+key)
                 client.upload_file(str(local), BUCKET, key, ExtraArgs={
                     "ContentType":"video/mp2t", "CacheControl":"public, max-age=31536000, immutable"})
     station = program["station_id"]
@@ -201,14 +203,14 @@ def publish_program(program, cache, client):
         if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 404:
             raise
         existing = None
-    if existing and existing.get("revisions", []) != program["revisions"][:-1]:
+    if existing and existing.get("revisions", []) != program["revisions"][:-new_revision_count]:
         raise RuntimeError("Cloud program changed while preparing; reload before publishing.")
     raw = json.dumps(program, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     client.put_object(Bucket=BUCKET, Key=key, Body=raw,
                       ContentType="application/json", CacheControl="no-store")
     print("Published cloud program:", station)
-    print("Revision:", program["revisions"][-1]["id"])
-    print("Takes effect:", program["revisions"][-1]["effective_at"])
+    for revision in program["revisions"][-new_revision_count:]:
+        print("Revision:", revision["id"], "at", revision["effective_at"])
 
 
 def main():
@@ -217,6 +219,7 @@ def main():
     parser.add_argument("--cache", default=str(Path(os.environ.get("LOCALAPPDATA",
         str(Path.home()))) / "HUMKIN" / "Autopilot"))
     parser.add_argument("--publish", action="store_true", help="Upload segments and commit the schedule")
+    parser.add_argument("--approved-packet", help="Owner-reviewed Gambit proposal packet; schedules guest and automatic house return")
     parser.add_argument("--lead-seconds", type=int, default=120)
     args = parser.parse_args()
     if not 30 <= args.lead_seconds <= 86400:
@@ -224,6 +227,15 @@ def main():
     manifest = Path(args.input).resolve(strict=True)
     cache = Path(args.cache)
     station, tracks = prepare_tracks(manifest, cache)
+    reviewed = None
+    if args.approved_packet:
+        from program_deck import validate_packet, select_deck
+        reviewed = json.loads(Path(args.approved_packet).resolve(strict=True).read_text(encoding="utf-8"))
+        validate_packet(reviewed, station)
+        tracks = select_deck(reviewed, tracks, station)
+        print("Gambit preview:", len(tracks), "approved songs in priority order")
+        print("Requested guest window:", reviewed["proposal"]["day"], reviewed["proposal"]["time"],
+              "Central,", reviewed["proposal"]["minutes"], "minutes")
     if not args.publish:
         print("PREVIEW ONLY: no public schedule was changed. Use --publish after review.")
         print("Total cycle seconds:", sum(sum(t["durations_ms"]) for t in tracks) / 1000)
@@ -240,8 +252,15 @@ def main():
         if status not in (404,):
             raise
         existing = None
-    program = public_program(existing, station, tracks, args.lead_seconds)
-    publish_program(program, cache, client)
+    if reviewed:
+        from program_deck import schedule_guest
+        program = schedule_guest(existing, station, tracks, reviewed)
+        for revision in program["revisions"][-2:]:
+            print("Scheduled", revision["id"], "at", revision["effective_at"])
+        publish_program(program, cache, client, new_revision_count=2)
+    else:
+        program = public_program(existing, station, tracks, args.lead_seconds)
+        publish_program(program, cache, client)
 
 
 if __name__ == "__main__":
