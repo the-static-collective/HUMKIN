@@ -1,3 +1,4 @@
+import {qualifiesFeedback,stationWeek} from "../../../fm/top42/feedback-signals.mjs";
 /**
  * HUMKIN LONG WAVE — virtual station programming.
  *
@@ -50,6 +51,15 @@ export const STATIONS=Object.freeze([
     filter:{kinds:["song"]},include_bumpers:true,programs:[]
   },
   {
+    id:"dance-contenders", name:"HUMKIN · Dance New Contenders",
+    description:"New candidates invited by Made Me Move responses; never an automatic Top 42 vote.",
+    enabled:true,mode:"personal",
+    contract_version:1,revision:1,parent_id:"mainline",
+    relationship:{kind:"counterpoint",influence:35},
+    filter:{kinds:["song"],feedback:{feeling:"move",min_count:3}},
+    include_bumpers:false,programs:[]
+  },
+  {
     id:"talk", name:"HUMKIN · Talk",
     description:"Reserved for original, approved talk recordings and interviews.",
     enabled:false, mode:"virtual", filter:{tags:["talk"]},
@@ -94,7 +104,7 @@ export function activeSlot(station,at=new Date()){
 }
 function normalized(value){return String(value||"").trim().toLowerCase()}
 function contains(list,value){return list.some(x=>normalized(x)===normalized(value))}
-export function matchFilter(track,filter={}){
+export function matchFilter(track,filter={},at=new Date()){
   // Explicit empty ID/artist/tag allowlists NEVER turn into "all tracks".
   if(Array.isArray(filter.track_ids)&&!contains(filter.track_ids,track.id))return false;
   if(Array.isArray(filter.artists)&&!contains(filter.artists,track.artist))return false;
@@ -102,6 +112,8 @@ export function matchFilter(track,filter={}){
   if(Array.isArray(filter.tags)&&
      !filter.tags.some(t=>contains(track.tags||[],t)))return false;
   if(Array.isArray(filter.kinds)&&!contains(filter.kinds,track.kind))return false;
+  if(filter.feedback&&!qualifiesFeedback(track,{
+    ...filter.feedback,week_start:stationWeek(at)}))return false;
   if(filter.featured===true&&track.featured!==true)return false;
   if(filter.seasonal===true&&track.seasonal!==true)return false;
   return true;
@@ -115,7 +127,7 @@ export function resolveStation(station,catalog,at=new Date()){
   const slot=activeSlot(station,at);
   const filter=slot?.filter||station.filter||{kinds:["song"]};
   // Never silently widen an empty/invalid scheduled selection.
-  const selected=catalog.filter(t=>matchFilter(t,filter)&&
+  const selected=catalog.filter(t=>matchFilter(t,filter,at)&&
     (t.kind!=="bumper"||!held(t,catalog.bumper_rules)));
   // If a program explicitly selects just voice carts, they are intentional
   // primary content, not shuffled in as routine interstitials.
