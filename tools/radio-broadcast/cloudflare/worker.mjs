@@ -9,6 +9,7 @@
  */
 import {isHlsPath, serveHls} from "./hls-routes.mjs";
 import {serveStationRegistry} from "./station-registry.mjs";
+import {PATH_RE as AUTOPILOT_PATH, serveAutopilot} from "./cloud-autopilot.mjs";
 const SUPABASE="https://kbhqacsdvjsstzyplqij.supabase.co";
 const PUBLIC_KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o";
 const PUBLIC_MANIFEST="https://humkin.abundent.org/fm/r2-tracks.json";
@@ -308,6 +309,8 @@ export default {
    const path=new URL(request.url).pathname;
    if(request.method==="OPTIONS")return new Response(null,{status:204,headers:basicHeaders()});
    if(request.method!=="GET"&&request.method!=="HEAD")return json({ok:false,error:"METHOD_NOT_ALLOWED"},405);
+   if(AUTOPILOT_PATH.test(path))return serveAutopilot(request,env);
+   if(path.startsWith("/autopilot/"))return json({ok:false,error:"NOT_FOUND"},404);
    if(path==="/hls/stations")return serveStationRegistry(request,env);
    if(isHlsPath(path))return serveHls(request,env);
    if(path.startsWith("/hls/"))return json({ok:false,error:"NOT_FOUND"},404);
