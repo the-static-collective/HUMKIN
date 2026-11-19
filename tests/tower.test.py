@@ -113,6 +113,7 @@ class TowerTests(unittest.TestCase):
             desk = Desk(StationV2(catalog), path)
             events = []
             desk.on_metadata_change = lambda item: events.append(item.copy())
+            desk.act({"action": "queue_next", "id": "a"})
             self.assertTrue(desk.start(desk.pending(1)[0]))
             self.assertEqual(desk.act({"action": "metadata_edit", "id": "a",
                 "metadata": {"title": "Live correction", "artist": "New Artist",
