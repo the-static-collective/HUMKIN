@@ -1,6 +1,6 @@
 # HUMKIN Cloud Autopilot — Shared Air laboratory
 
-**Source/implementation status:** opt-in pilot on a feature branch. The public
+**Source/implementation status:** opt-in laboratory implementation. The public
 `/fm/`, `/fmstudio/`, `/hls/` and personal `/live.mp3` sources are not
 repointed. Do **not** advertise this as an active station before a real phone
 playback test and a reviewed upload. The Acer can prepare a published schedule,
