@@ -95,7 +95,10 @@ function derivedWeight(child,parentWeights,track){
   const strength=p?clamp((p.rotation_weight||baseWeight(p))/5,0,1):0;
   const sign=r.kind==="echo"?1:-1;
   const intensity=r.kind==="counterpoint"?0.75:1;
-  return clamp(Math.round(3+sign*(strength-0.5)*4*factor*intensity),1,5);
+  const target=clamp(3+sign*(strength-0.5)*4*intensity,1,5);
+  // Influence blends the inherited target against the recording's existing
+  // single/seasonal rotation rights. Weak influence must not erase them.
+  return clamp(Math.round(baseWeight(track)*(1-factor)+target*factor),1,5);
 }
 /**
  * Resolve a station through its ancestors. Descendants inherit the *signal*
