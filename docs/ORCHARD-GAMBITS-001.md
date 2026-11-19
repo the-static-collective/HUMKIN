@@ -21,14 +21,14 @@ carry a human-readable decision receipt. The rule engine is deliberately
 deterministic and has no access to public scheduling, upload or ownership APIs.
 
 Starter conditions:
-- Unheard recording available
+- Recording not yet chosen by this workbench
 - Different album available
 - Evening/night
 - Short recording available
 - Fallback
 
 Actions:
-- Least heard (local estimate, not global audited play count)
+- Least used in local workbench drafts (not listening or global audited play counts)
 - Different album
 - Shortest / longest
 - Surprise
