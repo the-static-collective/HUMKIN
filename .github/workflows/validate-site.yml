@@ -43,6 +43,9 @@ jobs:
       - run: node --check scripts/humkin-tracer.mjs
       - run: node --test tests/humkin-tracer.test.mjs
       - run: node --test tests/daily-slice-crossover.test.mjs
+      - run: node --check fmstudio/dial.js
+      - run: node --check tools/radio-broadcast/cloudflare/station-registry.mjs
+      - run: node --test tests/fmstudio-live-dial.test.mjs tests/fmstudio-station-registry.test.mjs
       - run: python3 -m unittest discover -s tests -p 'test_mesh_inventory.py' -v
       - run: node tests/radio-folder-metadata.test.mjs
       - run: node tests/radio-manager.test.mjs

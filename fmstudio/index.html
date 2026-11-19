@@ -62,6 +62,9 @@ h1 em { font-style: normal; color: var(--gold); }
 .section-heading > p { max-width: 34ch; color: var(--muted); line-height: 1.45; }
 h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; font-weight: 890; }
 .dial-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.dial-network { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 0 .85rem; font-size: .83rem; color: var(--muted); }
+.dial-network .text-button { flex: none; }
+.station .station-state { opacity: .9; font-size: .58rem; line-height: 1.3; }
 .station { appearance: none; display: flex; min-width: 0; text-align: left; min-height: 78px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--ink); }
 .station strong { font-size: clamp(.87rem, 1.45vw, 1.14rem); line-height: 1.25; overflow-wrap: anywhere; }
 .station span { color: var(--muted); font: 650 .62rem/1.3 ui-monospace, Consolas, monospace; letter-spacing: .04em; text-transform: uppercase; }
@@ -187,7 +190,9 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
           <p>Start with Station One or tune into The Compost Heap.</p>
         </div>
         <noscript><p><a href="https://humkin.abundent.org/fm/" target="_blank" rel="noopener">Open the classic HUMKIN player</a>.</p></noscript>
+        <div class="dial-network"><p id="station-registry-status" role="status">Checking live Acer frequencies…</p><button id="refresh-stations" class="text-button" type="button">Refresh frequencies</button></div>
         <div class="dial-grid" id="stations" role="group" aria-label="Stations"></div>
+        <p class="actions"><a class="button quiet" href="../fm/autodisco/">Auto Disco · Accident Frequency — on-demand experiment ↗</a></p>
         <div class="station-detail" id="station-detail" hidden>
           <div>
             <p class="label" id="station-status"></p>
@@ -302,140 +307,7 @@ h2 { margin-top: 6px; font-size: clamp(2.7rem, 6vw, 5.4rem); line-height: .93; f
     <a href="https://humkin.abundent.org/fm/" target="_blank" rel="noopener">Classic player ↗</a>
     <a href="https://humkin.abundent.org/support.html" target="_blank" rel="noopener">Tip jar ↗</a>
   </footer>
-<script>
-(() => {
-  "use strict";
-
-  const stations = [
-    {name: "Station One", lane: "Flagship", copy: "The eclectic HUMKIN broadcast. The classic player carries the titles and cover art, Road Shuffle and Hear the New One.", receiver: "https://humkin.abundent.org/fm/"},
-    {name: "Top 40", lane: "Heavy rotation", copy: "Big hooks, new singles and the records worth hearing twice."},
-    {name: "Deep Cuts", lane: "Album tracks", copy: "B-sides, long tracks and the rest of the record."},
-    {name: "Night Drive", lane: "After dark", copy: "Slow burns and wide-open songs for the road after midnight."},
-    {name: "Porch & Field", lane: "Roots", copy: "Folk, Americana, field recordings and the sound of a room."},
-    {name: "The Workshop", lane: "Instrumentals", copy: "Instrumentals, beats and long stretches for making things."},
-    {name: "Sunday Signal", lane: "Gospel & worship", copy: "Gospel, worship and songs worn smooth by singing together."},
-    {name: "Talk & Tape", lane: "Voices", copy: "Interviews, stories and recordings people made to be heard."},
-    {name: "Auto Disco V20", lane: "Accident Frequency", copy: "Blind-first-listen intake over neglected catalog tracks. A playable experimental frequency with editorial handoffs for V20.", receiver: "https://humkin.abundent.org/fm/autodisco/", independent: true},
-    {name: "The Compost Heap", lane: "Living Archive", copy: "The long tail of the HUMKIN archive. Less-played recordings go first.", archive: true},
-    {name: "The Strange Hour", lane: "Experimental", copy: "Mutant pop, experiments and songs that make their own genre."}
-  ];
-
-  const byId = id => document.getElementById(id);
-  const grid = byId("stations");
-  const detail = byId("station-detail");
-  const link = byId("station-tune");
-  const room = byId("listening-room");
-  const mount = byId("receiver-mount");
-  const fullReceiver = byId("full-receiver");
-  const heading = byId("receiver-title");
-  const motion = byId("motion");
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-
-  let frame = null;
-  let receiverSize = null;
-  let opener = null;
-
-  function selectStation(station, announce = false) {
-    for (const button of grid.children) {
-      button.setAttribute("aria-pressed", String(button.dataset.station === station.name));
-    }
-    byId("station-status").textContent = station.archive ? "Available" : station.receiver ? "Receiver available" : "In development";
-    byId("station-name").textContent = station.name;
-    byId("station-copy").textContent = station.copy;
-    link.hidden = !(station.receiver || station.archive);
-    link.href = station.archive ? "#compost" : station.receiver || "#dial";
-    link.textContent = station.archive ? "Open The Compost Heap ↓" : station.independent ? "Open Auto Disco ↗" : "Open receiver ↗";
-    link.target = station.archive ? "_self" : "_blank";
-    if (announce) {
-      byId("station-announcement").textContent =
-        station.name + (station.archive || station.receiver ? ". Available." : ". In development.");
-    }
-  }
-
-  for (const station of stations) {
-    const button = document.createElement("button");
-    const name = document.createElement("strong");
-    const lane = document.createElement("span");
-    button.type = "button";
-    button.className = "station";
-    button.dataset.station = station.name;
-    button.setAttribute("aria-controls", "station-detail");
-    name.textContent = station.name;
-    lane.textContent = station.lane;
-    button.append(name, lane);
-    button.addEventListener("click", () => selectStation(station, true));
-    grid.append(button);
-  }
-
-  selectStation(stations[0]);
-  detail.hidden = false;
-
-  function openReceiver(event) {
-    if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-    const trigger = event.currentTarget;
-    const target = new URL(trigger.href);
-    if (target.hash === "#compost" || target.pathname === "/fm/autodisco/") return;
-    event.preventDefault();
-    document.dispatchEvent(new Event("humkin:station-one"));
-    selectStation(stations[0]);
-    opener = trigger;
-    if (!frame) {
-      const receiver = document.createElement("iframe");
-      receiver.title = "Station One audio player";
-      receiver.src = target.href;
-      receiver.allow = "autoplay";
-      receiver.addEventListener("load", () => {
-        const desk = receiver.contentDocument?.getElementById("receiver");
-        if (!desk || typeof ResizeObserver !== "function") return;
-        receiverSize = new ResizeObserver(() => {
-          receiver.style.height = Math.ceil(desk.getBoundingClientRect().height) + "px";
-        });
-        receiverSize.observe(desk);
-      });
-      fullReceiver.href = target.href.replace(/#.*$/, "");
-      frame = receiver;
-      mount.append(frame);
-    }
-    room.hidden = false;
-    heading.focus({preventScroll: true});
-    room.scrollIntoView({block: "start"});
-  }
-
-  for (const trigger of document.querySelectorAll("[data-tune]")) {
-    trigger.addEventListener("click", openReceiver);
-  }
-
-  function closeReceiver(restoreFocus) {
-    receiverSize?.disconnect();
-    receiverSize = null;
-    frame?.remove();
-    frame = null;
-    room.hidden = true;
-    if (restoreFocus) (opener?.hidden ? grid.firstElementChild : opener)?.focus();
-    opener = null;
-  }
-  byId("close-receiver").addEventListener("click", () => closeReceiver(true));
-  document.addEventListener("humkin:compost-playing", () => closeReceiver(false));
-
-  function stopMotion() {
-    byId("monitor").classList.remove("moving");
-    motion.textContent = "Start the visualizer";
-  }
-
-  function syncMotionPreference() {
-    stopMotion();
-    motion.hidden = reduceMotion.matches;
-  }
-
-  motion.addEventListener("click", () => {
-    const moving = byId("monitor").classList.toggle("moving");
-    motion.textContent = moving ? "Pause the visualizer" : "Start the visualizer";
-  });
-  reduceMotion.addEventListener("change", syncMotionPreference);
-  syncMotionPreference();
-})();
-
-</script>
+<script src="./dial.js"></script>
 <script src="./compost.js"></script>
 </body>
 </html>

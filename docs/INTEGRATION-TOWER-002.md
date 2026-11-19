@@ -28,3 +28,7 @@
 7. Review Cloudflare Worker route compatibility and any planned binding changes before considering the source or integration PR for production.
 
 **Rollback:** leave stacked draft PR unmerged. A field-verified main merge needs a separate human-reviewed promotion decision; no test fixture is a real-world broadcast receipt.
+
+## Integration finding — preserved current main routing
+
+During the first stacked CI run, the #145 source Worker had overwritten existing HLS dispatch; a missing segment that needed HTTP 404 instead returned 503 before reaching HLS. The integration repaired the virtual-station Worker to import HLS route handling and the current main station registry and dispatch them ahead of the RADIO_MEDIA binding check. New main FM Studio dial, registry, source tests, and combined CI were then brought into Train 001 and this stacked branch with an explicit Git parent reconciliation. This is a staging fix; it does not deploy a Cloudflare Worker.

@@ -14,7 +14,7 @@ Status: **staging-only, draft PR; not production**. Constructed as a single cont
 ### Integration resolution
 
 - The overlapping `.github/workflows/validate-site.yml` files were **combined**, rather than choosing one branch's version: Auto Disco core and snapshot tests, Season Two page tests, SIGNAL Relay tests and Tracer tests all run in one workflow, alongside the existing baseline tests and Daily Slice tests.
-- `fmstudio/index.html` is taken from #154; `fmstudio/compost.js` is taken from #155. These are distinct files that together let operator-proposed catalog IDs open the current approved Compost item.
+- **Current main reconciliation (2026-11-19):** preserve the newer FM Studio live frequency dial and station-registry routes from main `9cca272c83ad4c4c7a2d128ce18a2481b2711542`. Instead of restoring #154's older FM Studio page, add a clearly labeled on-demand Auto Disco link to the newer dial; its actual experiment code is unchanged. Retain #155's `fmstudio/compost.js` exact-track deep link.
 - `fm/index.html` and network receiver styles come from #151, preserving the existing primary website and receiver route.
 - All code and static files in the table were copied from their specified **source head trees**, rather than cherry-picking unrelated commits from entire historical branches. Their independent PR review history remains available.
 - This staging commit has one parent (main) and does **not** claim that these source PR heads have been merged into production.
@@ -45,3 +45,7 @@ Status: **staging-only, draft PR; not production**. Constructed as a single cont
 **Rollback:** With no default route changed and no automatic write endpoints added, rollback is to close the integration PR or revert its eventual merge. Production program decisions remain owner-controlled.
 
 This document is a composition receipt, not a claim of physical broadcast or community benefit.
+
+## Concurrent-main compatibility
+
+The source PRs originally based on earlier main. The integration branch now carries a two-parent reconciliation commit with current main, including new FM Studio frequency discovery, station-registry implementation and tests, plus main's Worker HLS/registry dispatch. This is a code composition, not evidence that a secondary Acer frequency was heard live.
