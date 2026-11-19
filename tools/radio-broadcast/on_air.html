@@ -66,6 +66,27 @@
         </section>
       </div>
     </div>
+    <dialog id="metadata-dialog" aria-labelledby="metadata-heading">
+      <form id="metadata-form">
+        <h2 id="metadata-heading">Edit recording metadata</h2>
+        <p id="metadata-track" class="helper"></p>
+        <input type="hidden" id="metadata-id">
+        <label for="metadata-title">Title</label><input id="metadata-title" required maxlength="160">
+        <label for="metadata-artist">Artist</label><input id="metadata-artist" maxlength="160">
+        <label for="metadata-album">Album</label><input id="metadata-album" maxlength="180">
+        <label for="metadata-genre">Genre / style</label><input id="metadata-genre" maxlength="100">
+        <label for="metadata-tags">Tags (comma-separated)</label><input id="metadata-tags" maxlength="400">
+        <label for="metadata-notes">Production / programming notes</label>
+        <textarea id="metadata-notes" maxlength="1000" rows="3"></textarea>
+        <label for="metadata-artwork">Artwork HTTPS URL (approved media hosts)</label>
+        <input id="metadata-artwork" maxlength="512" type="url">
+        <p class="helper">Changes are saved for this frequency without rewriting the original audio file.</p>
+        <div class="controls">
+          <button type="submit">Save metadata</button>
+          <button id="metadata-cancel" type="button">Cancel</button>
+        </div>
+      </form>
+    </dialog>
     <p id="feedback" role="status"></p>
   </main>
 </body>

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import tempfile
+import threading
 from urllib.parse import urlsplit
 
 
@@ -47,28 +48,30 @@ class CueSheet:
     def __init__(self, directory, first_sequence):
         self.path = Path(directory) / CUE_FILE
         self.entries = []
+        self.lock = threading.RLock()
         self.first_sequence = first_sequence
 
     def record(self, seconds, item):
-        if item is None:
-            track = None
-        else:
-            track = {key: str(item.get(key) or "")[:240]
-                     for key in ("id", "title", "artist", "album")}
-            track["artwork"] = artwork_url(item.get("artwork"))
-            if item.get("local_art"):
-                track["local_art"] = item["local_art"]
-        cue = {"offset": round(seconds, 3), "track": track}
-        if self.entries and self.entries[-1]["offset"] == cue["offset"]:
-            self.entries.pop()
-        self.entries.append(cue)
-        while len(self.entries) > 1 and self.entries[1]["offset"] < seconds - 360:
-            self.entries.pop(0)
-        try:
-            write_json(self.path, {"sequence": self.first_sequence, "events": self.entries})
-        except OSError:
-            # Metadata availability must never determine audio continuity.
-            pass
+        with self.lock:
+            if item is None:
+                track = None
+            else:
+                track = {key: str(item.get(key) or "")[:240]
+                         for key in ("id", "title", "artist", "album")}
+                track["artwork"] = artwork_url(item.get("artwork"))
+                if item.get("local_art"):
+                    track["local_art"] = item["local_art"]
+            cue = {"offset": round(seconds, 3), "track": track}
+            if self.entries and self.entries[-1]["offset"] == cue["offset"]:
+                self.entries.pop()
+            self.entries.append(cue)
+            while len(self.entries) > 1 and self.entries[1]["offset"] < seconds - 360:
+                self.entries.pop(0)
+            try:
+                write_json(self.path, {"sequence": self.first_sequence, "events": self.entries})
+            except OSError:
+                # Metadata availability must never determine audio continuity.
+                pass
 
 
 def insert_cues(playlist, directory, session, resolve_art=lambda _: None, clock=None):

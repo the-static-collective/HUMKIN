@@ -33,7 +33,8 @@ function trackRow(track, context, index) {
   const lane = {manual: "Queued", show: "Scheduled show", rotation: "Rotation"};
   info.textContent = [track.artist, lane[track.lane], track.disabled ? "Disabled" : track.held ? "Held" : "",
     track.rotation && context !== "queue" ? weight[track.weight] + " rotation" : "",
-    track.kind === "bumper" ? "Bumper" : "", track.in_lineup ? "Curated lineup" : ""].filter(Boolean).join(" · ");
+    track.kind === "bumper" ? "Bumper" : "", track.in_lineup ? "Curated lineup" : "",
+    track.genre || "", track.tags ? "Tags: " + track.tags : ""].filter(Boolean).join(" · ");
   if (context === "catalog" && track.score) {
     const score = track.score;
     info.textContent += " · " + score.plays + " archive listens";
@@ -55,15 +56,21 @@ function trackRow(track, context, index) {
       );
       if (track.lane === "manual") controls.append(button("Remove", "remove", track));
       if (track.movable) controls.append(button("Move to end", "move", track));
-      row.draggable = true;
-      row.addEventListener("dragstart", event => {
+      const handle = document.createElement("span");
+      handle.className = "drag-handle";
+      handle.textContent = "Drag to reorder";
+      handle.draggable = true;
+      handle.setAttribute("aria-label", "Drag " + track.title + " to another position");
+      handle.addEventListener("dragstart", event => {
         dragging = track;
-        event.dataTransfer.setData("text/plain", track.title);
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", track.id);
       });
-      row.addEventListener("dragend", () => {
+      handle.addEventListener("dragend", () => {
         dragging = null;
         row.classList.remove("drop-target");
       });
+      row.prepend(handle);
       row.addEventListener("dragover", event => {
         if (dragging?.lane === track.lane && dragging.slot !== track.slot) {
           event.preventDefault();
@@ -94,13 +101,23 @@ function trackRow(track, context, index) {
       if (byId("route").value && byId("route").value !== "station-one")
         controls.append(button("Add to destination lineup", "route_lineup", track));
     }
-    controls.append(button(track.held ? "Release hold" : "Hold 1 hour", "hold", track));
-    controls.append(button(track.disabled ? "Enable" : "Disable", "disable", track));
-    if (track.rotation) {
-      controls.append(button("Less often", "less", track, track.weight === -2));
-      controls.append(button("More often", "more", track, track.weight === 2));
-    }
   }
+  // Every recording is editable and disableable, including queued and on-air rows.
+  controls.append(button(track.held ? "Release hold" : "Hold 1 hour", "hold", track));
+  controls.append(button(track.disabled ? "Enable" : "Disable", "disable", track));
+  if (track.rotation) {
+    controls.append(button("Less often", "less", track, track.weight === -2));
+    controls.append(button("More often", "more", track, track.weight === 2));
+  }
+  const edit = document.createElement("button");
+  edit.type = "button";
+  edit.textContent = "Edit metadata";
+  edit.dataset.action = "metadata_edit";
+  edit.dataset.track = track.id;
+  edit.setAttribute("aria-label", "Edit metadata · " + track.title);
+  edit.addEventListener("click", () => openEditor(track));
+  controls.append(edit);
+  row.dataset.track = track.id;
   row.append(title, info, controls);
   return row;
 }
@@ -108,12 +125,15 @@ function trackRow(track, context, index) {
 function renderRows(id, data, render, extra = null) {
   const container = byId(id);
   const key = JSON.stringify([data, extra]);
+  if (id === "queue" && dragging) return;
   if (viewKeys.get(id) === key) return;
   viewKeys.set(id, key);
   const buttons = [...container.querySelectorAll("button")];
   const focused = document.activeElement;
   const index = buttons.indexOf(focused);
+  const scrollTop = container.scrollTop;
   container.replaceChildren(...render());
+  container.scrollTop = scrollTop;
   if (index >= 0) {
     const next = [...container.querySelectorAll("button")];
     const previousRow = Math.floor(index / (buttons.length || 1) * next.length);
@@ -129,7 +149,7 @@ function renderCatalog() {
   const query = byId("search").value.trim().toLowerCase();
   const sort = byId("crate-sort").value;
   const tracks = latest.catalog.filter(track => (sort !== "lineup" || track.in_lineup) &&
-    [track.title, track.artist, track.album].join(" ").toLowerCase().includes(query));
+    [track.title, track.artist, track.album, track.genre, track.tags, track.notes].join(" ").toLowerCase().includes(query));
   const tally = track => archiveScores.get(track.id);
   tracks.sort((a, b) => {
     let difference = 0;
@@ -221,7 +241,21 @@ function setConnection(online) {
   if (byId("connection").textContent !== text) byId("connection").textContent = text;
 }
 
-async function act(action, track, target) {
+function openEditor(track) {
+  if (busy || !connected) return;
+  const current = latest.catalog.find(item => item.id === track.id)
+    || latest.queue.find(item => item.id === track.id)
+    || (latest.current?.id === track.id ? latest.current : track);
+  byId("metadata-id").value = current.id;
+  byId("metadata-track").textContent = current.title;
+  for (const key of ["title", "artist", "album", "genre", "tags", "notes", "artwork"]) {
+    byId("metadata-" + key).value = current[key] || "";
+  }
+  byId("metadata-dialog").showModal();
+  byId("metadata-title").focus();
+}
+
+async function act(action, track, target, metadata = null) {
   if (busy || !connected) return;
   busy = true;
   connectionGeneration++;
@@ -229,11 +263,13 @@ async function act(action, track, target) {
     const response = await fetch("/action", {
       method: "POST",
       headers: {...headers, "Content-Type": "application/json"},
-      body: JSON.stringify({action, id: track?.id, slot: track?.slot, play: latest.play, target, frequency: byId('route').value}),
+      body: JSON.stringify({action, id: track?.id, slot: track?.slot, play: latest.play,
+        target, metadata, frequency: byId("route").value}),
     });
     const result = await response.json();
     if (result.state) render(result.state);
     byId("feedback").textContent = result.message;
+    if (!response.ok && action === "reorder") byId("feedback").textContent += " The queue was refreshed; try the move again.";
   } catch {
     setConnection(false);
     byId("feedback").textContent = "The station did not confirm this change.";
@@ -287,6 +323,18 @@ byId("upload").addEventListener("submit", async event => {
   busy = false;
   byId("feedback").textContent = "Queued " + added + " of " + files.length +
     (failed.length ? ". " + failed.join("; ") : ".");
+});
+byId("metadata-cancel").addEventListener("click", () => byId("metadata-dialog").close());
+byId("metadata-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const id = byId("metadata-id").value;
+  const metadata = Object.fromEntries(
+    ["title", "artist", "album", "genre", "tags", "notes", "artwork"].map(key =>
+      [key, byId("metadata-" + key).value])
+  );
+  // Close before rendering the changed record; focus is returned to the list.
+  byId("metadata-dialog").close();
+  await act("metadata_edit", {id}, null, metadata);
 });
 byId("more").addEventListener("click", () => {
   visible += 60;

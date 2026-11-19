@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote
 
-from now_playing import write_json
+from now_playing import artwork_url, write_json
 from archive_catalog import archive_snapshot
 
 
@@ -31,6 +31,8 @@ class Desk:
         if path.exists():
             self.state = json.loads(path.read_text(encoding="utf-8"))
         self.state.setdefault("lineup", [])
+        self.state.setdefault("metadata", {})
+        self.on_metadata_change = None
         self.default_catalog = station.catalog
         self.default_songs = station.songs[:]
         self.catalog_revision = 0
@@ -38,6 +40,7 @@ class Desk:
             self.tower.find_tracks(station.by_id)
             station.songs.extend(id_ for id_ in self.state.get("rotation_uploads", [])
                                  if id_ in station.by_id and id_ not in station.songs)
+        self.apply_metadata()
         station.eligible = self.eligible
         station.weight = lambda id_: self.state["tracks"].get(id_, {}).get("weight", 0)
         if self.curated:
@@ -103,11 +106,47 @@ class Desk:
                     self.station.by_id[track["id"]] = track
                     added.add(track["id"])
             if added:
+                self.apply_metadata()
                 self.catalog_revision += 1
                 if self.curated and added.intersection(self.state.get("curated_lineup", [])):
                     self.apply_rotation()
                 self.changed()
         return {"ids": [track["id"] for track in tracks], "scores": scores}
+
+    def apply_metadata(self, id_=None):
+        """Overlay non-destructive, frequency-specific metadata on source records."""
+        overrides = self.state.get("metadata", {})
+        ids = [id_] if id_ is not None else list(overrides)
+        for key in ids:
+            if key in self.station.by_id and isinstance(overrides.get(key), dict):
+                self.station.by_id[key].update(overrides[key])
+                if overrides[key].get("artwork"):
+                    self.station.by_id[key].pop("local_art", None)
+
+    def edit_metadata(self, id_, values):
+        if not isinstance(id_, str) or id_ not in self.station.by_id:
+            raise ValueError("That recording is unavailable.")
+        if not isinstance(values, dict) or not values:
+            raise ValueError("Supply the metadata fields to change.")
+        limits = {"title": 160, "artist": 160, "album": 180, "genre": 100,
+                  "tags": 400, "notes": 1000, "artwork": 512}
+        if any(key not in limits for key in values):
+            raise ValueError("An unsupported metadata field was supplied.")
+        for key, value in values.items():
+            if not isinstance(value, str) or len(value) > limits[key]:
+                raise ValueError(f"Invalid {key} metadata.")
+            if key == "title" and not value.strip():
+                raise ValueError("A recording needs a title.")
+            if key == "artwork" and value and artwork_url(value) != value:
+                raise ValueError("Artwork must use an approved HTTPS media host.")
+        saved = self.state.get("metadata", {}).copy()
+        saved[id_] = {**saved.get(id_, {}), **{key: value.strip() for key, value in values.items()}}
+        self.save(self.state | {"metadata": saved})
+        self.apply_metadata(id_)
+        self.changed()
+        if self.current and self.current["id"] == id_ and self.on_metadata_change:
+            self.on_metadata_change(self.current)
+        return "Metadata saved for this frequency."
 
     def eligible(self, id_):
         policy = self.state["tracks"].get(id_, {})
@@ -173,6 +212,10 @@ class Desk:
             "uploaded": item.get("source") == "upload",
             "in_lineup": id_ in self.state.get("curated_lineup", []),
             "album": item.get("album", ""),
+            "genre": item.get("genre", ""),
+            "tags": item.get("tags", ""),
+            "notes": item.get("notes", ""),
+            "artwork": item.get("artwork", ""),
             "disabled": bool(policy.get("disabled")),
             "held": policy.get("hold_until", 0) > time.time(),
         }
@@ -198,6 +241,7 @@ class Desk:
                 size = len(self.station.by_id)
                 self.tower.find_tracks(self.station.by_id)
                 if len(self.station.by_id) != size:
+                    self.apply_metadata()
                     self.catalog_revision += 1
             pending = self.pending(4000) if self.tower else self.pending()
             move = self.queue_undo()
@@ -227,6 +271,8 @@ class Desk:
             action = request.get("action")
             if action in ("lineup_add", "lineup_remove", "lineup_enable"):
                 return self.edit_archive_lineup(action, request.get("id"))
+            if action == "metadata_edit":
+                return self.edit_metadata(request.get("id"), request.get("metadata"))
             if action == "skip":
                 view = self.view()
                 if request.get("play") != view["play"] or not view["can_skip"]:

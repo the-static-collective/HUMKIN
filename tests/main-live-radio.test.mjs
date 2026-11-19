@@ -15,6 +15,7 @@ function fixture(initialOnline = true) {
   let clock = Date.now();
   class FakeDate extends Date {static now() {return clock;}}
   let stationStatusChecks = 0, metadata = null, hlsPlayer, monitor, pollMetadata;
+  let hidden = false, visibilityChanged = () => {};
   const playing = {clock: 0, shuffle: 0, pauses: 0, spotlight: 0};
   let introFinish = null;
   function element(id) {
@@ -51,6 +52,8 @@ function fixture(initialOnline = true) {
     static isSupported() {return true;}
     constructor() {hlsPlayer = this;}
     loadSource(url) {this.source = url;}
+    startLoad() {this.resumed = (this.resumed || 0) + 1;}
+    recoverMediaError() {this.recovered = (this.recovered || 0) + 1;}
     attachMedia(media) {this.media = media;}
     on(event, callback) {if (event === "error") this.fail = callback;}
     destroy() {this.destroyed = true;}
@@ -83,6 +86,8 @@ function fixture(initialOnline = true) {
     document: {
       baseURI: "https://humkin.abundent.org/fm/",
       title: "HUMKIN RADIO",
+      get hidden() {return hidden;},
+      addEventListener(event, fn) {if (event === "visibilitychange") visibilityChanged = fn;},
       getElementById: id => elements.get(id) || null
     },
     window: {HUMKIN_RADIO: radio, Hls: FakeHls},
@@ -125,6 +130,7 @@ function fixture(initialOnline = true) {
       return true;
     },
     setOnline: x => {statusOnline = x;},
+    setHidden: x => {hidden = x; visibilityChanged();},
     advance: ms => {clock += ms;},
     getHls: () => hlsPlayer,
     getPlayCalls: () => actualPlayCalls,
@@ -206,8 +212,42 @@ test("stale transmitter requires two checks before falling back", async () => {
   f.setOnline(false);
   await f.monitor();
   assert.notEqual(f.audio.src, BASE + "/live.mp3");
+  f.advance(31000);
   await f.monitor(); await f.flush();
   assert.equal(f.audio.src, BASE + "/live.mp3");
+});
+
+test("background status failures do not replace live audio with browser fallback", async () => {
+  const f = fixture();
+  await f.flush();
+  f.click("listen"); await f.flush();
+  const player = f.getHls();
+  f.setOnline(false);
+  f.setHidden(true);
+  f.advance(90000);
+  await f.monitor(); await f.monitor();
+  assert.equal(f.getHls(), player);
+  assert.equal(f.audio.src, "");
+  assert.equal(f.playing.clock, 0);
+  player.fail("error", {fatal: true, type: "networkError"});
+  assert.equal(player.destroyed, undefined);
+  f.setOnline(true);
+  f.setHidden(false);
+  assert.equal(player.resumed, 1, "resume the HLS loader on returning to the tab");
+  assert.equal(f.audio.src, "");
+});
+
+test("live audio progress outranks missing status responses", async () => {
+  const f = fixture();
+  await f.flush();
+  f.click("listen"); await f.flush();
+  f.setOnline(false);
+  f.advance(19000);
+  await f.monitor();
+  f.audio.dispatch("timeupdate");
+  f.advance(19000);
+  await f.monitor();
+  assert.equal(f.audio.src, "", "still playing HLS despite two failed probes");
 });
 
 test("Road Shuffle stops the live decoder and keeps original browser player", async () => {

@@ -495,6 +495,8 @@ def streaming(catalog,args):
     def cue(item):
         if sheet:
             sheet.record(written / (RATE * FRAME_BYTES), item)
+    if desk and sheet:
+        desk.on_metadata_change = cue
     maximum=int(args.seconds*RATE*FRAME_BYTES) if args.seconds else None
     def write(chunk):
         nonlocal written
