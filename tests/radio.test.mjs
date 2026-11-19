@@ -14,7 +14,7 @@ assert(html.includes('rel="manifest"'),"Radio installable manifest missing");
 assert(!/<audio[^>]*\\sautoplay(?:\\s|>)/i.test(html),"Do not autoplay radio");
 assert(!html.includes("88.1"),"Do not mislead with a real-sounding FM frequency");
 assert(html.includes("SAME-TIME RADIO")&&html.includes("ROAD SHUFFLE"));
-assert(html.includes("separate browser-built station clock")&&html.includes("NOT THE ACER BROADCAST"),"Independent browser radio must be labeled distinctly from Station One");
+assert(html.includes("▶ LISTEN LIVE")&&html.includes("ROAD SHUFFLE")&&html.includes("SAME-TIME RADIO"),"Unified dial must retain live and shuffle while concealing the clock fallback");
 assert(html.includes('href="../"'),"Album homepage link missing");
 assert(css.includes("@media(max-width:480px)"),"Must support phone screens");
 const rotation=JSON.parse(read("fm/rotation.json"));
