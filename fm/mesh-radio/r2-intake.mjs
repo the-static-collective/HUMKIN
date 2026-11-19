@@ -3,6 +3,7 @@
 // the existing HUMKIN R2 Edge Function as /fm/load/. No R2 keys in the browser.
 // Nothing is made public until the owner presses PUBLISH.
 import {installProtonLogin} from "../proton-auth.mjs";
+import {humkinAuthOptions} from "../browser-safe-auth.mjs";
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY="sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // RLS-scoped, public.
 const OWNER="us@abundent.org";
@@ -34,7 +35,7 @@ export function installR2Intake({getFiles,onPublished,log}){
         import("https://esm.sh/@supabase/supabase-js@2.57.0"),
         import("../load/r2-direct-client.mjs")
       ]);
-      db=createClient(API,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+      db=createClient(API,KEY,{auth:humkinAuthOptions()});
       direct=r2.r2Direct;
       putPrivateMp3=r2.putPrivateMp3;
       db.auth.onAuthStateChange(()=>setTimeout(()=>refreshLogin().catch(()=>{}),0));
