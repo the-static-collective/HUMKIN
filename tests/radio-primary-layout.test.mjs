@@ -40,6 +40,6 @@ test("no autoplay and no invented live title or album art", () => {
   assert(!/<audio[^>]*\sautoplay(?:\s|>)/i.test(html));
   assert(html.includes('src="../cover.jpg"'));
   assert(html.includes("artist") && html.includes("current-title"));
-  assert(html.includes("Record"));
+  assert(html.includes("HEAR THE NEW ONE") && html.includes("current-artist"));
   assert(!html.includes("Now spinning 21 songs:"));
 });
