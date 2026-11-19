@@ -1,0 +1,30 @@
+{
+  "schema": "sia/linkbank/v0",
+  "assets": [
+    {
+      "id": "humkin-surprise",
+      "type": "music",
+      "title": "HUMKIN — A Surprise Song",
+      "status": "active",
+      "locations": [
+        {
+          "url": "https://humkin.abundent.org/surprise.html",
+          "since": "2026-11-18T00:00:00.000Z",
+          "reason": "Existing public surprise-song page identified in HUMKIN source"
+        }
+      ]
+    }
+  ],
+  "packets": [
+    {
+      "id": "radio-surprise-001",
+      "title": "A Little Music for the Road",
+      "note": "A free song to hear, keep, or share. No gift requires a scan.",
+      "items": [
+        {
+          "asset_id": "humkin-surprise"
+        }
+      ]
+    }
+  ]
+}
