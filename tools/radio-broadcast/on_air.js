@@ -94,13 +94,18 @@ function trackRow(track, context, index) {
       if (byId("route").value && byId("route").value !== "station-one")
         controls.append(button("Add to destination lineup", "route_lineup", track));
     }
-    controls.append(button(track.held ? "Release hold" : "Hold 1 hour", "hold", track));
-    controls.append(button(track.disabled ? "Enable" : "Disable", "disable", track));
-    if (track.rotation) {
-      controls.append(button("Less often", "less", track, track.weight === -2));
-      controls.append(button("More often", "more", track, track.weight === 2));
-    }
   }
+  // Every recording is editable and disableable, including queued and on-air rows.
+  controls.append(button(track.held ? "Release hold" : "Hold 1 hour", "hold", track));
+  controls.append(button(track.disabled ? "Enable" : "Disable", "disable", track));
+  if (track.rotation) {
+    controls.append(button("Less often", "less", track, track.weight === -2));
+    controls.append(button("More often", "more", track, track.weight === 2));
+  }
+  const edit = button("Edit metadata", "metadata_edit", track);
+  edit.addEventListener("click", event => { event.stopImmediatePropagation(); openEditor(track); });
+  controls.append(edit);
+  row.dataset.track = track.id;
   row.append(title, info, controls);
   return row;
 }
@@ -113,7 +118,9 @@ function renderRows(id, data, render, extra = null) {
   const buttons = [...container.querySelectorAll("button")];
   const focused = document.activeElement;
   const index = buttons.indexOf(focused);
+  const scrollTop = container.scrollTop;
   container.replaceChildren(...render());
+  container.scrollTop = scrollTop;
   if (index >= 0) {
     const next = [...container.querySelectorAll("button")];
     const previousRow = Math.floor(index / (buttons.length || 1) * next.length);
@@ -129,7 +136,7 @@ function renderCatalog() {
   const query = byId("search").value.trim().toLowerCase();
   const sort = byId("crate-sort").value;
   const tracks = latest.catalog.filter(track => (sort !== "lineup" || track.in_lineup) &&
-    [track.title, track.artist, track.album].join(" ").toLowerCase().includes(query));
+    [track.title, track.artist, track.album, track.genre, track.tags, track.notes].join(" ").toLowerCase().includes(query));
   const tally = track => archiveScores.get(track.id);
   tracks.sort((a, b) => {
     let difference = 0;
@@ -221,7 +228,21 @@ function setConnection(online) {
   if (byId("connection").textContent !== text) byId("connection").textContent = text;
 }
 
-async function act(action, track, target) {
+function openEditor(track) {
+  if (busy || !connected) return;
+  const current = latest.catalog.find(item => item.id === track.id)
+    || latest.queue.find(item => item.id === track.id)
+    || (latest.current?.id === track.id ? latest.current : track);
+  byId("metadata-id").value = current.id;
+  byId("metadata-track").textContent = current.title;
+  for (const key of ["title", "artist", "album", "genre", "tags", "notes", "artwork"]) {
+    byId("metadata-" + key).value = current[key] || "";
+  }
+  byId("metadata-dialog").showModal();
+  byId("metadata-title").focus();
+}
+
+async function act(action, track, target, metadata = null) {
   if (busy || !connected) return;
   busy = true;
   connectionGeneration++;
@@ -229,11 +250,13 @@ async function act(action, track, target) {
     const response = await fetch("/action", {
       method: "POST",
       headers: {...headers, "Content-Type": "application/json"},
-      body: JSON.stringify({action, id: track?.id, slot: track?.slot, play: latest.play, target, frequency: byId('route').value}),
+      body: JSON.stringify({action, id: track?.id, slot: track?.slot, play: latest.play,
+        target, metadata, frequency: byId("route").value}),
     });
     const result = await response.json();
     if (result.state) render(result.state);
     byId("feedback").textContent = result.message;
+    if (!response.ok && action === "reorder") byId("feedback").textContent += " The queue was refreshed; try the move again.";
   } catch {
     setConnection(false);
     byId("feedback").textContent = "The station did not confirm this change.";
@@ -287,6 +310,18 @@ byId("upload").addEventListener("submit", async event => {
   busy = false;
   byId("feedback").textContent = "Queued " + added + " of " + files.length +
     (failed.length ? ". " + failed.join("; ") : ".");
+});
+byId("metadata-cancel").addEventListener("click", () => byId("metadata-dialog").close());
+byId("metadata-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const id = byId("metadata-id").value;
+  const metadata = Object.fromEntries(
+    ["title", "artist", "album", "genre", "tags", "notes", "artwork"].map(key =>
+      [key, byId("metadata-" + key).value])
+  );
+  // Close before rendering the changed record; focus is returned to the list.
+  byId("metadata-dialog").close();
+  await act("metadata_edit", {id}, null, metadata);
 });
 byId("more").addEventListener("click", () => {
   visible += 60;
