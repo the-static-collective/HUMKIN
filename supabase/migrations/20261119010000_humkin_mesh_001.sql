@@ -42,7 +42,8 @@ create table if not exists public.humkin_mesh_links(
   title text not null check(length(title) between 1 and 240),
   state text not null default 'held' check(state in ('held','active')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  change_reason text not null default 'created' check(length(change_reason) between 1 and 240)
 );
 create table if not exists public.humkin_mesh_link_events(
   id bigint generated always as identity primary key,
@@ -82,3 +83,23 @@ create policy "mesh_links_owner_read" on public.humkin_mesh_links for select to 
  using (owner_id=(select auth.uid()));
 create policy "mesh_link_events_owner_read" on public.humkin_mesh_link_events for select to authenticated
  using (owner_id=(select auth.uid()));
+
+-- Audit is part of the same transaction as a link creation, hold or repoint.
+create or replace function public.humkin_mesh_log_link_change()
+returns trigger language plpgsql security invoker set search_path = ''
+as $$
+begin
+  insert into public.humkin_mesh_link_events(
+    slug,owner_id,old_target_track_id,new_target_track_id,old_state,new_state,reason)
+  values(
+    new.slug,new.owner_id,
+    case when TG_OP='INSERT' then null else old.target_track_id end,
+    new.target_track_id,
+    case when TG_OP='INSERT' then null else old.state end,
+    new.state,new.change_reason);
+  return new;
+end $$;
+revoke all on function public.humkin_mesh_log_link_change() from public,anon,authenticated;
+create trigger humkin_mesh_link_history
+after insert or update of target_track_id,state,title on public.humkin_mesh_links
+for each row execute function public.humkin_mesh_log_link_change();
