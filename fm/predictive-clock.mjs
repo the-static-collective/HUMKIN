@@ -7,7 +7,7 @@ const HOSTS = new Set(["humkin.abundent.org", "media.abundent.org",
 export const MAX_PREFETCH_TRACKS = 3;
 export const MAX_PREFETCH_BYTES = 30 * 1024 * 1024;
 export const MAX_CLOCK_RTT_MS = 2500;
-export const MAX_CLOCK_AGE_MS = 2 * 60 * 1000;
+export const MAX_CLOCK_AGE_MS = 30 * 60 * 1000;
 
 function goodTime(value) {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
