@@ -280,6 +280,9 @@ export function stripInitialID3(body){
  */
 export function continuousStream(bucket,tracks,options={}){
  const maxObjects=Math.min(900,Math.max(2,Number(options.maxObjects)||900));
+ const maxAgeMs=Number.isFinite(options.maxAgeMs)&&options.maxAgeMs>0?
+   Math.min(options.maxAgeMs,24*3600000):null;
+ const started=Date.now();
  let counter=0,cycle=0,rotation=[],index=0,reader=null,closed=false,errors=0;
  let currentTracks=tracks,activeProgramKey=null;
  const seed=Number.isInteger(options.seed)?options.seed:(crypto.getRandomValues(new Uint32Array(1))[0]>>>0);
@@ -312,7 +315,10 @@ export function continuousStream(bucket,tracks,options={}){
        // buffering instead of a browser-side timer or per-track play() call.
        while(!closed){
          if(!reader){
-           if(counter>=maxObjects){closed=true;controller.close();return;}
+           if(counter>=maxObjects||
+              (maxAgeMs!==null&&Date.now()-started>=maxAgeMs)){
+             closed=true;controller.close();return;
+           }
            const track=await nextTrack();
            if(!track){closed=true;controller.close();return;}
            counter++;
@@ -383,6 +389,9 @@ export default {
        "X-HUMKIN-Stream":"virtual-continuous","X-HUMKIN-Synchronized":"false"};
      if(request.method==="HEAD")return new Response(null,{status:200,headers});
      return new Response(continuousStream(env.RADIO_MEDIA,list,{
+       // Reserve Cloudflare internal subrequests for periodic catalog and
+       // Mainline schedule refresh. Listeners must retune after this window.
+       maxObjects:300,maxAgeMs:8*3600000,
        resolveTracks:async()=>{
          // Refresh at the next natural recording boundary. Cache keeps this
          // inexpensive; expired approval metadata failures stop new tracks.
