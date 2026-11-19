@@ -72,7 +72,7 @@ async function flush(){await new Promise(resolve=>setImmediate(resolve));await n
 function fixture(config=rotation,cloudRows=[],staticOverrides=[],programRows=[],clockMs=null,settingsRows=[],prefetchAudio=false,artRows=[],serverAheadMs=null,effectClass=null,airCarts=null){
  const elems=new Map(),listeners={},copies=[],downloads=[],intervals=[],time={now:clockMs??(Date.parse(rotation.synced_clock_epoch_utc)+135*1000)};
  function $(id){if(!elems.has(id))elems.set(id,new E(id));return elems.get(id)}
- const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:$,addEventListener:(k,fn)=>{listeners[k]=fn},
+ const document={baseURI:"https://humkin.abundent.org/fm/",title:html.match(/<title>([^<]+)/)?.[1]||"HUMKIN RADIO",visibilityState:"visible",getElementById:id=>id==="live-air"?null:$(id),addEventListener:(k,fn)=>{listeners[k]=fn},
  createElement:()=>({href:"",download:"",click(){downloads.push({href:this.href,name:this.download})},remove(){}}),
  body:{appendChild:()=>{}}};
  class Clock extends Date{static now(){return time.now}}
