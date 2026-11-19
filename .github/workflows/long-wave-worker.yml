@@ -7,6 +7,10 @@ on:
       - 'docs/LONG-WAVE-BACKGROUND-STREAM.md'
       - 'docs/VIRTUAL-STATION-NETWORK.md'
       - 'fm/tower/**'
+      - 'fm/catalog-enrichment.json'
+      - 'tools/humkin_catalog_map.py'
+      - 'tools/humkin-radio-batch.py'
+      - 'tests/radio-catalog-map.test.py'
       - '.github/workflows/long-wave-worker.yml'
   workflow_dispatch:
 permissions:
@@ -25,6 +29,11 @@ jobs:
           node --check tools/radio-broadcast/cloudflare/stations.mjs
           node --check tools/radio-broadcast/cloudflare/contracts.mjs
           node --check fm/tower/tower.js
+          node --check fm/tower/catalog.js
+          node --check fm/tower/catalog-review.mjs
+          python3 -m py_compile tools/humkin_catalog_map.py tools/humkin-radio-batch.py
           node --check fm/long-wave/receiver.js
       - name: Long Wave stream and receiver regression tests
-        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/stations.test.mjs tools/radio-broadcast/cloudflare/contracts.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs
+        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/stations.test.mjs tools/radio-broadcast/cloudflare/contracts.test.mjs tools/radio-broadcast/cloudflare/enrichment.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs fm/tower/catalog-review.test.mjs
+      - name: Catalogue metadata mapping tests
+        run: python3 tests/radio-catalog-map.test.py
