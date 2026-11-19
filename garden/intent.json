@@ -50,14 +50,20 @@
       "text": "HUMKIN radio game grows from discovering the dial through personal conditional Gambits, contributing music/art/bumper work, proposing show programming, verified station operation, and ultimately operating networks of stations. Gambits are ordered conditional rules whose real powers grow with game experience and station-authorized roles. Local HUM/XP never by itself grants privileged cloud publishing, actual station identity, or ownership; permissions are server-verified and scoped to station and action.",
       "source": "https://github.com/the-static-collective/HUMKIN/pull/172",
       "status": "USER_REPORTED"
+    },
+    {
+      "id": "community-reviewed-daily-gambit-programs",
+      "text": "Community members may contribute ordered conditional Gambit decks proposing bounded daily radio blocks. Contributions remain private review proposals, not transmitter commands. Station-authorized editorial approval and explicit operator publication are separate; only existing approved, permission-cleared recordings may enter Cloud Autopilot, which schedules guest programming at safe track boundaries and returns to the prior house rotation automatically even when the owner's computer is off. Never let editable local XP/HUM or guest links confer broadcasting authority.",
+      "source": "https://github.com/the-static-collective/HUMKIN/pull/173",
+      "status": "USER_REPORTED"
     }
   ],
-  "next": "Field-test the Orchard Gambit Workbench on Android at Level 1 and unlocked Level 3; verify it generates a playable personal Signal without changing public radio. Then design server-scoped Producer/Operator grants compiling reviewed Gambit policies into Cloud Autopilot, after the cloud shared-program stream has been field-proven.",
+  "next": "Field-test Gambit daily proposal intake and owner review/export on phone with a safe synthetic proposal, then test an approved two-track guest window on the existing isolated Cloud Autopilot receiver, proving real Acer-off audio, safe track-boundary takeover and return. Keep main HLS and listener fallback paths unchanged until proven.",
   "unknowns": [
     "Live minimization behavior on Mac and Android remains unverified in this handoff.",
     "Actual last device field test may be newer than this record; check the user and source receipts.",
     "Newer PRs/merges may change what is already running; never trust the pilot's PR table without refreshing.",
     "Cloud Autopilot code merged, but the Cloudflare Worker route and R2 program have not been deployed or field-tested; current main listener experience remains unchanged.",
-    "Gambit Workbench local three-song Signal preview has merged source and automated checks; real Android in-device behavior and the future authorized station/network permission tier remain unverified/unbuilt."
+    "Gambit daily program review code merged and private Supabase queue deployed November 19, 2026; site deployment and physical user submission/review still require verification. Cloud Worker program publication and Acer-off guest-window listening are not field-proven."
   ]
 }
