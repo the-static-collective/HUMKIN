@@ -12,6 +12,8 @@ const BASE = "https://humkin-long-wave.joyvolcanomusic.workers.dev";
 function fixture(initialOnline = true) {
   const elements = new Map();
   let actualPlayCalls = 0, statusOnline = initialOnline, statusGate = null;
+  let clock = Date.now();
+  class FakeDate extends Date {static now() {return clock;}}
   let stationStatusChecks = 0, metadata = null, hlsPlayer, monitor, pollMetadata;
   const playing = {clock: 0, shuffle: 0, pauses: 0};
   function element(id) {
@@ -74,7 +76,7 @@ function fixture(initialOnline = true) {
     },
     window: {HUMKIN_RADIO: radio, Hls: FakeHls},
     navigator: {},
-    URL, Date, Number, String, Promise, AbortController,
+    URL, Date: FakeDate, Number, String, Promise, AbortController,
     fetch: async url => {
       fetchRequests.push(url);
       if (url.endsWith("/hls/status")) {
@@ -104,6 +106,7 @@ function fixture(initialOnline = true) {
     elements, audio, oldAudio, radio, playing, flush, fetchRequests,
     click: id => elements.get(id).dispatch("click"),
     setOnline: x => {statusOnline = x;},
+    advance: ms => {clock += ms;},
     getHls: () => hlsPlayer,
     getPlayCalls: () => actualPlayCalls,
     checks: () => stationStatusChecks,
@@ -246,4 +249,16 @@ test("verified Acer metadata updates live artist and cover; stale data cannot", 
     track: {...meta.track, title: "Stale Song"}});
   await f.pollMetadata(); await f.flush();
   assert.equal(f.elements.get("current-title").textContent, "True Blue Garden");
+});
+
+test("a connected but stalled Long Wave source eventually falls to Same-Time", async () => {
+  const f = fixture(false);
+  await f.flush();
+  f.click("listen"); await f.flush();
+  assert.equal(f.audio.src, BASE + "/live.mp3");
+  f.advance(51000);
+  await f.monitor(); await f.flush();
+  assert.equal(f.playing.clock, 1);
+  assert.equal(f.oldAudio.paused, false);
+  assert.equal(f.audio.paused, true);
 });
