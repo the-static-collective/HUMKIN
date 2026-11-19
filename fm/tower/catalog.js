@@ -28,9 +28,9 @@ function trackCard(r){
   small(article,"POSSIBLE ALTERNATE VERSION · review; never auto-merge","note");
  const tags=document.createElement("textarea");
  tags.setAttribute("aria-label","Review tags for "+r.title);
- tags.value=(r.reviewed_tags||proposed).join(", ");
+ tags.value=r.pending_tags_text??(r.reviewed_tags||proposed).join(", ");
  tags.addEventListener("input",()=>{
-  r.reviewed_tags=null;unreviewRecord(r);
+  r.pending_tags_text=tags.value;unreviewRecord(r);
   reviewButton.textContent="APPROVE TAGS";
  });
  article.append(tags);
@@ -93,7 +93,7 @@ $("approve-page").addEventListener("click",()=>{
  if(!pack)return;
  const rows=visible.slice(page*PAGE,(page+1)*PAGE);
  try{
-  for(const r of rows)reviewRecord(r,(r.reviewed_tags||candidateTags(r)).join(", "));
+  for(const r of rows)reviewRecord(r,r.pending_tags_text??(r.reviewed_tags||candidateTags(r)).join(", "));
   redraw();status(rows.length+" visible candidates reviewed. Still local only.");
  }catch(e){status(e.message)}
 });
