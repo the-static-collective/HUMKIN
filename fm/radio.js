@@ -18,6 +18,9 @@ const counter=$("counter");
 const modeHelp=$("mode-help");
 let tracks=[],config=null,mode="clock",index=-1,order=[],cursor=0,cycle=-1;
 let active=false,seekToken=0,failureCount=0,switching=false;
+// A one-song feature may return to the actual live receiver when its source ends.
+// This is separate from the normal spotlight-to-Road-Shuffle behavior.
+let spotlightFinish=null;
 // Keep a local first-party fallback when an optional cloud source fails.
 let localFallbackCount=0,usingLocalFallback=false;
 let lastPlaybackPosition=0,lastPlaybackProgressAt=Date.now(),lastBoundaryToken=-1;
@@ -674,6 +677,7 @@ function startShuffle(shouldPlay){
   setMessage("Road Shuffle: releases 2×; approved seasonal tracks 3×; 60-minute repeat memory.");
 }
 function nextShuffle(shouldPlay){
+  spotlightFinish=null; // An explicit skip cancels the one-song-to-live handoff.
   if(!order.length)return;
   const previous=order[cursor];
   cursor+=1;
@@ -733,9 +737,10 @@ function nextAlbum(shouldPlay){
   setTrackSource(albumQueue[albumCursor],0,shouldPlay);
   setMessage("ALBUM · "+(albumCursor+1)+" / "+albumQueue.length);
 }
-function spotlight(id){
+function spotlight(id,onFinished=null){
   const chosen=tracks.findIndex(t=>t.id===id);
-  if(chosen<0)return;
+  if(chosen<0)return false;
+  spotlightFinish=typeof onFinished==="function"?onFinished:null;
   mode="shuffle";pendingClockJoin=null;resetRate();
   warmSignal.setPlayback(false);
   buildShuffle();
@@ -745,10 +750,13 @@ function spotlight(id){
   updateModeUI();
   showTrack(chosen);
   setTrackSource(chosen,0,true);
-  setMessage("New single: "+tracks[chosen].title+". Road Shuffle will keep playing afterward.");
+  setMessage("New single: "+tracks[chosen].title+"."+
+    (spotlightFinish?" Live radio comes on when this song ends.":" Road Shuffle will keep playing afterward."));
+  return true;
 }
 function changeMode(target){
   if(target!=="clock"&&target!=="shuffle")return;
+  spotlightFinish=null;
   const wasPlaying=!audio.paused&&active;
   mode=target;order=[];pendingClockJoin=null;resetRate();
   trace("mode_change",{mode:target,reason:"mode_change"});
@@ -810,7 +818,7 @@ async function share(){
   setMessage("Share this address: "+link);
 }
 if(!primaryLive)$("listen").addEventListener("click",startRadio);
-$("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
+if(!primaryLive)$("spotlight").addEventListener("click",()=>spotlight("haileylu-bloom"));
 // The public website no longer exposes manual clock catch-up.
 if(document.getElementById("catch-up")&&!primaryLive)document.getElementById("catch-up").addEventListener("click",()=>{if(mode==="clock")startClock(!audio.paused)});
 $("next-song").addEventListener("click",()=>{if(mode==="shuffle")nextShuffle(!audio.paused);else if(mode==="album")nextAlbum(!audio.paused)});
@@ -869,6 +877,14 @@ function advanceNaturalEnd(reason="unknown"){
   lastBoundaryToken=seekToken;
   trace("boundary",{mode,track_id:tracks[index]?.id,kind:tracks[index]?.kind,
     position_s:Number(audio.currentTime)||0,cycle:Math.max(0,cycle),reason});
+  if(spotlightFinish){
+    // This source, not a wall-clock guess, determines when the feature ends.
+    const after=spotlightFinish;
+    spotlightFinish=null;
+    pause();
+    after();
+    return;
+  }
   if(mode==="shuffle")nextShuffle(true);
   else if(mode==="album")nextAlbum(true);
   else if(remoteStream){setMessage("Stream ended. Tune in again to reconnect.");pause();}
@@ -877,7 +893,7 @@ function advanceNaturalEnd(reason="unknown"){
 audio.addEventListener("ended",()=>advanceNaturalEnd("native_ended"));
 function watchNaturalEnd(){
   if(!active||switching||remoteStream||!tracks.length)return;
-  if(!closeToEnd(.85))return;
+  if(!closeToEnd(spotlightFinish?.12:.85))return;
   // A paused-but-ended track, or a playback head stalled at the final
   // fraction of the song, should not leave the station stuck indefinitely.
   if(audio.ended||Date.now()-lastPlaybackProgressAt>1700)advanceNaturalEnd("watchdog");
@@ -898,6 +914,14 @@ function recoverLocalDial(shouldPlay){
 }
 audio.addEventListener("error",()=>{
   if(!tracks.length&&!remoteStream)return;
+  if(spotlightFinish){
+    // An unplayable featured single must not strand the listener.
+    const after=spotlightFinish;
+    spotlightFinish=null;
+    pause();
+    after();
+    return;
+  }
   failureCount++;
   trace("audio_error",{mode,track_id:tracks[index]?.id,
     audio_code:Number(audio.error?.code)||0,reason:"source_error"});
@@ -937,7 +961,9 @@ audio.addEventListener("timeupdate",()=>{
   // can be blocked cross-origin. Do NOT depend on prepared.blobUrl for the
   // near-end handoff; the final 0.25s is safer than an indefinitely silent
   // receiver on phones that suspend the 'ended' event.
-  if(!remoteStream&&closeToEnd(.25))advanceNaturalEnd("near_end");
+  // Let the featured single finish naturally before joining live; do not
+  // clip the last quarter-second with the ordinary MP3 near-end prehandoff.
+  if(!spotlightFinish&&!remoteStream&&closeToEnd(.25))advanceNaturalEnd("near_end");
   // Never mid-song wall-clock resync in legacy browser-clock playback.
 });
 audio.addEventListener("stalled",()=>trace("stalled",{mode,track_id:tracks[index]?.id}));
@@ -1067,6 +1093,15 @@ async function boot(){
 }
 function startRoadShuffleFromLive(){
   if(!tracks.length)return false;
+  if(spotlightFinish){
+    // A listener explicitly choosing Road Shuffle replaces the feature,
+    // rather than pausing the feature or continuing its planned live handoff.
+    spotlightFinish=null;
+    order=[];
+    buildShuffle(index);
+    startShuffle(true);
+    return true;
+  }
   if(mode!=="shuffle")changeMode("shuffle");
   if(audio.paused)startRadio();
   else pause();
@@ -1074,13 +1109,23 @@ function startRoadShuffleFromLive(){
 }
 function startSameTimeFallback(){
   if(!tracks.length)return false;
+  spotlightFinish=null;
   pause();
   mode="clock";order=[];pendingClockJoin=null;resetRate();updateModeUI();
   startClock(true);
   return true;
 }
+function stopBrowserAudio(){
+  spotlightFinish=null;
+  pause();
+}
+function playSpotlightToLive(onFinished){
+  if(typeof onFinished!=="function")return false;
+  return spotlight("haileylu-bloom",onFinished);
+}
 window.HUMKIN_RADIO=Object.freeze({tuneAt,seededShuffle,changeMode,
-  startRoadShuffleFromLive,startSameTimeFallback,stopBrowserAudio:pause,
+  startRoadShuffleFromLive,startSameTimeFallback,stopBrowserAudio,
+  playSpotlightToLive,
   get ready(){return tracks.length>0;},
   playAlbum,albumCatalog,
   get state(){return {mode,index,cycle,cursor,tracks:tracks.length,
