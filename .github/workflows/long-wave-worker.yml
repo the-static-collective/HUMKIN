@@ -23,7 +23,8 @@ jobs:
         run: |
           node --check tools/radio-broadcast/cloudflare/worker.mjs
           node --check tools/radio-broadcast/cloudflare/stations.mjs
+          node --check tools/radio-broadcast/cloudflare/contracts.mjs
           node --check fm/tower/tower.js
           node --check fm/long-wave/receiver.js
       - name: Long Wave stream and receiver regression tests
-        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/stations.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs
+        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/stations.test.mjs tools/radio-broadcast/cloudflare/contracts.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs
