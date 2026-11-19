@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {applyReviewedEnrichment,approvedCatalog,getCatalog,mapApprovedProgramIds} from "./worker.mjs";
+import {resolveContract} from "./contracts.mjs";
+import {STATIONS} from "./stations.mjs";
 
 const HASH="a".repeat(64);
 function row(i,hash=HASH){
@@ -70,4 +72,22 @@ test("published Supabase show IDs map to eligible Worker crate IDs without guess
  const ids=mapApprovedProgramIds([row(1).id,"crate-"+row(2).id,"missing-id"],list);
  assert.deepEqual(ids,[list[0].id,list[1].id]);
  assert.deepEqual(mapApprovedProgramIds(["unknown"],list),[]);
+});
+
+test("five thousand independently approved recordings can feed a derived station without copying media",()=>{
+ const rows=Array.from({length:5000},(_,i)=>row(i+10000,(i+10000).toString(16).padStart(64,"0")));
+ const library=approvedCatalog(rows,null);
+ assert.equal(library.length,5000);
+ const overlay={schema:"humkin.radio.enrichment/v1",tracks:rows.filter((_,i)=>i%2===0)
+   .map(x=>({mp3_sha256:x.sha256,reviewed:true,tags:["genre:jazz"]}))};
+ applyReviewedEnrichment(library,overlay);
+ assert.equal(library.filter(x=>x.tags.includes("genre:jazz")).length,2500);
+ const channel={id:"jazz-deep-wave",name:"Jazz Deep Wave",enabled:true,
+   mode:"personal",filter:{tags:["genre:jazz"],kinds:["song"]},
+   include_bumpers:false,programs:[],parent_id:"mainline",contract_version:1,
+   revision:1,relationship:{kind:"counterpoint",influence:65}};
+ const resolved=resolveContract(channel,library,new Date("2026-11-18T20:00:00Z"),[channel]);
+ assert.equal(resolved.tracks.length,2500);
+ assert(resolved.tracks.every(t=>t.tags.includes("genre:jazz")));
+ assert.equal(new Set(resolved.tracks.map(t=>t.key)).size,2500);
 });
