@@ -97,7 +97,7 @@ export function applyReviewedEnrichment(tracks,manifest){
  * turn an unknown program reference into another recording.
  */
 export function mapApprovedProgramIds(ids,tracks){
- const eligible=new Set(tracks.map(t=>t.id));
+ const eligible=tracks instanceof Set?tracks:new Set(tracks.map(t=>t.id));
  const found=[];
  for(const original of Array.isArray(ids)?ids.slice(0,1500):[]){
    if(typeof original!=="string")continue;
@@ -156,17 +156,19 @@ async function queryPublicCatalog(fetcher){
      {headers:{apikey:PUBLIC_KEY,Accept:"application/json"},cache:"no-store"});
    if(response.ok){
      const rows=await response.json();
+     const approvedIds=new Set(tracks.map(t=>t.id));
      tracks.mainline_programs=(Array.isArray(rows)?rows:[]).filter(r=>
        r?.is_active===true&&Array.isArray(r.days)&&Array.isArray(r.track_ids))
-       .slice(0,500).map(r=>({
-         id:String(r.id||""),name:String(r.name||"Mainline").slice(0,160),
-         days:r.days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6),
-         start_minute:Number(r.start_minute),end_minute:Number(r.end_minute),
-         priority:Number(r.priority)||0,
-         track_ids:mapApprovedProgramIds(r.track_ids,tracks),
-         filter:{track_ids:mapApprovedProgramIds(r.track_ids,tracks)},
-         enabled:true
-       }));
+       .slice(0,500).map(r=>{
+         const ids=mapApprovedProgramIds(r.track_ids,approvedIds);
+         return {
+           id:String(r.id||""),name:String(r.name||"Mainline").slice(0,160),
+           days:r.days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6),
+           start_minute:Number(r.start_minute),end_minute:Number(r.end_minute),
+           priority:Number(r.priority)||0,
+           track_ids:ids,filter:{track_ids:ids},enabled:true
+         };
+       });
    }
  }catch{/* Continue with the approved catalog baseline if Mainline plans are unreachable. */}
  return tracks;
