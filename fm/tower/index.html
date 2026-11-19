@@ -61,6 +61,20 @@ footer{border-top:1px solid #65717b;margin-top:27px;padding:15px;color:var(--mut
 </div>
 <label for="name">Station name</label><input id="name" maxlength="100">
 <div class="form-grid">
+<div><label for="parent-station">Inherits programming signals from</label>
+<select id="parent-station"><option value="mainline">MAINLINE</option></select></div>
+<div><label for="relationship">Relationship contract</label>
+<select id="relationship">
+<option value="echo">Echo — emphasize parent favorites</option>
+<option value="counterpoint">Counterpoint — complement parent</option>
+<option value="inverse">Inverse — emphasize parent's gaps</option>
+<option value="independent">Independent — no preference signal</option>
+</select></div>
+</div>
+<label for="influence">Parent influence <output id="influence-label">0%</output></label>
+<input type="range" id="influence" min="0" max="100" value="0" step="5">
+<p id="contract-lineage" class="note" role="status">Mainline → station. No programming published.</p>
+<div class="form-grid">
 <div><label for="mode">Mode</label><select id="mode"><option value="personal">Personal rotation</option><option value="virtual">Virtual scheduled</option><option value="live">Live (not wired)</option></select></div>
 <div><label for="kinds">Content lane</label><select id="kinds"><option value="song">Music</option><option value="bumper">Voice carts</option><option value="all">Mixed (explicitly selected)</option></select></div>
 </div>
@@ -104,6 +118,9 @@ footer{border-top:1px solid #65717b;margin-top:27px;padding:15px;color:var(--mut
 <p class="note">Export a readable <code>humkin-network-draft.json</code> for review and eventual integration into <code>tools/radio-broadcast/cloudflare/stations.mjs</code>. No Supabase migration is required for this first network. Publishing changes still requires a code review and Worker redeploy.</p>
 <div class="inline"><button id="export" type="button">EXPORT NETWORK DRAFT</button><a class="button ghost" href="https://github.com/the-static-collective/HUMKIN/pull/145" target="_blank" rel="noopener noreferrer">OPEN EXPERIMENTAL PR</a></div>
 <p class="status" id="draft-status" role="status">No public programming changes made.</p>
+<h3 style="margin-top:22px">Local contract change journal</h3>
+<p class="note">Recorded in this browser only. This is a reviewable edit history, not a tamper-proof blockchain or a remote audit ledger. Export includes this history.</p>
+<div id="contract-events" class="note" aria-live="polite">No local changes recorded.</div>
 </section>
 <footer>HUMKIN TOWER · Experimental network desk · Station definitions are public; owner credentials are never handled here.</footer>
 </main>
