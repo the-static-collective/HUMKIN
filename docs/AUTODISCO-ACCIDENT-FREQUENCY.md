@@ -28,3 +28,13 @@ Run `node --test tests/autodisco-accident.test.mjs`, then open `/fm/autodisco/` 
 ## Next crossing
 
 Add an owner-authorized local V20 ingest runner to consume the editorial packet while quarantining it from DJ inputs, download each admitted track, verify hashes, run real sealed encounters and assemble reviewable episodes. Then return approved divergent DJ interpretations and listener feedback to the Accident Engine as proposals, not as automatic canon or uncontrolled broadcast.
+
+## RETURN LOOP 002 — same-program listener snapshots
+
+The experimental station adds **Export feedback snapshot**, which reads the existing public aggregated Compost score endpoint and downloads only the selected six tracks' cumulative play counts, rating counts, dance classifications and star averages. No listener IDs, IPs, device keys, raw responses or source credentials are exported. This reuses the deployed existing stats function; no new database migration is required.
+
+The first snapshot pins that six-record program **for the current browser session** (it loops instead of silently regenerating on the sixth song). Take a second snapshot before clicking **Start a new six-track experiment**. Keep the exact same editorial handoff and program seed. A reload does not guarantee that the previous experiment remains available, so save both files locally.
+
+Then use V20's `scripts/accident-return-loop.mjs` with `--before=... --after=...`, alongside a real V20 first-listen artifact folder and the original MOTIF Python checkout. See [the connected V20 draft](https://github.com/the-static-collective/The-AutodiscoV.20.-question-marks-/pull/10), particularly `docs/HUMKIN-MOTIF-ACCIDENT-001.md`.
+
+The return loop compares only measured aggregate deltas and verified V20 protocol artifacts. Changes in dance classifications are **self-reported, cumulative, editable and non-causal**. `plays` are neither unique listeners nor delayed replay. V20 dialogue is a model report, not a human judgment. MOTIF receives declared evidence under explicit provenance and can propose a new experiment; it cannot automatically rewrite the music, announce a factual musical discovery, or broadcast an episode.

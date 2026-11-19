@@ -1,0 +1,49 @@
+{
+  "schema": "humkin/living-relic-v0",
+  "relic_id": "field-001",
+  "current_revision": "v2",
+  "revisions": [
+    {
+      "id": "v1",
+      "parent": null,
+      "title": "A little song for the road",
+      "message": "A tiny musical gift. The card keeps this same address as its story grows.",
+      "songs": [
+        {
+          "title": "First Light Finds Your Face — HUMKIN",
+          "href": "./audio/10_First_Light_Finds_Your_Face.mp3"
+        }
+      ]
+    },
+    {
+      "id": "v2",
+      "parent": "v1",
+      "title": "The card remembers",
+      "message": "The original song remains. A fictional gift demonstration has added a new possibility, without claiming a real person received anything.",
+      "songs": [
+        {
+          "title": "First Light Finds Your Face — HUMKIN",
+          "href": "./audio/10_First_Light_Finds_Your_Face.mp3"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "sample-gift-001",
+      "type": "gift.reported",
+      "mode": "synthetic",
+      "description": "Fictional care-pack gift; no real delivery claimed"
+    },
+    {
+      "id": "sample-confirmation-001",
+      "type": "gift.confirmed",
+      "mode": "synthetic",
+      "report_id": "sample-gift-001",
+      "recipient_confirmed": true,
+      "publisher_approved": true,
+      "description": "Simulated review approval, not recipient testimony"
+    }
+  ],
+  "demonstration_confirmation_id": "sample-confirmation-001"
+}
