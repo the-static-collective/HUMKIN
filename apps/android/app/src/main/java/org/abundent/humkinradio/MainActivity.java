@@ -71,6 +71,8 @@ public final class MainActivity extends Activity {
     private boolean wideCards, modeStyled;
     private OnBackInvokedCallback albumsBack;
     private Button tune,sameTime,road,albumNext,outpostButton,reactionButton;
+    private Button liveTowerButton;
+    private boolean towerTuneWhenReady;
     private Button keepRecordButton,keepAlbumButton;
     private TextView humChip,coinBurst;
     private boolean keepDownloading;
@@ -99,7 +101,12 @@ public final class MainActivity extends Activity {
     private String currentAlbum="";
 
     private final Player.Listener listener=new Player.Listener(){
-        @Override public void onEvents(Player player,Player.Events events){redraw();}
+        @Override public void onEvents(Player player,Player.Events events){
+            redraw();
+            if("tower".equals(source) && player.getPlayerError()!=null && status!=null)
+                showMessage(status,
+                        "Tower HLS unavailable. SAME-TIME RADIO remains available.");
+        }
     };
 
     @Override public void onCreate(Bundle savedInstanceState) {
@@ -613,6 +620,14 @@ public final class MainActivity extends Activity {
         addPair(radioScreen,sameTime,road,11);
         sameTime.setOnClickListener(v->changeMode(true));
         road.setOnClickListener(v->changeMode(false));
+
+        // Opt-in native HLS. Never replace the established Same-Time or shuffle.
+        liveTowerButton=pill("▶ LIVE TOWER · EXPERIMENTAL",null,PINK,12);
+        liveTowerButton.setMinHeight(dp(46));
+        liveTowerButton.setContentDescription(
+                "Listen to the actual HUMKIN Tower broadcast, experimental native HLS");
+        liveTowerButton.setOnClickListener(v->tuneTower());
+        radioScreen.addView(liveTowerButton,wrap(8));
 
         tune=pill("TUNE IN",Icon.PLAY,YELLOW,27);
         tune.setMinHeight(dp(70));
@@ -1287,6 +1302,8 @@ public final class MainActivity extends Activity {
 
     private void changeMode(boolean radio){
         radioMode = radio;
+        // A deliberate tap leaves opt-in live HLS and restores the classic dial.
+        if("tower".equals(source))source="none";
         getSharedPreferences("humkin-radio", MODE_PRIVATE).edit()
                 .putBoolean("last-radio-mode", radio).apply();
         showAlbums(false);
@@ -1354,7 +1371,8 @@ public final class MainActivity extends Activity {
                 if("none".equals(source) && controller.getMediaItemCount()>0){
                     MediaItem item=controller.getCurrentMediaItem();
                     String id=item==null?"":item.mediaId;
-                    if(id.startsWith("album:"))source="album";
+                    if(TowerLive.isLive(item))source="tower";
+                    else if(id.startsWith("album:"))source="album";
                     else {
                         PlaybackContinuity.Saved saved = PlaybackContinuity.read(
                                 getSharedPreferences("humkin-radio", MODE_PRIVATE));
@@ -1365,7 +1383,8 @@ public final class MainActivity extends Activity {
                     }
                 }
                 if (!alive) return;
-                if (tuneWhenReady) changeMode(radioMode);
+                if (towerTuneWhenReady) {towerTuneWhenReady=false;tuneTower();}
+                else if (tuneWhenReady) changeMode(radioMode);
                 else redraw();
             }catch(Exception e){showMessage(status, "Couldn't connect to the receiver.");}
         },this::runOnUiThread);
@@ -1383,6 +1402,35 @@ public final class MainActivity extends Activity {
     }
     @Override public void onDestroy(){worker.shutdownNow();coverWorker.shutdownNow();super.onDestroy();}
 
+    /**
+     * Real Tower HLS is always an explicit choice. While timed track cues are
+     * not yet wired, the player shows station metadata (not guessed songs).
+     * The legacy Same-Time, Road Shuffle, Albums, and game stay untouched.
+     */
+    private void tuneTower(){
+        if(controller==null){
+            towerTuneWhenReady=true;
+            if(status!=null)showMessage(status,"Connecting the native receiver…");
+            return;
+        }
+        MediaItem current=controller.getCurrentMediaItem();
+        if(TowerLive.isLive(current)){
+            source="tower";
+            if(controller.isPlaying())controller.pause();else controller.play();
+        }else{
+            RadioPlaybackService.clearSameTime();
+            controller.setMediaItem(TowerLive.stationOne());
+            source="tower";
+            currentAlbum="";
+            tuneWhenReady=false;
+            controller.prepare();
+            controller.play();
+        }
+        if(status!=null)showMessage(status,
+                "Tower HLS test · cue-aligned song titles and fallback not yet connected.");
+        redraw();
+    }
+
     private void tuneIn(){
         if(livingFace!=null && !livingFace.playable()){
             showUnbuiltReceiverCircuit("DIAL",livingFace.frequency(),livingFace.archive());
@@ -1396,6 +1444,9 @@ public final class MainActivity extends Activity {
             tuneWhenReady = true;
             showMessage(status, "Connecting the receiver…");
             return;
+        }
+        if("tower".equals(source) && TowerLive.isLive(controller.getCurrentMediaItem())){
+            tuneTower();return;
         }
         if("pirate".equals(source)&&RadioPlaybackService.isPirateArmed()
                 &&controller.getMediaItemCount()>0){
@@ -1478,6 +1529,7 @@ public final class MainActivity extends Activity {
                 runOnUiThread(()->{
                     loading.set(false);setBusy(false);
                     if(!alive||controller==null)return;
+                    if("tower".equals(source))return;
                     if(requested!=radioMode){fetchRadio(true);return;}
                     if(!force&&controller.getMediaItemCount()>0)return;
                     if(requested){
@@ -1570,8 +1622,8 @@ public final class MainActivity extends Activity {
             }
         }
         boolean pirateLive="pirate".equals(source)&&RadioPlaybackService.isPirateArmed();
-        boolean sameSelected=!pirateLive&&radioMode;
-        boolean shuffleSelected=!pirateLive&&!radioMode;
+        boolean sameSelected=!pirateLive&&!"tower".equals(source)&&radioMode;
+        boolean shuffleSelected=!pirateLive&&!"tower".equals(source)&&!radioMode;
         if(!modeStyled || sameTime.isSelected()!=sameSelected
                 || road.isSelected()!=shuffleSelected) {
             // Bootleg Frequency is its own dial. Never label it "Same-Time".
@@ -1589,13 +1641,20 @@ public final class MainActivity extends Activity {
         }
         boolean ready = controller != null && controller.getMediaItemCount() > 0;
         boolean stationPlaying = ready && controller.isPlaying()
-                && ("pirate".equals(source)
+                && ("pirate".equals(source) || "tower".equals(source)
                     ||(radioMode ? "radio" : "shuffle").equals(source));
         if (stationPlaying != "PAUSE".contentEquals(tune.getText())) {
             tune.setText(stationPlaying ? "PAUSE" : "TUNE IN");
             HumkinVisuals.setIcon(tune, stationPlaying ? Icon.PAUSE : Icon.PLAY, 31);
         }
 
+        if(liveTowerButton!=null){
+            String title="tower".equals(source)&&stationPlaying
+                    ?"Ⅱ PAUSE LIVE TOWER"
+                    :"▶ LIVE TOWER · EXPERIMENTAL";
+            if(!title.contentEquals(liveTowerButton.getText()))
+                liveTowerButton.setText(title);
+        }
         MediaItem item = ready ? controller.getCurrentMediaItem() : null;
         String thisId = item == null ? "" : item.mediaId;
         if(reactionButton!=null){
@@ -1615,6 +1674,8 @@ public final class MainActivity extends Activity {
         }
         if (!ready) {
             onDeck.setText("—");
+        } else if ("tower".equals(source)) {
+            onDeck.setText("Shared broadcast · timed track cues pending");
         } else if ("album".equals(source)) {
             int nextIndex = controller.getCurrentMediaItemIndex() + 1;
             MediaItem upcoming = nextIndex < controller.getMediaItemCount()
