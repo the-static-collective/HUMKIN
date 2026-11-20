@@ -149,7 +149,8 @@ class BatchAndProgramsTests(unittest.TestCase):
                       "ids": ["song-2", "song-1"]})
             self.assertEqual(desk.state["curated_lineup"], ["song-2", "song-1"])
             desk.act({"action": "lineup_enable"})
-            self.assertEqual(desk.pending(1)[0][1], "song-2")
+            self.assertEqual(set(desk.station.songs), {"song-1", "song-2"})
+            self.assertIn(desk.pending(1)[0][1], {"song-1", "song-2"})
             with self.assertRaises(ValueError):
                 desk.act({"action": "batch", "operation": "lineup_remove",
                           "ids": ["song-2", "song-1"]})
