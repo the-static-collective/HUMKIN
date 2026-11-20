@@ -1,0 +1,95 @@
+name: HUMKIN Android classic recovery · build and launch proof
+
+on:
+  pull_request:
+    paths:
+      - 'apps/android/**'
+      - '.github/workflows/android-recovery-lab.yml'
+      - 'tools/android-qa/**'
+  push:
+    branches:
+      - recovery/android-classic-spine-20261120
+    paths:
+      - 'apps/android/**'
+      - '.github/workflows/android-recovery-lab.yml'
+      - 'tools/android-qa/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-compile:
+    name: Classic app build + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - name: Install Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile original native app and run unit tests
+        run: gradle -p apps/android --no-daemon :app:assembleRadioRecovery :app:testRadioRecoveryUnitTest
+      - name: Check APK identity
+        run: |
+          APK=apps/android/app/build/outputs/apk/radioRecovery/app-radioRecovery.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -5
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='org.abundent.humkinradio.recovery'"
+          sha256sum "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HUMKIN-CLASSIC-RECOVERY-LAB-APK
+          path: apps/android/app/build/outputs/apk/radioRecovery/app-radioRecovery.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  android-launch:
+    name: Android 11 real UI launch screenshot
+    needs: android-compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: HUMKIN-CLASSIC-RECOVERY-LAB-APK
+          path: emulator-apk
+      - name: Enable KVM for Android emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot Android 11 and test actual launch
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            mkdir -p android-qa
+            adb install -r emulator-apk/app-radioRecovery.apk
+            adb shell am start -W -n org.abundent.humkinradio.recovery/org.abundent.humkinradio.MainActivity
+            sleep 12
+            adb shell pidof org.abundent.humkinradio.recovery
+            adb exec-out screencap -p > android-qa/classic-launch-android11.png
+            python3 -m pip install --quiet pillow
+            python3 tools/android-qa/check-launch-image.py android-qa/classic-launch-android11.png
+            adb logcat -d -v brief > android-qa/logcat.txt
+            ! grep -F 'FATAL EXCEPTION' android-qa/logcat.txt
+      - name: Preserve screenshot and Android logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HUMKIN-ANDROID11-LAUNCH-RECEIPT
+          path: android-qa/
+          if-no-files-found: warn
+          retention-days: 14
