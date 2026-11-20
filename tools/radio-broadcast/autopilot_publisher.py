@@ -13,6 +13,8 @@ import re
 import subprocess
 import sys
 
+from autopilot_remote import verified_remote_file
+
 SCHEMA = "humkin.cloud-autopilot/v1"
 CRATE_SCHEMA = "humkin.autopilot.crate/v1"
 BUCKET = "humkin-radio-live"
@@ -71,11 +73,42 @@ def segments_from_manifest(manifest, directory):
     return durations
 
 
-def prepare_tracks(input_path, cache):
+def _encoded_segments(src, digest, cache):
+    """Encode only once per byte digest; always validate reusable manifests."""
+    target = cache / digest
+    target.mkdir(parents=True, exist_ok=True)
+    manifest = target / "track.m3u8"
+    if not manifest.exists():
+        command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-i", str(src), "-map", "0:a:0", "-vn", "-c:a", "aac",
+            "-b:a", "128k", "-ar", "44100", "-ac", "2",
+            "-f", "hls", "-hls_time", "8", "-hls_list_size", "0",
+            "-hls_playlist_type", "vod", "-hls_segment_filename",
+            str(target / "segment-%06d.ts"), str(manifest)]
+        subprocess.run(command, check=True)
+    return segments_from_manifest(manifest, target)
+
+
+def _remote_pin_path(cache, handoff):
+    fingerprint = handoff["fingerprint"]
+    if not re.fullmatch(r"[0-9a-f]{64}", fingerprint):
+        raise ValueError("Invalid remote handoff fingerprint.")
+    return cache / "handoffs" / (fingerprint + ".json")
+
+
+def prepare_tracks(input_path, cache, *, publish=False):
+    """Prepare files or published remote MP3s without requiring a local master.
+
+    Published remote sources are downloaded only into disposable temp files.
+    A successful preview records SHA-256 pins in the private AAC cache.
+    Publishing requires the same handoff and byte-for-byte remote media.
+    """
     payload = json.loads(input_path.read_text(encoding="utf-8"))
+    handoff = None
     if payload.get("schema") == "humkin.tower.cloud-handoff/v1":
         from tower_cloud_handoff import validate_handoff
         validate_handoff(payload)
+        handoff = payload
         payload = payload["crate"]
     if payload.get("schema") != CRATE_SCHEMA:
         raise ValueError("Expected " + CRATE_SCHEMA)
@@ -85,30 +118,55 @@ def prepare_tracks(input_path, cache):
     sources = payload.get("tracks")
     if not isinstance(sources, list) or not 1 <= len(sources) <= 500:
         raise ValueError("Expected 1–500 explicitly approved audio files")
-    tracks = []
+    cache = Path(cache)
+    tracks, remote_pins, remote_seen = [], [], {}
+    pin_path = _remote_pin_path(cache, handoff) if handoff else None
+    prior_pins = None
+    if publish and handoff and any("url" in item for item in sources):
+        if not pin_path.is_file():
+            raise ValueError("Preview this remote show first; the source checksum receipt is missing.")
+        prior = json.loads(pin_path.read_text(encoding="utf-8"))
+        if prior.get("schema") != "humkin.autopilot.source-pins/v1" or prior.get("fingerprint") != handoff["fingerprint"]:
+            raise ValueError("The remote preview receipt is incompatible with this show.")
+        prior_pins = prior.get("remote_tracks")
+        if not isinstance(prior_pins, list):
+            raise ValueError("The remote preview receipt is invalid.")
     for item in sources:
-        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
-            raise ValueError("A track needs a local audio path")
-        src = Path(item["path"]).expanduser()
-        if not src.is_absolute():
-            src = input_path.parent / src
-        src = src.resolve(strict=True)
-        if not src.is_file() or src.stat().st_size > 500 * 1024 * 1024:
-            raise ValueError("Audio file missing or too large")
-        digest = asset_digest(src)
-        target = cache / digest
-        target.mkdir(parents=True, exist_ok=True)
-        manifest = target / "track.m3u8"
-        if not manifest.exists():
-            command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-                "-i", str(src), "-map", "0:a:0", "-vn", "-c:a", "aac",
-                "-b:a", "128k", "-ar", "44100", "-ac", "2",
-                "-f", "hls", "-hls_time", "8", "-hls_list_size", "0",
-                "-hls_playlist_type", "vod", "-hls_segment_filename",
-                str(target / "segment-%06d.ts"), str(manifest)]
-            subprocess.run(command, check=True)
-        durations = segments_from_manifest(manifest, target)
-        name = str(item.get("title") or src.stem).strip()[:160]
+        if not isinstance(item, dict):
+            raise ValueError("Invalid approved recording entry.")
+        path = item.get("path")
+        remote_url = item.get("url")
+        if isinstance(path, str) and path and remote_url is None:
+            src = Path(path).expanduser()
+            if not src.is_absolute():
+                src = input_path.parent / src
+            src = src.resolve(strict=True)
+            if not src.is_file() or src.stat().st_size > 500 * 1024 * 1024:
+                raise ValueError("Audio file missing or too large")
+            digest = asset_digest(src)
+            durations = _encoded_segments(src, digest, cache)
+            label = src.stem
+        elif (isinstance(remote_url, str) and remote_url
+              and path is None and handoff is not None):
+            source = item.get("source_kind")
+            expected = item.get("expected_sha")
+            # Even a reused URL is checked against the current handoff metadata.
+            from autopilot_remote import published_audio_url
+            published_audio_url(remote_url, source)
+            memo = (remote_url, source, expected)
+            if memo in remote_seen:
+                digest, durations = remote_seen[memo]
+            else:
+                with verified_remote_file(remote_url, source, cache,
+                                          expected_sha=expected) as (temp, digest):
+                    durations = _encoded_segments(temp, digest, cache)
+                remote_seen[memo] = (digest, durations)
+            label = ""
+            remote_pins.append({"id": item.get("id"), "url": remote_url,
+                                "sha256": digest})
+        else:
+            raise ValueError("An approved track needs exactly one safe local or published remote source.")
+        name = str(item.get("title") or label).strip()[:160]
         if not name:
             raise ValueError("Tracks require titles")
         item_id = str(item.get("id") or ("track-" + digest[:20]))
@@ -124,6 +182,22 @@ def prepare_tracks(input_path, cache):
             "artwork": artwork[:1000], "asset_sha": digest,
             "durations_ms": durations})
         print("Prepared:", name, "—", len(durations), "segments")
+    if remote_pins and handoff:
+        if publish:
+            if remote_pins != prior_pins:
+                raise ValueError("Remote audio changed since preview; preview the show again.")
+        else:
+            pin_path.parent.mkdir(parents=True, exist_ok=True)
+            receipt = {"schema": "humkin.autopilot.source-pins/v1",
+                       "fingerprint": handoff["fingerprint"],
+                       "remote_tracks": remote_pins}
+            temp = pin_path.with_suffix(".tmp")
+            try:
+                temp.write_text(json.dumps(receipt, sort_keys=True), encoding="utf-8")
+                temp.replace(pin_path)
+            finally:
+                temp.unlink(missing_ok=True)
+            print("Pinned", len(remote_pins), "remote recording slots for owner review.")
     return station, tracks
 
 
@@ -242,7 +316,7 @@ def main():
         print("Tower program:", handoff["program"]["name"],
               "revision", handoff["program"]["revision"])
         print("Requested Central slot:", handoff["slot"]["day"], handoff["slot"]["time"])
-    station, tracks = prepare_tracks(manifest, cache)
+    station, tracks = prepare_tracks(manifest, cache, publish=args.publish)
     if handoff:
         from tower_cloud_handoff import validate_prepared
         validate_prepared(handoff, tracks)
