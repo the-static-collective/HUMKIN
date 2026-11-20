@@ -8,7 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1] / "tools" / "radio-broadcast"
 sys.path.insert(0, str(ROOT))
-from on_air import Desk
+from on_air import Desk, serve
 from scheduler_v2 import StationV2
 from tower_library import TowerLibrary
 
@@ -140,6 +140,25 @@ class BatchAndProgramsTests(unittest.TestCase):
                           "field": "artwork", "value": "https://evil.invalid/x.jpg",
                           "ids": ["song-0", "song-1"]})
             self.assertEqual(desk.state["metadata"]["song-0"], {"genre": "Synthfolk"})
+
+    def test_peer_frequency_batch_commits_once_or_refuses_all(self):
+        with tempfile.TemporaryDirectory() as root:
+            parent = Path(root) / "crate"
+            sender = TowerLibrary(parent, "station-one")
+            destination = TowerLibrary(parent, "talk")
+            target = Desk(StationV2(catalog()), Path(root) / "talk.json", tower=destination)
+            server, _ = serve(target, 0)
+            try:
+                message = sender.route_batch("talk", ["song-3", "song-1"], "queue_end")
+                self.assertIn("2 recordings", message)
+                self.assertEqual(target.state["lineup"], ["song-3", "song-1"])
+                with self.assertRaises(ValueError):
+                    sender.route_batch("talk", ["song-0", "missing"], "queue_next")
+                self.assertEqual(target.state["lineup"], ["song-3", "song-1"])
+            finally:
+                server.unregister_desk()
+                server.shutdown()
+                server.server_close()
 
     def test_batch_curated_lineup_on_secondary_frequency(self):
         with tempfile.TemporaryDirectory() as root:
