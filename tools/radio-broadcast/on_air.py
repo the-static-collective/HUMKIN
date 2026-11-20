@@ -535,6 +535,11 @@ def serve(desk, port):
                     message = desk.tower.route_batch(request.get("frequency"), request.get("ids"),
                                                      request.get("operation"))
                 else:
+                    if (action == "batch" and desk.tower and request.get("operation") in ("queue_next", "queue_end", "lineup_add"):
+                        ids = request.get("ids")
+                        if isinstance(ids, list) and any(isinstance(id_, str) and id_ not in desk.station.by_id
+                                                          and not id_.startswith("upload-") for id_ in ids):
+                            desk.refresh_archive()
                     id_ = request.get("id")
                     if (action in ("lineup_add", "queue_end") and desk.tower and isinstance(id_, str)
                             and id_ not in desk.station.by_id and not id_.startswith("upload-")):
