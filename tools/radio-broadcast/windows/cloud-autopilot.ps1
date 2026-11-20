@@ -3,8 +3,10 @@
 # No credentials are printed, logged to disk or embedded in the published program.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $true, ParameterSetName = "FromPlan")]
     [string]$Plan,
+    [Parameter(Mandatory = $true, ParameterSetName = "FromTower")]
+    [string]$TowerProgram,
     [switch]$Publish,
     [string]$ApprovedPacket = '',
     [ValidateRange(30, 86400)]
@@ -16,7 +18,12 @@ $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $PythonScript = Join-Path $RepoRoot 'tools\radio-broadcast\autopilot_publisher.py'
 $VaultFile = Join-Path $env:LOCALAPPDATA 'HUMKIN\StationOne\r2-live-credentials.dpapi'
 if (-not (Test-Path -LiteralPath $PythonScript)) { throw 'Use a complete updated HUMKIN repository checkout.' }
-if (-not (Test-Path -LiteralPath $Plan)) { throw 'The approved track plan file does not exist.' }
+if ($PSCmdlet.ParameterSetName -eq 'FromTower') {
+    if (-not (Test-Path -LiteralPath $TowerProgram)) { throw 'Tower program handoff not found.' }
+    if ($ApprovedPacket) { throw 'A Tower exact-order program cannot be combined with a Gambit packet.' }
+} elseif (-not (Test-Path -LiteralPath $Plan)) {
+    throw 'The approved track plan file does not exist.'
+}
 if (Get-Command py -ErrorAction SilentlyContinue) {
     $Exe = 'py'
     $Prefix = @('-3')
@@ -26,8 +33,12 @@ if (Get-Command py -ErrorAction SilentlyContinue) {
 } else {
     throw 'Python 3 is required.'
 }
-$arguments = @($Prefix) + @($PythonScript, '--input', [IO.Path]::GetFullPath($Plan),
-    '--lead-seconds', [string]$LeadSeconds)
+$arguments = @($Prefix) + @($PythonScript, '--lead-seconds', [string]$LeadSeconds)
+if ($PSCmdlet.ParameterSetName -eq 'FromTower') {
+    $arguments += @('--tower-program', [IO.Path]::GetFullPath($TowerProgram))
+} else {
+    $arguments += @('--input', [IO.Path]::GetFullPath($Plan))
+}
 if ($ApprovedPacket) {
     if (-not (Test-Path -LiteralPath $ApprovedPacket)) { throw 'Reviewed Gambit packet not found.' }
     $arguments += @('--approved-packet', [IO.Path]::GetFullPath($ApprovedPacket))
@@ -39,6 +50,10 @@ if ($Publish) {
     Write-Host 'Cloud Autopilot will upload approved AAC segments and revise the scheduled cloud frequency.' -ForegroundColor Yellow
     Write-Host 'This does NOT change the public listener player or the ordinary live transmitter.'
     if ($ApprovedPacket) { Write-Host 'A guest Gambit window and an automatic house return will be published, after owner review.' }
+    if ($PSCmdlet.ParameterSetName -eq 'FromTower') {
+        Write-Host 'A saved Tower show will play in exact order, then return to the existing house program.'
+        Write-Host 'Review the selected show, requested Central date/time and imported audio before approving.'
+    }
     $answer = (Read-Host 'Type PUBLISH AUTOPILOT to commit the schedule').Trim()
     if ($answer -cne 'PUBLISH AUTOPILOT') {
         Write-Host 'No cloud publication made.'
@@ -71,6 +86,7 @@ if ($Publish) {
     }
 } else {
     Write-Host 'PREVIEW MODE: local media preparation only. No cloud credentials required.'
+    if ($PSCmdlet.ParameterSetName -eq 'FromTower') { Write-Host 'This is an UNAPPROVED Tower handoff, not a scheduled broadcast.' }
     & $Exe @arguments
     if ($LASTEXITCODE -ne 0) { throw 'Preview/packaging failed.' }
 }

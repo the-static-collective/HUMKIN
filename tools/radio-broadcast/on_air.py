@@ -10,6 +10,7 @@ from urllib.parse import unquote
 from now_playing import artwork_url, write_json
 from archive_catalog import archive_snapshot
 from tower_programming import apply_batch, save_program, delete_program, queue_program
+from tower_cloud_handoff import export_handoff
 
 
 class Desk:
@@ -280,6 +281,8 @@ class Desk:
                 return delete_program(self, request)
             if action == "program_queue":
                 return queue_program(self, request)
+            if action == "program_cloud_handoff":
+                return export_handoff(self, request)
             if action in ("lineup_add", "lineup_remove", "lineup_enable"):
                 return self.edit_archive_lineup(action, request.get("id"))
             if action == "metadata_edit":
@@ -545,7 +548,11 @@ def serve(desk, port):
                             and id_ not in desk.station.by_id and not id_.startswith("upload-")):
                         desk.refresh_archive()
                     message = desk.act(request)
-                self.result(200, {"message": message, "state": desk.view()})
+                if isinstance(message, dict) and message.get("schema") == "humkin.tower.cloud-handoff/v1":
+                    self.result(200, {"message": "Unapproved cloud handoff downloaded for owner review.",
+                                      "handoff": message})
+                else:
+                    self.result(200, {"message": message, "state": desk.view()})
             except ValueError as exc:
                 self.result(409, {"message": str(exc), "state": desk.view()})
             except OSError:

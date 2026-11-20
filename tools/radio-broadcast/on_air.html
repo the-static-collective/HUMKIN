@@ -158,6 +158,25 @@
         </div>
       </form>
     </dialog>
+    <dialog id="cloud-dialog" aria-labelledby="cloud-heading">
+      <form id="cloud-form">
+        <h2 id="cloud-heading">Prepare Cloud Autopilot show</h2>
+        <p id="cloud-program-name" class="helper"></p>
+        <p class="helper">Choose a Central Time slot. Cloud Autopilot aligns the show to
+          the next song boundary and restores house rotation after the full running order.
+          Exporting this file NEVER publishes or schedules anything.</p>
+        <label for="cloud-day">Broadcast date (America/Chicago)</label>
+        <input id="cloud-day" type="date" required>
+        <label for="cloud-time">Requested start (Central, 15-minute increments)</label>
+        <input id="cloud-time" type="time" step="900" required>
+        <div class="controls">
+          <button type="submit" id="cloud-export">Download unapproved handoff</button>
+          <button type="button" id="cloud-cancel">Cancel</button>
+        </div>
+        <p class="helper">The handoff contains local Acer audio paths. Keep it private,
+          preview it with cloud-autopilot.ps1, and use its separate owner-approved Publish step.</p>
+      </form>
+    </dialog>
     <p id="feedback" role="status"></p>
   </main>
 </body>

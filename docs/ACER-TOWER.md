@@ -22,6 +22,53 @@ Use the complete updated HUMKIN checkout. If the earlier Station One version is 
 
 **Not an automatic on-air publish:** These drafts do not schedule a cloud program or authorize Cloud Autopilot; the reviewed Gambit export and cloud approval remain separate gates. The selection and editor are local to the Acer Tower. Back up the transmitter's existing programming.json state before migrating, stop the broadcaster, update the checkout, then restart. Running playout files should never be replaced in place.
 
+## Saved show → Cloud Autopilot (owner-reviewed handoff)
+
+TOWER can hand a saved program to the existing cloud radio clock **without**
+immediately changing the live Acer transmitter, public website, or R2 schedule.
+
+1. Open TOWER on the Acer. In **Saved programs**, select **Prepare cloud show**.
+2. Choose the future date and a quarter-hour start in **America/Chicago**.
+   Download the **unapproved handoff** JSON. It contains the exact ordered track
+   references, their local Acer audio paths, the saved draft revision, and a
+   non-cryptographic change-detection fingerprint. Keep this private.
+3. Make sure the selected audio files are in the local Acer media crate. The
+   first bridge requires **local, playable files**. Remote-only archive/R2
+   references, missing files, held/disabled songs, invalid cloud IDs and
+   stale program revisions are rejected without creating a cloud schedule.
+4. In PowerShell at the HUMKIN checkout, preview the exported file before
+   using R2 credentials:
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\radio-broadcast\windows\cloud-autopilot.ps1 -TowerProgram "$env:USERPROFILE\Downloads\humkin-cloud-your-show-2030-01-02.json"
+   ```
+
+   Replace the sample filename with the handoff file you actually downloaded.
+   Preview transcodes/caches AAC segments locally, verifies imported-audio SHA
+   identity and exact program order, and displays the requested slot and show
+   duration. It does **not** publish or authorize a broadcast.
+
+5. Once the show and scheduled slot have been reviewed, use the same command
+   with **-Publish** added. The existing Acer DPAPI R2 vault must be available.
+   It asks the owner to type **PUBLISH AUTOPILOT** before updating the cloud
+   schedule. This is the existing credential-backed publication authority,
+   not a self-approved program field.
+
+Prerequisite: an approved, seeded **house Cloud Autopilot program** must already
+exist for that same frequency. The publisher reads the current revision and
+refuses to overwrite an incompatible or unexpectedly changed cloud program.
+The requested start is moved forward to the next existing song boundary if
+necessary; a cloud revision plays the saved tracks *in exact order*, after
+which a second revision restores the prior house rotation. Programs more than
+eight hours long, dates too close to now, and overlapping future reservations
+are refused. The editor's notes remain editorial text and are not audio
+crossfade commands.
+
+After a successful publish, the Acer can be offline during that cloud show.
+This is distinct from the ordinary live HLS transmitter: it does not publish
+track metadata to the regular Acer live playlist, silently schedule every
+saved draft, or automatically syndicate across all frequencies.
+
 ## Live-control improvements
 
 - Every visible track (on air, in the upcoming queue or in the media crate) has **Edit metadata**, **Disable / Enable**, **Hold / Release**, and any applicable rotation weight controls.

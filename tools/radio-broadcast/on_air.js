@@ -15,6 +15,7 @@ const selectedIds = new Set();
 let shownCrate = [];
 let shownQueue = [];
 let programDraft = null;
+let cloudProgram = null;
 let programsViewKey = null;
 
 function button(label, action, target, disabled = false) {
@@ -378,6 +379,61 @@ function openProgramEditor(program = null) {
   byId("program-name").focus();
 }
 
+function openCloudDialog(program) {
+  if (!connected || busy) return;
+  cloudProgram = {id: program.id, revision: program.revision, name: program.name};
+  byId("cloud-program-name").textContent =
+    program.name + " · " + program.track_ids.length + " tracks · Revision " + program.revision;
+  byId("cloud-day").value = "";
+  byId("cloud-time").value = "";
+  byId("cloud-dialog").showModal();
+  byId("cloud-day").focus();
+}
+
+async function downloadCloudHandoff(event) {
+  event.preventDefault();
+  if (!cloudProgram || busy || !connected) return;
+  const snapshot = {...cloudProgram};
+  const day = byId("cloud-day").value;
+  const time = byId("cloud-time").value;
+  busy = true;
+  connectionGeneration++;
+  try {
+    const response = await fetch("/action", {
+      method: "POST",
+      headers: {...headers, "Content-Type": "application/json"},
+      body: JSON.stringify({action: "program_cloud_handoff",
+        program_id: snapshot.id, revision: snapshot.revision, day, time})
+    });
+    const result = await response.json();
+    if (!response.ok || !result.handoff) {
+      byId("feedback").textContent = result.message || "The cloud handoff could not be prepared.";
+      return;
+    }
+    const filename = "humkin-cloud-" + snapshot.name.toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-").slice(0, 50) + "-" + day + ".json";
+    const blob = new Blob([JSON.stringify(result.handoff, null, 2) + "\n"],
+      {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    byId("cloud-dialog").close();
+    cloudProgram = null;
+    byId("feedback").textContent =
+      "Cloud handoff prepared: " + filename +
+      ". Nothing is scheduled. Review and publish from the Acer Cloud Autopilot command.";
+  } catch {
+    byId("feedback").textContent = "Could not prepare the private cloud handoff.";
+  } finally {
+    busy = false;
+  }
+}
+
 function renderPrograms() {
   const programs = latest.programs || [];
   const key = JSON.stringify(programs);
@@ -395,6 +451,7 @@ function renderPrograms() {
     controls.className = "controls";
     controls.append(
       draftButton("Edit", () => openProgramEditor(program)),
+      draftButton("Prepare cloud show", () => openCloudDialog(program)),
       draftButton("Play next", async () => {
         if (confirm("Insert " + program.name + " before the current upcoming queue?"))
           await sendControl({action: "program_queue", program_id: program.id,
@@ -532,6 +589,11 @@ byId("batch-action").addEventListener("change", () => {
 });
 byId("batch-apply").addEventListener("click", applySelectedBatch);
 byId("batch-create").addEventListener("click", () => openProgramEditor());
+byId("cloud-cancel").addEventListener("click", () => {
+  byId("cloud-dialog").close();
+  cloudProgram = null;
+});
+byId("cloud-form").addEventListener("submit", downloadCloudHandoff);
 byId("program-cancel").addEventListener("click", () => {
   byId("program-dialog").close();
   programDraft = null;
