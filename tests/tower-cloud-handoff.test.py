@@ -173,7 +173,7 @@ class TowerCloudHandoffTests(unittest.TestCase):
             desk.act({"action": "hold", "id": sources[1]["id"]})
             # All locally available upload files exist; remote-only references must fail.
             desk.station.by_id[sources[0]["id"]].pop("local_audio")
-            with self.assertRaisesRegex(ValueError, "remote-only"):
+            with self.assertRaisesRegex(ValueError, "published HUMKIN catalogue"):
                 draft(desk, program)
 
     def test_cli_preview_accepts_export_without_any_publish(self):
