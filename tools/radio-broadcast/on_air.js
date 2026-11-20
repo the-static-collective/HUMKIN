@@ -124,7 +124,7 @@ function trackRow(track, context, index) {
   controls.append(edit);
   row.dataset.track = track.id;
   row.append(title, info, controls);
-  if (context !== "current") {
+  {
     const box = document.createElement("input");
     box.type = "checkbox";
     box.className = "track-checkbox";
