@@ -1,0 +1,100 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.abundent.humkinradio'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'org.abundent.humkinradio'
+        minSdk 26
+        targetSdk 36
+        versionCode 34
+        versionName '0.34.0'
+        resValue 'string', 'app_name', 'HUMKIN RADIO'
+    }
+
+    // An independent field-test install avoids Android's rejection when an older
+    // CI-generated debug APK has the same package name but a different signing key.
+    // This is not a production signing solution; a permanent key is still needed.
+    buildTypes {
+        fieldTest {
+            initWith debug
+            applicationIdSuffix '.humserver'
+            versionNameSuffix '-fieldtest'
+            resValue 'string', 'app_name', 'HUMKIN · HUM SERVER 029'
+        }
+        // The GitHub Actions debug signature may differ from previous runs.
+        // A side-by-side variant lets a listener try Night Watch without
+        // uninstalling the earlier Outpost and losing local progress.
+        // Separate installation identity: preserves v0.26 Antenna and Night Watch
+        // local progress. Reuses the same native player, not a WebView wrapper.
+        radioRebel {
+            initWith debug
+            applicationIdSuffix '.rebel'
+            versionNameSuffix '-rebel'
+            resValue 'string', 'app_name', 'HUMKIN · RADIO REBEL'
+        }
+        // Next-generation tactile radio is independently installable, preserving
+        // the existing Radio Rebel / Night Watch local data and device package.
+        radioLiving {
+            initWith debug
+            applicationIdSuffix '.living'
+            versionNameSuffix '-living'
+            resValue 'string', 'app_name', 'HUMKIN · LIVING RECEIVER'
+        }
+        // Visually rebuilt pocket receiver. Independent package retains
+        // older Living Receiver, Rebel and Doctor app installations/data.
+        radioPocket {
+            initWith debug
+            applicationIdSuffix '.pocket'
+            versionNameSuffix '-pocket'
+            resValue 'string', 'app_name', 'HUMKIN · POCKET RECEIVER'
+        }
+        // New permanent side-by-side package until a stable release-signing
+        // key is provisioned. Every GitHub-run debug keystore changes, so
+        // claiming that separate CI debug APKs update in-place is incorrect.
+        radioFlex {
+            initWith debug
+            applicationIdSuffix '.flex'
+            versionNameSuffix '-flex'
+            resValue 'string', 'app_name', 'HUMKIN · FLEX RECEIVER'
+        }
+        // Side-by-side native responsive fix; GitHub's disposable debug
+        // signing certificates cannot safely update the prior .flex APK.
+        radioFit {
+            initWith debug
+            applicationIdSuffix '.fit'
+            versionNameSuffix '-fit'
+            resValue 'string', 'app_name', 'HUMKIN · FIT RADIO'
+        }
+        // Visual rollback to the exact pre-blue native HUMKIN v0.26 theme;
+        // keep modern server/Media3 capabilities and preserve previous APK data.
+        radioClassic {
+            initWith debug
+            applicationIdSuffix '.classic'
+            versionNameSuffix '-classic'
+            resValue 'string', 'app_name', 'HUMKIN · CLASSIC RADIO'
+        }
+        nightWatch {
+            initWith debug
+            applicationIdSuffix '.nightwatch'
+            versionNameSuffix '-nightwatch'
+            resValue 'string', 'app_name', 'HUMKIN · NIGHT WATCH'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    def media3_version = '1.11.1'
+    implementation "androidx.media3:media3-exoplayer:$media3_version"
+    implementation "androidx.media3:media3-session:$media3_version"
+    testImplementation "junit:junit:4.13.2"
+    testImplementation 'org.json:json:20240303'
+}

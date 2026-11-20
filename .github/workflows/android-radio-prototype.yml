@@ -1,0 +1,96 @@
+name: Android radio prototype
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/android/**'
+      - '.github/workflows/android-radio-prototype.yml'
+  push:
+    branches: ['feat/native-android-radio-001']
+    paths:
+      - 'apps/android/**'
+      - '.github/workflows/android-radio-prototype.yml'
+jobs:
+  debug-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Android 16 SDK
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Check Java I/O against Android 11
+        run: |
+          if grep -RnE '\.readNBytes\(|\.readAllBytes\(|\.transferTo\(' apps/android/app/src/main/java | grep -vE '^[^:]+:[0-9]+: *\*|^[^:]+:[0-9]+: *//'; then
+            echo "Unsupported Android 11 Java I/O method call"; exit 1
+          fi
+      - name: Build debug receiver
+        run: gradle -p apps/android --no-daemon :app:assembleDebug :app:assembleFieldTest :app:assembleNightWatch :app:assembleRadioRebel :app:assembleRadioLiving :app:assembleRadioPocket :app:assembleRadioFlex :app:assembleRadioFit :app:assembleRadioClassic :app:testDebugUnitTest :app:testFieldTestUnitTest :app:testNightWatchUnitTest :app:testRadioRebelUnitTest :app:testRadioLivingUnitTest :app:testRadioPocketUnitTest :app:testRadioFlexUnitTest :app:testRadioFitUnitTest :app:testRadioClassicUnitTest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-debug
+          path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-field-test
+          path: apps/android/app/build/outputs/apk/fieldTest/app-fieldTest.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-night-watch
+          path: apps/android/app/build/outputs/apk/nightWatch/app-nightWatch.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-rebel-027
+          path: apps/android/app/build/outputs/apk/radioRebel/app-radioRebel.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-radio-android-living-028
+          path: apps/android/app/build/outputs/apk/radioLiving/app-radioLiving.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-pocket-receiver-031
+          path: apps/android/app/build/outputs/apk/radioPocket/app-radioPocket.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-flex-receiver-031
+          path: apps/android/app/build/outputs/apk/radioFlex/app-radioFlex.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-fit-radio-032
+          path: apps/android/app/build/outputs/apk/radioFit/app-radioFit.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: humkin-classic-radio-034
+          path: apps/android/app/build/outputs/apk/radioClassic/app-radioClassic.apk
+          if-no-files-found: error
+
+      # Explicit one-shot smoke check. Never create disposable test accounts
+      # on ordinary Android build pushes; the test uses an ephemeral signing key.
+      - name: Verify signed HUM server transaction boundaries (one-time)
+        if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, 'HUM-WALLET-LIVE-TEST') }}
+        run: node tests/hum-wallet-live-smoke.mjs
