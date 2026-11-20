@@ -73,6 +73,10 @@ def segments_from_manifest(manifest, directory):
 
 def prepare_tracks(input_path, cache):
     payload = json.loads(input_path.read_text(encoding="utf-8"))
+    if payload.get("schema") == "humkin.tower.cloud-handoff/v1":
+        from tower_cloud_handoff import validate_handoff
+        validate_handoff(payload)
+        payload = payload["crate"]
     if payload.get("schema") != CRATE_SCHEMA:
         raise ValueError("Expected " + CRATE_SCHEMA)
     station = payload.get("station_id", "station-one")
@@ -215,7 +219,9 @@ def publish_program(program, cache, client, new_revision_count=1):
 
 def main():
     parser = argparse.ArgumentParser(description="Prepare/cloud-publish HUMKIN's clock-owned radio")
-    parser.add_argument("--input", required=True, help="Local approved track list JSON")
+    sources = parser.add_mutually_exclusive_group(required=True)
+    sources.add_argument("--input", help="Local approved track list JSON")
+    sources.add_argument("--tower-program", help="Unapproved Tower handoff JSON; owner must review before publication")
     parser.add_argument("--cache", default=str(Path(os.environ.get("LOCALAPPDATA",
         str(Path.home()))) / "HUMKIN" / "Autopilot"))
     parser.add_argument("--publish", action="store_true", help="Upload segments and commit the schedule")
@@ -224,9 +230,22 @@ def main():
     args = parser.parse_args()
     if not 30 <= args.lead_seconds <= 86400:
         parser.error("Lead time must be 30–86400 seconds")
-    manifest = Path(args.input).resolve(strict=True)
+    if args.tower_program and args.approved_packet:
+        parser.error("Tower exact-order programs and Gambit proposals are separate scheduling paths.")
+    manifest = Path(args.tower_program or args.input).resolve(strict=True)
     cache = Path(args.cache)
+    handoff = None
+    if args.tower_program:
+        from tower_cloud_handoff import validate_handoff
+        handoff = json.loads(manifest.read_text(encoding="utf-8"))
+        station, requested = validate_handoff(handoff)
+        print("Tower program:", handoff["program"]["name"],
+              "revision", handoff["program"]["revision"])
+        print("Requested Central slot:", handoff["slot"]["day"], handoff["slot"]["time"])
     station, tracks = prepare_tracks(manifest, cache)
+    if handoff:
+        from tower_cloud_handoff import validate_prepared
+        validate_prepared(handoff, tracks)
     reviewed = None
     if args.approved_packet:
         from program_deck import validate_packet, select_deck
@@ -237,6 +256,9 @@ def main():
         print("Requested guest window:", reviewed["proposal"]["day"], reviewed["proposal"]["time"],
               "Central,", reviewed["proposal"]["minutes"], "minutes")
     if not args.publish:
+        if handoff:
+            print("Running order preserved:", " / ".join(track["id"] for track in tracks))
+            print("A seeded house Cloud Autopilot schedule is required before publishing.")
         print("PREVIEW ONLY: no public schedule was changed. Use --publish after review.")
         print("Total cycle seconds:", sum(sum(t["durations_ms"]) for t in tracks) / 1000)
         return
@@ -252,7 +274,13 @@ def main():
         if status not in (404,):
             raise
         existing = None
-    if reviewed:
+    if handoff:
+        from tower_cloud_handoff import schedule_curated
+        program = schedule_curated(existing, station, tracks, handoff)
+        for revision in program["revisions"][-2:]:
+            print("Scheduled", revision["id"], "at", revision["effective_at"])
+        publish_program(program, cache, client, new_revision_count=2)
+    elif reviewed:
         from program_deck import schedule_guest
         program = schedule_guest(existing, station, tracks, reviewed)
         for revision in program["revisions"][-2:]:
