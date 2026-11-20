@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#271b34">
+<meta name="description" content="Save the Hour: a real-song HUMKIN radio card game. Build a three-track Signal with five cards and three plays.">
+<title>HUMKIN · Save the Hour</title>
+<link rel="stylesheet" href="./orchard.css">
+<link rel="stylesheet" href="./save-hour.css">
+<script defer src="./gambit-core.js"></script>
+<script defer src="../signal/model.js"></script>
+<script defer src="./save-hour-core.js"></script>
+<script defer src="./save-hour-ui.js"></script>
+</head>
+<body>
+<header class="mast">
+ <a class="logo" href="./">HUMKIN <span>✳</span> ORCHARD</a>
+ <nav aria-label="Game navigation">
+  <a href="./">MY ORCHARD</a>
+  <a href="./gambits.html">GAMBIT WORKBENCH</a>
+  <a href="../../fmstudio/">RADIO DIAL</a>
+ </nav>
+</header>
+<main>
+<section class="hour-hero">
+ <p class="eyebrow">THE LIVING DECK · FIRST PLAYABLE EXPERIMENT 001</p>
+ <h1>SAVE<br><em>THE HOUR.</em></h1>
+ <p class="hour-lead">The station has a problem. You have five cards and three plays to rescue a little piece of the radio, using actual HUMKIN songs.</p>
+ <div class="hour-tags"><span>24-CARD DECK</span><span>5 IN HAND</span><span>3 PLAYS</span><span>REAL MUSIC</span></div>
+</section>
+<div class="hour-layout">
+ <section class="hour-table" aria-labelledby="hand-heading">
+  <div class="hour-section-top">
+   <div><p class="eyebrow">YOUR HAND · SELECT ONE CARD PER TURN</p><h2 id="hand-heading">Pick your move.</h2></div>
+   <p id="game-progress" class="hour-stat" role="status">0 / 3 plays</p>
+  </div>
+  <p>Each card selects one recording from the published radio rotation. Some neighboring cards make combos. You may use any three of the five cards you're dealt.</p>
+  <div id="game-hand" class="hour-hand" aria-label="Playable card hand"></div>
+  <p class="hour-small">The choices are explainable and use real catalog IDs. No card can interrupt a broadcast, issue a collectible or earn XP.</p>
+ </section>
+ <aside class="hour-sidebar">
+  <section class="hour-panel" aria-labelledby="condition-title">
+   <p class="eyebrow">TODAY'S BOREDOM</p>
+   <h2 id="condition-title">Station condition</h2>
+   <div id="game-condition"><p>Connecting to the published rotation…</p></div>
+   <p class="hour-small">One challenge per hand. A new practice round changes the challenge and cards, not the real station.</p>
+  </section>
+  <section class="hour-panel" aria-labelledby="playlist-title">
+   <p class="eyebrow">THE PROGRAM YOU ARE MAKING</p>
+   <h2 id="playlist-title">Three-track rescue</h2>
+   <ol id="game-plays" class="hour-slots"><li>Loading the catalog…</li></ol>
+   <div class="hour-result">
+    <p id="game-score" class="hour-stat">Practice score —</p>
+    <p id="game-status" role="status" aria-live="polite">Loading songs…</p>
+   </div>
+   <a id="game-signal" class="primary hour-link" href="../signal/" hidden>LISTEN TO MY THREE-SONG SIGNAL</a>
+   <button id="game-copy" type="button" class="secondary" hidden>COPY LOCAL GAME RECEIPT</button>
+   <button id="game-reset" type="button" class="secondary" disabled>DEAL A NEW PRACTICE HAND</button>
+  </section>
+ </aside>
+</div>
+<section class="hour-how" aria-labelledby="how-heading">
+ <p class="eyebrow">WHAT COUNTS · WHAT DOESN'T</p>
+ <h2 id="how-heading">The radio is real. The cards are practice.</h2>
+ <p>Every completed hand can open an existing shareable three-song HUMKIN Signal. Those songs come from the public rotation, never fabricated recordings. The result is your personal listening program — not an on-air event, official chart play, or real broadcast receipt.</p>
+ <p>Blue Lemon request cards, server-issued Orchard collectibles and editor-reviewed Gambit programs have separate permissions and ledgers. This prototype deliberately does not claim them. A future version could offer successful hand proposals to the existing <a href="./gambits.html#daily-program-proposal">reviewed Gambit programming desk</a>, only with explicit submission and owner approval.</p>
+</section>
+</main>
+<footer><a href="./">← MY ORCHARD</a><span>HUMKIN · SAVE THE HOUR 001</span><a href="./gambits.html">PROGRAM THE RADIO ↗</a></footer>
+</body>
+</html>
