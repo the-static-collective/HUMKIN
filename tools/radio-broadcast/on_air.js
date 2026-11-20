@@ -523,6 +523,8 @@ async function refreshArchive() {
 
 
 byId("batch-select-crate").addEventListener("click", () => selectVisible(shownCrate));
+byId("crate-select-visible").addEventListener("click", () => selectVisible(shownCrate));
+byId("queue-select-visible").addEventListener("click", () => selectVisible(shownQueue));
 byId("batch-select-queue").addEventListener("click", () => selectVisible(shownQueue));
 byId("batch-clear").addEventListener("click", () => { selectedIds.clear(); updateSelection(); });
 byId("batch-action").addEventListener("change", () => {
