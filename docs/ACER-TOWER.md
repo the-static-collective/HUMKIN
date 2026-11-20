@@ -30,12 +30,15 @@ immediately changing the live Acer transmitter, public website, or R2 schedule.
 1. Open TOWER on the Acer. In **Saved programs**, select **Prepare cloud show**.
 2. Choose the future date and a quarter-hour start in **America/Chicago**.
    Download the **unapproved handoff** JSON. It contains the exact ordered track
-   references, their local Acer audio paths, the saved draft revision, and a
-   non-cryptographic change-detection fingerprint. Keep this private.
-3. Make sure the selected audio files are in the local Acer media crate. The
-   first bridge requires **local, playable files**. Remote-only archive/R2
-   references, missing files, held/disabled songs, invalid cloud IDs and
-   stale program revisions are rejected without creating a cloud schedule.
+   references, either local audio paths or allowlisted published HUMKIN remote URLs,
+   the saved draft revision, and a change-detection fingerprint. Keep this private.
+3. The show may include **local Acer uploads or published remote HUMKIN audio**
+   (R2, approved catalogue, and public archive references). No preexisting MP3
+   copy on the Acer is required for a remote recording. Arbitrary external URLs,
+   missing/unpublished recordings, held/disabled tracks, and stale draft revisions
+   are rejected. Remote downloads are bounded, HTTPS-only, do not follow redirects,
+   and are discarded after AAC conversion. Remote tracks with a catalogue SHA-256
+   must match that hash; others are pinned by the first successful preview.
 4. In PowerShell at the HUMKIN checkout, preview the exported file before
    using R2 credentials:
 
@@ -44,15 +47,18 @@ immediately changing the live Acer transmitter, public website, or R2 schedule.
    ```
 
    Replace the sample filename with the handoff file you actually downloaded.
-   Preview transcodes/caches AAC segments locally, verifies imported-audio SHA
-   identity and exact program order, and displays the requested slot and show
-   duration. It does **not** publish or authorize a broadcast.
+   Preview transcodes/caches AAC segments locally, downloads allowed remote
+   recordings only into temporary files, pins their actual SHA-256 to the
+   preview receipt in the AAC cache, verifies exact show order, and displays
+   the requested slot and show duration. It does **not** publish or authorize
+   a broadcast. Keep the same Autopilot cache between preview and publication.
 
 5. Once the show and scheduled slot have been reviewed, use the same command
    with **-Publish** added. The existing Acer DPAPI R2 vault must be available.
    It asks the owner to type **PUBLISH AUTOPILOT** before updating the cloud
    schedule. This is the existing credential-backed publication authority,
-   not a self-approved program field.
+   not a self-approved program field. Publishing re-reads remote sources and
+   refuses changed bytes or a missing preview receipt, before any cloud writes.
 
 Prerequisite: an approved, seeded **house Cloud Autopilot program** must already
 exist for that same frequency. The publisher reads the current revision and
@@ -62,7 +68,9 @@ necessary; a cloud revision plays the saved tracks *in exact order*, after
 which a second revision restores the prior house rotation. Programs more than
 eight hours long, dates too close to now, and overlapping future reservations
 are refused. The editor's notes remain editorial text and are not audio
-crossfade commands.
+crossfade commands. An R2 public URL does not imply the track is permanently
+available; a vanished, redirected or changed remote recording blocks the
+show's cloud publication without modifying the running schedule.
 
 After a successful publish, the Acer can be offline during that cloud show.
 This is distinct from the ordinary live HLS transmitter: it does not publish
