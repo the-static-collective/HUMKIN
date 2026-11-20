@@ -1,0 +1,50 @@
+/* Save the Hour — typography-forward physical card table, mobile-first. */
+.hour-hero{background:radial-gradient(circle at 80% 10%,#78516b 0,transparent 35%),linear-gradient(132deg,#231d35,#524052);color:#fff7e9;padding:48px max(5%,calc((100vw - 1220px)/2)) 48px}
+.hour-hero .eyebrow{color:#ffdf96}
+.hour-hero h1{font:900 clamp(58px,10vw,125px)/.85 Georgia,serif;letter-spacing:-.07em;margin:16px 0 27px}
+.hour-hero h1 em{color:#ffdb83}
+.hour-lead{font-size:clamp(17px,2.5vw,23px);line-height:1.4;max-width:680px}
+.hour-tags{display:flex;flex-wrap:wrap;gap:9px;margin-top:28px}
+.hour-tags span{border:1px solid #b9a5b9;border-radius:22px;padding:7px 11px;font-size:11px;font-weight:850;letter-spacing:.08em}
+.hour-layout{max-width:1370px;margin:0 auto;padding:36px 4.5% 65px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,.8fr);gap:28px;align-items:start}
+.hour-table,.hour-panel,.hour-how{background:#fff8ec;border:2px solid #241b32;border-radius:14px;padding:clamp(17px,2.6vw,29px);box-shadow:6px 7px 0 #bd9eaa}
+.hour-table>p{max-width:680px}
+.hour-section-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:15px}
+.hour-section-top h2,.hour-panel h2,.hour-how h2{font:900 clamp(26px,3.5vw,40px)/1.05 Georgia,serif;margin:6px 0 16px}
+.hour-stat{background:#e4dbed;border:1px solid #6b526d;border-radius:7px;padding:10px 12px;font-weight:900;display:inline-block}
+.hour-hand{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch;margin:26px 0}
+.hour-card{position:relative;border:3px solid #2f263e;border-radius:12px;min-height:256px;padding:15px;display:flex;flex-direction:column;gap:9px;text-align:left;background:linear-gradient(146deg,#f8dfbb,#f5ebdd);box-shadow:4px 5px 0 #ab8f99;color:#241b32;transition:transform .12s,box-shadow .12s;overflow:hidden}
+.hour-card:before{content:"";position:absolute;inset:8px;border:1px solid #49354a59;border-radius:7px;pointer-events:none}
+.hour-card:not(:disabled):hover{transform:translateY(-4px);box-shadow:4px 9px 0 #ab8f99}
+.hour-card:disabled{opacity:.6;cursor:default}
+.hour-card[data-family="record"]{background:linear-gradient(160deg,#f9cbbf,#f6e7d1)}
+.hour-card[data-family="gear"]{background:linear-gradient(160deg,#d0e0db,#fff3d2)}
+.hour-card[data-family="gambit"]{background:linear-gradient(160deg,#d8cae9,#f7e5df)}
+.hour-card[data-family="crew"]{background:linear-gradient(160deg,#f6df9d,#f8eadb)}
+.hour-card[data-family="weather"]{background:linear-gradient(160deg,#bcd9e8,#e5e4ed)}
+.hour-card[data-family="relic"]{background:linear-gradient(160deg,#dec6b5,#f7d8b8)}
+.hour-card .card-type{font-size:10px;letter-spacing:.14em;font-weight:950;text-transform:uppercase}
+.hour-card .card-medallion{font:900 52px/1 Georgia,serif;text-align:center;margin:5px 0 12px;color:#644568;text-shadow:3px 3px #fff9}
+.hour-card strong{font:900 clamp(16px,2vw,24px)/1.03 Georgia,serif;letter-spacing:-.02em}
+.hour-card .card-description{font-size:12px;line-height:1.33;margin-top:2px}
+.hour-card .card-action{margin-top:auto;font-size:10px;letter-spacing:.06em;font-weight:950;border-top:1px solid #77677b;padding-top:9px}
+.hour-card.used{background:#ddd9db;opacity:.5}
+.hour-sidebar{display:grid;gap:20px}
+.hour-panel{box-shadow:5px 5px 0 #cfb2a5}
+.hour-panel h3{font:850 25px Georgia,serif;margin:4px 0 11px}
+.hour-panel p{line-height:1.42}
+.hour-small{font-size:12px;color:#625564}
+.hour-slots{list-style:none;padding:0;display:grid;gap:11px}
+.hour-slots li{min-height:70px;border:1px solid #b099a9;border-left:5px solid #644e6d;background:#f8e9dd;border-radius:6px;padding:11px}
+.hour-slots li strong{display:block;font-size:13px}
+.hour-slots li small{display:block;font-size:11px;color:#685665;margin-top:4px}
+.hour-slots .empty{border-style:dashed;background:transparent;color:#79697b}
+.hour-result{border-top:1px solid #bdaeb5;padding-top:12px;margin-top:20px}
+.hour-link{display:block;text-align:center;margin:14px 0;font-size:12px}
+.hour-panel button{display:block;width:100%;margin:10px 0;min-height:45px}
+.hour-how{max-width:1250px;margin:0 auto 72px;box-shadow:none;background:#eee1e7}
+.hour-how p{max-width:900px}
+@media(max-width:1100px){.hour-layout{grid-template-columns:1fr}.hour-sidebar{grid-template-columns:1fr 1fr}}
+@media(max-width:730px){.hour-sidebar{grid-template-columns:1fr}.hour-hand{grid-template-columns:repeat(2,minmax(0,1fr))}.hour-card{min-height:240px}.hour-hero{padding-top:42px}.hour-layout{padding:22px 4% 45px}.hour-card .card-medallion{font-size:40px}}
+@media(max-width:375px){.hour-hand{gap:8px}.hour-card{padding:11px;min-height:257px}.hour-card strong{font-size:17px}}
+@media(prefers-reduced-motion:reduce){.hour-card{transition:none}}
