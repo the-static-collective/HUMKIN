@@ -32,6 +32,9 @@ jobs:
       - run: node --check tools/radio-broadcast/cloudflare/station-registry.mjs
       - run: node --test tests/fmstudio-live-dial.test.mjs tests/fmstudio-station-registry.test.mjs
       - run: node tests/orchard-gambits.test.cjs
+      - run: node tests/save-the-hour.test.cjs
+      - run: node --check fm/orchard/save-hour-ui.js
+      - run: node --check fm/orchard/save-hour-core.js
       - run: node tests/gambit-program-proposals.test.cjs
       - run: node --check fm/orchard/gambit-proposal.js
       - run: node --check fm/orchard/gambit-proposal-ui.js
