@@ -11,6 +11,11 @@ let peerList = [];
 let archiveScores = new Map();
 let archiveBusy = false;
 let catalogLimit = 75;
+const selectedIds = new Set();
+let shownCrate = [];
+let shownQueue = [];
+let programDraft = null;
+let programsViewKey = null;
 
 function button(label, action, target, disabled = false) {
   const control = document.createElement("button");
@@ -119,6 +124,20 @@ function trackRow(track, context, index) {
   controls.append(edit);
   row.dataset.track = track.id;
   row.append(title, info, controls);
+  {
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.className = "track-checkbox";
+    box.dataset.selectTrack = track.id;
+    box.setAttribute("aria-label", "Select " + track.title);
+    box.checked = selectedIds.has(track.id);
+    box.addEventListener("change", () => {
+      if (box.checked) selectedIds.add(track.id);
+      else selectedIds.delete(track.id);
+      updateSelection();
+    });
+    row.prepend(box);
+  }
   return row;
 }
 
@@ -159,6 +178,7 @@ function renderCatalog() {
     return difference || a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
   });
   const shown = tracks.slice(0, catalogLimit).map(track => ({...track, score: tally(track)}));
+  shownCrate = shown.map(track => track.id);
   const hasPeers = peerList.some(peer => peer.id !== latest.frequency);
   renderRows("catalog", shown, () => shown.length ? shown.map(track => trackRow(track, "catalog")) :
     [empty("No matching tracks.")], [hasPeers, byId("route").value, latest.curated]);
@@ -195,10 +215,13 @@ function render(state) {
   byId("undo").disabled = !state.undo;
   byId("undo").textContent = state.undo ? "Undo " + state.undo : "Undo";
   renderCatalog();
+  renderPrograms();
+  updateSelection();
 }
 
 function renderQueue() {
   const page = latest.queue.slice(0, visible);
+  shownQueue = page.map(track => track.id);
   renderRows("queue", page, () => page.length
     ? page.map((track, index) => trackRow(track, "queue", index)) : [empty("No tracks pending.")]);
   byId("more").hidden = visible >= latest.queue.length;
@@ -255,26 +278,165 @@ function openEditor(track) {
   byId("metadata-title").focus();
 }
 
-async function act(action, track, target, metadata = null) {
-  if (busy || !connected) return;
+async function sendControl(payload) {
+  if (busy || !connected) return false;
   busy = true;
   connectionGeneration++;
   try {
     const response = await fetch("/action", {
       method: "POST",
       headers: {...headers, "Content-Type": "application/json"},
-      body: JSON.stringify({action, id: track?.id, slot: track?.slot, play: latest.play,
-        target, metadata, frequency: byId("route").value}),
+      body: JSON.stringify(payload)
     });
     const result = await response.json();
     if (result.state) render(result.state);
-    byId("feedback").textContent = result.message;
-    if (!response.ok && action === "reorder") byId("feedback").textContent += " The queue was refreshed; try the move again.";
+    byId("feedback").textContent = result.message || "The station did not accept this action.";
+    if (!response.ok && payload.action === "reorder")
+      byId("feedback").textContent += " The queue was refreshed; try the move again.";
+    return response.ok;
   } catch {
     setConnection(false);
     byId("feedback").textContent = "The station did not confirm this change.";
+    return false;
   } finally {
     busy = false;
+  }
+}
+
+async function act(action, track, target, metadata = null) {
+  return sendControl({action, id: track?.id, slot: track?.slot, play: latest.play,
+    target, metadata, frequency: byId("route").value});
+}
+
+function updateSelection() {
+  for (const box of document.querySelectorAll("[data-select-track]"))
+    box.checked = selectedIds.has(box.dataset.selectTrack);
+  byId("batch-panel").hidden = selectedIds.size === 0;
+  byId("batch-count").textContent = selectedIds.size + " selected";
+}
+
+function selectVisible(ids) {
+  for (const id of ids) if (selectedIds.size < 250 || selectedIds.has(id)) selectedIds.add(id);
+  updateSelection();
+  if (selectedIds.size >= 250) byId("feedback").textContent = "Maximum 250 selected tracks per batch.";
+}
+
+function catalogTrack(id) {
+  return latest.catalog.find(track => track.id === id)
+    || latest.queue.find(track => track.id === id)
+    || (latest.current?.id === id ? latest.current : null);
+}
+
+function draftButton(label, callback, disabled = false) {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.textContent = label;
+  element.disabled = disabled;
+  element.addEventListener("click", callback);
+  return element;
+}
+
+function renderProgramTracks() {
+  if (!programDraft) return;
+  const list = byId("program-tracks");
+  list.replaceChildren(...programDraft.track_ids.map((id, index) => {
+    const item = document.createElement("li");
+    const track = catalogTrack(id);
+    const title = document.createElement("strong");
+    title.textContent = (index + 1) + ". " + (track?.title || "Unavailable recording: " + id);
+    const controls = document.createElement("div");
+    controls.className = "controls";
+    const move = direction => {
+      const destination = index + direction;
+      if (destination < 0 || destination >= programDraft.track_ids.length) return;
+      const ids = programDraft.track_ids;
+      [ids[index], ids[destination]] = [ids[destination], ids[index]];
+      renderProgramTracks();
+    };
+    controls.append(
+      draftButton("↑", () => move(-1), index === 0),
+      draftButton("↓", () => move(1), index === programDraft.track_ids.length - 1),
+      draftButton("Remove", () => {
+        programDraft.track_ids.splice(index, 1);
+        renderProgramTracks();
+      })
+    );
+    item.append(title, controls);
+    return item;
+  }));
+}
+
+function openProgramEditor(program = null) {
+  if (!connected) return;
+  programDraft = program ? {...program, track_ids: [...program.track_ids]} : {
+    id: null, revision: null, name: "", notes: "", track_ids: [...selectedIds]
+  };
+  byId("program-name").value = programDraft.name;
+  byId("program-notes").value = programDraft.notes;
+  renderProgramTracks();
+  byId("program-dialog").showModal();
+  byId("program-name").focus();
+}
+
+function renderPrograms() {
+  const programs = latest.programs || [];
+  const key = JSON.stringify(programs);
+  if (key === programsViewKey) return;
+  programsViewKey = key;
+  byId("program-count").textContent = programs.length + " saved";
+  const list = byId("program-list");
+  list.replaceChildren(...(programs.length ? programs.map(program => {
+    const item = document.createElement("li");
+    const title = document.createElement("strong");
+    title.textContent = program.name;
+    const details = document.createElement("p");
+    details.textContent = program.track_ids.length + " tracks · Revision " + program.revision;
+    const controls = document.createElement("div");
+    controls.className = "controls";
+    controls.append(
+      draftButton("Edit", () => openProgramEditor(program)),
+      draftButton("Play next", async () => {
+        if (confirm("Insert " + program.name + " before the current upcoming queue?"))
+          await sendControl({action: "program_queue", program_id: program.id,
+            revision: program.revision, placement: "next"});
+      }),
+      draftButton("Queue at end", async () => {
+        if (confirm("Append " + program.name + " to the upcoming queue?"))
+          await sendControl({action: "program_queue", program_id: program.id,
+            revision: program.revision, placement: "end"});
+      }),
+      draftButton("Delete draft", async () => {
+        if (confirm("Delete saved draft " + program.name + "? Queued copies will remain."))
+          await sendControl({action: "program_delete", program_id: program.id,
+            revision: program.revision});
+      })
+    );
+    item.append(title, details, controls);
+    return item;
+  }) : [empty("No saved programs on this frequency yet.")]));
+}
+
+async function applySelectedBatch() {
+  if (!selectedIds.size || busy || !connected) return;
+  const action = byId("batch-action").value;
+  const ids = [...selectedIds];
+  const remote = action.startsWith("route_");
+  const operation = action === "route_end" ? "queue_end"
+    : action === "route_lineup" ? "lineup_add" : action;
+  const target = byId("route").value;
+  if (remote && (!target || target === latest.frequency)) {
+    byId("feedback").textContent = "Select another running frequency under Send tracks to.";
+    return;
+  }
+  const what = remote ? operation + " on " + target : operation;
+  if (!confirm("Apply " + what.replace(/_/g, " ") + " to " + ids.length + " selected recordings?")) return;
+  const payload = remote
+    ? {action: "batch_route", operation, frequency: target, ids}
+    : {action: "batch", operation, ids,
+       field: byId("batch-field").value, value: byId("batch-value").value};
+  if (await sendControl(payload)) {
+    selectedIds.clear();
+    updateSelection();
   }
 }
 
@@ -358,6 +520,42 @@ async function refreshArchive() {
     archiveBusy = false;
   }
 }
+
+
+byId("batch-select-crate").addEventListener("click", () => selectVisible(shownCrate));
+byId("crate-select-visible").addEventListener("click", () => selectVisible(shownCrate));
+byId("queue-select-visible").addEventListener("click", () => selectVisible(shownQueue));
+byId("batch-select-queue").addEventListener("click", () => selectVisible(shownQueue));
+byId("batch-clear").addEventListener("click", () => { selectedIds.clear(); updateSelection(); });
+byId("batch-action").addEventListener("change", () => {
+  byId("batch-metadata").hidden = byId("batch-action").value !== "metadata";
+});
+byId("batch-apply").addEventListener("click", applySelectedBatch);
+byId("batch-create").addEventListener("click", () => openProgramEditor());
+byId("program-cancel").addEventListener("click", () => {
+  byId("program-dialog").close();
+  programDraft = null;
+});
+byId("program-add-selected").addEventListener("click", () => {
+  if (!programDraft) return;
+  for (const id of selectedIds)
+    if (!programDraft.track_ids.includes(id) && programDraft.track_ids.length < 250)
+      programDraft.track_ids.push(id);
+  renderProgramTracks();
+});
+byId("program-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!programDraft || !programDraft.track_ids.length) {
+    byId("feedback").textContent = "A program needs at least one recording.";
+    return;
+  }
+  const program = {...programDraft,
+    name: byId("program-name").value, notes: byId("program-notes").value};
+  if (await sendControl({action: "program_save", program})) {
+    byId("program-dialog").close();
+    programDraft = null;
+  }
+});
 
 setInterval(refreshFrequencies, 4000);
 setInterval(refreshArchive, 60000);

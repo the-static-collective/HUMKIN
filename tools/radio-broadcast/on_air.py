@@ -9,6 +9,7 @@ from urllib.parse import unquote
 
 from now_playing import artwork_url, write_json
 from archive_catalog import archive_snapshot
+from tower_programming import apply_batch, save_program, delete_program, queue_program
 
 
 class Desk:
@@ -32,6 +33,7 @@ class Desk:
             self.state = json.loads(path.read_text(encoding="utf-8"))
         self.state.setdefault("lineup", [])
         self.state.setdefault("metadata", {})
+        self.state.setdefault("programs", {})
         self.on_metadata_change = None
         self.default_catalog = station.catalog
         self.default_songs = station.songs[:]
@@ -262,6 +264,7 @@ class Desk:
                               "movable": key[0] == "rotation" and key[2] < len(self.station.queue) - 1}
                           for key, id_ in pending],
                 **({"catalog": [self.track(id_) for id_ in self.station.by_id]} if version != catalog_version else {}),
+                "programs": sorted(self.state.get("programs", {}).values(), key=lambda p: p["updated_at"], reverse=True),
                 "undo": (move["label"] if move else
                          self.state["history"][-1]["label"] if self.state["history"] else None),
             }
@@ -269,6 +272,14 @@ class Desk:
     def act(self, request):
         with self.lock:
             action = request.get("action")
+            if action == "batch":
+                return apply_batch(self, request)
+            if action == "program_save":
+                return save_program(self, request)
+            if action == "program_delete":
+                return delete_program(self, request)
+            if action == "program_queue":
+                return queue_program(self, request)
             if action in ("lineup_add", "lineup_remove", "lineup_enable"):
                 return self.edit_archive_lineup(action, request.get("id"))
             if action == "metadata_edit":
@@ -299,6 +310,15 @@ class Desk:
                 if not history:
                     raise ValueError("There is no programming change to undo.")
                 change = history.pop()
+                if "batch_before" in change:
+                    tracks.update(change["batch_before"])
+                    if not any(not tracks.get(song, {}).get("disabled")
+                               and tracks.get(song, {}).get("hold_until", 0) <= time.time()
+                               for song in self.station.songs if song not in self.failed):
+                        raise ValueError("Undo would leave the station without playable songs.")
+                    self.save(self.state | {"tracks": tracks, "history": history})
+                    self.changed()
+                    return f'Undid {change["label"]}.'
                 id_, after = change["id"], change["before"]
                 message = f'Undid {change["label"]}.'
             else:
@@ -502,7 +522,7 @@ def serve(desk, port):
                     message = desk.upload(name, size, self.rfile)
                     self.result(200, {"message": message})
                     return
-                if self.path != "/action" or not 0 < size <= 4096:
+                if self.path != "/action" or not 0 < size <= 65536:
                     raise ValueError("Invalid control request.")
                 self.connection.settimeout(3)
                 request = json.loads(self.rfile.read(size))
@@ -511,7 +531,15 @@ def serve(desk, port):
                 action = request.get("action")
                 if action in ("route", "route_lineup") and desk.tower:
                     message = desk.tower.route(request.get("frequency"), request.get("id"), action == "route_lineup")
+                elif action == "batch_route" and desk.tower:
+                    message = desk.tower.route_batch(request.get("frequency"), request.get("ids"),
+                                                     request.get("operation"))
                 else:
+                    if (action == "batch" and desk.tower and request.get("operation") in ("queue_next", "queue_end", "lineup_add")):
+                        ids = request.get("ids")
+                        if isinstance(ids, list) and any(isinstance(id_, str) and id_ not in desk.station.by_id
+                                                          and not id_.startswith("upload-") for id_ in ids):
+                            desk.refresh_archive()
                     id_ = request.get("id")
                     if (action in ("lineup_add", "queue_end") and desk.tower and isinstance(id_, str)
                             and id_ not in desk.station.by_id and not id_.startswith("upload-")):

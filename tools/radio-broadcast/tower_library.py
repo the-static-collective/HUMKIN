@@ -80,6 +80,28 @@ class TowerLibrary:
         except (OSError, KeyError) as exc:
             raise ValueError("That frequency is offline or busy.") from exc
 
+    def route_batch(self, frequency, ids, operation):
+        """Apply one reviewed batch to a running peer frequency, not N partial sends."""
+        if (not isinstance(ids, list) or not 1 <= len(ids) <= 250
+                or any(not isinstance(id_, str) or not id_ for id_ in ids)
+                or len(set(ids)) != len(ids)):
+            raise ValueError("Choose 1–250 unique recordings.")
+        if operation not in ("queue_next", "queue_end", "lineup_add"):
+            raise ValueError("Choose a supported destination operation.")
+        try:
+            with self.peer(frequency, "/action",
+                           {"action": "batch", "operation": operation, "ids": ids}) as response:
+                result = json.load(response)
+                return result["message"] + f" Destination: {frequency}."
+        except HTTPError as exc:
+            if exc.code == 409:
+                raise ValueError(json.load(exc)["message"]) from exc
+            raise ValueError("That frequency did not accept the batch.") from exc
+        except (OSError, KeyError, ValueError) as exc:
+            if isinstance(exc, ValueError):
+                raise
+            raise ValueError("That frequency is offline or busy.") from exc
+
     def find_tracks(self, catalog):
         for file in self.media.glob("*.json"):
             if not DIGEST.fullmatch(file.stem) or "upload-" + file.stem in catalog:

@@ -18,6 +18,51 @@
     <nav id="frequencies" aria-label="Running frequencies" hidden>
       <h2>Frequencies</h2><ul id="frequency-list"></ul>
     </nav>
+    <section id="batch-panel" class="batch-panel" aria-labelledby="batch-heading" hidden>
+      <div class="section-head"><h2 id="batch-heading">Batch programming</h2>
+        <strong id="batch-count">0 selected</strong></div>
+      <div class="controls">
+        <button type="button" id="batch-select-crate">Select visible crate tracks</button>
+        <button type="button" id="batch-select-queue">Select visible upcoming tracks</button>
+        <button type="button" id="batch-clear">Clear selection</button>
+      </div>
+      <label for="batch-action">Apply one operation to all selected tracks</label>
+      <select id="batch-action">
+        <option value="queue_end">Add to queue (end)</option>
+        <option value="queue_next">Play next (in selected order)</option>
+        <option value="hold">Hold for one hour</option>
+        <option value="release">Release hold</option>
+        <option value="disable">Disable</option>
+        <option value="enable">Enable</option>
+        <option value="more">Increase rotation weight</option>
+        <option value="less">Decrease rotation weight</option>
+        <option value="rotation_add">Add uploaded tracks to rotation</option>
+        <option value="lineup_add">Add to curated lineup (secondary station)</option>
+        <option value="lineup_remove">Remove from curated lineup</option>
+        <option value="metadata">Set shared metadata field</option>
+        <option value="route_end">Send to another frequency's queue</option>
+        <option value="route_lineup">Send to another frequency's curated lineup</option>
+      </select>
+      <div id="batch-metadata" hidden>
+        <label for="batch-field">Field to set on each recording</label>
+        <select id="batch-field">
+          <option value="genre">Genre / style</option>
+          <option value="album">Album</option>
+          <option value="artist">Artist</option>
+          <option value="tags">Tags (replace)</option>
+          <option value="notes">Programming notes (replace)</option>
+          <option value="artwork">Approved artwork URL</option>
+        </select>
+        <label for="batch-value">New value</label>
+        <input id="batch-value" maxlength="1000">
+      </div>
+      <div class="controls batch-primary">
+        <button type="button" id="batch-apply">Apply batch</button>
+        <button type="button" id="batch-create">Create program from selection</button>
+      </div>
+      <p class="helper">Selection survives searching, sorting and scrolling. Batch changes affect this frequency;
+      sending uses the destination frequency's rules. The live track is not interrupted.</p>
+    </section>
     <div class="studio">
       <div class="programming">
         <section class="current-panel" aria-labelledby="current-heading">
@@ -31,6 +76,7 @@
           <button id="lineup-mode" type="button" hidden>Use curated lineup</button>
           <ol id="queue"></ol>
           <button id="more" type="button" hidden>Show more tracks</button>
+          <button id="queue-select-visible" type="button">Select visible upcoming tracks</button>
         </section>
       </div>
       <div class="crate">
@@ -63,6 +109,14 @@
           </div>
           <ul id="catalog"></ul>
           <button id="catalog-more" type="button" hidden>Show more recordings</button>
+          <button id="crate-select-visible" type="button">Select visible crate tracks</button>
+        </section>
+        <section aria-labelledby="programs-heading">
+          <div class="section-head"><h2 id="programs-heading">Saved programs</h2>
+            <small id="program-count" class="helper"></small></div>
+          <p class="helper">Drafts are saved on this frequency. Inserting a saved program
+            queues its current snapshot; it does not broadcast automatically.</p>
+          <ul id="program-list"></ul>
         </section>
       </div>
     </div>
@@ -84,6 +138,23 @@
         <div class="controls">
           <button type="submit">Save metadata</button>
           <button id="metadata-cancel" type="button">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="program-dialog" aria-labelledby="program-heading">
+      <form id="program-form">
+        <h2 id="program-heading">Program editor</h2>
+        <p class="helper">Reorder the recordings and polish your draft before inserting it into the queue.</p>
+        <label for="program-name">Program name</label>
+        <input id="program-name" required maxlength="120">
+        <label for="program-notes">Notes / transition plan</label>
+        <textarea id="program-notes" maxlength="1000" rows="3"></textarea>
+        <h3>Running order</h3>
+        <ol id="program-tracks"></ol>
+        <div class="controls">
+          <button id="program-add-selected" type="button">Add selected crate tracks</button>
+          <button id="program-save" type="submit">Save program draft</button>
+          <button id="program-cancel" type="button">Cancel</button>
         </div>
       </form>
     </dialog>

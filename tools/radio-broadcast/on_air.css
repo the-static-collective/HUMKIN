@@ -52,3 +52,29 @@ dialog #metadata-cancel{background:transparent;color:var(--ink)}
 .drag-handle{display:inline-block;cursor:grab;color:var(--signal);font:700 11px/1.5 ui-monospace,monospace;
   text-transform:uppercase;letter-spacing:.08em;user-select:none;padding:4px 10px 4px 0}
 .drag-handle:active{cursor:grabbing}
+
+
+/* Multi-track workflow: lightweight checkboxes and a contextual programming rail. */
+.track-checkbox{width:18px;height:18px;min-width:18px;vertical-align:middle;
+  margin:0 9px 2px 0;accent-color:var(--signal);cursor:pointer}
+#queue li:has(.track-checkbox:checked),#catalog li:has(.track-checkbox:checked){
+  background:#3c2c43;border-left:3px solid var(--signal);padding-left:8px}
+.batch-panel{position:sticky;top:0;z-index:4;border-color:var(--signal);
+  background:#2a2033;box-shadow:0 9px 20px #0008}
+.batch-panel .section-head{align-items:center}
+.batch-panel .controls{align-items:center}
+.batch-primary{margin-top:10px}
+#batch-apply,#batch-create{background:var(--signal);color:#251622;border-color:var(--signal)}
+#batch-metadata{display:grid;grid-template-columns:1fr 2fr;column-gap:12px;align-items:end}
+#batch-metadata[hidden]{display:none}
+#batch-metadata label{grid-column:1/-1}
+#program-list{margin:12px 0 0;padding:0;list-style:none}
+#program-list li{padding:12px 0;border-top:1px solid var(--line)}
+#program-list li strong{font-size:15px}
+#program-tracks{max-height:40vh;overflow:auto;padding:0;list-style:none;counter-reset:program}
+#program-tracks li{padding:9px 0;border-bottom:1px solid var(--line)}
+#program-tracks strong{display:block;font-size:14px}
+#program-dialog{width:min(680px,calc(100vw - 28px))}
+#program-dialog h3{margin:16px 0 8px;font-size:16px}
+#program-save{background:var(--signal);color:#251622;border-color:var(--signal)}
+@media(max-width:730px){.batch-panel{position:static}#batch-metadata{display:block}}

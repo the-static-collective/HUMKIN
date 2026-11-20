@@ -11,6 +11,17 @@ Use the complete updated HUMKIN checkout. If the earlier Station One version is 
 - **Play next**, **Skip now**, **Hold**, **Disable**, and rotation weight controls operate while the encoder runs. Use **Add to rotation** to bring an uploaded track into that frequency's recurring mix.
 - **Send to frequency** queues the same crate item on another running frequency. Its current track and queue are independent.
 
+## Batch selection and saved programs (proposed upgrade)
+
+- Every on-air, upcoming and crate recording has a selection checkbox. Click **Select visible** near a list to select its currently displayed page, or check arbitrary tracks across searches, sorting and pages. Up to 250 unique recordings may be in one batch.
+- The contextual **Batch programming** panel offers explicit **Hold**, **Release**, **Enable**, **Disable**, **Increase/Decrease rotation weight**, queue operations, adding eligible uploads to rotation, curated-lineup operations and selective shared metadata changes. It previews the intended count and asks for confirmation. These are atomic *within one frequency*: invalid, held, disabled or unavailable items can reject the entire change rather than leaving a partial queue.
+- **Send to another frequency** submits one batch to the destination's local authenticated Tower endpoint. The destination's own eligibility rules apply. A disconnection is reported as a failure; check its queue before retrying when delivery confirmation is uncertain.
+- **Create program from selection** opens the program editor with the selected recordings in selection order. Give the show a name, add programming notes, reorder or remove tracks, or append additional selected crate tracks. **Save program draft** stores it in that frequency's programming JSON state across transmitter restarts; editing uses optimistic revision checks to refuse stale overwrites.
+- Under **Saved programs**, choose **Edit**, **Play next**, **Queue at end**, or **Delete draft**. Inserting a program copies its current ordered track IDs into the manual queue, with one atomic save. Its saved draft stays intact and reusable. Previously queued copies remain unchanged if the saved draft changes or is deleted. A held/missing recording blocks insertion until resolved.
+- Batch metadata changes are frequency-local overlays, not source-file tag edits. Normal on-air metadata-cue behavior applies if the current recording is edited. Batch policy changes have one-step **Undo**; queue and program insertion are intentionally not claimed to be reversible through that Undo button.
+
+**Not an automatic on-air publish:** These drafts do not schedule a cloud program or authorize Cloud Autopilot; the reviewed Gambit export and cloud approval remain separate gates. The selection and editor are local to the Acer Tower. Back up the transmitter's existing programming.json state before migrating, stop the broadcaster, update the checkout, then restart. Running playout files should never be replaced in place.
+
 ## Live-control improvements
 
 - Every visible track (on air, in the upcoming queue or in the media crate) has **Edit metadata**, **Disable / Enable**, **Hold / Release**, and any applicable rotation weight controls.
