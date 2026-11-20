@@ -109,7 +109,8 @@ public final class RadioPlaybackService extends MediaSessionService {
                 outpostTrackHeardMs=0L;outpostTrackQualified=false;
             }
             boolean audible=player!=null && player.isPlaying() &&
-                    player.getPlaybackState()==Player.STATE_READY && !id.isEmpty();
+                    player.getPlaybackState()==Player.STATE_READY && !id.isEmpty()
+                    && !TowerLive.isLive(current);
             if(audible){
                 outpostUnbankedMs+=delta;
                 outpostTrackHeardMs+=delta;
