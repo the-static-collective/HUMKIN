@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102427">
+<meta name="description" content="HUMKIN Night Shift: one-tap access to the independently scheduled cloud radio, even when the Tower computer is off.">
+<title>HUMKIN NIGHT SHIFT · Shared Cloud Radio</title>
+<link rel="stylesheet" href="./night-shift.css">
+<script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+<script type="module" src="./night-shift.js"></script>
+</head>
+<body>
+<main class="shell">
+  <header class="masthead">
+    <a href="../" aria-label="HUMKIN radio homepage">HUMKIN RADIO</a>
+    <span>NIGHT SHIFT / CLOUD FREQUENCY</span>
+  </header>
+  <section class="radio" aria-labelledby="radio-title">
+    <p class="eyebrow">THE HOUSE THAT KEEPS PLAYING</p>
+    <h1 id="radio-title">NIGHT<br><em>SHIFT.</em></h1>
+    <div class="lamp-row" aria-hidden="true"><span class="lamp"></span><span class="frequency">STATION ONE &nbsp;·&nbsp; THE SHARED CLOCK</span></div>
+    <p class="introduction">One radio program for everyone, served from Cloudflare. The Tower computer may be asleep or switched off. Press Tune to join the broadcast at its current position.</p>
+    <p class="state" id="signal-state" role="status" aria-live="polite">Checking the cloud signal…</p>
+    <div class="play-panel">
+      <button type="button" id="tune" class="tune">TUNE IN</button>
+      <button type="button" id="pause" class="pause" disabled>PAUSE</button>
+    </div>
+    <audio id="radio-audio" preload="none" playsinline controls aria-label="Night Shift shared cloud radio"></audio>
+    <div class="on-air" aria-live="polite">
+      <p class="eyebrow">ON THE PUBLISHED CLOUD SCHEDULE</p>
+      <p id="track-title" class="track">—</p>
+      <p id="track-artist" class="artist">HUMKIN RADIO</p>
+      <p id="track-album" class="album"></p>
+    </div>
+    <p class="explain">The displayed song follows the cloud schedule and may be ahead of what a buffering phone is currently hearing. Playback requires an internet connection. Some Android browsers limit audio when locked; use the restored native app or an HLS-capable player if background playback stops.</p>
+    <div class="alternatives">
+      <a href="../">CLASSIC RADIO</a>
+      <a href="../long-wave/">LONG WAVE BACKUP</a>
+      <a href="https://humkin-long-wave.joyvolcanomusic.workers.dev/autopilot/station-one/live.m3u8">OPEN HLS PLAYLIST</a>
+    </div>
+  </section>
+  <footer>
+    <span>HUMKIN NIGHT SHIFT · REAL STATION · CLOUD SCHEDULE</span>
+    <a href="../../">HOME</a>
+  </footer>
+</main>
+</body>
+</html>
