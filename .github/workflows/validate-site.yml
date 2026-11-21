@@ -61,6 +61,10 @@ jobs:
       - run: node --test tests/tower-cloud-incremental-sync.test.mjs
       - run: node --test tests/tower-cloud-receipt.test.mjs
       - run: node --test tests/tower-cloud-feature-handoff.test.mjs
+      - run: node --test tests/tower-living-control.test.mjs
+      - run: python3 tests/tower-living-control.test.py
+      - run: python3 -m py_compile tools/radio-broadcast/tower_living_control.py tools/radio-broadcast/tower_control_preflight.py tools/radio-broadcast/cloud_house_sync.py
+      - run: node --check fm/load/living-control.mjs
       - run: node --check fm/load/cloud-feature-handoff.mjs
       - run: node --check fm/load/cloud-house-receipt.mjs
       - run: python3 tests/cloud-house-delta.test.py
