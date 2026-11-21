@@ -4,7 +4,7 @@
  * No credentials, persistent worker timers, or Acer availability required.
  */
 export const PROGRAM_SCHEMA = "humkin.cloud-autopilot/v1";
-export const PATH_RE = /^\/autopilot\/([a-z0-9][a-z0-9-]{0,31})\/(live\.m3u8|status|now-playing|segments\/([0-9a-f]{64})\/segment-([0-9]{6})\.ts)$/;
+export const PATH_RE = /^\/autopilot\/([a-z0-9][a-z0-9-]{0,31})\/(live\.m3u8|status|now-playing|schedule|segments\/([0-9a-f]{64})\/segment-([0-9]{6})\.ts)$/;
 const HASH = /^[0-9a-f]{64}$/;
 const ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const MAX_REVISIONS = 32, MAX_TRACKS = 500, MAX_SEGMENTS = 10000;
@@ -30,7 +30,9 @@ function buildRevision(raw) {
   let offset = 0, trackBeginnings = 0, maxSegment = 0;
   const segments = [];
   const tracks = [];
+  const trackSpans = [];
   for (const row of raw.tracks) {
+    const trackStart = offset;
     requireValue(row && ID.test(row.id) && HASH.test(row.asset_sha), "INVALID_ASSET_ID");
     requireValue(Array.isArray(row.durations_ms) && row.durations_ms.length > 0, "INVALID_SEGMENTS");
     requireValue(segments.length + row.durations_ms.length <= MAX_SEGMENTS, "SEGMENT_LIMIT");
@@ -46,10 +48,11 @@ function buildRevision(raw) {
         index: i, asset: row.asset_sha, discIndex: trackBeginnings});
       offset += duration;
     }
+    trackSpans.push({start: trackStart, end: offset});
     trackBeginnings++;
   }
   requireValue(offset > 0 && offset <= 7 * 24 * 3600 * 1000, "INVALID_CYCLE_LENGTH");
-  return {id: raw.id, epoch, tracks, segments, cycleMs: offset,
+  return {id: raw.id, epoch, tracks, segments, trackSpans, cycleMs: offset,
     discontinuitiesPerCycle: tracks.length, maxSegment, baseSeq: 0, baseDisc: 0};
 }
 function locationInRevision(rev, time) {
@@ -119,6 +122,77 @@ export function playbackWindow(program, now = Date.now()) {
   }
   return reversed.reverse();
 }
+
+// Project only already-published, listener-safe cue metadata. Never return R2
+// object names, source checksums, segment addresses, credentials or draft carts.
+function trackOccurrence(program, instant) {
+  const segment = segmentAt(program, instant);
+  if (!segment) return null;
+  let revisionIndex = -1;
+  for (let index = 0; index < program.revisions.length; index++) {
+    if (instant >= program.revisions[index].epoch) revisionIndex = index;
+    else break;
+  }
+  const revision = program.revisions[revisionIndex];
+  const cycle = Math.floor((instant - revision.epoch) / revision.cycleMs);
+  const span = revision.trackSpans[segment.trackIndex];
+  const trackStart = revision.epoch + cycle * revision.cycleMs + span.start;
+  const nextRevision = program.revisions[revisionIndex + 1];
+  const naturalEnd = revision.epoch + cycle * revision.cycleMs + span.end;
+  const trackEnd = Math.min(naturalEnd, nextRevision?.epoch ?? Infinity);
+  requireValue(trackEnd > instant, "INVALID_SCHEDULE_BOUNDARY");
+  const track = revision.tracks[segment.trackIndex];
+  return {revision: revision.id, start: trackStart, end: trackEnd,
+    track: {id: track.id, title: track.title, artist: track.artist,
+      album: track.album, artwork_url: track.artwork}};
+}
+
+export function publicSchedule(program, now = Date.now()) {
+  requireValue(Number.isFinite(now), "INVALID_TIME");
+  const playbackClock = now - PLAYOUT_LAG_MS;
+  const clock = Math.max(playbackClock, program.revisions[0].epoch);
+  const current = segmentAt(program, playbackClock);
+  const first = trackOccurrence(program, clock);
+  requireValue(first, "INVALID_SCHEDULE_BOUNDARY");
+  const active = program.revisions.filter(revision => revision.epoch <= clock).at(-1);
+  const following = program.revisions.find(revision => revision.epoch > clock);
+  // Show the remainder of this cycle plus one complete future revision if a
+  // published revision becomes effective. Stop before repeating the opening cue.
+  const deadline = following ? following.epoch + following.cycleMs :
+    first.start + active.cycleMs;
+  const maxEntries = Math.min(1000,
+    active.tracks.length + (following ? following.tracks.length : 0));
+  const upcoming = [];
+  let cursor = clock;
+  while (upcoming.length < maxEntries) {
+    const item = trackOccurrence(program, cursor);
+    if (!item || item.start >= deadline) break;
+    upcoming.push({
+      revision: item.revision,
+      is_current: Boolean(current) && upcoming.length === 0,
+      start_at_utc: new Date(item.start).toISOString(),
+      end_at_utc: new Date(item.end).toISOString(),
+      track: item.track
+    });
+    cursor = item.end;
+  }
+  return {
+    schema: "humkin.autopilot.public-schedule/v1",
+    station_id: program.stationId,
+    revision: active.id,
+    as_of_utc: new Date(now).toISOString(),
+    clock_at_utc: new Date(playbackClock).toISOString(),
+    rotation_track_count: active.tracks.length,
+    cycle_duration_ms: active.cycleMs,
+    upcoming,
+    pending_revisions: program.revisions.filter(revision => revision.epoch > playbackClock)
+      .map(revision => ({revision: revision.id,
+        effective_at_utc: new Date(revision.epoch).toISOString(),
+        track_count: revision.tracks.length})),
+    truncated: cursor < deadline && upcoming.length >= maxEntries
+  };
+}
+
 export function renderPlaylist(program, now = Date.now()) {
   const window = playbackWindow(program, now);
   if (!window.length) throw new Error("NOT_ON_AIR");
@@ -163,6 +237,23 @@ export async function serveAutopilot(request, env, now = Date.now()) {
     const parsed = compileProgram(JSON.parse(await snapshot.text()));
     if (parsed.stationId !== match[1]) return respond({on_air:false,error:"FREQUENCY_MISMATCH"},503);
     const window = playbackWindow(parsed, now);
+    if (match[2] === "schedule") {
+      // A published rotation is still viewable when the audio is unavailable.
+      // Its off-air label is deliberate and must never fake a listening receipt.
+      let available = window.length > 0;
+      for (const item of window) {
+        if (!await env.RADIO_LIVE.head("autopilot/segments/" + item.asset +
+          "/segment-" + String(item.index).padStart(6, "0") + ".ts")) {
+          available = false;
+          break;
+        }
+      }
+      return respond({...publicSchedule(parsed, now),
+        on_air: available,
+        reason: available ? null : window.length ? "PROGRAM_MEDIA_INCOMPLETE" :
+          "PROGRAM_NOT_STARTED",
+        mode: "cloud_autopilot_schedule"});
+    }
     if (!window.length) return respond({on_air:false,error:"PROGRAM_NOT_STARTED"},503);
     if (match[2].startsWith("segments/")) {
       const sha = match[3], index = Number(match[4]);

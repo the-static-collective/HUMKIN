@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102427">
+<meta name="description" content="HUMKIN Cloud HOUSE schedule: current published rotation, upcoming songs, local air times and revisions.">
+<title>HUMKIN CLOUD SCHEDULE · Radio House</title>
+<link rel="stylesheet" href="../night-shift/night-shift.css">
+<link rel="stylesheet" href="./schedule.css">
+<script type="module" src="./schedule.js"></script>
+</head>
+<body>
+<main class="shell">
+  <header class="masthead">
+    <a href="../" aria-label="HUMKIN Radio homepage">HUMKIN RADIO</a>
+    <span>RADIO HOUSE / PUBLISHED CLOUD PROGRAM</span>
+  </header>
+  <section class="radio schedule-page" aria-labelledby="page-title">
+    <div class="schedule-hero">
+      <p class="eyebrow">THE HOUSE KEEPS THE CLOCK</p>
+      <h1 id="page-title">THE<br><em>LINEUP.</em></h1>
+      <p class="introduction">What's scheduled on the shared cloud frequency, and when. This is the published running order—not a playlist guessed from your phone or the old website rotation.</p>
+      <div class="schedule-actions">
+        <a class="listen-link" href="../night-shift/">LISTEN TO NIGHT SHIFT</a>
+        <a class="quiet-link" href="../">CLASSIC RADIO</a>
+      </div>
+    </div>
+    <div class="schedule-summary" aria-label="Published station schedule details">
+      <div class="summary-stat"><span>STATION</span><strong>ONE</strong></div>
+      <div class="summary-stat"><span>ROTATION</span><strong id="record-count">—</strong><small>recordings</small></div>
+      <div class="summary-stat"><span>LOOP LENGTH</span><strong id="loop-length">—</strong></div>
+      <div class="summary-stat"><span>SOURCE REVISION</span><strong id="revision-label">—</strong></div>
+    </div>
+    <div class="schedule-heading">
+      <div><p class="eyebrow" id="updated-at">CHECKING PUBLISHED SCHEDULE</p><h2>ON THE CLOUD CLOCK</h2></div>
+      <div class="schedule-buttons">
+        <button type="button" class="quiet-button" id="time-zone" aria-pressed="false">SHOW UTC</button>
+        <button type="button" class="quiet-button" id="refresh">REFRESH</button>
+      </div>
+    </div>
+    <div class="signal-state" id="signal-indicator" data-status="unknown">
+      <span class="signal-dot" aria-hidden="true"></span>
+      <p id="schedule-state" role="status" aria-live="polite">Checking the published cloud plan…</p>
+    </div>
+    <p class="revision-notice" id="revision-notice" hidden></p>
+    <ol class="schedule-list" id="schedule-list" aria-label="Upcoming published cloud songs">
+      <li class="schedule-placeholder">Reading the published running order…</li>
+    </ol>
+    <p class="schedule-footnote" id="schedule-footnote"></p>
+    <div class="reality-note">
+      <p class="eyebrow">HOW TO READ THIS</p>
+      <p>Times come from the versioned cloud program. The highlighted entry follows the server's shared clock, which intentionally trails real time slightly. Listening devices may buffer behind it. <strong>A scheduled song is not proof that a specific phone actually played it.</strong></p>
+      <p>Only published Cloud HOUSE tracks appear here. Long Wave, the Acer live transmitter, Same-Time Radio and Road Shuffle have different clocks and running orders.</p>
+    </div>
+    <noscript><p class="schedule-fallback">Enable JavaScript to display the current published cloud schedule. The radio player remains available separately.</p></noscript>
+  </section>
+  <footer><span>HUMKIN RADIO HOUSE · PUBLIC SCHEDULE · READ ONLY</span><a href="../night-shift/">LISTEN TO NIGHT SHIFT</a></footer>
+</main>
+</body>
+</html>
