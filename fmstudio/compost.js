@@ -5,6 +5,10 @@
   const audio = get("audio"), listen = get("listen"), next = get("next"), form = get("rating");
   const status = get("status"), stars = get("stars"), reaction = get("reaction"), feedback = get("feedback");
   const heard = new Set(), failed = new Set();
+  // An approved public catalog ID can be linked without exposing its R2 key.
+  // This only chooses the first recording after an explicit human click.
+  const queryId = new URL(location.href).searchParams.get("compost");
+  let linkedPending = /^[A-Za-z0-9-]{3,90}$/.test(queryId || "") ? queryId : null;
   let tracks = [], scores = new Map(), current, listener;
   let loading, scoreTask, catalogAt = 0, scoresAt = 0, errors = 0, reported = false;
 
@@ -66,8 +70,15 @@
       catalogAt = Date.now();
       const available = new Set(tracks.map(track => track.id));
       for (const id of heard) if (!available.has(id)) heard.delete(id);
-      if (!current) status.textContent = "Ready to play.";
-      listen.textContent = "Listen to the Heap";
+      const linked = linkedPending && tracks.find(track => track.id === linkedPending);
+      if (!current) status.textContent = linked
+        ? "A published recording was shared with you. Press Listen to hear it."
+        : "Ready to play.";
+      listen.textContent = linked ? "Listen to " + linked.title : "Listen to the Heap";
+      if (linkedPending && !linked) {
+        linkedPending = null;
+        status.textContent = "That shared recording is unavailable. The rest of the Heap remains open.";
+      }
       get("count").textContent = tracks.length.toLocaleString() + " recordings";
     }).catch(error => {
       if (!tracks.length) {
@@ -136,8 +147,8 @@
     next.hidden = true;
   }
 
-  function playNext() {
-    const track = chooseTrack();
+  function playNext(preferred = null) {
+    const track = preferred && tracks.includes(preferred) ? preferred : chooseTrack();
     if (!track) return tryAgain("The archive audio could not load. Try listening again.");
     document.dispatchEvent(new Event("humkin:compost-playing"));
     current = track;
@@ -177,9 +188,11 @@
       return;
     }
     errors = 0;
-    playNext();
+    const linked = linkedPending ? tracks.find(track => track.id === linkedPending) : null;
+    linkedPending = null;
+    playNext(linked);
   });
-  next.addEventListener("click", playNext);
+  next.addEventListener("click", () => playNext());
   audio.addEventListener("playing", () => { errors = 0; status.textContent = ""; });
   audio.addEventListener("timeupdate", reportPlay);
   audio.addEventListener("ended", () => { reportPlay(); playNext(); });

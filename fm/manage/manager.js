@@ -2,6 +2,7 @@ import {createClient} from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import {prepareCover} from "./art-upload.js";
 import {r2Bridge} from "../r2-bridge-client.js";
 import {mountBumperControls} from "./bumper-workbench.js";
+import {mountSignalRelay,installSignalRelayActions} from "./signal-relay-ui.js";
 
 // Publishable key only. Every write is checked again by owner-only Postgres RLS.
 const API="https://kbhqacsdvjsstzyplqij.supabase.co";
@@ -74,10 +75,12 @@ async function loadDesk(){
    $("catalog").replaceChildren(el("p","Sign in to manage the library."));
    $("show-list").replaceChildren(el("p","Sign in to manage programming."));
    $("guest-feature-list")?.replaceChildren(el("p","Sign in to manage guest features."));
+   $("signal-relay")?.classList.add("hidden");
    $("group-editor-root")?.replaceChildren(el("p","Sign in to edit groups."));
    $("rule-editor-root")?.replaceChildren(el("p","Sign in to edit optional rules."));
    return;
  }
+ $("signal-relay")?.classList.remove("hidden");
  $("login-link").classList.add("hidden");
  $("logout").classList.remove("hidden");
  $("auth-status").textContent="UNLOCKED · "+user.email+" · owner-only control";
@@ -164,6 +167,7 @@ async function loadDesk(){
   renderArtShelf();renderLibrary();renderShows();renderGuestFeatures();renderSlots();renderNow();renderAutoDj();note("");
   mountBumperControls({db,ownerId:user.id,library,groups:bumperGroups,rules:editorialRules,
     selected,refresh:loadDesk,authorize:requireOwner});
+  void mountSignalRelay({library,preparePausedShow});
   await refreshR2VaultStatus();
  }catch(err){note("Could not read station: "+err.message);$("auth-status").textContent="Signed in · data unavailable"}
 }
@@ -550,6 +554,16 @@ function showEditor(show=null){
  renderSlots();$("show-form").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
+function preparePausedShow(candidate){
+ const track=library.find(t=>t.id===candidate.id&&trackAvailable(t)&&t.kind==="song");
+ if(!track){note("This recording is no longer published and enabled. Refresh the Signal Relay.");return;}
+ showEditor(null);
+ slots=[track.id];
+ $("show-name").value="SIGNAL · "+track.title.slice(0,60);
+ $("show-active").checked=false; // Explicit owner activation is always separate.
+ renderSlots();
+ note("A paused, one-track draft was loaded. Review the show, its schedule and rights before you choose SAVE. No station changed.");
+}
 function featureMatches(feature){
  return (feature.tracks||[]).map(spec=>{
    const candidates=library.filter(t=>t.sha256===spec.sha256);
@@ -764,4 +778,5 @@ $("logout").addEventListener("click",async()=>{
  await db.auth.signOut();user=null;library=[];shows=[];selected.clear();await loadDesk();
 });
 db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_IN"||event==="SIGNED_OUT")setTimeout(loadDesk,0)});
+installSignalRelayActions();
 loadDesk();
