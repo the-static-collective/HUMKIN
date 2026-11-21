@@ -48,6 +48,24 @@ test('program spreads permitted bumper lengths without repeating too early',()=>
  assert.notDeepEqual(p.map(x=>x.key),q.map(x=>x.key));
  for(const x of p)assert(tracks.some(t=>t.key===x.key));
 });
+test('shortie carts cannot follow consecutive songs, even across cycle seams',()=>{
+ const rows=Array.from({length:48},(_,i)=>song(i+1));
+ rows.push(song(501,'bumper',8),song(502,'bumper',15));
+ const catalog=approvedCatalog(rows,null);
+ for(const seed of [1,2,3,7,29,541]){
+  const rotation=program(catalog,seed);
+  let completedSongs=0;
+  const shortAfter=[];
+  for(const item of rotation){
+   if(item.kind==='song')completedSongs++;
+   else if(item.duration<=19)shortAfter.push(completedSongs);
+  }
+  assert(shortAfter.length>1,'Shorties should remain in the rotation');
+  assert(shortAfter.every((n,i)=>n>1&&(i===0||n-shortAfter[i-1]>=2)),
+   'No adjacent-song shorties or next-cycle first-song shortie');
+  assert.equal(completedSongs,rows.filter(r=>r.kind==='song').length);
+ }
+});
 test('a fictional announcement stays eligible unless an owner rule is ON',()=>{
  const rows=Array.from({length:35},(_,i)=>song(i+1));
  rows.push({...song(501,'bumper',36),title:'Top of the Hour'});
