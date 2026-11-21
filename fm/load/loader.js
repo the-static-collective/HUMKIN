@@ -6,6 +6,7 @@ import {r2Bridge} from "../r2-bridge-client.js";
 import {r2Direct,putPrivateMp3} from "./r2-direct-client.mjs";
 import {inferFileMetadata,parseLayout,titleFromFile} from "./folder-metadata.mjs";
 import {inspectTowerFolder,towerAudioDigest} from "./tower-sidecars.mjs";
+import {mountFeatureDesk} from "./feature-desk.mjs";
 
 const API = "https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY = "sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public, RLS-scoped key. Never a secret/service key.
@@ -15,6 +16,7 @@ const MAX_FILE = 50 * 1024 * 1024;
 const db = createClient(API, KEY, {auth: humkinAuthOptions()});
 const $ = id => document.getElementById(id);
 let selected = [], busy = false, stopRequested = false, drafts = [], known = [], activeUser = null;
+let featureDesk = null;
 let scanPromise=Promise.resolve();
 let directReady=false;
 const fmtTime = seconds => {
@@ -263,7 +265,7 @@ async function uploadFile(file,path,onProgress){
 }
 async function loadKnown(){
  const {data,error}=await db.from("humkin_radio_tracks")
-   .select("id,sha256,storage_path,title,kind,is_single,enabled,bytes,duration_seconds,published_at,storage_provider,r2_upload_verified_at,supabase_source_removed_at")
+   .select("id,sha256,storage_path,title,artist,album,kind,is_single,enabled,bytes,duration_seconds,published_at,storage_provider,r2_upload_verified_at,supabase_source_removed_at")
    .order("created_at",{ascending:false}).limit(2000);
  if(error)throw error;
  known=data||[];
@@ -287,10 +289,11 @@ async function loadKnown(){
  const used=known.filter(r=>r.storage_provider!=="r2_private"&&!r.supabase_source_removed_at)
    .reduce((s,r)=>s+Number(r.bytes||0),0);
  const secs=known.filter(x=>x.published_at).reduce((s,r)=>s+Number(r.duration_seconds||0),0);
- $("stats").textContent=known.filter(x=>x.published_at).length+" cloud recordings on air · "+drafts.length+" private drafts · "+fmtBytes(used)+" still in Supabase storage · "+known.filter(x=>x.storage_provider==="r2").length+" served by R2";
+ $("stats").textContent=known.filter(x=>x.published_at).length+ " published catalog recordings · "+drafts.length+" private drafts · "+fmtBytes(used)+" still in Supabase storage · "+known.filter(x=>x.storage_provider==="r2").length+" served by R2";
  $("total").textContent=fmtTime(secs)+" new cloud airtime";
  $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper"&&
    (row.storage_provider!=="r2_private"||row.r2_upload_verified_at));
+ featureDesk?.refresh();
 }
 
 async function refreshDirectStatus(){
@@ -483,7 +486,8 @@ async function publish(){
        live++;log("ON AIR via "+provider+": "+row.title);
      }catch(err){failed++;log("Publication failed for "+row.title+": "+err.message)}
    }
-   feedback("Published "+live+" songs. "+failed+" need retry. Reload the station to hear the new crate.");
+   feedback("Published "+live+" songs to the approved catalog. "+failed+
+     " need retry. Same-Time/TOWER may pick them up on refresh; the independent Cloud HOUSE HLS schedule does NOT rebuild automatically yet.");
  }finally{setBusy(false);try{await loadKnown()}catch(err){log(err.message)}}
 }
 
@@ -503,7 +507,8 @@ async function publishOne(selectedRow){
  setBusy(true);
  try{
    const provider=await publishStorage(row);
-   feedback("PUBLISHED + ENABLED via "+provider+" · "+row.title+". Check a completed song boundary in the radio to confirm actual audio playback.");
+   feedback("PUBLISHED TO CATALOG + ENABLED via "+provider+" · "+row.title+
+     ". Browser/TOWER eligibility is updated, but Cloud HOUSE still needs a separately reviewed schedule publication. Check a real receiver for playback.");
  }catch(err){feedback("Could not publish "+row.title+": "+err.message)}
  finally{setBusy(false);try{await loadKnown()}catch(err){log("Refresh failure: "+err.message)}}
 }
@@ -568,7 +573,7 @@ $("verify-link").addEventListener("click",async()=>{
      ". Request a NEW email and copy its link without opening it.";
  }finally{$("verify-link").disabled=false;token=null}
 });
-$("sign-out").addEventListener("click",async()=>{await db.auth.signOut();activeUser=null;drafts=[];known=[];drawAuth();$("draft-list").textContent="Sign in to view drafts."});
+$("sign-out").addEventListener("click",async()=>{await db.auth.signOut();activeUser=null;drafts=[];known=[];drawAuth();featureDesk?.refresh();$("draft-list").textContent="Sign in to view drafts."});
 async function updateSession(){
  const {data,error}=await db.auth.getSession();
  const user=data?.session?.user;
@@ -579,5 +584,6 @@ async function updateSession(){
  else if(error)log("Authentication: "+error.message);
 }
 db.auth.onAuthStateChange((_event,_session)=>{setTimeout(updateSession,0)});
+featureDesk=mountFeatureDesk({db,rows:()=>activeUser?known:[],onStatus:message=>log("Feature Desk: "+message)});
 installProtonLogin({mount:$("proton-loader"),getClient:async()=>db,onSignedIn:updateSession});
 updateSession();

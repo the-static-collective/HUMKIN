@@ -85,6 +85,7 @@ jobs:
           print('Program entries:',len(selection['tracks']))
           if count == 'FULL':
               print('Songs:',selection['song_count'],'Bumper breaks:',selection['bumper_break_count'])
+              print('Weighted song slots:',selection['weighted_song_slots'],'Release/single/seasonal bonuses:',selection['release_seasonal_bonus_slots'])
           print('Estimated minutes:',round(minutes,1))
           for index,t in enumerate(selection['tracks'],1):
               label='BUMPER ' if t.get('kind') == 'bumper' else ''

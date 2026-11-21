@@ -47,6 +47,7 @@ jobs:
           print('Program entries:',len(p['tracks']))
           if p.get('mode') == 'full_catalog':
               print('Unique songs:',p['song_count'],'Bumper breaks:',p['bumper_break_count'])
+              print('Release/single/seasonal extra song slots:',p['release_seasonal_bonus_slots'])
               print('Feature-only / held carts:',p['held_bumper_count'])
           print('Estimated house minutes:',round(sum(s['duration_seconds'] for s in p['tracks'])/60,1))
           print('REVIEW FINGERPRINT:',p['fingerprint'])
@@ -55,6 +56,7 @@ jobs:
               receipt.write('Program entries: '+str(len(p['tracks']))+'\n\n')
               if p.get('mode') == 'full_catalog':
                   receipt.write('Unique songs: '+str(p['song_count'])+' · short/medium/long bumper breaks: '+str(p['bumper_break_count'])+' · held/feature-only bumpers: '+str(p['held_bumper_count'])+'\n\n')
+                  receipt.write('Weighted music slots: '+str(p['weighted_song_slots'])+' (including '+str(p['release_seasonal_bonus_slots'])+' release/single/seasonal bonuses)\n\n')
               receipt.write('Copy the 64-character fingerprint into **Night Shift — publish reviewed HOUSE in cloud**:\n\n')
               receipt.write('`'+p['fingerprint']+'`\n\n')
               for n, track in enumerate(p['tracks'],1):
