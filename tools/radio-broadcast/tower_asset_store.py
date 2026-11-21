@@ -174,6 +174,49 @@ def publish_asset(client, digest, durations, cache, workers=8):
             "new_uploads": uploaded}
 
 
+def certify_legacy_asset(client, digest, durations, workers=8):
+    """Migrate EXISTING published segments into a durable marker without FFmpeg.
+
+    Read each immutable R2 segment and SHA-verify its bytes. Never infer asset
+    completion from a playlist alone. The marker goes in only after all reads.
+    """
+    prior = read_manifest(client, digest, expected_durations=durations)
+    if prior is not None:
+        return {"state": "reused", "segments": len(durations)}
+    if not isinstance(durations, list) or not 1 <= len(durations) <= MAX_SEGMENTS:
+        raise ValueError("Invalid published legacy AAC durations.")
+    if any(type(ms) is not int or not 250 <= ms <= 11000 for ms in durations):
+        raise ValueError("Malformed published AAC duration.")
+
+    def inspect(pair):
+        index, milliseconds = pair
+        obj = client.get_object(Bucket=BUCKET, Key=segment_key(digest, index))
+        data = obj["Body"].read(MAX_SEGMENT_BYTES + 1)
+        if not 0 < len(data) <= MAX_SEGMENT_BYTES:
+            raise ValueError("Legacy cloud AAC segment missing or too large.")
+        return {"index": index, "milliseconds": milliseconds,
+                "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+
+    with ThreadPoolExecutor(max_workers=min(max(1, int(workers)), 12)) as pool:
+        receipts = list(pool.map(inspect, enumerate(durations)))
+    marker = {"schema": SCHEMA, "profile": PROFILE,
+              "source_sha256": digest, "segments": receipts}
+    data = json.dumps(marker, separators=(",", ":")).encode()
+    if len(data) > MAX_MANIFEST:
+        raise ValueError("Legacy AAC receipt is oversized.")
+    again = read_manifest(client, digest, expected_durations=durations)
+    if again is not None:
+        if again[0] != marker:
+            raise ValueError("Legacy AAC completion marker conflict.")
+        return {"state": "reused", "segments": len(durations)}
+    client.put_object(Bucket=BUCKET, Key=key_for_manifest(digest), Body=data,
+                      ContentType="application/json", CacheControl="private, no-store")
+    found = read_manifest(client, digest, expected_durations=durations)
+    if found is None or found[0] != marker:
+        raise ValueError("Legacy AAC receipt write did not verify.")
+    return {"state": "certified_without_reencoding", "segments": len(durations)}
+
+
 def verify_stored_segments(client, digest, manifest):
     """Cheap preflight after a prior atomic marker, not 20–40 HEADs per song.
 
