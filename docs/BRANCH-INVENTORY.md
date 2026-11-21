@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [405340ee61c7](https://github.com/the-static-collective/HUMKIN/commit/405340ee61c7f34d2ebf9f77d76c31eb7c1e216b)
-- Branches: 191; open PRs: 25; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [830bc77f7c84](https://github.com/the-static-collective/HUMKIN/commit/830bc77f7c84e20abb5bbbaed67cbf92cdef63b7)
+- Branches: 192; open PRs: 25; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -157,6 +157,7 @@
 | [feature/radio-first-day-production-bible-20261114](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-first-day-production-bible-20261114) | 3ea9d3f122f4 | No matching open PR; UNCLASSIFIED |
 | [feature/radio-four-voice-liners-20261115](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-four-voice-liners-20261115) | 6509b8e92efe | No matching open PR; UNCLASSIFIED |
 | [feature/radio-hour-memory-and-warm-signal-20261114](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-hour-memory-and-warm-signal-20261114) | e155ad3890eb | No matching open PR; UNCLASSIFIED |
+| [feature/radio-house-cloud-schedule-viewer-20261121](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-house-cloud-schedule-viewer-20261121) | 44a849656080 | No matching open PR; UNCLASSIFIED |
 | [feature/radio-house-source-network-and-transmitter-gate-20261114](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-house-source-network-and-transmitter-gate-20261114) | addd87a6dae2 | No matching open PR; UNCLASSIFIED |
 | [feature/radio-reusable-art-library-20261114](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-reusable-art-library-20261114) | 22f4429d7948 | No matching open PR; UNCLASSIFIED |
 | [feature/radio-sync-92bpm-airwave-20261114](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-sync-92bpm-airwave-20261114) | 9d12039fcbb8 | No matching open PR; UNCLASSIFIED |
@@ -198,7 +199,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 405340ee61c7 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 830bc77f7c84 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
