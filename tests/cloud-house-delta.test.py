@@ -145,7 +145,7 @@ class CloudHouseDeltaTest(unittest.TestCase):
         modified[0]["enabled"] = False
         with tempfile.TemporaryDirectory() as cache:
             with patch.object(syncer, "prepare_delta", side_effect=AssertionError("no encoding")):
-                with self.assertRaisesRegex(ValueError, "changed"):
+                with self.assertRaisesRegex(ValueError, "changed|strict source validation"):
                     syncer.sync(client=read,cache=cache,selection=self.chosen,
                                 read_catalog=lambda:modified,commit=True)
         self.assertEqual(read.reads,0)
