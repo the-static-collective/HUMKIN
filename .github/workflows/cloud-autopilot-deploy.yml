@@ -54,6 +54,16 @@ jobs:
           const payload=await api.json().catch(()=>({}));
           if(api.status!==200 && api.status!==503)throw Error('Cloud Autopilot route did not deploy: '+api.status);
           if(typeof payload.on_air!=='boolean')throw Error('Cloud Autopilot route not responding with its contract');
+          const schedule=await fetch(root+'/autopilot/station-one/schedule');
+          const scheduleData=await schedule.json().catch(()=>({}));
+          if(schedule.status!==200 && schedule.status!==503)throw Error('Public schedule route unavailable: '+schedule.status);
+          if(schedule.status===200 && (scheduleData.schema!=='humkin.autopilot.public-schedule/v1' ||
+             !Array.isArray(scheduleData.upcoming) || !scheduleData.upcoming.length))
+             throw Error('Public schedule response does not match the published projection contract');
+          if(schedule.status===503 && scheduleData.on_air!==false)
+             throw Error('Unpublished schedule must explicitly be off-air');
+          console.log(JSON.stringify({schedule_http:schedule.status,
+            schedule_entries:scheduleData.upcoming?.length||0}));
           console.log(JSON.stringify({health:'OK',autopilot_http:api.status,autopilot_on_air:payload.on_air,
             detail:payload.error||payload.mode||'schedule seen'}));
           JS
