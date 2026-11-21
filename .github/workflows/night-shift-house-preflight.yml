@@ -26,7 +26,7 @@ jobs:
           command -v ffmpeg
       - name: Verify all preview and short-segment regression tests
         run: |
-          python -m unittest discover -s tests -p 'cloud-house-rotation.test.py' -v
+          python tests/cloud-house-rotation.test.py
           python -m py_compile tools/radio-broadcast/autopilot_publisher.py
       - name: Prepare source-verified 40-song HOUSE against live approved catalog
         run: |
