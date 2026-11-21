@@ -194,10 +194,10 @@ class CloudHouseRotationTest(unittest.TestCase):
                 durations = [8000, 8000, 80] if seconds == "8" else [7600, 7600, 880]
                 for n, duration in enumerate(durations):
                     (directory / f"segment-{n:06d}.ts").write_bytes(b"G" * 188)
-                manifest.write_text("#EXTM3U\\n" + "".join(
-                    f"#EXTINF:{duration / 1000:.3f},\\nsegment-{n:06d}.ts\\n"
+                manifest.write_text("#EXTM3U\n" + "".join(
+                    f"#EXTINF:{duration / 1000:.3f},\nsegment-{n:06d}.ts\n"
                     for n, duration in enumerate(durations)
-                ) + "#EXT-X-ENDLIST\\n", encoding="utf-8")
+                ) + "#EXT-X-ENDLIST\n", encoding="utf-8")
 
             with patch.object(publisher.subprocess, "run", side_effect=fake_encode):
                 durations = publisher._encoded_segments(src, digest, root)
@@ -215,9 +215,9 @@ class CloudHouseRotationTest(unittest.TestCase):
             for n in range(3):
                 (directory / f"segment-{n:06d}.ts").write_bytes(b"G" * 188)
             manifest.write_text(
-                "#EXTM3U\\n#EXTINF:8.000,\\nsegment-000000.ts\\n"
-                "#EXTINF:0.080,\\nsegment-000001.ts\\n"
-                "#EXTINF:7.500,\\nsegment-000002.ts\\n",
+                "#EXTM3U\n#EXTINF:8.000,\nsegment-000000.ts\n"
+                "#EXTINF:0.080,\nsegment-000001.ts\n"
+                "#EXTINF:7.500,\nsegment-000002.ts\n",
                 encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Invalid AAC segment duration"):
                 publisher.segments_from_manifest(manifest, directory)
