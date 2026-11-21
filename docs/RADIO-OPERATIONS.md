@@ -251,6 +251,8 @@ recordings are not disfavored by a weight: they receive *different,
 slower slots* instead of competing with five-second station tags.
 
 - Short: ≤19s, frequent φ-shaped short drops after completed songs.
+  Shorties never fire at consecutive song boundaries, even across rotation
+  cycle seams: at least one intervening song boundary has no shortie.
 - Medium: 20–59.999s, between long feature anchors; medium and long
   together furnish a feature break every ~11–12 minutes. With no long
   items available, mediums fill all ~11–12-minute anchors.
