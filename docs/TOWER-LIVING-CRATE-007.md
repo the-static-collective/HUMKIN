@@ -7,7 +7,9 @@
 1. On Android/iPhone/desktop, open `https://humkin.abundent.org/fm/load/`. The top shortcuts jump directly to **Add today's audio**, **Review crate**, and **Build a feature**. File picker already handles MP3/M4A/WAV, with browser codec support, existing private R2 staging and individually approved publication. Existing content identity and server-side SHA validation remain unchanged.
 2. Review each song/official single/bumper; approval means the source becomes **published and enabled in the radio catalog**, not immediately included in the separately reviewed Cloud HOUSE HLS program. This separation must be visible, not hidden.
 3. In **Feature Desk** choose already enabled and published recordings (including a long interview), add and reorder them, choose repeating Central day/time block, and **SAVE PAUSED FEATURE**. Authenticated owner-only insert into existing `public.humkin_radio_programs` with `is_active=false`. Never invent on-air authorization. `/fm/manage/#programming` remains the single authoritative editor/activation surface for recurring Same-Time/TOWER shows. Never silently enable at save.
-4. The Feature Desk is a mobile-friendly front door, not a parallel station database. It uses the existing Supabase owner RLS. It does **not** offer non-owner church-secretary privileges until a proper scoped delegated-role system is built.
+4. The Crate page includes a scoped mobile home-screen manifest so a browser may present TOWER as a standalone shortcut. This is **not** a native Android application, and phone installation/codec behavior requires device verification.
+
+The Feature Desk is a mobile-friendly front door, not a parallel station database. It uses the existing Supabase owner RLS. It does **not** offer non-owner church-secretary privileges until a proper scoped delegated-role system is built.
 
 ## Release/seasonal weighting across engines
 
