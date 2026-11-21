@@ -56,6 +56,11 @@ button.warn{background:#ffd3d3}
 #draft-list li{padding:8px;border-bottom:1px solid #bbb}
 #auth-message,#feedback{font-weight:700;min-height:24px}
 #feature-desk{scroll-margin-top:18px}
+#living-control{scroll-margin-top:18px}
+#living-control select,#living-control input{padding:11px;min-width:0;max-width:100%;box-sizing:border-box}
+#living-control-receipts{padding-left:25px;max-height:350px;overflow:auto}
+#living-control-receipts li{padding:9px 0;border-bottom:1px solid #d7d4d0;overflow-wrap:anywhere}
+#living-control button{min-height:42px}
 #feature-desk input:not([type=checkbox]),#feature-desk select{padding:12px;width:100%;min-width:0;max-width:100%;border:2px solid #211b3a;border-radius:8px;font:inherit;background:white;box-sizing:border-box}
 #feature-order{padding-left:24px}
 #feature-order li{padding:10px 0;border-bottom:1px solid #c3bdb3;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -179,6 +184,34 @@ footer{padding:20px;text-align:center}
 <p id="cloud-house-receipt" role="status" aria-live="polite">Checking the public Cloud HOUSE schedule…</p>
 <div class="row"><button type="button" id="cloud-receipt-refresh">CHECK CLOUD SCHEDULE</button><a class="button-like" href="https://github.com/the-static-collective/HUMKIN/actions/workflows/tower-cloud-incremental-sync.yml" target="_blank" rel="noopener noreferrer">OWNER: CLOUD SYNC SETUP</a><a class="button-like" href="../schedule/" target="_blank" rel="noopener noreferrer">PUBLIC SCHEDULE</a></div>
 <p class="small">Owner setup once: run the Cloud Sync workflow using <strong>SYNC_APPROVED_CATALOG</strong>. For scheduled automatic refresh, enable repository variable <code>HUMKIN_CLOUD_AUTOPUBLISH=ENABLED</code> after a successful test. Without this setting, automation stays off. New audio is encoded only when its source hash has not been published before. Cloud HLS updates still occur at clean audio boundaries.</p>
+</section>
+<section class="panel card" id="living-control" aria-labelledby="living-title">
+<h2 id="living-title">TOWER 010 · Living Control — mobile + desktop</h2>
+<p class="small">Owner-only station commands. The recording must already be published and approved in R2. A request is durable but does <strong>not</strong> change what listeners hear until the protected Cloud HOUSE scheduler accepts it and publishes a new safe-boundary revision. Existing desktop TOWER production tools remain available.</p>
+<div class="folder-controls">
+  <div><label for="living-search">Find an approved track or bumper</label><input type="search" id="living-search" placeholder="Title, artist, album…"></div>
+  <div><label for="living-track">Recording to control</label><select id="living-track"><option value="">Choose approved R2 recording…</option></select></div>
+</div>
+<p id="living-catalog-count" class="small">Sign in to search the approved catalog.</p>
+<div class="row">
+  <button type="button" id="living-queue_next" class="accent">QUEUE NEXT</button>
+  <button type="button" id="living-queue_end">QUEUE AT END</button>
+  <button type="button" id="living-more">+ WEIGHT</button>
+  <button type="button" id="living-less">− WEIGHT</button>
+  <button type="button" id="living-hold">HOLD</button>
+  <button type="button" id="living-release">RELEASE HOLD</button>
+</div>
+<div class="folder-controls">
+  <div><label for="living-edit-title">Title</label><input type="text" id="living-edit-title" maxlength="160"></div>
+  <div><label for="living-edit-artist">Artist</label><input type="text" id="living-edit-artist" maxlength="160"></div>
+  <div><label for="living-edit-album">Album</label><input type="text" id="living-edit-album" maxlength="160"></div>
+</div>
+<div class="row"><button type="button" id="living-metadata-save">SAVE TRACK INFORMATION</button>
+<button type="button" id="living-refresh">CHECK CONTROL RECEIPTS</button></div>
+<p id="living-control-status" role="status" aria-live="polite"></p>
+<h3>Recent station requests</h3>
+<ol id="living-control-receipts" aria-live="polite"><li>Sign in to inspect station requests.</li></ol>
+<p class="small">REQUESTED = owner entry recorded. ACCEPTED = published future cloud revision. EFFECTIVE = the cloud HLS schedule reached that revision and current media passed its availability checks. None of these labels alone proves a specific listener heard a recording. This controller cannot skip the currently playing audio.</p>
 </section>
 <section class="panel card" id="feature-desk" aria-labelledby="feature-title">
 <h2 id="feature-title">06 · Feature Desk — put a show in order</h2>
