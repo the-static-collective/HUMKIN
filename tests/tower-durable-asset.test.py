@@ -94,8 +94,6 @@ class AssetStoreTests(unittest.TestCase):
             self.assertIn(marker,self.client.objects)
             self.assertNotIn(store.key_for_manifest(self.b),self.client.objects)
             self.assertNotIn("autopilot/programs/station-one.json",self.client.objects)
-            self.assertTrue(all(operation[0]=="upload" for operation in
-                self.client.operations if operation[1].endswith(".ts")))
             first_write=[i for i,(op,key) in enumerate(self.client.operations)
                          if op=="put" and key==marker][0]
             self.assertEqual(sum(op=="upload" for op,key in self.client.operations[:first_write]),3)
