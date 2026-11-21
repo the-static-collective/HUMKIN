@@ -12,6 +12,15 @@ android {
         targetSdk = 35
         versionCode = 2
         versionName = "0.2.0-test"
+        manifestPlaceholders["receiverLabel"] = "HUMKIN Living Receiver"
+    }
+    buildTypes {
+        create("cloudHouse") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".cloudhouse"
+            versionNameSuffix = "-cloud-house"
+            manifestPlaceholders["receiverLabel"] = "HUMKIN Cloud HOUSE Preview"
+        }
     }
     buildFeatures { compose = true }
     compileOptions {

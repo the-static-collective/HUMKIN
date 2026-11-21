@@ -102,11 +102,11 @@ class ReceiverPlaybackService : MediaSessionService() {
     private fun updateSnapshot() {
         val exo = player ?: return
         val mediaId = exo.currentMediaItem?.mediaId.orEmpty()
-        val station = if (mediaId == "station-one" || mediaId == "talk") mediaId else ""
+        val station = BroadcastStation.fromMediaId(mediaId)
         val playing = exo.isPlaying
         val prefs = getSharedPreferences("receiver", Context.MODE_PRIVATE)
         val earned = prefs.getBoolean("earned", false)
-        val (cue, live, sample) = if (station.isNotEmpty()) {
+        val (cue, live, sample) = if (station != null) {
             val current = exo.currentManifest as? HlsManifest
             if (current !== lastManifest) {
                 lastManifest = current
@@ -122,8 +122,8 @@ class ReceiverPlaybackService : MediaSessionService() {
                 System.currentTimeMillis() - (start + length) in -30_000..90_000
             val time = if (start != C.TIME_UNSET) start + exo.currentPosition else C.TIME_UNSET
             val cue = if (liveWindow) CueWindow(start, start + length, cachedCues).at(time) else null
-            val sample = if (liveWindow && playing && exo.volume > 0f)
-                BroadcastSample(station, SystemClock.elapsedRealtime(), time) else null
+            val sample = if (station.earnsDemoHum && liveWindow && playing && exo.volume > 0f)
+                BroadcastSample(station.mediaId, SystemClock.elapsedRealtime(), time) else null
             Triple(cue, liveWindow, sample)
         } else {
             lastManifest = null
@@ -136,20 +136,20 @@ class ReceiverPlaybackService : MediaSessionService() {
             listening.observe(sample) else Listening()
         if (listening.earned && !earned) {
             prefs.edit().putBoolean("earned", true)
-                .putString("hum_receipt", "$station|${System.currentTimeMillis()}|30000|local-demo")
+                .putString("hum_receipt", "${station?.mediaId}|${System.currentTimeMillis()}|30000|local-demo")
                 .apply()
         }
         val nowEarned = earned || listening.earned
         val status = when {
-            station.isEmpty() && mediaId.startsWith("offline:") && playing -> "Playing clean offline record"
-            station.isEmpty() && mediaId.startsWith("offline:") -> "Offline record paused"
-            station.isEmpty() -> "Choose a frequency."
+            station == null && mediaId.startsWith("offline:") && playing -> "Playing clean offline record"
+            station == null && mediaId.startsWith("offline:") -> "Offline record paused"
+            station == null -> "Choose a frequency."
             exo.playerError != null -> "Signal unavailable. Tune again to retry."
-            live && playing -> "Live · $station"
+            live && playing -> "Live · ${station.title}"
             !playing -> "Paused or buffering"
-            else -> "Waiting for a fresh Tower signal"
+            else -> "Waiting for a fresh broadcast signal"
         }
-        ReceiverEngineState.snapshot.value = ReceiverSnapshot(station, cue, playing, live,
+        ReceiverEngineState.snapshot.value = ReceiverSnapshot(station?.mediaId.orEmpty(), cue, playing, live,
             listening.qualifiedMs, nowEarned, status)
     }
 }

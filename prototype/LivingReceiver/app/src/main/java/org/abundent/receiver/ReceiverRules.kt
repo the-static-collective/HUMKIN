@@ -1,5 +1,26 @@
 package org.abundent.receiver
 
+private const val relay = "https://humkin-long-wave.joyvolcanomusic.workers.dev"
+
+enum class BroadcastStation(
+    val mediaId: String,
+    val title: String,
+    path: String,
+    val earnsDemoHum: Boolean,
+    val scheduleUrl: String? = null
+) {
+    STATION_ONE("station-one", "Station One", "/hls/live.m3u8", true),
+    TALK("talk", "Talk", "/hls/talk/live.m3u8", true),
+    CLOUD_HOUSE("cloud-house", "Cloud HOUSE · Night Shift", "/autopilot/station-one/live.m3u8", false,
+        "https://humkin.abundent.org/fm/schedule/");
+
+    val hlsUrl = relay + path
+
+    companion object {
+        fun fromMediaId(id: String): BroadcastStation? = entries.firstOrNull { it.mediaId == id }
+    }
+}
+
 // Pure, monotonic playback accounting. A qualified session is one uninterrupted
 // station's advancing audible playback; it is never banked across interruptions.
 data class BroadcastSample(val station: String, val wallMs: Long, val audioMs: Long)
