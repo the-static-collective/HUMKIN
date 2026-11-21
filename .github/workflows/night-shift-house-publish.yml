@@ -1,0 +1,145 @@
+name: HUMKIN Night Shift — publish reviewed HOUSE in cloud
+
+# Owner-triggered only: never run a publishing job for a pull request,
+# schedule, push, or unreviewed branch.
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Already approved R2 songs in the new cloud HOUSE'
+        required: true
+        type: choice
+        default: '40'
+        options:
+          - '12'
+          - '18'
+          - '24'
+          - '40'
+      reviewed_fingerprint:
+        description: 'Paste the 64-character REVIEW FINGERPRINT from the matching draft workflow'
+        required: true
+        type: string
+      confirmation:
+        description: 'Deliberate authorization to update the public cloud schedule'
+        required: true
+        type: choice
+        default: HOLD
+        options:
+          - HOLD
+          - PUBLISH_AUTOPILOT
+
+permissions:
+  contents: read
+
+concurrency:
+  group: humkin-reviewed-cloud-house-station-one
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirmation == 'PUBLISH_AUTOPILOT'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned R2 uploader dependency and verify FFmpeg
+        run: |
+          python -m pip install boto3==1.40.70
+          ffmpeg -hide_banner -version | head -n 1
+
+      - name: Recreate reviewed selection from current published catalog
+        env:
+          HOUSE_COUNT: ${{ inputs.count }}
+          REVIEWED_FINGERPRINT: ${{ inputs.reviewed_fingerprint }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import json
+          from pathlib import Path
+          from sys import path
+          path.insert(0, 'tools/radio-broadcast')
+          from house_rotation import catalog_rows, make_selection
+          count=int(os.environ['HOUSE_COUNT'])
+          expected=os.environ['REVIEWED_FINGERPRINT'].strip()
+          if count not in (12,18,24,40) or not re.fullmatch('[0-9a-f]{64}',expected):
+              raise SystemExit('HOLD: count or review fingerprint is invalid')
+          selection=make_selection(catalog_rows(),count=count)
+          if selection['fingerprint'] != expected:
+              raise SystemExit('HOLD: published catalog or selection differs from the reviewed draft. Generate and review a new draft.')
+          path_out=Path('out/night-shift-house-selection.json')
+          path_out.parent.mkdir(parents=True,exist_ok=True)
+          path_out.write_text(json.dumps(selection,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          minutes=sum(t['duration_seconds'] for t in selection['tracks'])/60
+          print('Matched reviewed fingerprint:',expected)
+          print('Tracks:',len(selection['tracks']))
+          print('Estimated minutes:',round(minutes,1))
+          for index,t in enumerate(selection['tracks'],1):
+              print(f"{index:02d}. {t['artist']} — {t['title']}")
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as summary:
+              summary.write(f"### Reviewed HUMKIN HOUSE\n\n{count} songs · {minutes:.1f} estimated minutes\n\n")
+              summary.write(f"Selected SHA-256 fingerprint: \`{expected}\`\n\n")
+              summary.write('Source: current published, enabled R2 song catalog. Publication remains separate.\n')
+          PY
+
+      - name: Preview and transcode every remote MP3 without R2 credentials
+        run: |
+          python tools/radio-broadcast/autopilot_publisher.py \
+            --house-selection out/night-shift-house-selection.json \
+            --cache "$RUNNER_TEMP/humkin-house-cache"
+
+      - name: Publish only with explicitly configured live-bucket R2 credential
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HUMKIN_R2_LIVE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HUMKIN_R2_LIVE_SECRET_ACCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import os, re
+          account=os.environ.get('CLOUDFLARE_ACCOUNT_ID','')
+          if not re.fullmatch('[0-9a-fA-F]{32}',account):
+              raise SystemExit('HOLD: configure the existing CLOUDFLARE_ACCOUNT_ID Actions secret')
+          if not os.environ.get('AWS_ACCESS_KEY_ID') or not os.environ.get('AWS_SECRET_ACCESS_KEY'):
+              raise SystemExit('HOLD: configure dedicated HUMKIN_R2_LIVE_* Actions secrets scoped to the humkin-radio-live bucket')
+          print('R2 publisher credentials present. Values withheld.')
+          PY
+          # Recheck publication eligibility and SHA-256 bytes a second time.
+          # The existing publisher uploads immutable AAC/TS assets FIRST,
+          # rechecks current R2 program revision, and writes the pointer LAST.
+          python tools/radio-broadcast/autopilot_publisher.py \
+            --house-selection out/night-shift-house-selection.json \
+            --cache "$RUNNER_TEMP/humkin-house-cache" --publish
+
+      - name: Verify new R2 program pointer and report scheduled revision
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HUMKIN_R2_LIVE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HUMKIN_R2_LIVE_SECRET_ACCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          sys.path.insert(0,'tools/radio-broadcast')
+          from hls_push import r2_client
+          from autopilot_publisher import SCHEMA, BUCKET
+          selection=json.load(open('out/night-shift-house-selection.json',encoding='utf-8'))
+          client=r2_client()
+          data=json.loads(client.get_object(Bucket=BUCKET,Key='autopilot/programs/station-one.json')['Body'].read())
+          if data.get('schema') != SCHEMA or data.get('station_id') != 'station-one':
+              raise SystemExit('Published program schema or frequency mismatch')
+          revision=data['revisions'][-1]
+          actual=[x['id'] for x in revision['tracks']]
+          expected=['r2-'+x['id'] for x in selection['tracks']]
+          if actual!=expected: raise SystemExit('Published cloud program does not match reviewed song order')
+          print('R2 program pointer VERIFIED:',revision['id'])
+          print('Effective at:',revision['effective_at'])
+          print('Tracks:',len(actual))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as out:
+              out.write(f"\n**R2 publication verified:** \`{revision['id']}\` — {len(actual)} songs, effective {revision['effective_at']}\n\n")
+              out.write('The existing Cloudflare listener will switch at that published revision boundary. Physical playback still requires a receiver check.\n')
+          PY
+          curl --fail --silent --show-error --max-time 15 \
+            https://humkin-long-wave.joyvolcanomusic.workers.dev/health > /dev/null
+          echo 'Long Wave Worker health endpoint reachable.'

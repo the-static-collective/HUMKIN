@@ -37,12 +37,20 @@ jobs:
           mkdir -p out
           python tools/radio-broadcast/house_rotation.py --count "$TRACK_COUNT" --output out/night-shift-house-selection.json
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
           p=json.loads(Path('out/night-shift-house-selection.json').read_text(encoding='utf-8'))
           print('DRAFT ONLY: no cloud audio or playlist writes')
           print('Number of songs:',len(p['tracks']))
           print('Estimated house minutes:',round(sum(s['duration_seconds'] for s in p['tracks'])/60,1))
+          print('REVIEW FINGERPRINT:',p['fingerprint'])
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as receipt:
+              receipt.write('### Review this HOUSE before publishing\n\n')
+              receipt.write('Count: '+str(len(p['tracks']))+'\n\n')
+              receipt.write('Copy the 64-character fingerprint into **Night Shift — publish reviewed HOUSE in cloud**:\n\n')
+              receipt.write('`'+p['fingerprint']+'`\n\n')
+              for n, track in enumerate(p['tracks'],1):
+                  receipt.write(f"{n:02d}. {track['artist']} — {track['title']}\n")
           for n, track in enumerate(p['tracks'],1):
               print(f"{n:02d}. {track['artist']} — {track['title']}")
           PY
