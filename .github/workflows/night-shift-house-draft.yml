@@ -31,7 +31,9 @@ jobs:
       - name: Build an owner-review DRAFT from current public radio catalog
         shell: bash
         run: |
-          TRACK_COUNT=40
+          # Read-only PR rehearsal verifies the FULL catalog without credentials.
+          # Manual owner dispatch still defaults to the ordinary 40-song draft.
+          TRACK_COUNT=FULL
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             TRACK_COUNT="$(jq -r '.inputs.count' "$GITHUB_EVENT_PATH")"
           fi
