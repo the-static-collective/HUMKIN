@@ -1,6 +1,6 @@
 # RADIO HOUSE 002 — public Cloud HOUSE running order
 
-**Status:** source implementation in a protected review PR; merge and manual Worker deployment are separate from running audio verification.
+**Status boundaries:** source implementation, PR merge, static Pages deployment, manual Worker deployment, published program state and real listening verification are separate milestones. This document is not evidence that the live endpoint or a particular 40-song revision is deployed.
 
 ## Public interface
 
