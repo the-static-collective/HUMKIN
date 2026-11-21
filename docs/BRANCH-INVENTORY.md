@@ -2,7 +2,7 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [f9a325dd19e2](https://github.com/the-static-collective/HUMKIN/commit/f9a325dd19e257cc2f90fef9154d1cd00fee6694)
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [405340ee61c7](https://github.com/the-static-collective/HUMKIN/commit/405340ee61c7f34d2ebf9f77d76c31eb7c1e216b)
 - Branches: 191; open PRs: 25; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
@@ -31,7 +31,7 @@
 | [codex/humkin-fmstudio-preview](https://github.com/the-static-collective/HUMKIN/tree/codex/humkin-fmstudio-preview) | 5986be427453 | No matching open PR; UNCLASSIFIED |
 | [design/approved-paper-manga-look](https://github.com/the-static-collective/HUMKIN/tree/design/approved-paper-manga-look) | ae552cdbeaed | No matching open PR; UNCLASSIFIED |
 | [docs/continuity-pilot-001-20261119](https://github.com/the-static-collective/HUMKIN/tree/docs/continuity-pilot-001-20261119) | 4d581d28b3f6 | No matching open PR; UNCLASSIFIED |
-| [docs/radio-house-001-consolidation-20261121](https://github.com/the-static-collective/HUMKIN/tree/docs/radio-house-001-consolidation-20261121) | 824d72059794 | No matching open PR; UNCLASSIFIED |
+| [docs/radio-house-001-consolidation-20261121](https://github.com/the-static-collective/HUMKIN/tree/docs/radio-house-001-consolidation-20261121) | fdd186705467 | No matching open PR; UNCLASSIFIED |
 | [experiment/fellowship-dec4-possibility-engine](https://github.com/the-static-collective/HUMKIN/tree/experiment/fellowship-dec4-possibility-engine) | 3002f1b8cd8a | [#13](https://github.com/the-static-collective/HUMKIN/pull/13) (base: main) |
 | [experiment/field-outside-witness-001-20261121](https://github.com/the-static-collective/HUMKIN/tree/experiment/field-outside-witness-001-20261121) | 317ca33952d3 | [#190](https://github.com/the-static-collective/HUMKIN/pull/190) (base: main) |
 | [experiment/humkin-listener-receptacle-001](https://github.com/the-static-collective/HUMKIN/tree/experiment/humkin-listener-receptacle-001) | be316936bdbc | No matching open PR; UNCLASSIFIED |
@@ -198,7 +198,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | f9a325dd19e2 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 405340ee61c7 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
