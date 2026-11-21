@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
 import {availableRecordings,buildPausedFeature,minutes,move} from "../fm/load/feature-core.mjs";
 
 const owner="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -37,4 +38,23 @@ test("edit operations move only approved slot indices without changing their ide
  assert.deepEqual(move([song,interview,song],0,-1),[song,interview,song]);
  assert.deepEqual(move([song,interview],0,1),[interview,song]);
  assert.equal(minutes("19:45"),1185);
+});
+
+test("the existing authenticated Crate page owns the real feature editor, not a second radio backend",()=>{
+ const page=readFileSync("fm/load/index.html","utf8");
+ const loader=readFileSync("fm/load/loader.js","utf8");
+ const desk=readFileSync("fm/load/feature-desk.mjs","utf8");
+ const manifest=JSON.parse(readFileSync("fm/load/manifest.webmanifest","utf8"));
+ for(const id of ["feature-desk","feature-track","feature-order","feature-save","feature-days"])
+  assert.match(page,new RegExp('id="'+id+'"'));
+ assert.match(loader,/import \{mountFeatureDesk\} from "\.\/feature-desk\.mjs"/);
+ assert.match(loader,/rows:\(\)=>activeUser\?known:\[\]/);
+ assert.match(desk,/db\.from\("humkin_radio_programs"\)/);
+ assert.match(desk,/\.insert\(packet\)/);
+ assert.match(desk,/\.select\("id,kind,enabled,published_at,duration_seconds"\)/);
+ assert.match(desk,/is_active/);
+ assert.match(page,/Cloud HOUSE.*?separate/);
+ assert.match(page,/rel="manifest"/);
+ assert.equal(manifest.start_url,"./");
+ assert.equal(manifest.display,"standalone");
 });
