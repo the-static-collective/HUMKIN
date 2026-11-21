@@ -20,7 +20,7 @@ from autopilot_publisher import (BUCKET, SCHEMA, _encoded_segments,
                                   public_program, publish_program,
                                   validate_hosted_program, utcnow)
 from catalog_sources import r2_public_url
-from tower_asset_store import read_manifest, publish_asset
+from tower_asset_store import read_manifest, publish_asset, certify_legacy_asset
 from house_rotation import (FULL, catalog_rows, make_selection,
                             validate_selection)
 
@@ -152,6 +152,34 @@ def prepare_delta(selection, existing, cache, *, downloader=verified_remote_file
                     "program_entries": len(result), "segments": total_segments}
 
 
+def backfill_previous(client, existing, approved_rows, *, limit=5):
+    """Turn up to five *still-approved* historic AAC assets into durable blobs.
+
+    This is independent of playlist changes and skips anything not currently
+    approved by the published R2 catalog. It never writes a station pointer.
+    """
+    if not existing:
+        return 0
+    if type(limit) is not int or not 0 <= limit <= 10:
+        raise ValueError("Invalid bounded AAC backfill limit.")
+    current = {r.get("sha256") for r in approved_rows if isinstance(r, dict)
+               and r.get("enabled") is True and r.get("published_at")
+               and r.get("storage_provider") == "r2"}
+    count = 0
+    for digest, durations in encoded_sources(existing, existing["station_id"]).items():
+        if count >= limit:
+            break
+        if digest not in current:
+            continue
+        if read_manifest(client, digest, expected_durations=durations) is not None:
+            continue
+        summary = certify_legacy_asset(client, digest, durations)
+        count += 1
+        print(f"AAC legacy backfill {count}/{limit}: {digest[:12]} — "
+              f"{summary['segments']} segments certified; no FFmpeg", flush=True)
+    return count
+
+
 def read_cloud(client, station):
     """Read existing pointer only; fail on errors other than object not found."""
     key = f"autopilot/programs/{station}.json"
@@ -183,6 +211,8 @@ def sync(*, client, cache, selection=None, read_catalog=catalog_rows,
     chosen = selection or plan(current_rows)
     validate_selection(chosen, current_rows)
     old = read_cloud(client, chosen["station_id"])
+    historic_backfills = (backfill_previous(client, old, current_rows) if
+                          durable_assets and commit and old else 0)
     controlled = chosen
     commands = []
     control_state = None
@@ -197,6 +227,7 @@ def sync(*, client, cache, selection=None, read_catalog=catalog_rows,
                                                      previous, commands)
     if not needs_refresh(controlled, old) and not commands:
         return {"state": "unchanged", "fingerprint": controlled["fingerprint"],
+                "legacy_assets_certified": historic_backfills,
                 "entries": len(controlled["tracks"])}
     tracks, counts = prepare_delta(controlled, old, cache,
                                    downloader=downloader, encode=encode,
@@ -232,6 +263,7 @@ def sync(*, client, cache, selection=None, read_catalog=catalog_rows,
         # revision races; media is uploaded before the pointer changes.
         publish_program(program, Path(cache), client, new_revision_count=1)
     return {**counts, "state": "published" if commit else "preview",
+            "legacy_assets_certified": historic_backfills,
             "fingerprint": controlled["fingerprint"],
             "control_cursor": control_state["cursor"] if control_state else None,
             "revision": program["revisions"][-1]["id"],
