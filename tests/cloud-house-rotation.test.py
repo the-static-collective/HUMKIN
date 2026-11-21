@@ -177,6 +177,94 @@ class CloudHouseRotationTest(unittest.TestCase):
                         publisher.prepare_tracks(manifest, cache, publish=True)
                 self.assertFalse(list(cache.glob("*.mp3")))
 
+    def test_full_catalog_includes_short_song_and_preserves_bumper_brain(self):
+        """The source-owned 3-lane planner, not simple every-N bumpers, runs in cloud."""
+        rows = []
+        for i in range(50):
+            uid = f"00000000-0000-4000-8000-{i + 200:012d}"
+            digest = sha256(uid.encode()).hexdigest()
+            rows.append({
+                "id": uid, "sha256": digest,
+                "r2_object_key": f"tracks/{uid}/{digest}.mp3",
+                "title": f"Approved public song {i}", "artist": "HUMKIN" if i % 2 else "Hailey Lu",
+                "album": "TEST HOUSE", "duration_seconds": 22.854 if i == 0 else 188.0,
+                "published_at": "2026-11-21T00:00:00+00:00",
+                "enabled": True, "kind": "song", "storage_provider": "r2",
+            })
+        for i, duration in enumerate((7.0, 13.5, 41.0, 94.0, 262.5)):
+            uid = f"00000000-0000-4000-8000-{i + 600:012d}"
+            digest = sha256(uid.encode()).hexdigest()
+            rows.append({
+                "id": uid, "sha256": digest,
+                "r2_object_key": f"tracks/{uid}/{digest}.mp3",
+                "title": f"Approved bumper {i}", "artist": "HUMKIN",
+                "album": "STATION BUMPERS", "duration_seconds": duration,
+                "published_at": "2026-11-21T00:00:00+00:00",
+                "enabled": True, "kind": "bumper", "storage_provider": "r2",
+            })
+        settings = {"bumper_every": 4, "bumper_groups": [], "bumper_rules": []}
+        policy = {"short_max_seconds": 19, "medium_max_seconds": 60,
+                  "maximum_break_seconds": 180, "medium_target_seconds": 690,
+                  "long_target_seconds": 1350, "feature_only_spoken_sha256s": []}
+        packet = make_selection(rows, count="FULL", bumper_settings=settings, bumper_policy=policy)
+        self.assertEqual(packet, make_selection(list(reversed(rows)), count="FULL",
+                                                 bumper_settings=settings, bumper_policy=policy))
+        self.assertEqual(packet["source"], "approved-public-r2-catalog+bumper-brain/v1")
+        self.assertEqual(packet["song_count"], 50)
+        self.assertEqual(packet["eligible_bumper_count"], 4)
+        self.assertEqual(packet["held_bumper_count"], 1)  # oversize show feature
+        self.assertGreater(packet["bumper_break_count"], 10)
+        self.assertLessEqual(len(packet["tracks"]), 500)
+        self.assertEqual(len({t["id"] for t in packet["tracks"] if t["kind"] == "song"}), 50)
+        self.assertTrue(any(t["duration_seconds"] < 30 and t["kind"] == "song"
+                            for t in packet["tracks"]))
+        song_boundary = 0
+        short_boundaries = []
+        lanes = set()
+        for track in packet["tracks"]:
+            if track["kind"] == "song":
+                song_boundary += 1
+            else:
+                seconds = track["duration_seconds"]
+                lanes.add("short" if seconds <= 19 else "medium" if seconds < 60 else "long")
+                if seconds <= 19:
+                    short_boundaries.append(song_boundary)
+        self.assertEqual(lanes, {"short", "medium", "long"})
+        self.assertTrue(all(n > 1 and (i == 0 or n - short_boundaries[i-1] >= 2)
+                            for i, n in enumerate(short_boundaries)))
+        self.assertEqual(validate_selection(packet, rows, bumper_settings=settings,
+                                            bumper_policy=policy), "station-one")
+        self.assertEqual(len(crate_from_selection(packet)["tracks"]), len(packet["tracks"]))
+        altered = dict(settings, bumper_every=3)
+        with self.assertRaisesRegex(ValueError, "changed"):
+            validate_selection(packet, rows, bumper_settings=altered, bumper_policy=policy)
+        edited = json.loads(json.dumps(packet))
+        edited["tracks"][1]["title"] = "UNREVIEWED INTERRUPTION"
+        edited["fingerprint"] = fingerprint(edited)
+        with self.assertRaisesRegex(ValueError, "changed"):
+            validate_selection(edited, rows, bumper_settings=settings, bumper_policy=policy)
+        revoked = json.loads(json.dumps(rows))
+        revoked[0]["enabled"] = False
+        with self.assertRaises(ValueError):
+            validate_selection(packet, revoked, bumper_settings=settings, bumper_policy=policy)
+
+    def test_full_catalog_rejects_time_window_bumper_rules(self):
+        rows = clean_rows(source_rows())
+        row = dict(rows[0])
+        row["id"] = "a" * 8 + "-0000-4000-8000-000000000010"
+        row["sha256"] = sha256(row["id"].encode()).hexdigest()
+        row["r2_object_key"] = f"tracks/{row['id']}/{row['sha256']}.mp3"
+        row["kind"] = "bumper"
+        row["duration_seconds"] = 9.0
+        rows.append(row)
+        settings = {"bumper_every": 4, "bumper_groups": [],
+                    "bumper_rules": [{"enabled": True, "kind": "daypart",
+                    "track_ids": [row["id"]], "days": [0], "start_minute": 0,
+                    "end_minute": 360}]}
+        with self.assertRaisesRegex(ValueError, "Time-limited bumper"):
+            make_selection(rows, count="FULL", bumper_settings=settings,
+                           bumper_policy={"feature_only_spoken_sha256s": []})
+
     def test_short_final_hls_tail_retries_without_relaxing_segment_contract(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
