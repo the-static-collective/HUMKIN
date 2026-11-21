@@ -4,6 +4,8 @@ on:
     paths:
       - 'tools/radio-broadcast/**'
       - 'tests/station-one-v2.test.py'
+      - 'tests/cloud-house-delta.test.py'
+      - 'tools/radio-broadcast/cloud_house_sync.py'
       - 'tests/station-lab.test.py'
       - 'tests/radio-broadcast.test.py'
       - '.github/workflows/station-one-v2.yml'
@@ -12,6 +14,8 @@ on:
     paths:
       - 'tools/radio-broadcast/**'
       - 'tests/station-one-v2.test.py'
+      - 'tests/cloud-house-delta.test.py'
+      - 'tools/radio-broadcast/cloud_house_sync.py'
       - 'tests/station-lab.test.py'
       - '.github/workflows/station-one-v2.yml'
   workflow_dispatch:
@@ -50,6 +54,7 @@ jobs:
           python tests/tower-cloud-handoff.test.py
           python tests/autopilot-remote-media.test.py
           python tests/cloud-house-rotation.test.py
+          python tests/cloud-house-delta.test.py
           python tests/test_gambit_program_deck.py
           python tests/tower.test.py
           python tests/station-on-air.test.py
