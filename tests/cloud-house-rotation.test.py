@@ -265,6 +265,27 @@ class CloudHouseRotationTest(unittest.TestCase):
             make_selection(rows, count="FULL", bumper_settings=settings,
                            bumper_policy={"feature_only_spoken_sha256s": []})
 
+    def test_full_worker_limits_are_checked_before_any_r2_publication(self):
+        base = {"id": "song", "title": "Song", "artist": "HUMKIN",
+                "album": "", "artwork": "", "asset_sha": "a" * 64,
+                "durations_ms": [8000]}
+        template = {"schema": publisher.SCHEMA, "station_id": "station-one",
+                    "revisions": [{"id": "preview", "effective_at":
+                    "2026-11-21T00:00:00.000Z", "tracks": [base]}]}
+        publisher.validate_hosted_program(template)
+        too_many = json.loads(json.dumps(template))
+        too_many["revisions"][0]["tracks"] = [base] * 501
+        with self.assertRaisesRegex(ValueError, "500"):
+            publisher.validate_hosted_program(too_many)
+        too_many_segments = json.loads(json.dumps(template))
+        too_many_segments["revisions"][0]["tracks"][0]["durations_ms"] = [8000] * 10001
+        with self.assertRaisesRegex(ValueError, "10,000"):
+            publisher.validate_hosted_program(too_many_segments)
+        invalid = json.loads(json.dumps(template))
+        invalid["revisions"][0]["tracks"][0]["durations_ms"] = [8000, 90]
+        with self.assertRaisesRegex(ValueError, "segment duration"):
+            publisher.validate_hosted_program(invalid)
+
     def test_short_final_hls_tail_retries_without_relaxing_segment_contract(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
