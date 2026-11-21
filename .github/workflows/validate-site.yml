@@ -58,6 +58,10 @@ jobs:
       - run: node tests/radio-loader.test.mjs
       - run: node --test tests/tower-sidecars.test.mjs
       - run: node --test tests/night-shift-cloud-publish.test.mjs
+      - run: node --test tests/tower-cloud-incremental-sync.test.mjs
+      - run: node --test tests/tower-cloud-receipt.test.mjs
+      - run: node --check fm/load/cloud-house-receipt.mjs
+      - run: python3 tests/cloud-house-delta.test.py
       - run: node --test tests/living-crate-feature.test.mjs
       - run: node --check fm/load/feature-core.mjs
       - run: node --check fm/load/feature-desk.mjs

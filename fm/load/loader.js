@@ -7,6 +7,7 @@ import {r2Direct,putPrivateMp3} from "./r2-direct-client.mjs";
 import {inferFileMetadata,parseLayout,titleFromFile} from "./folder-metadata.mjs";
 import {inspectTowerFolder,towerAudioDigest} from "./tower-sidecars.mjs";
 import {mountFeatureDesk} from "./feature-desk.mjs";
+import {mountCloudReceipt} from "./cloud-house-receipt.mjs";
 
 const API = "https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY = "sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public, RLS-scoped key. Never a secret/service key.
@@ -585,5 +586,6 @@ async function updateSession(){
 }
 db.auth.onAuthStateChange((_event,_session)=>{setTimeout(updateSession,0)});
 featureDesk=mountFeatureDesk({db,rows:()=>activeUser?known:[],onStatus:message=>log("Feature Desk: "+message)});
+mountCloudReceipt();
 installProtonLogin({mount:$("proton-loader"),getClient:async()=>db,onSignedIn:updateSession});
 updateSession();

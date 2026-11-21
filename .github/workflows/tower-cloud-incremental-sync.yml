@@ -1,0 +1,81 @@
+name: HUMKIN TOWER — incremental Cloud HOUSE sync
+
+# The schedule is deliberately dark by default. Owner switches on the repo
+# variable HUMKIN_CLOUD_AUTOPUBLISH=ENABLED only after field verification.
+# Manual owner dispatch needs only one explicit confirmation, no fingerprint.
+# Existing reviewed-fingerprint publisher remains unchanged.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Only already approved/published catalog items; no upload from phone requests"
+        type: choice
+        required: true
+        default: HOLD
+        options:
+          - HOLD
+          - SYNC_APPROVED_CATALOG
+  schedule:
+    - cron: '17,47 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: humkin-reviewed-cloud-house-station-one
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.confirmation == 'SYNC_APPROVED_CATALOG') ||
+       (github.event_name == 'schedule' && vars.HUMKIN_CLOUD_AUTOPUBLISH == 'ENABLED'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the pinned encoder and scoped R2 client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          command -v ffmpeg
+          python -m pip install boto3==1.40.70
+
+      - name: Prove the selected public catalog is approved, eligible and bounded
+        run: |
+          python tools/radio-broadcast/cloud_house_sync.py \
+            --cache "$RUNNER_TEMP/humkin-house-delta"
+      - name: Confirm dedicated live-bucket credentials are present
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HUMKIN_R2_LIVE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HUMKIN_R2_LIVE_SECRET_ACCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import os,re
+          if not re.fullmatch('[a-fA-F0-9]{32}',os.getenv('CLOUDFLARE_ACCOUNT_ID','')):
+              raise SystemExit('HOLD: missing existing CLOUDFLARE_ACCOUNT_ID secret')
+          if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
+              raise SystemExit('HOLD: dedicated humkin-radio-live R2 secrets missing')
+          print('Scoped live-bucket credentials present (values withheld).')
+          PY
+
+      - name: Reuse cloud AAC segments; encode only new approved hashes; publish on song boundary
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HUMKIN_R2_LIVE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HUMKIN_R2_LIVE_SECRET_ACCESS_KEY }}
+        run: |
+          python tools/radio-broadcast/cloud_house_sync.py \
+            --cache "$RUNNER_TEMP/humkin-house-delta" --sync
+
+      - name: Check the public Cloud HOUSE status without treating it as physical audio proof
+        run: |
+          curl --fail --silent --show-error --max-time 20 \
+            https://humkin-long-wave.joyvolcanomusic.workers.dev/health > /dev/null
+          echo 'Long Wave is reachable. Verify actual listener playback separately.'
