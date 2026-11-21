@@ -33,7 +33,10 @@ test("previews before publishing, retaining existing private source pin / revali
   assert.match(publish,/python tools\/radio-broadcast\/autopilot_publisher\.py/g);
   assert.match(publish,/rechecks current R2 program revision/);
   assert.match(publish,/Get|put_object|R2 program pointer VERIFIED/i);
-  assert.match(publish,/timeout-minutes: 90/);
+  assert.match(publish,/timeout-minutes: 240/);
+  assert.match(publish,/count not in \(12,18,24,40,'FULL'\)/);
+  assert.match(draft,/          - 'FULL'/);
+  assert.match(publish,/          - 'FULL'/);
 });
 test("cloud runner installs FFmpeg instead of assuming preinstalled image tools",()=>{
   assert.match(publish,/sudo apt-get install -y -qq ffmpeg/);
