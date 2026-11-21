@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#241b31"><meta name="robots" content="noindex,follow">
+<meta name="description" content="A HUMKIN Living Relic: an address that stays still while the story grows.">
+<title>THE LIVING RELIC · HUMKIN</title>
+<style>
+:root{color-scheme:dark;--ink:#faebd0;--gold:#efbd6e;--muted:#cbc1d3;--edge:#67566e}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 85% 0,#62405e,transparent 40%),radial-gradient(ellipse at 0 80%,#145157,transparent 50%),#241b31;color:var(--ink);font:16px/1.55 system-ui,sans-serif}
+a{color:var(--gold)}button,select,textarea,input{font:inherit}button{cursor:pointer;border:1px solid var(--gold);background:var(--gold);color:#251d2d;border-radius:30px;padding:11px 16px;font-weight:750}button:disabled{opacity:.45;cursor:not-allowed}button.ghost{background:transparent;color:var(--ink);border-color:var(--edge)}button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #a7e2ce;outline-offset:3px}
+header,main,footer{width:min(1080px,94%);margin:auto}header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:22px 0}header a{font-weight:800;font-size:13px;text-decoration:none;letter-spacing:.06em}header .brand{font-size:24px;color:var(--ink)}
+.hero{padding:38px 0;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:36px}
+.eyebrow,.step{font-size:12px;letter-spacing:.16em;color:var(--gold);font-weight:850}h1{font:normal clamp(55px,9vw,104px)/.87 Georgia,serif;letter-spacing:-.08em;margin:18px 0}h1 em{color:#abdfd4}h2{font:normal clamp(30px,4vw,46px)/1.08 Georgia,serif;margin:10px 0 16px}h3{font-size:19px;margin:8px 0}.intro{font-size:19px;color:var(--muted)}
+.ticket{border:2px solid #cab084;background:linear-gradient(130deg,#f7d9ae,#d1e9da 52%,#cdb3d7);color:#281e33;border-radius:19px;min-height:340px;padding:28px;display:flex;flex-direction:column;justify-content:space-between;transform:rotate(2deg);box-shadow:12px 14px 0 #100e1a55}
+.ticket strong{font:normal clamp(45px,6vw,72px)/.9 Georgia,serif;letter-spacing:-.07em}.ticket .code{font-size:13px;border-top:2px dashed #78657d;padding-top:14px;word-break:break-all}.ticket a{color:#342240}
+.notice{background:#163139;border-left:4px solid #a7dfd2;padding:13px 19px;border-radius:6px;font-size:14px}
+.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:25px 0 30px}.stage,.panel{background:#33283eeb;border:1px solid var(--edge);border-radius:19px;padding:23px}.stage p{margin:6px 0;color:var(--muted);font-size:14px}
+.sections{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:38px}.panel p{color:var(--muted)}.buttons{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:15px 0}.status{min-height:22px;font-size:13px;color:#b0ead3}.note{background:#201a2a;border-radius:12px;padding:14px;color:var(--ink)!important}.revisions{display:flex;gap:9px;flex-wrap:wrap}.revisions button[aria-pressed=true]{background:#a8e1d3;border-color:#a8e1d3}textarea{display:block;width:100%;min-height:100px;padding:10px;background:#201a2a;color:var(--ink);border:1px solid #897b93;border-radius:11px;margin:12px 0;resize:vertical}audio{width:100%;margin:5px 0 10px}#local-play{display:none}[hidden]{display:none!important}footer{border-top:1px solid var(--edge);padding:24px 0 40px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:13px}
+@media(max-width:760px){.hero,.stages,.sections{grid-template-columns:1fr}.hero{padding-top:18px}.ticket{min-height:265px;transform:none}}
+@media print{body{background:white;color:black}header,.notice,.stages,.sections,footer{display:none!important}.ticket{box-shadow:none;transform:none;max-width:4in;min-height:5.7in}.hero{display:block}}
+
+.workshop{margin:12px 0 48px;border-top:2px dashed #997c84;padding-top:34px}
+.workshop>h2{max-width:850px}.work-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.work-panel{background:#32273deb;border:1px solid var(--edge);border-radius:19px;padding:23px}
+.work-panel.full{grid-column:1/-1}.work-panel label{display:block;margin:9px 0 5px}
+.work-panel input:not([type=checkbox]):not([type=file]),.work-panel select{width:100%;padding:10px;background:#201a2a;color:var(--ink);border:1px solid #897b93;border-radius:11px}
+.work-panel input[type=file]{max-width:100%;padding:8px 0}
+.work-panel fieldset{border:1px solid #776780;border-radius:13px;margin:12px 0;padding:12px}
+.work-panel fieldset label{margin:8px 0}.work-panel fieldset input{margin-right:7px}
+.work-panel output,.work-panel .readout{display:block;white-space:pre-wrap;overflow-wrap:anywhere;background:#211a2d;border:1px solid #554765;border-radius:10px;padding:14px;font:13px/1.6 ui-monospace,monospace;min-height:45px;margin:10px 0}
+.work-panel .small{font-size:13px;color:var(--muted)}
+.work-panel .ghost{min-height:38px}.work-panel .destructive{border-color:#e6a8a9;color:#f4b7be;background:transparent}
+@media(max-width:760px){.work-grid{grid-template-columns:1fr}.work-panel.full{grid-column:auto}}
+@media print{.workshop{display:none!important}}
+</style><script type="module" src="./living-relic.js"></script><script type="module" src="./living-relic.porch.js"></script></head>
+<body>
+<header><a class="brand" href="./">HUMKIN ✳</a><a href="./surprise.html">THE LITTLE MUSIC RELAY</a></header>
+<main>
+<section class="hero"><div><p class="eyebrow">SPECIMEN 001 · THE LIVING RELAY</p><h1>ONE CARD.<br><em>MANY LIVES.</em></h1><p class="intro">A small gift, a possible encounter, and a song returning to where it started.</p><p>Nothing plays automatically. A scan does not prove anyone received a gift.</p></div>
+<div class="ticket"><span>HUMKIN · LIVING RELIC 001</span><strong>TAKE<br>WHAT<br>HELPS.</strong><div class="code"><span id="stable-url">Loading fixed address…</span><br><a id="share-link" href="#">OPEN THE FIXED LINK</a></div></div></section>
+<p class="notice">EXPERIMENTAL / SYNTHETIC · No real delivery is claimed. NO UPLOAD: recordings and notes stay on this device unless you export them yourself.</p>
+<div class="stages"><div class="stage"><span class="step">03 · LIVING RELIC</span><h3>The invitation</h3><p>One address, multiple preserved revisions.</p></div>
+<div class="stage"><span class="step">01 · GIFTWAVE</span><h3>The consequence</h3><p>A reported act cannot unlock anything without confirmation.</p></div>
+<div class="stage"><span class="step">02 → 03 · MUSIC</span><h3>The return</h3><p>An original musical proposal can return to this same relic.</p></div></div>
+<div class="sections">
+<section class="panel"><span class="step">03 · THE RELIC</span><h2 id="song-heading">The first transmission</h2><div id="revisions" class="revisions" aria-label="Historical revisions"></div><p id="relic-story">Loading…</p><div id="songs"></div><p>Older versions remain accessible. The printed link always opens the current version.</p><div class="buttons"><button class="ghost" type="button" id="copy-link">COPY FIXED LINK</button></div><p id="link-status" class="status" role="status"></p></section>
+<section class="panel"><span class="step">01 · GIFTWAVE</span><h2>An act can open a door.</h2><p>This is a fictional confirmation test. Disable it to verify that a report alone cannot activate the proposals.</p><label><input id="fixture-confirmed" type="checkbox" checked> Admit synthetic confirmation</label><p id="gift-status" class="note" role="status">Checking fixture…</p><p>Game result: <strong id="game-status">HELD</strong>. No actual Jubilee or Outpost state changes.</p></section>
+<section class="panel"><span class="step">OPTIONAL · LOCAL ONLY</span><h2>A thought you can carry.</h2><label for="local-note">Write a thought or memory</label><textarea id="local-note" maxlength="2000" placeholder="This remains here unless you export it."></textarea><div class="buttons"><button class="ghost" id="export-note" type="button">EXPORT NOTE</button><a id="download-note" hidden>DOWNLOAD NOTE</a></div><p>Or record your voice. Microphone permission is requested only if you press record. No files leave your device automatically.</p><div class="buttons"><button id="record" type="button">RECORD LOCALLY</button><a id="download-recording" hidden>DOWNLOAD RECORDING</a></div><audio id="local-play" controls aria-label="Your private recording"></audio><p class="status" id="record-status" role="status">Ready. No remote storage.</p></section>
+<section class="panel"><span class="step">02 · HAUNTED FREQUENCY</span><h2>Listen to a consequence.</h2><p>A newly calculated eight-note motif from the synthetic event seed. Not a remix, not a Haunted Phonograph render, and not on air.</p><div class="buttons"><button id="play-motif" type="button" disabled>PLAY ORIGINAL MOTIF</button></div><p class="note" id="music-status">HELD · waiting for fixture</p><p id="music-notes" aria-label="Musical note proposal"></p><p>The motif remains a proposal, never a published recording or proof of the gift.</p></section>
+</div>
+<section class="workshop" aria-labelledby="porch-title">
+<p class="eyebrow">RELAY 002 · STATIC LIVE KINSHIP 004 + 007 ADAPTATION</p>
+<h2 id="porch-title">A porch for the things people leave.</h2>
+<p class="intro">An encounter can produce a contribution. But receiving something is not permission to reuse it. This workspace runs privately in your browser, with no account, upload, publication or persistent storage.</p>
+<p class="notice">NO UPLOAD · LOCAL DEMONSTRATION ONLY. Operator labels and release checks here are your own local assertions, not verified identities or rights. Contributions disappear on page reload unless you explicitly export a private JSON copy. Uploaded media bytes stay on your device.</p>
+<div class="work-grid">
+<section class="work-panel" aria-labelledby="gift-create-title">
+<span class="step">3 → PORCH · PARTICIPANT CHANNEL</span><h3 id="gift-create-title">Offer a living gift</h3>
+<p class="small">Every permission starts unchecked. A private offer creates no public gallery, music sample, broadcast or contribution to the published relic.</p>
+<label for="gift-title">Gift title</label><input id="gift-title" maxlength="120" placeholder="A little note from the road">
+<label for="gift-kind">What are you offering?</label>
+<select id="gift-kind"><option value="statement">Written statement</option><option value="audio">Audio / voice recording</option><option value="photo">Photo</option><option value="video">Video</option></select>
+<label for="gift-attribution">Credit as (optional)</label><input id="gift-attribution" maxlength="80" placeholder="Anonymous">
+<label for="gift-note">Words or caption</label><textarea id="gift-note" maxlength="2000" placeholder="A note to accompany this gift…"></textarea>
+<label for="gift-media">Media file (required for audio, photo or video; processed locally)</label>
+<input id="gift-media" type="file" accept="audio/webm,audio/ogg,audio/mpeg,audio/mp4,audio/wav,image/jpeg,image/png,image/webp,video/mp4,video/webm">
+<label for="gift-rights">Permission/release evidence reference (required before any use is admitted)</label>
+<input id="gift-rights" maxlength="160" placeholder="Your own release note or signed agreement reference">
+<label for="gift-ancestor">An earlier gift to relate to (optional; does not inherit consent)</label><select id="gift-ancestor"><option value="">No ancestor — new gift</option></select>
+<fieldset id="gift-offer"><legend>Uses I am willing to have separately reviewed</legend>
+<label><input type="checkbox" data-gift-use value="relic"> A local relic/story preview</label>
+<label><input type="checkbox" data-gift-use value="music"> Inspiration for a new musical proposal</label>
+<label><input type="checkbox" data-gift-use value="radio"> Consideration by a human radio editor</label>
+<label><input type="checkbox" data-gift-use value="archive"> Consideration for an archive</label>
+</fieldset>
+<div class="buttons"><button id="gift-create" type="button">LEAVE ON THE LOCAL PORCH</button></div>
+<p id="gift-status" class="status" role="status" aria-live="polite">Ready. Your contribution stays private until you explicitly export it.</p>
+</section>
+<section class="work-panel" aria-labelledby="gift-review-title">
+<span class="step">PORCH → REVIEW · OPERATOR DEMONSTRATION</span><h3 id="gift-review-title">Nothing enters by accident</h3>
+<label for="gift-list">Selected local contribution</label><select id="gift-list"><option value="">Nothing yet</option></select>
+<div class="readout" id="gift-detail">No arrivals yet.</div>
+<label for="gift-review">Reviewer label (not authenticated)</label><input id="gift-review" maxlength="100" placeholder="human:local-operator-demo">
+<div class="buttons">
+<button id="gift-porch-welcome" class="ghost" type="button">WELCOME TO PORCH</button>
+<button id="gift-porch-hold" class="ghost" type="button">HOLD</button>
+<button id="gift-porch-refuse" class="ghost" type="button">REFUSE</button>
+</div>
+<p class="small">WELCOME permits consideration only. Separate admission of an individual use still requires a release check and current access to exact media bytes.</p>
+<label for="gift-use">Review one use</label><select id="gift-use">
+<option value="relic">Relic/story preview</option><option value="music">Musical influence</option>
+<option value="radio">Radio consideration</option><option value="archive">Archive consideration</option>
+</select>
+<label for="gift-release-check">Release check evidence or review reference</label>
+<input id="gift-release-check" maxlength="200" placeholder="Reviewed permission on this date">
+<div class="buttons">
+<button id="gift-use-admit" type="button">ADMIT THIS USE LOCALLY</button>
+<button id="gift-use-hold" class="ghost" type="button">HOLD THIS USE</button>
+<button id="gift-use-refuse" class="ghost" type="button">REFUSE THIS USE</button>
+</div>
+<p id="gift-use-status" class="status" role="status">HELD · no admission.</p>
+<label for="gift-reattach-file">Reattach exact local media after import (when required)</label>
+<input id="gift-reattach-file" type="file" accept="audio/webm,audio/ogg,audio/mpeg,audio/mp4,audio/wav,image/jpeg,image/png,image/webp,video/mp4,video/webm">
+<div class="buttons"><button id="gift-reattach" class="ghost" type="button">VERIFY EXACT MEDIA BYTES</button>
+<button id="gift-withdraw" class="destructive" type="button">WITHDRAW THIS GIFT</button></div>
+</section>
+<section class="work-panel" aria-labelledby="gift-preview-title">
+<span class="step">3 · LOCAL RELIC PROJECTION</span><h3 id="gift-preview-title">What can this relic carry?</h3>
+<output id="gift-preview">HOLD · no locally admitted contribution.</output>
+<p class="small">Local demonstration only. A preview does not update the public JSON, the QR target, or the original human's recorded material.</p>
+<p id="gift-radio-status" class="status">No radio consideration has been reviewed.</p>
+</section>
+<section class="work-panel" aria-labelledby="gift-influence-title">
+<span class="step">1 → 2 → 3 · CONSENTED INFLUENCE</span><h3 id="gift-influence-title">A sound can return.</h3>
+<p>The synthetic Giftwave confirmation must still be enabled above, and the contributor must explicitly offer music use and receive a distinct local review. No original recording bytes are sampled.</p>
+<div class="buttons"><button id="gift-influence" type="button" disabled>PLAY CONSENTED MOTIF VARIATION</button></div>
+<output id="gift-music-status">HELD · no approved local music influence.</output>
+</section>
+<section class="work-panel full" aria-labelledby="gift-handoff-title">
+<span class="step">KINSHIP 004 · SHIFT HANDOFF</span><h3 id="gift-handoff-title">Carry a pocket elsewhere, not its authority.</h3>
+<p>Exporting downloads private text, credit labels, media hashes and review history. It contains no raw audio/photo/video bytes. Importing another copy always invalidates previous approvals; exact media and scoped reviews must be supplied again.</p>
+<div class="buttons"><button id="gift-export" type="button" class="ghost">EXPORT PRIVATE POCKET JSON</button><a id="gift-export-link" hidden>DOWNLOAD PRIVATE POCKET</a></div>
+<label for="gift-import">Choose an exported pocket file (never auto-imported)</label><input type="file" id="gift-import" accept="application/json,.json">
+<div class="buttons"><button type="button" id="gift-import-apply" class="ghost">REPLACE THIS LOCAL POCKET WITH HELD IMPORT</button></div>
+<p class="small">An exported file is sensitive. Store it carefully. Withdrawal blocks new use here; it cannot recall a copy someone already received, or remove material from external systems automatically.</p>
+</section>
+</div>
+</section>
+
+</main><footer><span>THE LIVING RELAY · HUMKIN</span><a href="./">BACK TO THE RECORD</a><span>NO AUTOPLAY · NO TRACKING · NO UPLOAD</span></footer></body></html>
