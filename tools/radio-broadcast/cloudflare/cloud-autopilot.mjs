@@ -23,6 +23,23 @@ function timestamp(raw) {
   requireValue(Number.isFinite(value), "INVALID_TIME");
   return value;
 }
+function safeControl(raw) {
+  if(raw==null)return null;
+  requireValue(raw && raw.schema === "humkin.tower.living-control/v1" &&
+    Number.isSafeInteger(raw.cursor) && raw.cursor>=0,"INVALID_CONTROL_STATE");
+  let last = null;
+  if(raw.last_action != null) {
+    const item=raw.last_action;
+    requireValue(item && Number.isSafeInteger(item.id) &&
+      item.id<=raw.cursor && item.id>0 &&
+      /^(?:queue_next|queue_end|hold|release|more|less)$/.test(item.action) &&
+      typeof item.track_id==="string" &&
+      /^[a-f0-9-]{36}$/.test(item.track_id),"INVALID_CONTROL_RECEIPT");
+    last={id:item.id,action:item.action,track_id:item.track_id};
+  }
+  return {cursor:raw.cursor,last_action:last};
+}
+
 function buildRevision(raw) {
   requireValue(raw && ID.test(raw.id), "INVALID_REVISION_ID");
   const epoch = timestamp(raw.effective_at);
@@ -53,7 +70,8 @@ function buildRevision(raw) {
   }
   requireValue(offset > 0 && offset <= 7 * 24 * 3600 * 1000, "INVALID_CYCLE_LENGTH");
   return {id: raw.id, epoch, tracks, segments, trackSpans, cycleMs: offset,
-    discontinuitiesPerCycle: tracks.length, maxSegment, baseSeq: 0, baseDisc: 0};
+    discontinuitiesPerCycle: tracks.length, maxSegment, baseSeq: 0, baseDisc: 0,
+    control:safeControl(raw.control)};
 }
 function locationInRevision(rev, time) {
   const elapsed = time - rev.epoch;
@@ -189,7 +207,15 @@ export function publicSchedule(program, now = Date.now()) {
       .map(revision => ({revision: revision.id,
         effective_at_utc: new Date(revision.epoch).toISOString(),
         track_count: revision.tracks.length})),
-    truncated: cursor < deadline && upcoming.length >= maxEntries
+    truncated: cursor < deadline && upcoming.length >= maxEntries,
+    // These are *schedule* receipts. A caller must also check on_air and
+    // now-playing before claiming any given recording actually played.
+    control: {
+      effective_cursor: active.control?.cursor ?? 0,
+      pending_cursor: following?.control?.cursor ?? null,
+      last_effective_action: active.control?.last_action ?? null,
+      last_pending_action: following?.control?.last_action ?? null
+    }
   };
 }
 
