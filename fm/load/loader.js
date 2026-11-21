@@ -5,6 +5,7 @@ import * as tus from "https://esm.sh/tus-js-client@4.3.1";
 import {r2Bridge} from "../r2-bridge-client.js";
 import {r2Direct,putPrivateMp3} from "./r2-direct-client.mjs";
 import {inferFileMetadata,parseLayout,titleFromFile} from "./folder-metadata.mjs";
+import {inspectTowerFolder,towerAudioDigest} from "./tower-sidecars.mjs";
 
 const API = "https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY = "sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public, RLS-scoped key. Never a secret/service key.
@@ -71,7 +72,8 @@ function drawQueue(){
      (item.duration?" · "+fmtTime(item.duration):"")+
      (item.folderInfo?.genre?" · GENRE "+item.folderInfo.genre:"")+
      (item.folderInfo?.collection?" · COLLECTION "+item.folderInfo.collection:"")+
-     (item.folderInfo?.disc?" · "+item.folderInfo.disc:"");
+     (item.folderInfo?.disc?" · "+item.folderInfo.disc:"")+
+     (item.towerDigest&&!item.towerMeta?" · TOWER SIDECAR MISSING: CHECK TITLE":"");
    row.className="queue-controls";
    for(const [field,limit] of [["title",120],["artist",160],["album",160]]){
      const input=document.createElement("input");input.type="text";input.maxLength=limit;
@@ -140,7 +142,7 @@ async function scanDurations(){
    }
  }));
 }
-async function addFiles(files){
+async function addFiles(files,towerScan=null){
  const existing=new Set(selected.map(x=>[
    x.file.webkitRelativePath||x.file.name,x.file.size,x.file.lastModified].join("|")));
  try{parseLayout(currentLayout())}catch(error){feedback(error.message);return}
@@ -150,11 +152,47 @@ async function addFiles(files){
    if(existing.has(key))continue;existing.add(key);
    const item={file,status:"READY",duration:0,kind:"song",
      title:titleFromName(file.name),artist:"",album:"",edited:{title:false,artist:false,album:false}};
-   inferItem(item);selected.push(item);
+   inferItem(item);
+   // Imported Tower audio has a matching <SHA256>.json sidecar.
+   // Do not replace its editorial metadata with a hash filename.
+   const digestFromName=towerAudioDigest(file.name);
+   const sidecar=digestFromName&&towerScan?.metadata.get(digestFromName);
+   if(digestFromName){
+     item.towerDigest=digestFromName;
+     item.towerMeta=Boolean(sidecar);
+   }
+   if(sidecar){
+     item.title=sidecar.title;
+     item.artist=sidecar.artist||$("fallback-artist").value.trim();
+     item.album=sidecar.album||$("fallback-album").value.trim();
+     item.duration=sidecar.duration;item.kind=sidecar.kind;
+     for(const field of ["title","artist","album"])item.edited[field]=true;
+   }
+   selected.push(item);
  }
  refreshFolderRules();
  scanPromise=scanPromise.then(scanDurations);
  await scanPromise;
+}
+async function addTowerFolder(files){
+ try{
+   const report=await inspectTowerFolder(files);
+   const summary=report.towerAudioCount
+     ? "ACER TOWER: "+report.paired+" metadata pairs found in "+report.towerAudioCount+
+       " hash-named audio files; "+report.rejected+" invalid sidecars, "+
+       report.unpaired+" unmatched sidecars, "+report.unsupported+
+       " audio files requiring local MP3 conversion. No files uploaded."
+     : "Ordinary music folder selected. Inferring metadata from paths as before.";
+   $("tower-note").textContent=summary;
+   await addFiles(files,report);
+ }catch(error){feedback("Tower catalog scan failed: "+error.message)}
+}
+async function assertTowerSource(item,originalSha){
+ if(!item.towerDigest)return;
+ if(originalSha!==item.towerDigest)
+   throw Error("Tower audio bytes differ from the source SHA-256 filename. File withheld.");
+ if(!item.towerMeta&&!item.edited.title)
+   throw Error("Tower metadata sidecar missing. Edit this track's title explicitly before staging.");
 }
 async function convertWav(item){
  if(!window.lamejs?.Mp3Encoder) throw Error("WAV encoder not loaded. Retry online or use the desktop batch converter.");
@@ -290,6 +328,7 @@ async function stageDirect(){
    const mp3=isWav(item.file)||isM4a(item.file)?await convertWav(item):item.file;
    if(mp3.size>MAX_FILE)throw Error("MP3 exceeds 50 MiB; convert locally first.");
    const hash=await digest(mp3);
+   await assertTowerSource(item,mp3===item.file?hash:await digest(item.file));
    if(known.some(x=>x.sha256===hash&&x.storage_provider!=="r2_private")){
      skipped++;item.status="DUPLICATE";return;
    }
@@ -351,6 +390,7 @@ async function stage(){
        if(mp3.size>MAX_FILE)throw Error("MP3 larger than 50 MiB; use desktop converter at 128 kbps.");
        if(!(item.duration>0&&item.duration<14400))throw Error("Cannot determine track duration.");
        const sha=await digest(mp3);
+       await assertTowerSource(item,mp3===item.file?sha:await digest(item.file));
        if(known.some(x=>x.sha256===sha)){
          skipped++;item.status="DUPLICATE";drawQueue();continue;
        }
@@ -469,7 +509,7 @@ async function publishOne(selectedRow){
 }
 
 $("pick").addEventListener("change",e=>addFiles(e.target.files));
-$("pick-folder").addEventListener("change",e=>addFiles(e.target.files));
+$("pick-folder").addEventListener("change",e=>addTowerFolder(e.target.files));
 for(const field of ["folder-layout","folder-custom","fallback-artist","fallback-album"])
  $(field).addEventListener(field==="folder-layout"?"change":"input",refreshFolderRules);
 $("queue-search").addEventListener("input",drawQueue);
@@ -480,7 +520,7 @@ for(const event of ["dragleave","drop"]){drop.addEventListener(event,e=>{e.preve
 drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));
 $("stage").addEventListener("click",stage);
 $("cancel").addEventListener("click",()=>{stopRequested=true;feedback("Finishing the current file, then stopping.")});
-$("clear").addEventListener("click",()=>{selected=[];$("pick").value="";$("pick-folder").value="";drawQueue()});
+$("clear").addEventListener("click",()=>{selected=[];$("pick").value="";$("pick-folder").value="";$("tower-note").textContent="No Tower folder selected.";drawQueue()});
 $("publish").addEventListener("click",publish);
 $("refresh-drafts").addEventListener("click",async()=>{try{await ensureSession();await loadKnown()}catch(e){feedback(e.message)}});
 $("send-link").addEventListener("click",async()=>{
