@@ -7,8 +7,10 @@
 <meta name="description" content="HUMKIN Night Shift: one-tap access to the independently scheduled cloud radio, even when the Tower computer is off.">
 <title>HUMKIN NIGHT SHIFT · Shared Cloud Radio</title>
 <link rel="stylesheet" href="./night-shift.css">
+<link rel="stylesheet" href="./field-witness.css">
 <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script type="module" src="./night-shift.js"></script>
+<script type="module" src="./field-witness.mjs"></script>
 </head>
 <body>
 <main class="shell">
@@ -39,6 +41,21 @@
       <a href="../long-wave/">LONG WAVE BACKUP</a>
       <a href="https://humkin-long-wave.joyvolcanomusic.workers.dev/autopilot/station-one/live.m3u8">OPEN HLS PLAYLIST</a>
     </div>
+  </section>
+  <section class="radio field-witness" aria-labelledby="field-title">
+    <p class="eyebrow">OUTSIDE WITNESS · OPT-IN TEST</p>
+    <h2 id="field-title">What did this phone actually experience?</h2>
+    <p class="field-explain">LOCAL ONLY · NO UPLOAD. Start a field check, tune into Night Shift above, and mark only events you personally observe. Browser playing/buffering events are noted automatically after you start. Your testimony is not a certified measurement of Acer power or decoded audio.</p>
+    <div class="field-buttons">
+      <button type="button" id="field-start">START FIELD CHECK</button>
+      <button type="button" id="field-heard" disabled>I HEAR AUDIO</button>
+      <button type="button" id="field-acer-off" disabled>ACER IS OFF</button>
+      <button type="button" id="field-change" disabled>HEARD A TRACK CHANGE</button>
+      <button type="button" id="field-glitch" disabled>HEARD A GLITCH</button>
+      <button type="button" id="field-save" disabled>SAVE JSON RECEIPT</button>
+    </div>
+    <p role="status" aria-live="polite" id="field-status">No observations collected. Nothing is sent to a server.</p>
+    <p class="field-explain">For corroboration, compare your local receipt with the separate <a href="https://github.com/the-static-collective/HUMKIN/actions/workflows/night-shift-aircheck.yml">GitHub-hosted public aircheck</a>. A successful HTTP probe alone does not prove audible playback.</p>
   </section>
   <footer>
     <span>HUMKIN NIGHT SHIFT · REAL STATION · CLOUD SCHEDULE</span>
