@@ -90,9 +90,9 @@ jobs:
               label='BUMPER ' if t.get('kind') == 'bumper' else ''
               print(f"{index:03d}. {label}{t['artist']} — {t['title']}")
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as summary:
-              summary.write(f"### Reviewed HUMKIN HOUSE\\n\\n{len(selection['tracks'])} program entries · {minutes:.1f} estimated minutes\\n\\n")
+              summary.write(f"### Reviewed HUMKIN HOUSE\n\n{len(selection['tracks'])} program entries · {minutes:.1f} estimated minutes\n\n")
               if count == 'FULL':
-                  summary.write(f"{selection['song_count']} songs · {selection['bumper_break_count']} short/medium/long bumper breaks · {selection['held_bumper_count']} held/feature-only carts\\n\\n")
+                  summary.write(f"{selection['song_count']} songs · {selection['bumper_break_count']} short/medium/long bumper breaks · {selection['held_bumper_count']} held/feature-only carts\n\n")
               summary.write(f"Selected SHA-256 fingerprint: \`{expected}\`\n\n")
               summary.write('Source: current published, enabled R2 song catalog. Publication remains separate.\n')
           PY
@@ -149,7 +149,7 @@ jobs:
           print('Effective at:',revision['effective_at'])
           print('Program entries:',len(actual))
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as out:
-              out.write(f"\\n**R2 publication verified:** \\x60{revision['id']}\\x60 — {len(actual)} reviewed program entries, effective {revision['effective_at']}\\n\\n")
+              out.write(f"\n**R2 publication verified:** `{revision['id']}` — {len(actual)} reviewed program entries, effective {revision['effective_at']}\n\n")
               out.write('The existing Cloudflare listener will switch at that published revision boundary. Physical playback still requires a receiver check.\n')
           PY
           curl --fail --silent --show-error --max-time 15 \
