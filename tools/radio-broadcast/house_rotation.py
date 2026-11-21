@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import re
 import random
-from scheduler_v2 import with_bumpers, bumper_lane, allowed_bumper
+from scheduler_v2 import with_bumpers, bumper_lane, allowed_bumper, featured_extra, add_bonus_slots
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -33,7 +33,7 @@ MAX_BYTES = 1_500_000
 def catalog_rows(opener=urlopen):
     """Read only published, enabled song rows. Never use a service-role key."""
     query = urlencode({
-        "select": "id,title,artist,album,duration_seconds,sha256,r2_object_key,kind,enabled,published_at,storage_provider",
+        "select": "id,title,artist,album,is_single,duration_seconds,sha256,r2_object_key,kind,enabled,published_at,storage_provider",
         "enabled": "eq.true", "published_at": "not.is.null",
         "storage_provider": "eq.r2", "limit": str(MAX_ROWS),
     })
@@ -78,10 +78,15 @@ def public_bumper_settings(opener=urlopen):
     return {"bumper_every": frequency, "bumper_groups": groups, "bumper_rules": rules}
 
 
+def local_rotation_policy():
+    """The same release, official-single, seasonal and bumper policy as TOWER."""
+    path = Path(__file__).resolve().parents[2] / "fm" / "rotation.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def local_bumper_policy():
     """Use the repo-owned policy, not a competing cloud scheduling definition."""
-    path = Path(__file__).resolve().parents[2] / "fm" / "rotation.json"
-    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest = local_rotation_policy()
     policy = dict(manifest.get("bumper_brain") or {})
     policy["feature_only_spoken_sha256s"] = manifest.get("feature_only_spoken_sha256s") or []
     return policy
@@ -125,6 +130,9 @@ def accepted_row(row, *, kind="song", min_song_seconds=30):
     }
     if kind == "bumper" or min_song_seconds != 30:
         result["kind"] = kind
+    if kind == "song" and min_song_seconds != 30:
+        # Owner-approved official single metadata is part of FULL's fingerprint.
+        result["is_single"] = row.get("is_single") is True
     return result
 
 
@@ -135,7 +143,7 @@ def fingerprint(packet):
     ).encode("utf-8")).hexdigest()
 
 
-def make_selection(rows, *, station="station-one", count=40, bumper_settings=None, bumper_policy=None):
+def make_selection(rows, *, station="station-one", count=40, bumper_settings=None, bumper_policy=None, rotation_policy=None):
     if not STATION.fullmatch(station):
         raise ValueError("Invalid cloud station.")
     full = count == FULL
@@ -193,6 +201,11 @@ def make_selection(rows, *, station="station-one", count=40, bumper_settings=Non
             raise ValueError("Invalid live bumper relations or rules.")
         if not isinstance(policy, dict):
             raise ValueError("Invalid source-owned Bumper Brain policy.")
+        rotation = local_rotation_policy() if rotation_policy is None else rotation_policy
+        featured = rotation.get("featured_rotation") if isinstance(rotation, dict) else None
+        seasonal = rotation.get("seasonal_rotation") if isinstance(rotation, dict) else None
+        if not isinstance(featured, dict) or not isinstance(seasonal, dict):
+            raise ValueError("FULL requires source-owned release/single/seasonal rotation rules.")
         eligible_carts = {}
         all_carts = [row for row in rows if isinstance(row, dict) and row.get("kind") == "bumper"]
         feature_only = set(policy.get("feature_only_spoken_sha256s") or [])
@@ -218,14 +231,22 @@ def make_selection(rows, *, station="station-one", count=40, bumper_settings=Non
                 if any(i in eligible_carts for i in rule.get("track_ids", [])):
                     raise ValueError("Time-limited bumper cannot be honored by a fixed full-cloud rotation; HOLD.")
         by_id = {entry["id"]: {"id": entry["id"], "kind": "song",
-                 "duration": entry["duration_seconds"], "sha256": entry["sha256"]}
+                 "duration": entry["duration_seconds"], "sha256": entry["sha256"],
+                 "album": entry["album"], "is_single": entry["is_single"],
+                 "source": "cloud"}
                  for entry in ordered}
         by_id.update({uid: {"id": uid, "kind": "bumper",
                  "duration": entry["duration_seconds"], "sha256": entry["sha256"]}
                  for uid, entry in eligible_carts.items()})
-        ordered_ids = with_bumpers([entry["id"] for entry in ordered], by_id,
-                                    settings, policy,
-                                    random.Random(int(digest_config(sorted(by_id))[:16], 16)))
+        unique_song_ids = [entry["id"] for entry in ordered]
+        # The existing TOWER policy owns 1x ordinary / 2x release+official
+        # single / 3x *total* seasonal rules. Do not count seasonal on top of 2x.
+        bonuses = featured_extra(unique_song_ids, by_id, rotation)
+        seed = int(digest_config({"catalog": sorted(by_id),
+                 "rotation": {"featured": featured, "seasonal": seasonal}})[:16], 16)
+        weighted_ids = add_bonus_slots(unique_song_ids, bonuses, random.Random(seed))
+        ordered_ids = with_bumpers(weighted_ids, by_id, settings, policy,
+                                    random.Random(seed ^ 0x71BDEA))
         if len(ordered_ids) > 500:
             raise ValueError("FULL exceeds Cloud Autopilot's 500-entry program limit; HOLD.")
         source_by_id = {**candidates, **eligible_carts}
@@ -234,10 +255,13 @@ def make_selection(rows, *, station="station-one", count=40, bumper_settings=Non
             "schema": SCHEMA, "state": "draft_for_owner_review",
             "station_id": station, "source": FULL_SOURCE, "mode": "full_catalog",
             "song_count": len(ordered),
-            "bumper_break_count": len(planned) - len(ordered),
+            "weighted_song_slots": len(weighted_ids),
+            "release_seasonal_bonus_slots": len(bonuses),
+            "bumper_break_count": len(planned) - len(weighted_ids),
             "eligible_bumper_count": len(eligible_carts),
             "held_bumper_count": len(all_carts) - len(eligible_carts),
             "bumper_configuration_digest": digest_config({"settings": settings, "policy": policy}),
+            "music_configuration_digest": digest_config({"featured": featured, "seasonal": seasonal}),
             "tracks": planned,
         }
     else:
@@ -249,7 +273,7 @@ def make_selection(rows, *, station="station-one", count=40, bumper_settings=Non
     return packet
 
 
-def validate_selection(packet, rows, *, bumper_settings=None, bumper_policy=None):
+def validate_selection(packet, rows, *, bumper_settings=None, bumper_policy=None, rotation_policy=None):
     if not isinstance(packet, dict) or packet.get("schema") != SCHEMA:
         raise ValueError("Not a HUMKIN house selection.")
     if packet.get("state") != "draft_for_owner_review" or packet.get("source") not in (SOURCE, FULL_SOURCE):
@@ -267,7 +291,8 @@ def validate_selection(packet, rows, *, bumper_settings=None, bumper_policy=None
         settings = public_bumper_settings() if bumper_settings is None else bumper_settings
         policy = local_bumper_policy() if bumper_policy is None else bumper_policy
         expected = make_selection(rows, station=packet["station_id"], count=FULL,
-                                  bumper_settings=settings, bumper_policy=policy)
+                                  bumper_settings=settings, bumper_policy=policy,
+                                  rotation_policy=rotation_policy)
         if packet != expected:
             raise ValueError("FULL source eligibility, bumper policy or reviewed running order changed; regenerate selection.")
         return packet["station_id"]
@@ -318,7 +343,9 @@ def main():
     print("Wrote HOUSE DRAFT:", args.output)
     print("Program entries:", len(packet["tracks"]))
     if packet.get("mode") == "full_catalog":
-        print("Unique songs:", packet["song_count"], "Bumper breaks:", packet["bumper_break_count"],
+        print("Unique songs:", packet["song_count"], "Weighted song slots:", packet["weighted_song_slots"],
+              "Release/seasonal bonus slots:", packet["release_seasonal_bonus_slots"],
+              "Bumper breaks:", packet["bumper_break_count"],
               "Held/feature-only bumpers:", packet["held_bumper_count"])
     print("Estimated minutes:", round(sum(t["duration_seconds"] for t in packet["tracks"]) / 60, 1))
     print("REVIEW REQUIRED: no audio uploaded, no cloud program modified.")
