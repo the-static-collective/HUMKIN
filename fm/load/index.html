@@ -173,6 +173,13 @@ footer{padding:20px;text-align:center}
 <p><a href="../manage/" class="button-like">✳ OPEN STATION MANAGER — EDIT SONGS & SHOWS ↗</a></p>
 <div class="row"><button id="publish" disabled>PUBLISH SONGS + SINGLES (NOT BUMPERS) ↗</button><button id="refresh-drafts">REFRESH CRATE</button><a href="../" class="button-like">LISTEN TO RADIO ↗</a></div>
 </section>
+<section class="panel card" id="cloud-receipt" aria-labelledby="cloud-title">
+<h2 id="cloud-title">TOWER · Cloud HOUSE receipt</h2>
+<p>Only approved songs and bumpers are eligible for automatic Cloud HOUSE pickup. A catalog approval does not itself prove a new cloud schedule or anyone's playback.</p>
+<p id="cloud-house-receipt" role="status" aria-live="polite">Checking the public Cloud HOUSE schedule…</p>
+<div class="row"><button type="button" id="cloud-receipt-refresh">CHECK CLOUD SCHEDULE</button><a class="button-like" href="https://github.com/the-static-collective/HUMKIN/actions/workflows/tower-cloud-incremental-sync.yml" target="_blank" rel="noopener noreferrer">OWNER: CLOUD SYNC SETUP</a><a class="button-like" href="../schedule/" target="_blank" rel="noopener noreferrer">PUBLIC SCHEDULE</a></div>
+<p class="small">Owner setup once: run the Cloud Sync workflow using <strong>SYNC_APPROVED_CATALOG</strong>. For scheduled automatic refresh, enable repository variable <code>HUMKIN_CLOUD_AUTOPUBLISH=ENABLED</code> after a successful test. Without this setting, automation stays off. New audio is encoded only when its source hash has not been published before. Cloud HLS updates still occur at clean audio boundaries.</p>
+</section>
 <section class="panel card" id="feature-desk" aria-labelledby="feature-title">
 <h2 id="feature-title">06 · Feature Desk — put a show in order</h2>
 <p>Choose already published and enabled songs, interviews and bumpers from this same crate. Put them in the exact order you want, save a <strong>PAUSED</strong> recurring program to the existing Station Manager, then inspect it there before anyone turns it on. Nothing schedules itself and no cloud transmitter is changed here.</p>
