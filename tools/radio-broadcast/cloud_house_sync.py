@@ -129,10 +129,10 @@ def prepare_delta(selection, existing, cache, *, downloader=verified_remote_file
             if durable:
                 # The manifest is committed only after every immutable segment
                 # has uploaded and verified. This survives runner interruption.
-                result = publish_asset(client, digest, list(durations), cache)
+                asset_receipt = publish_asset(client, digest, list(durations), cache)
                 persisted += 1
                 print(f"AAC library {len(seen)+1}/{unique_total}: checkpointed "
-                      f"{result['segments']} segments ({result['new_uploads']} new) "
+                      f"{asset_receipt['segments']} segments ({asset_receipt['new_uploads']} new) "
                       f"for {digest[:12]}", flush=True)
             seen[digest] = durations
             new += 1
