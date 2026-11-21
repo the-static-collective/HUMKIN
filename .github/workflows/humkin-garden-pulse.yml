@@ -33,9 +33,15 @@ jobs:
         run: python .garden-tools/garden/pulse.py pulse --owner the-static-collective --repo HUMKIN --intent garden/intent.json --out CONTINUE.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate Radio House bounded report generation
+        run: python3 -m unittest discover -s tests -p 'test_radio_house_pulse.py' -v
+      - name: Refresh Radio House source and branch inventory
+        run: python3 garden/radio_house_pulse.py --repo the-static-collective/HUMKIN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit only changed source state
         run: |
-          git add CONTINUE.md
+          git add CONTINUE.md docs/CURRENT-SIGNAL.md docs/BRANCH-INVENTORY.md
           if git diff --cached --quiet; then
             echo "No meaningful source delta."
             exit 0

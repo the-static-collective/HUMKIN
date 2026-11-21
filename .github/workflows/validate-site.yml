@@ -11,6 +11,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate Radio House contracts and evidence report
+        run: python3 -m unittest discover -s tests -p 'test_radio_house_pulse.py' -v
+      - name: Dry-run Radio House against live GitHub metadata
+        run: python3 garden/radio_house_pulse.py --repo the-static-collective/HUMKIN --signal-out "$RUNNER_TEMP/current-signal.md" --branch-out "$RUNNER_TEMP/branch-inventory.md"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Assemble and checksum-verify new release audio previews
         run: node scripts/assemble-everywhere-near-you.mjs
       - run: node tests/record-shelf.test.mjs

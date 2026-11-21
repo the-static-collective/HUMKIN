@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://humkin.abundent.org/contracts/recording.v1.schema.json",
+  "title": "Radio House Recording v1 (proposal only)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "recording_id",
+    "source_sha256",
+    "kind",
+    "source",
+    "review"
+  ],
+  "properties": {
+    "schema": {
+      "const": "humkin.radiohouse.recording/v1"
+    },
+    "recording_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "kind": {
+      "enum": [
+        "song",
+        "bumper",
+        "spoken",
+        "field_recording",
+        "other"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "locator",
+        "visibility"
+      ],
+      "properties": {
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "public",
+            "restricted"
+          ]
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "artist": {
+          "type": "string"
+        },
+        "album": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "held",
+            "rights_reviewed",
+            "approved",
+            "published",
+            "archived"
+          ]
+        },
+        "reviewer": {
+          "type": "string"
+        },
+        "decision_ref": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
