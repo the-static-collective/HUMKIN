@@ -48,6 +48,8 @@ jobs:
       - run: node --check fm/bumper-relations.js
       - run: node tests/station-blackbox.test.cjs
       - run: node tests/radio-loader.test.mjs
+      - run: node --test tests/tower-sidecars.test.mjs
+      - run: node --check fm/load/tower-sidecars.mjs
       - run: node tests/radio-r2-direct.test.mjs
       - run: node tests/mesh.test.mjs
       - run: python3 -m unittest discover -s tests -p 'test_mesh_inventory.py' -v
