@@ -22,6 +22,8 @@ The database's `r2_upload_verified_at` field is not populated, so catalog metada
 - When a cart is reused in the cycle, the publisher reuses its immutable source hash and encoded segments; this does not create a second original recording.
 - The FULL fingerprint includes exact source order, all recurring cart occurrences, owner settings/policy digest and count/hold receipts. A changed catalog, source metadata, enabled state, settings or policy invalidates approval.
 
+**Known clock limitation:** Cloud HOUSE's current R2 program is one fixed, content-addressed HLS cycle. It repeats this approved ~14-hour running order; it does **not** dynamically remix which bumper follows each song on subsequent cloud cycles. Browser Same-Time and Tower have their own cycle-seeded bumper bag remix. Introducing equivalent per-cycle cloud remixing requires a separate Worker scheduling model and verified receiver/schedule parity, not an undocumented claim that FULL already does it. The approved FULL cycle still guarantees equal-weight shuffled bags *within* the published running order.
+
 The program must fit Cloud Autopilot's existing hard limits of 500 entries and 10,000 segments. If it doesn't, **HOLD**; do not silently trim, lower media safeguards or mutate the live pointer. The prepared full 13+ hour program may take longer than the former 90-minute Actions limit, so the strictly manual publisher has a 240-minute job timeout.
 
 ## Release steps
