@@ -129,6 +129,7 @@ function plan(songs,bumpers,every,tracks,policy={}){
  let nextMid=midEvery,nextLong=longEvery,shortPulse=0;
  let nextShort=phiGap(shortPulse++,scale),nominalSeconds=0;
  let lastAnchorAt=-Infinity;
+ let lastShortAfterSong=-Infinity;
  const breaks=[],sequence=[];
  for(let i=0;i<base.length;i++){
    sequence.push(base[i]);
@@ -149,11 +150,13 @@ function plan(songs,bumpers,every,tracks,policy={}){
      if(!longSoon&&nominalSeconds-lastAnchorAt>=midEvery*0.55)
        chosen=pick("medium");
      while(nextMid<=nominalSeconds)nextMid+=midPeriod;
-   }else if(shortDue){
+   }else if(shortDue&&i>0&&i+1-lastShortAfterSong>=2){
+     // At least one song boundary without a shortie; guard the cycle seam.
      chosen=pick("short");
    }
    if(!chosen)continue;
-   if(chosen.lane!=="short")lastAnchorAt=nominalSeconds;
+   if(chosen.lane==="short")lastShortAfterSong=i+1;
+   else lastAnchorAt=nominalSeconds;
    sequence.push(chosen.index);
    nominalSeconds+=chosen.seconds;
    breaks.push({number:breaks.length+1,afterSong:i+1,index:chosen.index,

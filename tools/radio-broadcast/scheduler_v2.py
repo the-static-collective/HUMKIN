@@ -327,6 +327,7 @@ def with_bumpers(songs, tracks, settings, policy, rng):
     pulse += 1
     nominal = 0.0
     last_anchor = -float("inf")
+    last_short_after_song = -float("inf")
     sequence = []
     for i, song in enumerate(songs):
         sequence.append(song)
@@ -348,10 +349,13 @@ def with_bumpers(songs, tracks, settings, policy, rng):
                 selected = pick("medium")
             while next_mid <= nominal:
                 next_mid += mid_period
-        elif short_due:
+        elif short_due and i > 0 and i + 1 - last_short_after_song >= 2:
+            # Leave a non-shortie song boundary between drops, even across cycles.
             selected = pick("short")
         if selected is not None:
             sequence.append(selected)
+            if selected in groups["short"]:
+                last_short_after_song = i + 1
             if selected in groups["medium"] or selected in groups["long"]:
                 last_anchor = nominal
             nominal += float(tracks[selected]["duration"])
