@@ -70,7 +70,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
  }
  async function save(){
    if(state.busy)return;
-   state.busy=true;byId("feature-save").disabled=true;
+   state.busy=true;renderLineup();byId("feature-save").disabled=true;
    try{
      const result=await db.auth.getUser();
      const user=result.data?.user;
@@ -78,10 +78,16 @@ export function mountFeatureDesk({db,rows,onStatus}){
        throw Error("Unlock your verified owner session first.");
      const days=[...document.querySelectorAll('input[name="feature-day"]:checked')]
         .map(node=>Number(node.value));
+     // Re-check eligibility against the current owner-readable catalog, not
+     // only the list that was on screen before the program was assembled.
+     const ids=[...new Set(state.ids)];
+     const check=await db.from("humkin_radio_tracks")
+       .select("id,kind,enabled,published_at,duration_seconds").in("id",ids);
+     if(check.error)throw Error("Current source eligibility unavailable: "+check.error.message);
      const packet=buildPausedFeature({
        name:byId("feature-name").value,days,start:byId("feature-start").value,
        end:byId("feature-end").value,trackIds:state.ids
-     },approved(),user.id);
+     },check.data||[],user.id);
      const {data,error}=await db.from("humkin_radio_programs")
        .insert(packet).select("id,name,is_active").single();
      if(error)throw Error(error.message);
@@ -93,6 +99,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
    finally{state.busy=false;renderLineup()}
  }
  byId("feature-add").addEventListener("click",()=>{
+   if(state.busy)return;
    const id=byId("feature-track").value;
    if(!approved().some(r=>r.id===id))return status("Choose a currently approved recording.");
    if(state.ids.length>=200)return status("Maximum 200 positions per program.");
@@ -102,6 +109,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
  for(const id of ["feature-start","feature-end"])byId(id).addEventListener("change",renderLineup);
  byId("feature-save").addEventListener("click",save);
  byId("feature-clear").addEventListener("click",()=>{
+   if(state.busy)return;
    if(state.ids.length&& !confirm("Clear this unsaved feature running order?"))return;
    state.ids=[];renderLineup();status("Draft cleared. No show was created.");
  });
