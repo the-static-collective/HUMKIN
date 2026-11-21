@@ -6,6 +6,16 @@ This is an **isolated prototype**, not the installed HUMKIN Radio replacement or
 
 With JDK 17, SDK 35 and Gradle 8.13: `gradle :app:testDebugUnitTest :app:assembleDebug`. A GitHub Actions build-only workflow is included separately when staged in the HUMKIN repository.
 
+For the side-by-side Cloud HOUSE preview, run `gradle :app:testCloudHouseUnitTest :app:assembleCloudHouse`. Install the resulting APK from `app/build/outputs/apk/cloudHouse/`. Its app ID is `org.abundent.receiver.cloudhouse`.
+
+### Cloud HOUSE field check
+
+1. Open **HUMKIN Cloud HOUSE Preview** and choose **Tune to Cloud HOUSE · Night Shift**. The Media3 service uses the public Cloud Autopilot Station One HLS feed used by Night Shift on the web.
+2. Open **View published cloud schedule** to see the current revision and upcoming tracks. Compare the cues in the app with the recording heard through a track transition. Allow for each device's playback buffer.
+3. Lock the phone through one more transition. Record Android version, test UTC, cloud revision, expected and heard track, and whether playback continued. Use two independent devices for the powered-off transmitter check.
+
+Cloud HOUSE is opt-in. Its playback can show timed HLS cues. The existing local demo discovery and HUM rules remain available on the two Tower entries.
+
 ## What changed versus 0.1.0
 
 - Moved ExoPlayer, HLS manifest cues and the listening meter out of `ReceiverActivity` into `ReceiverPlaybackService`, with `MediaSession` and Android's `mediaPlayback` foreground-service permissions. Do not pause when the Activity stops.

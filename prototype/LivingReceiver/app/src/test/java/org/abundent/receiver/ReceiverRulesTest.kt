@@ -4,6 +4,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ReceiverRulesTest {
+    @Test fun cloudHouseUsesTheSamePublishedStreamAsNightShift() {
+        val cloud = requireNotNull(BroadcastStation.fromMediaId("cloud-house"))
+        assertEquals("https://humkin-long-wave.joyvolcanomusic.workers.dev/autopilot/station-one/live.m3u8",
+            cloud.hlsUrl)
+        assertFalse(cloud.earnsDemoHum)
+    }
+
+    @Test fun existingTowerIdsKeepTheirHlsRoutes() {
+        val tower = requireNotNull(BroadcastStation.fromMediaId("station-one"))
+        assertTrue(tower.hlsUrl.endsWith("/hls/live.m3u8"))
+        assertTrue(tower.earnsDemoHum)
+        assertTrue(requireNotNull(BroadcastStation.fromMediaId("talk")).hlsUrl.endsWith("/hls/talk/live.m3u8"))
+        assertNull(BroadcastStation.fromMediaId("offline:track"))
+    }
+
     private fun listen(station: String, start: Int, end: Int, prior: Listening = Listening()): Listening =
         (start..end).fold(prior) { state, second ->
             state.observe(BroadcastSample(station, second * 1000L, second * 1000L))

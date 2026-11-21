@@ -1,6 +1,7 @@
 package org.abundent.receiver
 
 import android.content.ComponentName
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -31,7 +33,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val relay = "https://humkin-long-wave.joyvolcanomusic.workers.dev"
 private const val recordId = "mutant-pop-04"
 private const val recordUrl = "https://humkin.abundent.org/audio/04_Golden_Yellow_Blue.mp3"
 private const val recordHash = "f887d7cff16dde882c34ffd19af6b88e2b69e8b661cebab26f3390e5de3258b8"
@@ -97,13 +98,13 @@ class ReceiverActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private fun tune(id: String, name: String) {
+    private fun tune(station: BroadcastStation) {
         val active = controller ?: return
-        val path = if (id == "station-one") "" else "$id/"
         val item = MediaItem.Builder()
-            .setMediaId(id)
-            .setUri("$relay/hls/${path}live.m3u8")
-            .setMediaMetadata(MediaMetadata.Builder().setTitle(name).setArtist("HUMKIN LIVE").build())
+            .setMediaId(station.mediaId)
+            .setUri(station.hlsUrl)
+            .setMimeType(MimeTypes.APPLICATION_M3U8)
+            .setMediaMetadata(MediaMetadata.Builder().setTitle(station.title).setArtist("HUMKIN LIVE").build())
             .build()
         active.repeatMode = Player.REPEAT_MODE_OFF
         active.setMediaItem(item)
@@ -130,6 +131,7 @@ class ReceiverActivity : ComponentActivity() {
         val file = remember { File(filesDir, "$recordId.mp3") }
         val snapshot by ReceiverEngineState.snapshot.collectAsState()
         val active = controller
+        val station = BroadcastStation.fromMediaId(snapshot.station)
         val earned = snapshot.earned || prefs.getBoolean("earned", false)
         var found by remember { mutableStateOf(prefs.getBoolean("discovered", false)) }
         var restored by remember { mutableStateOf(prefs.getBoolean("restored", false)) }
@@ -165,9 +167,9 @@ class ReceiverActivity : ComponentActivity() {
             Text("Living Receiver · engineering preview", style = MaterialTheme.typography.titleLarge)
             Text("Service-backed live radio; HUM and Orchard are local demonstration state.",
                 style = MaterialTheme.typography.bodySmall)
-            listOf("station-one" to "Station One", "talk" to "Talk").forEach { (id, name) ->
-                OutlinedButton(enabled = active != null, onClick = { tune(id, name) }) {
-                    Text("Tune to $name")
+            BroadcastStation.entries.forEach { entry ->
+                OutlinedButton(enabled = active != null, onClick = { tune(entry) }) {
+                    Text("Tune to ${entry.title}")
                 }
             }
             Text(connectionError ?: if (active == null) "Connecting to radio service…" else snapshot.status)
@@ -178,7 +180,16 @@ class ReceiverActivity : ComponentActivity() {
             }
             cover?.let { Image(it.asImageBitmap(), "Now-playing cover artwork", Modifier.size(164.dp)) }
             cue?.let { Text(it.title + " · " + it.artist) }
-            if (!found && snapshot.isPlaying && cue?.id == recordId) {
+            station?.scheduleUrl?.let { url ->
+                TextButton(onClick = {
+                    runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                        .onFailure {
+                            android.widget.Toast.makeText(this@ReceiverActivity,
+                                "Could not open the cloud schedule.", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                }) { Text("View published cloud schedule") }
+            }
+            if (!found && station?.earnsDemoHum == true && snapshot.isPlaying && cue?.id == recordId) {
                 Button(onClick = {
                     found = prefs.edit().putBoolean("discovered", true)
                         .putString("discovery_receipt", "${snapshot.station}|$recordId|${cue.atMs}").commit()
