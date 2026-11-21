@@ -177,6 +177,42 @@ class CloudHouseRotationTest(unittest.TestCase):
                         publisher.prepare_tracks(manifest, cache, publish=True)
                 self.assertFalse(list(cache.glob("*.mp3")))
 
+    def test_full_cloud_carries_release_single_and_seasonal_weights(self):
+        from collections import Counter
+        rows=clean_rows(source_rows())
+        rows[0]["album"]="MUTANT POP"
+        rows[1]["is_single"]=True
+        rows[2]["is_single"]=False
+        settings={"bumper_every":4,"bumper_groups":[],"bumper_rules":[]}
+        policy={"short_max_seconds":19,"medium_max_seconds":60,
+                "feature_only_spoken_sha256s":[]}
+        rotation={"featured_rotation":{"multiplier":2,"albums":["MUTANT POP"],
+                                      "singles":[]},
+                  "seasonal_rotation":{"multiplier":3,"track_ids":[],
+                                       "sha256s":[rows[1]["sha256"],rows[2]["sha256"]]}}
+        packet=make_selection(rows,count="FULL",bumper_settings=settings,
+                              bumper_policy=policy,rotation_policy=rotation)
+        by_id=Counter(t["id"] for t in packet["tracks"] if t["kind"]=="song")
+        # Normal=1, curated album=2, seasonal official single=3 total,
+        # and seasonal non-single=3 (never 2+3 extra).
+        self.assertEqual([by_id[r["id"]] for r in rows],[2,3,3,1,1,1,1])
+        self.assertEqual(packet["song_count"],7)
+        self.assertEqual(packet["weighted_song_slots"],12)
+        self.assertEqual(packet["release_seasonal_bonus_slots"],5)
+        self.assertEqual(validate_selection(packet,rows,bumper_settings=settings,
+            bumper_policy=policy,rotation_policy=rotation),"station-one")
+        changed=json.loads(json.dumps(rotation))
+        changed["seasonal_rotation"]["sha256s"]=[]
+        with self.assertRaisesRegex(ValueError,"changed"):
+            validate_selection(packet,rows,bumper_settings=settings,
+                               bumper_policy=policy,rotation_policy=changed)
+        # The official single bit is part of the approved record fingerprint.
+        revoked=json.loads(json.dumps(rows))
+        revoked[1]["is_single"]=False
+        with self.assertRaisesRegex(ValueError,"changed"):
+            validate_selection(packet,revoked,bumper_settings=settings,
+                               bumper_policy=policy,rotation_policy=rotation)
+
     def test_full_catalog_includes_short_song_and_preserves_bumper_brain(self):
         """The source-owned 3-lane planner, not simple every-N bumpers, runs in cloud."""
         rows = []
