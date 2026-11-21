@@ -17,6 +17,7 @@ on:
           - '18'
           - '24'
           - '40'
+          - 'FULL'
 permissions:
   contents: read
 jobs:
@@ -41,16 +42,22 @@ jobs:
           from pathlib import Path
           p=json.loads(Path('out/night-shift-house-selection.json').read_text(encoding='utf-8'))
           print('DRAFT ONLY: no cloud audio or playlist writes')
-          print('Number of songs:',len(p['tracks']))
+          print('Program entries:',len(p['tracks']))
+          if p.get('mode') == 'full_catalog':
+              print('Unique songs:',p['song_count'],'Bumper breaks:',p['bumper_break_count'])
+              print('Feature-only / held carts:',p['held_bumper_count'])
           print('Estimated house minutes:',round(sum(s['duration_seconds'] for s in p['tracks'])/60,1))
           print('REVIEW FINGERPRINT:',p['fingerprint'])
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as receipt:
               receipt.write('### Review this HOUSE before publishing\n\n')
-              receipt.write('Count: '+str(len(p['tracks']))+'\n\n')
+              receipt.write('Program entries: '+str(len(p['tracks']))+'\\n\\n')
+              if p.get('mode') == 'full_catalog':
+                  receipt.write('Unique songs: '+str(p['song_count'])+' · short/medium/long bumper breaks: '+str(p['bumper_break_count'])+' · held/feature-only bumpers: '+str(p['held_bumper_count'])+'\\n\\n')
               receipt.write('Copy the 64-character fingerprint into **Night Shift — publish reviewed HOUSE in cloud**:\n\n')
               receipt.write('`'+p['fingerprint']+'`\n\n')
               for n, track in enumerate(p['tracks'],1):
-                  receipt.write(f"{n:02d}. {track['artist']} — {track['title']}\n")
+                  lane = '[BUMPER] ' if track.get('kind') == 'bumper' else ''
+                  receipt.write(f"{n:03d}. {lane}{track['artist']} — {track['title']}\\n")
           for n, track in enumerate(p['tracks'],1):
               print(f"{n:02d}. {track['artist']} — {track['title']}")
           PY
