@@ -11,11 +11,12 @@ on:
         description: 'Count of already published, enabled R2 songs to place in a draft HOUSE'
         type: choice
         required: true
-        default: '18'
+        default: '40'
         options:
           - '12'
           - '18'
           - '24'
+          - '40'
 permissions:
   contents: read
 jobs:
@@ -29,7 +30,7 @@ jobs:
       - name: Build an owner-review DRAFT from current public radio catalog
         shell: bash
         run: |
-          TRACK_COUNT=18
+          TRACK_COUNT=40
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             TRACK_COUNT="$(jq -r '.inputs.count' "$GITHUB_EVENT_PATH")"
           fi
