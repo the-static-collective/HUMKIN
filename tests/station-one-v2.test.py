@@ -132,6 +132,30 @@ class ProgrammingTests(unittest.TestCase):
             command=popen.call_args.args[0]
             self.assertNotIn("-tls",command)
 
+    def test_shorties_never_follow_consecutive_songs(self):
+        songs = [make_track("music-%02d" % i, duration=180) for i in range(48)]
+        shorts = [make_track("short-%d" % i, kind="bumper", duration=8 + i)
+                  for i in range(3)]
+        by_id = {track["id"]: track for track in songs + shorts}
+        for cadence in (1, 4):
+            for seed in (7, 29):
+                rotation = with_bumpers([t["id"] for t in songs], by_id,
+                                        {"bumper_every": cadence}, {},
+                                        random.Random(seed))
+                seen_songs = 0
+                short_after = []
+                for id_ in rotation:
+                    if by_id[id_]["kind"] == "song":
+                        seen_songs += 1
+                    else:
+                        short_after.append(seen_songs)
+                self.assertTrue(short_after)
+                self.assertTrue(all(n > 1 and
+                    (i == 0 or n - short_after[i - 1] >= 2)
+                    for i, n in enumerate(short_after)),
+                    "Shorties need a non-shortie song gap, including across cycles")
+                self.assertEqual(seen_songs, len(songs))
+
     def test_no_bumpers_when_off(self):
         self.catalog["settings"]["bumper_every"]=0
         station=StationV2(self.catalog)
