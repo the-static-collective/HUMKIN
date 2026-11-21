@@ -115,8 +115,18 @@ export function mountLivingControl({db,rows,onStatus,onMetadataSaved}){
        .eq("id",row.id).eq("uploaded_by",user.id)
        .select("id,title,artist,album").single();
      if(error||data?.id!==row.id)throw Error(error?.message||"Metadata update not confirmed.");
-     message("CATALOG METADATA SAVED · cloud schedule still needs refresh; audio is not re-encoded.");
-     await onMetadataSaved?.();
+     // Metadata is already stored in the owner-authenticated catalog.
+     // Request a *separate* sooner cloud revision, never claim immediate air.
+     const submitted=await db.from("humkin_tower_control_intents")
+       .insert({owner_id:user.id,track_id:row.id,action:"metadata_refresh"})
+       .select("id,track_id,action,requested_at").single();
+     message(submitted.error
+       ? "CATALOG SAVED · cloud quick-refresh request failed: "+submitted.error.message+
+         ". Regular Cloud HOUSE catalog refresh may still pick it up."
+       : "CATALOG SAVED · REQUEST #"+submitted.data.id+
+         " for a future cloud metadata refresh. Original audio bytes unchanged.");
+     try{await onMetadataSaved?.()}catch(error){message("Metadata saved; reload catalog: "+error.message)}
+     await refreshReceipts();
    }catch(error){message("METADATA NOT SAVED: "+error.message)}
    finally{busy=false;controls()}
  }
@@ -138,7 +148,7 @@ export function mountLivingControl({db,rows,onStatus,onMetadataSaved}){
      if(!recent.length)list.append(document.createElement("li")).textContent="No station-control requests yet.";
      for(const item of recent){
        const li=document.createElement("li");
-       const label=ACTIONS.find(a=>a[0]===item.action)?.[1]||item.action;
+       const label=ACTIONS.find(a=>a[0]===item.action)?.[1]||(item.action==="metadata_refresh"?"REFRESH TRACK INFO":item.action);
        const track=rows().find(r=>r.id===item.track_id);
        li.textContent="#"+item.id+" · "+label+" · "+(track?.title||"recording")+
          " — "+controlReceipt(item,cloud);
