@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [830bc77f7c84](https://github.com/the-static-collective/HUMKIN/commit/830bc77f7c84e20abb5bbbaed67cbf92cdef63b7)
-- Branches: 192; open PRs: 25; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [45051e98ff34](https://github.com/the-static-collective/HUMKIN/commit/45051e98ff3422d051854d043a82eae9ceda679e)
+- Branches: 201; open PRs: 27; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -26,9 +26,11 @@
 | [archive/classic-radio-template](https://github.com/the-static-collective/HUMKIN/tree/archive/classic-radio-template) | 34bb5aa32cd8 | No matching open PR; UNCLASSIFIED |
 | [chore/preserve-player-landing-walmart](https://github.com/the-static-collective/HUMKIN/tree/chore/preserve-player-landing-walmart) | 2ae1a384e214 | No matching open PR; UNCLASSIFIED |
 | [ci/build-android-r2-repair-apk-035](https://github.com/the-static-collective/HUMKIN/tree/ci/build-android-r2-repair-apk-035) | 3c3fe8c2fe62 | No matching open PR; UNCLASSIFIED |
+| [codex/cloud-house-android-preview](https://github.com/the-static-collective/HUMKIN/tree/codex/cloud-house-android-preview) | 51376941af38 | [#194](https://github.com/the-static-collective/HUMKIN/pull/194) (base: review/living-receiver-service-20261120) |
 | [codex/daily-slice-crossover-pilot](https://github.com/the-static-collective/HUMKIN/tree/codex/daily-slice-crossover-pilot) | f7cabeaa4b16 | [#138](https://github.com/the-static-collective/HUMKIN/pull/138) (base: main) |
 | [codex/humkin-compost-heap](https://github.com/the-static-collective/HUMKIN/tree/codex/humkin-compost-heap) | 219ca8d8fb60 | No matching open PR; UNCLASSIFIED |
 | [codex/humkin-fmstudio-preview](https://github.com/the-static-collective/HUMKIN/tree/codex/humkin-fmstudio-preview) | 5986be427453 | No matching open PR; UNCLASSIFIED |
+| [codex/radio-house-station-seed](https://github.com/the-static-collective/HUMKIN/tree/codex/radio-house-station-seed) | 2df6862247aa | [#193](https://github.com/the-static-collective/HUMKIN/pull/193) (base: main) |
 | [design/approved-paper-manga-look](https://github.com/the-static-collective/HUMKIN/tree/design/approved-paper-manga-look) | ae552cdbeaed | No matching open PR; UNCLASSIFIED |
 | [docs/continuity-pilot-001-20261119](https://github.com/the-static-collective/HUMKIN/tree/docs/continuity-pilot-001-20261119) | 4d581d28b3f6 | No matching open PR; UNCLASSIFIED |
 | [docs/radio-house-001-consolidation-20261121](https://github.com/the-static-collective/HUMKIN/tree/docs/radio-house-001-consolidation-20261121) | fdd186705467 | No matching open PR; UNCLASSIFIED |
@@ -142,6 +144,7 @@
 | [feature/mesh-001-distributed-library-sia-linkbank](https://github.com/the-static-collective/HUMKIN/tree/feature/mesh-001-distributed-library-sia-linkbank) | fad2df9eb083 | No matching open PR; UNCLASSIFIED |
 | [feature/mesh-radio-direct-r2-upload-20261119](https://github.com/the-static-collective/HUMKIN/tree/feature/mesh-radio-direct-r2-upload-20261119) | e25107bcc3c5 | No matching open PR; UNCLASSIFIED |
 | [feature/more-music-warning-bumper-20261115](https://github.com/the-static-collective/HUMKIN/tree/feature/more-music-warning-bumper-20261115) | a7b98c2339a6 | No matching open PR; UNCLASSIFIED |
+| [feature/night-shift-full-catalog-bumper-brain-006](https://github.com/the-static-collective/HUMKIN/tree/feature/night-shift-full-catalog-bumper-brain-006) | 0e7b9ec64232 | No matching open PR; UNCLASSIFIED |
 | [feature/night-watch-native-001](https://github.com/the-static-collective/HUMKIN/tree/feature/night-watch-native-001) | a4625fa67de2 | No matching open PR; UNCLASSIFIED |
 | [feature/night-watch-outpost-001](https://github.com/the-static-collective/HUMKIN/tree/feature/night-watch-outpost-001) | 702056e5e694 | No matching open PR; UNCLASSIFIED |
 | [feature/night-watch-sidecar-apk-001](https://github.com/the-static-collective/HUMKIN/tree/feature/night-watch-sidecar-apk-001) | f412769704cb | No matching open PR; UNCLASSIFIED |
@@ -164,9 +167,15 @@
 | [feature/radio-web-primary-live-001](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-web-primary-live-001) | 0f7fb8cf9e82 | No matching open PR; UNCLASSIFIED |
 | [feature/random-postcard-art](https://github.com/the-static-collective/HUMKIN/tree/feature/random-postcard-art) | 1f30f18751d4 | No matching open PR; UNCLASSIFIED |
 | [feature/save-the-hour-cards-001](https://github.com/the-static-collective/HUMKIN/tree/feature/save-the-hour-cards-001) | c0158707ca3f | No matching open PR; UNCLASSIFIED |
+| [feature/shortie-gap-guard-20261121](https://github.com/the-static-collective/HUMKIN/tree/feature/shortie-gap-guard-20261121) | 5428a6c704ec | No matching open PR; UNCLASSIFIED |
 | [feature/spotlight-single-into-live-001](https://github.com/the-static-collective/HUMKIN/tree/feature/spotlight-single-into-live-001) | 0fe0488cd074 | No matching open PR; UNCLASSIFIED |
 | [feature/station-one-live-web-receiver-001](https://github.com/the-static-collective/HUMKIN/tree/feature/station-one-live-web-receiver-001) | e8dfa4cfd1b0 | No matching open PR; UNCLASSIFIED |
 | [feature/ten-manga-postcards](https://github.com/the-static-collective/HUMKIN/tree/feature/ten-manga-postcards) | 02348ed30206 | No matching open PR; UNCLASSIFIED |
+| [feature/tower-010-living-control](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-010-living-control) | e680d8dce2b6 | No matching open PR; UNCLASSIFIED |
+| [feature/tower-011-durable-asset-spine](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-011-durable-asset-spine) | de3617f680c8 | No matching open PR; UNCLASSIFIED |
+| [feature/tower-feature-handoff-009](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-feature-handoff-009) | 38ddc94066e7 | No matching open PR; UNCLASSIFIED |
+| [feature/tower-living-crate-007-20261121](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-living-crate-007-20261121) | b5309ccc7945 | No matching open PR; UNCLASSIFIED |
+| [feature/tower-living-crate-008-incremental-cloud-sync](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-living-crate-008-incremental-cloud-sync) | f033598e8eda | No matching open PR; UNCLASSIFIED |
 | [feature/unified-dial-live-fallback-001](https://github.com/the-static-collective/HUMKIN/tree/feature/unified-dial-live-fallback-001) | 6f7618dc75a6 | No matching open PR; UNCLASSIFIED |
 | [feature/winter-sunday-bumpers-20261115](https://github.com/the-static-collective/HUMKIN/tree/feature/winter-sunday-bumpers-20261115) | 7e7cba3ddf60 | No matching open PR; UNCLASSIFIED |
 | [feature/wkrp-producer-studio-20261114](https://github.com/the-static-collective/HUMKIN/tree/feature/wkrp-producer-studio-20261114) | e0dee514b7ad | No matching open PR; UNCLASSIFIED |
@@ -199,7 +208,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 830bc77f7c84 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 45051e98ff34 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
