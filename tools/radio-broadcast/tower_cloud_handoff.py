@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 
 from now_playing import artwork_url
+from autopilot_remote import published_audio_url
 from tower_programming import _stored
 
 SCHEMA = "humkin.tower.cloud-handoff/v1"
@@ -65,31 +66,39 @@ def export_handoff(desk, request):
         item = desk.station.by_id.get(id_)
         if not item or not desk.eligible(id_):
             raise ValueError(f"Recording unavailable or held for cloud: {id_}")
-        path = item.get("local_audio")
-        if not isinstance(path, str) or not path:
-            raise ValueError(f"Cloud needs an approved local audio file for {id_}; "
-                             "remote-only archive references cannot be exported yet.")
-        try:
-            file = Path(path).resolve(strict=True)
-        except OSError as exc:
-            raise ValueError(f"Local cloud source is missing: {id_}") from exc
-        if not file.is_file() or not 0 < file.stat().st_size <= 500 * 1024 * 1024:
-            raise ValueError(f"Local cloud source is unavailable or too large: {id_}")
-        if item.get("source") == "upload" and not file.is_relative_to(desk.tower.media.resolve()):
-            raise ValueError("An imported track must remain inside the approved media crate.")
         art = str(item.get("artwork") or "")
         if art and artwork_url(art) != art:
             raise ValueError("Only approved HTTPS artwork can be exported.")
         record = {
-            "id": id_, "path": str(file),
+            "id": id_,
             "title": str(item.get("title") or "")[:160],
             "artist": str(item.get("artist") or "HUMKIN")[:160],
             "album": str(item.get("album") or "")[:160],
             "artwork": art,
         }
+        path = item.get("local_audio")
+        if isinstance(path, str) and path:
+            try:
+                file = Path(path).resolve(strict=True)
+            except OSError as exc:
+                raise ValueError(f"Local cloud source is missing: {id_}") from exc
+            if not file.is_file() or not 0 < file.stat().st_size <= 500 * 1024 * 1024:
+                raise ValueError(f"Local cloud source is unavailable or too large: {id_}")
+            if item.get("source") == "upload" and not file.is_relative_to(desk.tower.media.resolve()):
+                raise ValueError("An imported track must remain inside the approved media crate.")
+            record["path"] = str(file)
+        else:
+            # URL originates from the current Tower's published catalogue, not
+            # a user-provided arbitrary address. CLI independently revalidates.
+            source = item.get("source")
+            record["url"] = published_audio_url(item.get("url"), source)
+            record["source_kind"] = source
         digest = UPLOAD.fullmatch(id_)
+        declared = item.get("sha256")
         if digest:
             record["expected_sha"] = digest.group(1)
+        elif isinstance(declared, str) and re.fullmatch(r"[0-9a-f]{64}", declared):
+            record["expected_sha"] = declared
         prepared.append(record)
     snapshot = {
         "schema": SCHEMA,
@@ -132,9 +141,16 @@ def validate_handoff(packet):
         raise ValueError("A handoff needs 1–250 ordered crate entries.")
     for id_, entry in zip(ids, entries):
         if (not isinstance(id_, str) or not TRACK.fullmatch(id_)
-                or not isinstance(entry, dict) or entry.get("id") != id_
-                or not isinstance(entry.get("path"), str) or not entry["path"]):
+                or not isinstance(entry, dict) or entry.get("id") != id_):
             raise ValueError("Cloud handoff lost its saved running order.")
+        local = isinstance(entry.get("path"), str) and bool(entry.get("path"))
+        remote = isinstance(entry.get("url"), str) and bool(entry.get("url"))
+        if local == remote:
+            raise ValueError("Each cloud recording needs exactly one local or remote source.")
+        if remote:
+            published_audio_url(entry["url"], entry.get("source_kind"))
+        elif "url" in entry or "source_kind" in entry:
+            raise ValueError("Local cloud entries cannot smuggle remote source details.")
         expected = entry.get("expected_sha")
         if expected is not None:
             if not isinstance(expected, str) or not re.fullmatch("[0-9a-f]{64}", expected):
