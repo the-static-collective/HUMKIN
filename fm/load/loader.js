@@ -8,6 +8,7 @@ import {inferFileMetadata,parseLayout,titleFromFile} from "./folder-metadata.mjs
 import {inspectTowerFolder,towerAudioDigest} from "./tower-sidecars.mjs";
 import {mountFeatureDesk} from "./feature-desk.mjs";
 import {mountCloudReceipt} from "./cloud-house-receipt.mjs";
+import {mountLivingControl} from "./living-control.mjs";
 
 const API = "https://kbhqacsdvjsstzyplqij.supabase.co";
 const KEY = "sb_publishable_Bv9JuOctSQTmnE3O1dP8RA_MKRNSD-o"; // Public, RLS-scoped key. Never a secret/service key.
@@ -18,6 +19,7 @@ const db = createClient(API, KEY, {auth: humkinAuthOptions()});
 const $ = id => document.getElementById(id);
 let selected = [], busy = false, stopRequested = false, drafts = [], known = [], activeUser = null;
 let featureDesk = null;
+let livingControl = null;
 let scanPromise=Promise.resolve();
 let directReady=false;
 const fmtTime = seconds => {
@@ -295,6 +297,7 @@ async function loadKnown(){
  $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper"&&
    (row.storage_provider!=="r2_private"||row.r2_upload_verified_at));
  featureDesk?.refresh();
+ livingControl?.refresh();
 }
 
 async function refreshDirectStatus(){
@@ -574,7 +577,7 @@ $("verify-link").addEventListener("click",async()=>{
      ". Request a NEW email and copy its link without opening it.";
  }finally{$("verify-link").disabled=false;token=null}
 });
-$("sign-out").addEventListener("click",async()=>{await db.auth.signOut();activeUser=null;drafts=[];known=[];drawAuth();featureDesk?.refresh();$("draft-list").textContent="Sign in to view drafts."});
+$("sign-out").addEventListener("click",async()=>{await db.auth.signOut();activeUser=null;drafts=[];known=[];drawAuth();featureDesk?.refresh();livingControl?.refresh();$("draft-list").textContent="Sign in to view drafts."});
 async function updateSession(){
  const {data,error}=await db.auth.getSession();
  const user=data?.session?.user;
@@ -586,6 +589,7 @@ async function updateSession(){
 }
 db.auth.onAuthStateChange((_event,_session)=>{setTimeout(updateSession,0)});
 featureDesk=mountFeatureDesk({db,rows:()=>activeUser?known:[],onStatus:message=>log("Feature Desk: "+message)});
+livingControl=mountLivingControl({db,rows:()=>activeUser?known:[],onStatus:message=>log("Living Control: "+message),onMetadataSaved:loadKnown});
 mountCloudReceipt();
 installProtonLogin({mount:$("proton-loader"),getClient:async()=>db,onSignedIn:updateSession});
 updateSession();
