@@ -1,3 +1,4 @@
+import {pathToFileURL} from "node:url";
 #!/usr/bin/env node
 // Read-only public Cloud Autopilot aircheck. No credentials, R2 writes or playout changes.
 const TS_PATH = /^\/autopilot\/([a-z0-9-]+)\/segments\/[a-f0-9]{64}\/segment-[0-9]{6}\.ts$/;
@@ -101,7 +102,7 @@ export async function watchWorker(origin,station,seconds=0,intervalSeconds=15,fe
     samples,monotonic,clock_advanced:advanced,
     receiver_audio_verified:false,acer_off_verified:false};
 }
-if(process.argv[1] && new URL("file://"+process.argv[1]).href===import.meta.url) {
+if(process.argv[1] && pathToFileURL(process.argv[1]).href===import.meta.url) {
   const args=process.argv.slice(2);
   function arg(flag,fallback) {
     const i=args.indexOf(flag);
