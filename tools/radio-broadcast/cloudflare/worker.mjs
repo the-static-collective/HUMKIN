@@ -196,15 +196,22 @@ export function program(tracks,seed){
  }
  const out=[],PHI=(1+Math.sqrt(5))/2;
  let elapsed=0,nextMedium=690,nextLong=1350,pulse=0;
+ let lastShortAfterSong=-Infinity;
  let nextShort=1+Math.floor(((++pulse)*PHI%1)*4);
  for(let i=0;i<music.length;i++){
    const song=music[i];out.push(song);elapsed+=song.duration;
    let choice=null;
    if(elapsed>=nextLong){choice=pick("long");nextLong+=1350;nextMedium=Math.max(nextMedium,elapsed+690)}
    else if(elapsed>=nextMedium){choice=pick("medium");nextMedium+=690;}
-   else if(i+1>=nextShort){choice=pick("short");}
+   else if(i+1>=nextShort&&i>0&&i+1-lastShortAfterSong>=2){
+     // Preserve a non-shortie boundary between short drops, including cycles.
+     choice=pick("short");
+   }
    if(i+1>=nextShort)nextShort+=(1+Math.floor(((++pulse)*PHI%1)*4));
-   if(choice){out.push(choice);elapsed+=choice.duration}
+   if(choice){
+     if(choice.duration<=19)lastShortAfterSong=i+1;
+     out.push(choice);elapsed+=choice.duration;
+   }
  }
  return arrangeBumperGroups(out,tracks.bumper_groups,carts);
 }
