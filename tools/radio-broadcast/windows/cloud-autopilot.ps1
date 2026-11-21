@@ -7,6 +7,8 @@ param(
     [string]$Plan,
     [Parameter(Mandatory = $true, ParameterSetName = "FromTower")]
     [string]$TowerProgram,
+    [Parameter(Mandatory = $true, ParameterSetName = "FromHouse")]
+    [string]$HouseSelection,
     [switch]$Publish,
     [string]$ApprovedPacket = '',
     [ValidateRange(30, 86400)]
@@ -21,6 +23,9 @@ if (-not (Test-Path -LiteralPath $PythonScript)) { throw 'Use a complete updated
 if ($PSCmdlet.ParameterSetName -eq 'FromTower') {
     if (-not (Test-Path -LiteralPath $TowerProgram)) { throw 'Tower program handoff not found.' }
     if ($ApprovedPacket) { throw 'A Tower exact-order program cannot be combined with a Gambit packet.' }
+} elseif ($PSCmdlet.ParameterSetName -eq 'FromHouse') {
+    if (-not (Test-Path -LiteralPath $HouseSelection)) { throw 'Reviewed HOUSE selection file not found.' }
+    if ($ApprovedPacket) { throw 'HOUSE rotation and Gambit guest proposal are separate actions.' }
 } elseif (-not (Test-Path -LiteralPath $Plan)) {
     throw 'The approved track plan file does not exist.'
 }
@@ -36,6 +41,8 @@ if (Get-Command py -ErrorAction SilentlyContinue) {
 $arguments = @($Prefix) + @($PythonScript, '--lead-seconds', [string]$LeadSeconds)
 if ($PSCmdlet.ParameterSetName -eq 'FromTower') {
     $arguments += @('--tower-program', [IO.Path]::GetFullPath($TowerProgram))
+} elseif ($PSCmdlet.ParameterSetName -eq 'FromHouse') {
+    $arguments += @('--house-selection', [IO.Path]::GetFullPath($HouseSelection))
 } else {
     $arguments += @('--input', [IO.Path]::GetFullPath($Plan))
 }
@@ -50,6 +57,10 @@ if ($Publish) {
     Write-Host 'Cloud Autopilot will upload approved AAC segments and revise the scheduled cloud frequency.' -ForegroundColor Yellow
     Write-Host 'This does NOT change the public listener player or the ordinary live transmitter.'
     if ($ApprovedPacket) { Write-Host 'A guest Gambit window and an automatic house return will be published, after owner review.' }
+    if ($PSCmdlet.ParameterSetName -eq 'FromHouse') {
+        Write-Host 'Approved public R2 HOUSE entries will be rechecked, encoded, and scheduled at the next song boundary.'
+        Write-Host 'This replaces the current short HOUSE cycle; no permanent source MP3s are downloaded.'
+    }
     if ($PSCmdlet.ParameterSetName -eq 'FromTower') {
         Write-Host 'A saved Tower show will play in exact order, then return to the existing house program.'
         Write-Host 'Review the selected show, requested Central date/time and imported audio before approving.'
