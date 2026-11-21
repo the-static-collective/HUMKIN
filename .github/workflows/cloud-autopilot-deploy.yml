@@ -26,7 +26,7 @@ jobs:
           node-version: '22'
       - name: Verify existing and Night Shift contracts
         run: |
-          node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs tools/radio-broadcast/cloudflare/cloud-autopilot.test.mjs tools/radio-broadcast/cloudflare/night-shift-aircheck.test.mjs
+          node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs tools/radio-broadcast/cloudflare/cloud-autopilot.test.mjs tools/radio-broadcast/cloudflare/cloud-schedule.test.mjs tools/radio-broadcast/cloudflare/night-shift-aircheck.test.mjs
           node --check tools/radio-broadcast/cloudflare/worker.mjs
           node --check tools/radio-broadcast/cloudflare/night-shift-aircheck.mjs
       - name: Require existing account-scoped Cloudflare deployment secrets
