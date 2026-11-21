@@ -19,7 +19,7 @@ from house_rotation import (API, PUBLIC_KEY, UUID, FULL, fingerprint,
 from scheduler_v2 import add_bonus_slots, with_bumpers
 
 SCHEMA = "humkin.tower.living-control/v1"
-ACTIONS = {"queue_next", "queue_end", "hold", "release", "more", "less"}
+ACTIONS = {"queue_next", "queue_end", "hold", "release", "more", "less", "metadata_refresh"}
 MAX_PENDING = 50
 MAX_WEIGHT = 2
 
