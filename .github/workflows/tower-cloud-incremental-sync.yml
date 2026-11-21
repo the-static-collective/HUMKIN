@@ -67,6 +67,7 @@ jobs:
 
       - name: Reuse cloud AAC segments; encode only new approved hashes; publish on song boundary
         env:
+          HUMKIN_CLOUD_LIVING_CONTROL: ${{ vars.HUMKIN_CLOUD_LIVING_CONTROL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           AWS_ACCESS_KEY_ID: ${{ secrets.HUMKIN_R2_LIVE_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.HUMKIN_R2_LIVE_SECRET_ACCESS_KEY }}
