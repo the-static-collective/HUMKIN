@@ -1,5 +1,5 @@
-import {pathToFileURL} from "node:url";
 #!/usr/bin/env node
+import {pathToFileURL} from "node:url";
 // Read-only public Cloud Autopilot aircheck. No credentials, R2 writes or playout changes.
 const TS_PATH = /^\/autopilot\/([a-z0-9-]+)\/segments\/[a-f0-9]{64}\/segment-[0-9]{6}\.ts$/;
 const MAX_RESPONSE_BYTES = 2_000_000;
