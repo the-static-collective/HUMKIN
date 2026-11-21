@@ -269,7 +269,7 @@ def next_effective(revisions, lead_seconds, now=None):
     return dt.datetime.fromtimestamp(earliest / 1000, tz=dt.timezone.utc)
 
 
-def public_program(existing, frequency, tracks, lead_seconds=120):
+def public_program(existing, frequency, tracks, lead_seconds=120, *, now=None):
     if existing:
         if existing.get("schema") != SCHEMA or existing.get("station_id") != frequency:
             raise ValueError("Existing cloud program is incompatible. Refusing to overwrite.")
@@ -278,7 +278,7 @@ def public_program(existing, frequency, tracks, lead_seconds=120):
             raise ValueError("Existing revision history needs review before another publication.")
     else:
         revisions = []
-    when = next_effective(revisions, lead_seconds)
+    when = next_effective(revisions, lead_seconds, now=now)
     revision = {"id": "r-" + when.strftime("%Y%m%d%H%M%S") + "-" +
         hashlib.sha256(json.dumps(tracks,sort_keys=True).encode()).hexdigest()[:10],
         "effective_at": iso(when), "tracks": tracks}

@@ -1,0 +1,61 @@
+{
+  "schema": "humkin.radiohouse.station-seed/v1",
+  "station_id": "fellowship",
+  "display_name": "FELLOWSHIP",
+  "owner": "the-static-collective",
+  "editorial": {
+    "roles": [
+      "contributor",
+      "reviewer",
+      "publisher"
+    ],
+    "authority": "human-review-required"
+  },
+  "automation": {
+    "mode": "manual",
+    "can_publish": false
+  },
+  "clock": {
+    "mode": "loop",
+    "default_program": "fellowship-test",
+    "timezone": "UTC"
+  },
+  "media_sources": [
+    {
+      "kind": "test-tone",
+      "id": "fellowship-tone-a",
+      "title": "Fellowship test tone A",
+      "approval": "synthetic-rehearsal",
+      "frequency_hz": 440,
+      "seconds": 14
+    },
+    {
+      "kind": "test-tone",
+      "id": "fellowship-tone-b",
+      "title": "Fellowship test tone B",
+      "approval": "synthetic-rehearsal",
+      "frequency_hz": 523,
+      "seconds": 17
+    }
+  ],
+  "programs": [
+    {
+      "id": "fellowship-test",
+      "title": "Fellowship engineering rehearsal",
+      "tracks": [
+        "fellowship-tone-a",
+        "fellowship-tone-b"
+      ]
+    }
+  ],
+  "receiver": {
+    "engine": "cloud_autopilot_hls"
+  },
+  "health": {
+    "policy": "verify-hls-and-schedule"
+  },
+  "provenance": {
+    "source": "generated-test-tones",
+    "purpose": "FELLOWSHIP rehearsal"
+  }
+}

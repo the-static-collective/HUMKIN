@@ -13,6 +13,13 @@ jobs:
           node-version: '22'
       - name: Validate Radio House contracts and evidence report
         run: python3 -m unittest discover -s tests -p 'test_radio_house_pulse.py' -v
+      - name: Verify Station Seed through the shared Cloud Autopilot engine
+        env:
+          PYTHON: python3
+        run: |
+          set -e
+          command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+          node --test tools/radio-broadcast/cloudflare/station-seed.test.mjs
       - name: Dry-run Radio House against live GitHub metadata
         run: python3 garden/radio_house_pulse.py --repo the-static-collective/HUMKIN --signal-out "$RUNNER_TEMP/current-signal.md" --branch-out "$RUNNER_TEMP/branch-inventory.md"
         env:
