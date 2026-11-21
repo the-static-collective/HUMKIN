@@ -25,6 +25,8 @@ jobs:
       - run: node tests/radio.test.mjs
       - run: node --check fm/live-station.js
       - run: node tests/main-live-radio.test.mjs
+      - run: node --test tests/night-shift-receiver.test.mjs
+      - run: node --check fm/night-shift/night-shift.js
       - run: node --check fmstudio/dial.js
       - run: node --check fmstudio/receiver/core.mjs
       - run: node --check fmstudio/receiver/engine.mjs
