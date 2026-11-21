@@ -52,6 +52,14 @@ assert.equal(result.sequence.length,songs.length+result.breaks.length);
 const shortGaps=result.breaks.filter(b=>b.lane==="short").map((b,i,a)=>
  i?b.afterSong-a[i-1].afterSong:null).filter(x=>x!==null);
 assert(new Set(shortGaps).size>=3,"Short drops require nonuniform golden-ratio gaps");
+const shortPositions=result.breaks.filter(b=>b.lane==="short").map(b=>b.afterSong);
+assert(shortPositions.every((n,i)=>n>1&&(i===0||n-shortPositions[i-1]>=2)),
+ "No shortie may follow a shortie at the next song boundary or cross a cycle seam");
+const dense=brain.plan(songs.slice(0,24),bumpers,1,tracks,options);
+const denseShortPositions=dense.breaks.filter(b=>b.lane==="short").map(b=>b.afterSong);
+assert(denseShortPositions.length>=2,"Dense setting should still allow shorties");
+assert(denseShortPositions.every((n,i)=>n>1&&(i===0||n-denseShortPositions[i-1]>=2)),
+ "Even the densest shortie setting cannot put them after consecutive songs");
 const longEvents=result.breaks.filter(b=>b.lane==="long");
 assert(longEvents.length>=5);
 for(let i=1;i<longEvents.length;i++){
