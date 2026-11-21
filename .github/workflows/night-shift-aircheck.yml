@@ -1,0 +1,43 @@
+name: HUMKIN Night Shift public aircheck (read-only)
+on:
+  workflow_dispatch:
+    inputs:
+      station:
+        description: Cloud Autopilot frequency
+        type: choice
+        options:
+          - station-one
+        default: station-one
+      watch_seconds:
+        description: Sample duration (seconds); 300 can span track boundaries
+        type: choice
+        options:
+          - '0'
+          - '60'
+          - '300'
+        default: '60'
+permissions:
+  contents: read
+jobs:
+  aircheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read public HLS clock and actual media (no credentials)
+        env:
+          STATION: ${{ inputs.station }}
+          WATCH: ${{ inputs.watch_seconds }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/radio-broadcast/cloudflare/night-shift-aircheck.mjs --station "$STATION" --watch-seconds "$WATCH" | tee night-shift-receipt.json
+      - name: Save aircheck receipt even if blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: humkin-night-shift-receipt
+          path: night-shift-receipt.json
+          if-no-files-found: warn
