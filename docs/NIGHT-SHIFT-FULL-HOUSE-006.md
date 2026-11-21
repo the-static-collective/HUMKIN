@@ -6,7 +6,7 @@
 
 The live catalog query of 2026-11-21 observed 241 published/enabled R2 songs and 36 published/enabled R2 bumper recordings (277 total). One song is 22.85 seconds: the previous 30-second **song** lower bound wrongly excluded it. In FULL mode the narrow lower bound is 15 seconds, while 12/18/24/40-song selections preserve their older validation.
 
-Of the 36 bumpers, 35 are within the current <=180-second incidental-cart limit; the remaining 262.5-second recording is **not** inserted at random breaks. It remains eligible for deliberate feature scheduling when separately reviewed. Disabled/unpublished, malformed source IDs/keys, manual profile holds, and feature-only voice files are not auto-aired.
+Of the 36 bumpers, 35 are within the current <=180-second incidental-cart limit. Two are held from automatic FULL drops: the **262.5-second Eno Efia interview** (requires a deliberate feature slot) and the time-specific **FELLOWSHIP! dec4** notice (previous station-operations notes explicitly reserved this for deliberate-show scheduling; its exact published asset SHA is now on the source-owned feature-only list). This leaves **34** approved incidental cart identities when current settings remain unchanged. Disabled/unpublished, malformed source IDs/keys, manual profile holds, and feature-only voice files are not auto-aired.
 
 The database's `r2_upload_verified_at` field is not populated, so catalog metadata is **not** evidence every source object is fetchable or playable. The publisher must download and SHA-256 verify each source before publishing, then validate the manifest and real AAC segments.
 
