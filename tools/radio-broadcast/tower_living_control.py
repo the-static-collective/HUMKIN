@@ -179,10 +179,14 @@ def compile_controls(base, live_rows, previous, commands, *, settings=None, bump
                               "holds": sorted(holds),
                               "weights": state["weights"]})[:16], 16)
     music = add_bonus_slots(music, extras, random.Random(seed))
+    # Feature-only carts may be QUEUED explicitly, but MUST NOT enter
+    # incidental Bumper Brain via the by_id source pool.
+    base_sources = {item["id"] for item in base["tracks"]}
     by_id = {uid: {
         "id": uid, "kind": item.get("kind", "song"),
         "duration": item["duration_seconds"], "sha256": item["sha256"],
-    } for uid, item in sources.items() if uid not in holds}
+    } for uid, item in sources.items()
+       if uid in base_sources and uid not in holds}
     effective_settings = settings if settings is not None else public_bumper_settings()
     effective_policy = bumper_policy if bumper_policy is not None else local_bumper_policy()
     # Source-owned three-lane Bumper Brain still owns incidental breaks.
