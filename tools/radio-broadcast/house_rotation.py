@@ -89,7 +89,7 @@ def fingerprint(packet):
     ).encode("utf-8")).hexdigest()
 
 
-def make_selection(rows, *, station="station-one", count=18):
+def make_selection(rows, *, station="station-one", count=40):
     if not STATION.fullmatch(station):
         raise ValueError("Invalid cloud station.")
     if type(count) is not int or not 2 <= count <= 40:
@@ -184,7 +184,7 @@ def crate_from_selection(packet):
 
 def main():
     parser = argparse.ArgumentParser(description="Draft a bounded, approved R2 HOUSE playlist.")
-    parser.add_argument("--count", type=int, default=18)
+    parser.add_argument("--count", type=int, default=40)
     parser.add_argument("--station", default="station-one")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
