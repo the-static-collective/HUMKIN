@@ -32,7 +32,7 @@ function safeControl(raw) {
     const item=raw.last_action;
     requireValue(item && Number.isSafeInteger(item.id) &&
       item.id<=raw.cursor && item.id>0 &&
-      /^(?:queue_next|queue_end|hold|release|more|less)$/.test(item.action) &&
+      /^(?:queue_next|queue_end|hold|release|more|less|metadata_refresh)$/.test(item.action) &&
       typeof item.track_id==="string" &&
       /^[a-f0-9-]{36}$/.test(item.track_id),"INVALID_CONTROL_RECEIPT");
     last={id:item.id,action:item.action,track_id:item.track_id};
