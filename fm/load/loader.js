@@ -289,7 +289,7 @@ async function loadKnown(){
  const used=known.filter(r=>r.storage_provider!=="r2_private"&&!r.supabase_source_removed_at)
    .reduce((s,r)=>s+Number(r.bytes||0),0);
  const secs=known.filter(x=>x.published_at).reduce((s,r)=>s+Number(r.duration_seconds||0),0);
- $("stats").textContent=known.filter(x=>x.published_at).length+" cloud recordings on air · "+drafts.length+" private drafts · "+fmtBytes(used)+" still in Supabase storage · "+known.filter(x=>x.storage_provider==="r2").length+" served by R2";
+ $("stats").textContent=known.filter(x=>x.published_at).length+ " published catalog recordings · "+drafts.length+" private drafts · "+fmtBytes(used)+" still in Supabase storage · "+known.filter(x=>x.storage_provider==="r2").length+" served by R2";
  $("total").textContent=fmtTime(secs)+" new cloud airtime";
  $("publish").disabled=busy||!drafts.some(row=>row.kind!=="bumper"&&
    (row.storage_provider!=="r2_private"||row.r2_upload_verified_at));
@@ -486,7 +486,8 @@ async function publish(){
        live++;log("ON AIR via "+provider+": "+row.title);
      }catch(err){failed++;log("Publication failed for "+row.title+": "+err.message)}
    }
-   feedback("Published "+live+" songs. "+failed+" need retry. Reload the station to hear the new crate.");
+   feedback("Published "+live+" songs to the approved catalog. "+failed+
+     " need retry. Same-Time/TOWER may pick them up on refresh; the independent Cloud HOUSE HLS schedule does NOT rebuild automatically yet.");
  }finally{setBusy(false);try{await loadKnown()}catch(err){log(err.message)}}
 }
 
@@ -506,7 +507,8 @@ async function publishOne(selectedRow){
  setBusy(true);
  try{
    const provider=await publishStorage(row);
-   feedback("PUBLISHED + ENABLED via "+provider+" · "+row.title+". Check a completed song boundary in the radio to confirm actual audio playback.");
+   feedback("PUBLISHED TO CATALOG + ENABLED via "+provider+" · "+row.title+
+     ". Browser/TOWER eligibility is updated, but Cloud HOUSE still needs a separately reviewed schedule publication. Check a real receiver for playback.");
  }catch(err){feedback("Could not publish "+row.title+": "+err.message)}
  finally{setBusy(false);try{await loadKnown()}catch(err){log("Refresh failure: "+err.message)}}
 }
