@@ -35,6 +35,15 @@ test("previews before publishing, retaining existing private source pin / revali
   assert.match(publish,/Get|put_object|R2 program pointer VERIFIED/i);
   assert.match(publish,/timeout-minutes: 90/);
 });
+test("cloud runner installs FFmpeg instead of assuming preinstalled image tools",()=>{
+  assert.match(publish,/sudo apt-get install -y -qq ffmpeg/);
+  assert.match(publish,/command -v ffmpeg/);
+  assert.match(publish,/command -v ffprobe/);
+  assert.match(publish,/set -euo pipefail/);
+  const setup = publish.indexOf("sudo apt-get install -y -qq ffmpeg");
+  const preview = publish.indexOf("Preview and transcode every remote MP3");
+  assert(setup > 0 && preview > setup);
+});
 test("embedded Python snippets are valid Python without requiring live cloud credentials",()=>{
   const snippets=[...publish.matchAll(/          python - <<'PY'\n([\s\S]*?)          PY/g)];
   const all=[...snippets,...draft.matchAll(/          python - <<'PY'\n([\s\S]*?)          PY/g)];
