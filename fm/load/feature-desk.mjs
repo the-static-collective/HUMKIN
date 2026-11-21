@@ -120,7 +120,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
        time:byId("feature-cloud-time").value,
        ids:[...state.ids],rows:check.data||[],programId
      },browserSha256);
-     const file=new Blob([JSON.stringify(packet,null,2)+"\\n"],{type:"application/json"});
+     const file=new Blob([JSON.stringify(packet,null,2),String.fromCharCode(10)],{type:"application/json"});
      const url=URL.createObjectURL(file);
      const link=document.createElement("a");
      link.href=url;
