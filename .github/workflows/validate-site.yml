@@ -11,6 +11,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate Radio House contracts and evidence report
+        run: python3 -m unittest discover -s tests -p 'test_radio_house_pulse.py' -v
       - name: Assemble and checksum-verify new release audio previews
         run: node scripts/assemble-everywhere-near-you.mjs
       - run: node tests/record-shelf.test.mjs
