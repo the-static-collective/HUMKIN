@@ -1,0 +1,103 @@
+{
+  "schema": "humkin.radiohouse.source-leads/v1",
+  "purpose": "Source-path and dated evidence leads only; neither GitHub code nor this manifest proves running audio, cloud publication, permissions, or device listening.",
+  "components": [
+    {
+      "id": "web-fm",
+      "label": "Web FM / invisible fallbacks",
+      "path": "fm/radio.js",
+      "notes": "Client selection code. Static rotation may not match cloud schedule.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/pull/148"
+    },
+    {
+      "id": "tower",
+      "label": "Acer Tower / live intervention",
+      "path": "tools/radio-broadcast/engine.py",
+      "notes": "Local/live source. File presence does not establish a running transmitter.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/pull/150"
+    },
+    {
+      "id": "cloud-house",
+      "label": "Cloud HOUSE publisher",
+      "path": "tools/radio-broadcast/autopilot_publisher.py",
+      "notes": "Published R2 schedule and AAC segments require independent verification.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/pull/187"
+    },
+    {
+      "id": "cloud-receiver",
+      "label": "Night Shift opt-in receiver",
+      "path": "fm/night-shift/night-shift.js",
+      "notes": "Owner reported two-song Acer-off audio November 20; full 40-song field test unknown.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/NIGHT-SHIFT-RECEIVER-002.md"
+    },
+    {
+      "id": "long-wave",
+      "label": "Long Wave personal stream",
+      "path": "tools/radio-broadcast/cloudflare/worker.mjs",
+      "notes": "Personal continuous MP3; not the same shared clock as Cloud Autopilot.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/LONG-WAVE-BACKGROUND-STREAM.md"
+    },
+    {
+      "id": "catalog",
+      "label": "R2 / Supabase catalog bridge",
+      "path": "supabase/functions/humkin-r2-bridge/index.ts",
+      "notes": "Catalog and R2 state are live external systems, not inspected in this report.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/R2-PRIMARY-STORAGE.md"
+    },
+    {
+      "id": "programming",
+      "label": "Program proposals and Gambits",
+      "path": "supabase/functions/humkin-program-proposals/index.ts",
+      "notes": "Approval alone is not cloud publication authority.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/GAMBIT-PROGRAMMING-002.md"
+    },
+    {
+      "id": "orchard",
+      "label": "Orchard station game",
+      "path": "fm/orchard/index.html",
+      "notes": "Local HUM/XP never grants owner broadcast rights.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/ORCHARD-NETWORK-004.md"
+    },
+    {
+      "id": "station-bible",
+      "label": "Station Bible and fiction",
+      "path": "fm/studio/station-bible.json",
+      "notes": "Scripts are not actual recorded or aired audio.",
+      "reference": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/HUMKIN-RADIO-CHARTER-AND-FIRST-DAY.md"
+    }
+  ],
+  "focus_branches": [
+    {
+      "branch": "recovery/android-classic-spine-20261120",
+      "question": "Classic Android recovery baseline and physical-device compatibility"
+    },
+    {
+      "branch": "feature/android-native-tower-hls-20261120",
+      "question": "Native HLS addition stacked on classic recovery"
+    },
+    {
+      "branch": "review/living-receiver-service-20261120",
+      "question": "Service-owned native playback experiment; compare without replacing classic"
+    },
+    {
+      "branch": "feature/catalog-graph-guardrails-predictive-radio-20261119",
+      "question": "Catalog integrity and three-song-ahead simulation"
+    },
+    {
+      "branch": "experiment/field-outside-witness-001-20261121",
+      "question": "Owner-opt-in device audio field receipts"
+    },
+    {
+      "branch": "integration/radio-signal-train-20261118",
+      "question": "SIGNAL / Auto Disco integration ancestry, still held"
+    },
+    {
+      "branch": "integration/radio-tower-council-20261118",
+      "question": "Tower / Vinyl Council nested integration ancestry"
+    },
+    {
+      "branch": "integration/living-hls-v20-bugtest-20261118",
+      "question": "Unmerged live relay integration tests"
+    }
+  ]
+}
