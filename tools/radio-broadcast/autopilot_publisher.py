@@ -105,6 +105,13 @@ def prepare_tracks(input_path, cache, *, publish=False):
     """
     payload = json.loads(input_path.read_text(encoding="utf-8"))
     handoff = None
+    if payload.get("schema") == "humkin.cloud-house-selection/v1":
+        from house_rotation import catalog_rows, validate_selection, crate_from_selection
+        # The public catalog is checked on BOTH preview and publish. Remote
+        # objects do not become eligible just because a stale draft says so.
+        validate_selection(payload, catalog_rows())
+        handoff = payload  # existing source-pins receipt gates remote publish
+        payload = crate_from_selection(payload)
     if payload.get("schema") == "humkin.tower.cloud-handoff/v1":
         from tower_cloud_handoff import validate_handoff
         validate_handoff(payload)
@@ -296,6 +303,7 @@ def main():
     sources = parser.add_mutually_exclusive_group(required=True)
     sources.add_argument("--input", help="Local approved track list JSON")
     sources.add_argument("--tower-program", help="Unapproved Tower handoff JSON; owner must review before publication")
+    sources.add_argument("--house-selection", help="Owner-reviewed draft generated from current approved R2 catalog; remote sources checked again")
     parser.add_argument("--cache", default=str(Path(os.environ.get("LOCALAPPDATA",
         str(Path.home()))) / "HUMKIN" / "Autopilot"))
     parser.add_argument("--publish", action="store_true", help="Upload segments and commit the schedule")
@@ -304,9 +312,9 @@ def main():
     args = parser.parse_args()
     if not 30 <= args.lead_seconds <= 86400:
         parser.error("Lead time must be 30–86400 seconds")
-    if args.tower_program and args.approved_packet:
-        parser.error("Tower exact-order programs and Gambit proposals are separate scheduling paths.")
-    manifest = Path(args.tower_program or args.input).resolve(strict=True)
+    if (args.tower_program or args.house_selection) and args.approved_packet:
+        parser.error("Saved Tower/house selections and Gambit proposals are separate scheduling paths.")
+    manifest = Path(args.tower_program or args.house_selection or args.input).resolve(strict=True)
     cache = Path(args.cache)
     handoff = None
     if args.tower_program:
@@ -317,6 +325,9 @@ def main():
               "revision", handoff["program"]["revision"])
         print("Requested Central slot:", handoff["slot"]["day"], handoff["slot"]["time"])
     station, tracks = prepare_tracks(manifest, cache, publish=args.publish)
+    if args.house_selection:
+        print("HOUSE source approval rechecked:", len(tracks), "songs")
+        print("This changes the HOUSE cycle only if explicitly published.")
     if handoff:
         from tower_cloud_handoff import validate_prepared
         validate_prepared(handoff, tracks)
