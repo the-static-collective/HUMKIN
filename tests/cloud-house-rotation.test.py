@@ -80,8 +80,8 @@ class CloudHouseRotationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Duplicate"):
             validate_selection(dirty, self.rows)
         revoked = json.loads(json.dumps(self.rows))
-        revoked[0]["enabled"] = False
-        revoked[1]["published_at"] = None
+        chosen = self.payload["tracks"][0]["id"]
+        next(row for row in revoked if row["id"] == chosen)["enabled"] = False
         with self.assertRaises(ValueError):
             validate_selection(self.payload, revoked)
 
@@ -139,7 +139,8 @@ class CloudHouseRotationTest(unittest.TestCase):
                 self.assertEqual(preview, confirmed)
 
                 revoked = json.loads(json.dumps(self.rows))
-                revoked[0]["enabled"]=False
+                chosen = self.payload["tracks"][0]["id"]
+                next(row for row in revoked if row["id"] == chosen)["enabled"] = False
                 with patch.object(house_rotation,"catalog_rows",return_value=revoked):
                     with self.assertRaisesRegex(ValueError, "eligibility or source metadata changed"):
                         publisher.prepare_tracks(manifest, cache, publish=True)
