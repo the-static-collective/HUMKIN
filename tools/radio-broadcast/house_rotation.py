@@ -89,7 +89,7 @@ def fingerprint(packet):
     ).encode("utf-8")).hexdigest()
 
 
-def make_selection(rows, *, station="station-one", count=18):
+def make_selection(rows, *, station="station-one", count=40):
     if not STATION.fullmatch(station):
         raise ValueError("Invalid cloud station.")
     if type(count) is not int or not 2 <= count <= 40:
@@ -101,25 +101,35 @@ def make_selection(rows, *, station="station-one", count=18):
             candidates[selected["id"]] = selected
     if len(candidates) < count:
         raise ValueError("Not enough approved, content-addressed songs for this house.")
-    # Deterministic interleaving across artist bins avoids a run of 18 entries
-    # from one artist, without inventing play-count information or "fairness".
+    # Deterministic, catalog-proportional artist allocation. The previous
+    # largest-bin alternator could omit a smaller approved artist entirely.
+    # No play counts or undisclosed editorial weights are inferred.
     bins = {}
     for item in candidates.values():
         bins.setdefault(item["artist"].casefold(), []).append(item)
     for values in bins.values():
         values.sort(key=lambda entry: hashlib.sha256(
             ("HUMKIN-NIGHT-SHIFT-003:" + entry["id"]).encode()).hexdigest())
+    weights = {name: len(items) for name, items in bins.items()}
+    total = sum(weights.values())
+    chosen_counts = {name: 0 for name in bins}
     ordered = []
-    while len(ordered) < count:
-        available = [(name, items) for name, items in bins.items() if items]
+    previous = None
+    for slot in range(count):
+        available = [name for name, items in bins.items() if items]
         if not available:
             break
-        available.sort(key=lambda pair: (
-            pair[0] == (ordered[-1]["artist"].casefold() if ordered else None),
-            -len(pair[1]), pair[0]
-        ))
-        _, chosen = available[0]
-        ordered.append(chosen.pop(0))
+        alternatives = [name for name in available if name != previous]
+        if alternatives:
+            available = alternatives
+        # Weighted fair scheduling: minimize catalog-proportional deficit.
+        # Integer arithmetic keeps output stable across runtimes and platforms.
+        chosen_name = min(available, key=lambda name: (
+            chosen_counts[name] * total - (slot + 1) * weights[name],
+            -weights[name], name))
+        ordered.append(bins[chosen_name].pop(0))
+        chosen_counts[chosen_name] += 1
+        previous = chosen_name
     packet = {
         "schema": SCHEMA, "state": "draft_for_owner_review",
         "station_id": station, "source": SOURCE, "tracks": ordered,
@@ -174,7 +184,7 @@ def crate_from_selection(packet):
 
 def main():
     parser = argparse.ArgumentParser(description="Draft a bounded, approved R2 HOUSE playlist.")
-    parser.add_argument("--count", type=int, default=18)
+    parser.add_argument("--count", type=int, default=40)
     parser.add_argument("--station", default="station-one")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

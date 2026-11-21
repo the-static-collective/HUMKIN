@@ -66,6 +66,37 @@ class CloudHouseRotationTest(unittest.TestCase):
             self.assertEqual(item["source_kind"], "r2")
             self.assertEqual(len(item["expected_sha"]), 64)
 
+    def test_larger_house_reaches_all_three_artists_with_catalog_proportions(self):
+        library = []
+        for family, (artist, quantity) in enumerate((
+                ("HUMKIN", 113), ("Hailey Lu", 82), ("Daughter's Home", 38))):
+            for slot in range(quantity):
+                uid = f"{family + 1:08x}-0000-4000-8000-{slot:012d}"
+                digest = sha256(uid.encode()).hexdigest()
+                library.append({
+                    "id": uid, "sha256": digest,
+                    "r2_object_key": f"tracks/{uid}/{digest}.mp3",
+                    "title": f"{artist} song {slot}", "artist": artist,
+                    "album": "HUMKIN RADIO",
+                    "duration_seconds": 180, "enabled": True,
+                    "published_at": "2026-11-21T00:00:00+00:00",
+                    "kind": "song", "storage_provider": "r2",
+                })
+        result = make_selection(library, count=40)
+        self.assertEqual(result, make_selection(list(reversed(library)), count=40))
+        counts = {artist: sum(song["artist"] == artist for song in result["tracks"])
+                  for artist in ("HUMKIN", "Hailey Lu", "Daughter's Home")}
+        self.assertEqual(sum(counts.values()), 40)
+        self.assertGreaterEqual(counts["HUMKIN"], 17)
+        self.assertGreaterEqual(counts["Hailey Lu"], 12)
+        self.assertGreaterEqual(counts["Daughter's Home"], 5)
+        self.assertEqual(len(set(song["id"] for song in result["tracks"])), 40)
+        self.assertTrue(all(
+            result["tracks"][i]["artist"] != result["tracks"][i-1]["artist"]
+            for i in range(1, len(result["tracks"]))
+        ))
+        self.assertEqual(validate_selection(result, library), "station-one")
+
     def test_rejects_unsigned_edits_duplicates_and_revoked_publication(self):
         dirty = json.loads(json.dumps(self.payload))
         dirty["tracks"][0]["title"] = "Wrong title"
