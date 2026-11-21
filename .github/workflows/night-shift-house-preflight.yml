@@ -1,0 +1,43 @@
+name: HUMKIN Night Shift — verify real 40-song HLS preview without publishing
+on:
+  pull_request:
+    paths:
+      - 'tools/radio-broadcast/autopilot_publisher.py'
+      - 'tools/radio-broadcast/house_rotation.py'
+      - 'tools/radio-broadcast/autopilot_remote.py'
+      - '.github/workflows/night-shift-house-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install tested audio encoder
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          command -v ffmpeg
+      - name: Verify all preview and short-segment regression tests
+        run: |
+          python tests/cloud-house-rotation.test.py
+          python -m py_compile tools/radio-broadcast/autopilot_publisher.py
+      - name: Prepare source-verified 40-song HOUSE against live approved catalog
+        run: |
+          mkdir -p out
+          python tools/radio-broadcast/house_rotation.py --count 40 --output out/night-shift-house-selection.json
+          python tools/radio-broadcast/autopilot_publisher.py \
+            --house-selection out/night-shift-house-selection.json \
+            --cache "$RUNNER_TEMP/humkin-house-cache"
+          echo 'PREVIEW PASS: all 40 approved recordings verified, decoded and segmented; no R2 write or program pointer change.'
+      - name: Prove only a preview happened
+        if: success()
+        run: |
+          echo '### HOUSE preflight passed' >> "$GITHUB_STEP_SUMMARY"
+          echo 'All 40 public source MP3s were hash-verified and transcoded in the runner without any R2 credentials. This job cannot publish.' >> "$GITHUB_STEP_SUMMARY"

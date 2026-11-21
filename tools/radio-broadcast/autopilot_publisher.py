@@ -51,6 +51,10 @@ def asset_digest(path):
     return digest.hexdigest()
 
 
+class ShortFinalSegment(ValueError):
+    """FFmpeg ended a valid audio track with a final HLS tail below 250 ms."""
+
+
 def segments_from_manifest(manifest, directory):
     durations = []
     waiting = None
@@ -64,29 +68,57 @@ def segments_from_manifest(manifest, directory):
             if not match or waiting is None or int(match.group(1)) != len(durations):
                 raise ValueError("Malformed HLS manifest: segment mismatch")
             file = directory / line
-            if not file.is_file() or file.stat().st_size == 0 or not 250 <= waiting <= 11000:
+            if not file.is_file() or file.stat().st_size == 0 or not 0 < waiting <= 11000:
                 raise ValueError("Invalid/missing AAC segment: " + line)
             durations.append(waiting)
             waiting = None
     if waiting is not None or not durations:
         raise ValueError("Empty or unfinished AAC manifest")
+    # The cloud Worker requires every advertised segment to last >=250 ms.
+    # A track lasting 184.08 seconds, for instance, produces 23 eight-second
+    # segments and an unusably short 80 ms tail. Change *encoding boundaries*,
+    # never the original audio or the Worker validation contract.
+    if len(durations) >= 2 and durations[-1] < 250 and all(
+            length >= 250 for length in durations[:-1]):
+        raise ShortFinalSegment("AAC final segment below 250 ms")
+    if any(length < 250 for length in durations):
+        raise ValueError("Invalid AAC segment duration")
     return durations
 
 
 def _encoded_segments(src, digest, cache):
-    """Encode only once per byte digest; always validate reusable manifests."""
+    """Encode once per digest, retrying only FFmpeg's short final segment.
+
+    Slightly changing HLS chunk width avoids a <250 ms last fragment without
+    modifying song duration, trimming audio, or weakening Worker requirements.
+    An already valid cache is reused. All attempts use the same source bytes.
+    """
     target = cache / digest
     target.mkdir(parents=True, exist_ok=True)
     manifest = target / "track.m3u8"
-    if not manifest.exists():
+    if manifest.exists():
+        try:
+            return segments_from_manifest(manifest, target)
+        except ShortFinalSegment:
+            print("Re-encoding old cache with a short AAC tail:", digest[:12])
+    for seconds in ("8", "7.6", "8.4", "7.2", "8.8", "9.1"):
+        # Remove only our own generated output; never delete sources or pins.
+        manifest.unlink(missing_ok=True)
+        for stale in target.glob("segment-*.ts"):
+            stale.unlink()
         command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
             "-i", str(src), "-map", "0:a:0", "-vn", "-c:a", "aac",
             "-b:a", "128k", "-ar", "44100", "-ac", "2",
-            "-f", "hls", "-hls_time", "8", "-hls_list_size", "0",
+            "-f", "hls", "-hls_time", seconds, "-hls_list_size", "0",
             "-hls_playlist_type", "vod", "-hls_segment_filename",
             str(target / "segment-%06d.ts"), str(manifest)]
         subprocess.run(command, check=True)
-    return segments_from_manifest(manifest, target)
+        try:
+            return segments_from_manifest(manifest, target)
+        except ShortFinalSegment:
+            print("Short AAC final segment at", seconds,
+                  "seconds; retrying with a different chunk width")
+    raise ValueError("AAC encoding produced short final segments at every safe chunk width")
 
 
 def _remote_pin_path(cache, handoff):

@@ -177,6 +177,54 @@ class CloudHouseRotationTest(unittest.TestCase):
                         publisher.prepare_tracks(manifest, cache, publish=True)
                 self.assertFalse(list(cache.glob("*.mp3")))
 
+    def test_short_final_hls_tail_retries_without_relaxing_segment_contract(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            digest = "b" * 64
+            src = root / "synthetic.mp3"
+            src.write_bytes(b"fake-source")
+            calls = []
+
+            def fake_encode(command, check):
+                self.assertTrue(check)
+                seconds = command[command.index("-hls_time") + 1]
+                calls.append(seconds)
+                directory = root / digest
+                manifest = directory / "track.m3u8"
+                durations = [8000, 8000, 80] if seconds == "8" else [7600, 7600, 880]
+                for n, duration in enumerate(durations):
+                    (directory / f"segment-{n:06d}.ts").write_bytes(b"G" * 188)
+                manifest.write_text("#EXTM3U\n" + "".join(
+                    f"#EXTINF:{duration / 1000:.3f},\nsegment-{n:06d}.ts\n"
+                    for n, duration in enumerate(durations)
+                ) + "#EXT-X-ENDLIST\n", encoding="utf-8")
+
+            with patch.object(publisher.subprocess, "run", side_effect=fake_encode):
+                durations = publisher._encoded_segments(src, digest, root)
+                self.assertEqual(durations, [7600, 7600, 880])
+                self.assertEqual(calls, ["8", "7.6"])
+                # A valid cache is reusable without reencoding.
+                self.assertEqual(publisher._encoded_segments(src, digest, root), durations)
+                self.assertEqual(calls, ["8", "7.6"])
+            self.assertTrue(all(250 <= duration <= 11000 for duration in durations))
+
+    def test_missing_or_tiny_middle_segment_still_fails_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder)
+            manifest = directory / "track.m3u8"
+            for n in range(3):
+                (directory / f"segment-{n:06d}.ts").write_bytes(b"G" * 188)
+            manifest.write_text(
+                "#EXTM3U\n#EXTINF:8.000,\nsegment-000000.ts\n"
+                "#EXTINF:0.080,\nsegment-000001.ts\n"
+                "#EXTINF:7.500,\nsegment-000002.ts\n",
+                encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Invalid AAC segment duration"):
+                publisher.segments_from_manifest(manifest, directory)
+            (directory / "segment-000002.ts").unlink()
+            with self.assertRaisesRegex(ValueError, "Invalid/missing AAC segment"):
+                publisher.segments_from_manifest(manifest, directory)
+
     def test_house_publication_schedules_at_old_song_boundary(self):
         tracks=[{"id":"r2-"+song["id"], "title":song["title"], "artist":song["artist"],
                  "album":song["album"], "artwork":"", "asset_sha":song["sha256"],
