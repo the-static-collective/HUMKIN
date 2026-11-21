@@ -55,7 +55,10 @@ class GuestSeasonals(unittest.TestCase):
         # explicitly feature-only recording may not be randomly inserted.
         interview = FEATURE["tracks"][1]
         config = json.loads((ROOT / "fm" / "rotation.json").read_text())
-        self.assertEqual(config["feature_only_spoken_sha256s"], [interview["sha256"]])
+        held = set(config["feature_only_spoken_sha256s"])
+        self.assertIn(interview["sha256"], held)
+        self.assertIn("3c8cf44a1ecbb933aa3bbcdc0d726881ff1839dec452e6593b5e00fcfc25b55a",
+                      held, "Dated FELLOWSHIP notice stays deliberate-show-only")
         tracks = {
             "song": {"id": "song", "kind": "song", "duration": 180.0},
             "interview": {"id": "interview", "kind": "bumper",

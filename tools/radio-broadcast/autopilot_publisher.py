@@ -286,7 +286,31 @@ def public_program(existing, frequency, tracks, lead_seconds=120):
     return {"schema": SCHEMA, "station_id": frequency, "revisions": revisions}
 
 
+def validate_hosted_program(program):
+    """Fail before uploading media if the schedule exceeds Worker hard limits."""
+    if not isinstance(program, dict) or program.get("schema") != SCHEMA:
+        raise ValueError("Invalid hosted cloud program.")
+    revisions = program.get("revisions")
+    if not isinstance(revisions, list) or not 1 <= len(revisions) <= 32:
+        raise ValueError("Cloud Worker allows 1–32 program revisions.")
+    for revision in revisions:
+        tracks = revision.get("tracks")
+        if not isinstance(tracks, list) or not 1 <= len(tracks) <= 500:
+            raise ValueError("Cloud Worker allows only 1–500 audio entries per revision.")
+        segment_count = 0
+        for entry in tracks:
+            durations = entry.get("durations_ms")
+            if not isinstance(durations, list) or not durations:
+                raise ValueError("Hosted audio requires valid encoded segments.")
+            if any(type(milliseconds) is not int or not 250 <= milliseconds <= 11000 for milliseconds in durations):
+                raise ValueError("Encoded segment duration violates Cloud Worker contract.")
+            segment_count += len(durations)
+        if segment_count > 10000:
+            raise ValueError("Cloud Worker 10,000-segment limit exceeded; HOLD before R2 writes.")
+
+
 def publish_program(program, cache, client, new_revision_count=1):
+    validate_hosted_program(program)
     from botocore.exceptions import ClientError
     # Media first, schedule last: an interrupted upload cannot announce missing audio.
     if not 1 <= new_revision_count <= len(program["revisions"]):

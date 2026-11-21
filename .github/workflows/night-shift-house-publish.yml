@@ -15,6 +15,7 @@ on:
           - '18'
           - '24'
           - '40'
+          - 'FULL'
       reviewed_fingerprint:
         description: 'Paste the 64-character REVIEW FINGERPRINT from the matching draft workflow'
         required: true
@@ -39,7 +40,7 @@ jobs:
   publish:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirmation == 'PUBLISH_AUTOPILOT'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -68,9 +69,10 @@ jobs:
           from sys import path
           path.insert(0, 'tools/radio-broadcast')
           from house_rotation import catalog_rows, make_selection
-          count=int(os.environ['HOUSE_COUNT'])
+          raw_count=os.environ['HOUSE_COUNT'].strip()
+          count=raw_count if raw_count == 'FULL' else int(raw_count)
           expected=os.environ['REVIEWED_FINGERPRINT'].strip()
-          if count not in (12,18,24,40) or not re.fullmatch('[0-9a-f]{64}',expected):
+          if count not in (12,18,24,40,'FULL') or not re.fullmatch('[0-9a-f]{64}',expected):
               raise SystemExit('HOLD: count or review fingerprint is invalid')
           selection=make_selection(catalog_rows(),count=count)
           if selection['fingerprint'] != expected:
@@ -80,12 +82,17 @@ jobs:
           path_out.write_text(json.dumps(selection,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           minutes=sum(t['duration_seconds'] for t in selection['tracks'])/60
           print('Matched reviewed fingerprint:',expected)
-          print('Tracks:',len(selection['tracks']))
+          print('Program entries:',len(selection['tracks']))
+          if count == 'FULL':
+              print('Songs:',selection['song_count'],'Bumper breaks:',selection['bumper_break_count'])
           print('Estimated minutes:',round(minutes,1))
           for index,t in enumerate(selection['tracks'],1):
-              print(f"{index:02d}. {t['artist']} — {t['title']}")
+              label='BUMPER ' if t.get('kind') == 'bumper' else ''
+              print(f"{index:03d}. {label}{t['artist']} — {t['title']}")
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as summary:
-              summary.write(f"### Reviewed HUMKIN HOUSE\n\n{count} songs · {minutes:.1f} estimated minutes\n\n")
+              summary.write(f"### Reviewed HUMKIN HOUSE\n\n{len(selection['tracks'])} program entries · {minutes:.1f} estimated minutes\n\n")
+              if count == 'FULL':
+                  summary.write(f"{selection['song_count']} songs · {selection['bumper_break_count']} short/medium/long bumper breaks · {selection['held_bumper_count']} held/feature-only carts\n\n")
               summary.write(f"Selected SHA-256 fingerprint: \`{expected}\`\n\n")
               summary.write('Source: current published, enabled R2 song catalog. Publication remains separate.\n')
           PY
@@ -140,9 +147,9 @@ jobs:
           if actual!=expected: raise SystemExit('Published cloud program does not match reviewed song order')
           print('R2 program pointer VERIFIED:',revision['id'])
           print('Effective at:',revision['effective_at'])
-          print('Tracks:',len(actual))
+          print('Program entries:',len(actual))
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as out:
-              out.write(f"\n**R2 publication verified:** \`{revision['id']}\` — {len(actual)} songs, effective {revision['effective_at']}\n\n")
+              out.write(f"\n**R2 publication verified:** `{revision['id']}` — {len(actual)} reviewed program entries, effective {revision['effective_at']}\n\n")
               out.write('The existing Cloudflare listener will switch at that published revision boundary. Physical playback still requires a receiver check.\n')
           PY
           curl --fail --silent --show-error --max-time 15 \
