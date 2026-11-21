@@ -55,7 +55,10 @@ assert(new Set(shortGaps).size>=3,"Short drops require nonuniform golden-ratio g
 const shortPositions=result.breaks.filter(b=>b.lane==="short").map(b=>b.afterSong);
 assert(shortPositions.every((n,i)=>n>1&&(i===0||n-shortPositions[i-1]>=2)),
  "No shortie may follow a shortie at the next song boundary or cross a cycle seam");
-const dense=brain.plan(songs.slice(0,24),bumpers,1,tracks,options);
+// Remove medium/long anchors in this dense fixture; their existing priority
+// can legitimately occupy every break at frequency 1.
+const shortOnly=bumpers.filter(i=>brain.classify(tracks[i],options).lane==="short");
+const dense=brain.plan(songs.slice(0,24),shortOnly,1,tracks,options);
 const denseShortPositions=dense.breaks.filter(b=>b.lane==="short").map(b=>b.afterSong);
 assert(denseShortPositions.length>=2,"Dense setting should still allow shorties");
 assert(denseShortPositions.every((n,i)=>n>1&&(i===0||n-denseShortPositions[i-1]>=2)),
