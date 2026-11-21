@@ -20,9 +20,10 @@ jobs:
       - name: Source syntax checks
         run: |
           node --check tools/radio-broadcast/cloudflare/cloud-autopilot.mjs
+          node --check tools/radio-broadcast/cloudflare/night-shift-aircheck.mjs
           node --check tools/radio-broadcast/cloudflare/worker.mjs
           node --check fm/long-wave/receiver.js
       - name: Long Wave stream and receiver regression tests
-        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs tools/radio-broadcast/cloudflare/cloud-autopilot.test.mjs
+        run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs tools/radio-broadcast/cloudflare/cloud-autopilot.test.mjs tools/radio-broadcast/cloudflare/night-shift-aircheck.test.mjs
       - name: Publisher source syntax
         run: python3 -m py_compile tools/radio-broadcast/autopilot_publisher.py
