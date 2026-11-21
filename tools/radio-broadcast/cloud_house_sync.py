@@ -127,14 +127,17 @@ def prepare_delta(selection, existing, cache, *, downloader=verified_remote_file
 
 def read_cloud(client, station):
     """Read existing pointer only; fail on errors other than object not found."""
-    from botocore.exceptions import ClientError
     key = f"autopilot/programs/{station}.json"
     try:
         item = client.get_object(Bucket=BUCKET, Key=key)
-    except ClientError as error:
-        if error.response.get("ResponseMetadata", {}).get("HTTPStatusCode") == 404:
-            return None
-        raise
+    except Exception as error:
+        # Only boto3-compatible object-not-found is an absent program.
+        # Auth failures, timeouts and unexpected exceptions must fail closed.
+        response = getattr(error, "response", None)
+        status = response.get("ResponseMetadata", {}).get("HTTPStatusCode") if isinstance(response, dict) else None
+        if status != 404:
+            raise
+        return None
     return json.loads(item["Body"].read())
 
 
