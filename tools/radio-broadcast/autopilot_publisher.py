@@ -315,26 +315,55 @@ def publish_program(program, cache, client, new_revision_count=1):
     # Media first, schedule last: an interrupted upload cannot announce missing audio.
     if not 1 <= new_revision_count <= len(program["revisions"]):
         raise ValueError("Invalid publication revision count")
-    uploaded = set()
+    from concurrent.futures import ThreadPoolExecutor
+    from tower_asset_store import read_manifest, verify_stored_segments, segment_key
+    # The source-addressed completion marker is written ONLY after all
+    # segments have been verified. Do not HEAD thousands of certified pieces
+    # every time someone changes a title or queues a different show.
+    certified = {}
+    fallback = {}
     for revision in program["revisions"][-new_revision_count:]:
         for track in revision["tracks"]:
             sha = track["asset_sha"]
-            for index in range(len(track["durations_ms"])):
-                key = f"autopilot/segments/{sha}/segment-{index:06d}.ts"
-                if key in uploaded:
-                    continue
-                uploaded.add(key)
-                local = cache / sha / f"segment-{index:06d}.ts"
-                try:
-                    client.head_object(Bucket=BUCKET, Key=key)
-                    continue
-                except ClientError as exc:
-                    if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 404:
-                        raise
-                if not local.is_file():
-                    raise FileNotFoundError("Approved R2 segment missing from both cache and cloud: "+key)
-                client.upload_file(str(local), BUCKET, key, ExtraArgs={
-                    "ContentType":"video/mp2t", "CacheControl":"public, max-age=31536000, immutable"})
+            durations = track["durations_ms"]
+            if sha not in certified:
+                marker = read_manifest(client, sha, expected_durations=durations)
+                if marker is not None:
+                    verify_stored_segments(client, sha, marker[0])
+                    certified[sha] = durations
+                else:
+                    certified[sha] = None
+            elif certified[sha] is not None and certified[sha] != durations:
+                raise ValueError("Cloud audio has contradictory durations for one source hash.")
+            if certified[sha] is not None:
+                continue
+            for index in range(len(durations)):
+                key = segment_key(sha, index)
+                fallback.setdefault(key, cache / sha / f"segment-{index:06d}.ts")
+
+    def check_or_upload(item):
+        key, local = item
+        try:
+            client.head_object(Bucket=BUCKET, Key=key)
+            return 0
+        except ClientError as exc:
+            if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 404:
+                raise
+        if not local.is_file():
+            raise FileNotFoundError("Approved R2 segment missing from both cache and cloud: " + key)
+        client.upload_file(str(local), BUCKET, key, ExtraArgs={
+            "ContentType": "video/mp2t",
+            "CacheControl": "public, max-age=31536000, immutable"})
+        return 1
+
+    print("Cloud AAC publication preflight:", sum(v is not None for v in certified.values()),
+          "durable assets,", len(fallback), "legacy segments", flush=True)
+    # Parallel independent object existence checks avoid 10–30 min serial
+    # round trips. Any failure aborts before the station program pointer.
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        newly_uploaded = sum(pool.map(check_or_upload, fallback.items()))
+    print("R2 segment preflight verified:", len(fallback),
+          "legacy references;", newly_uploaded, "uploads", flush=True)
     station = program["station_id"]
     key = f"autopilot/programs/{station}.json"
     # Recheck the latest revision before overwriting the program pointer.
