@@ -198,6 +198,12 @@ footer{padding:20px;text-align:center}
 <p><strong>Recurring days</strong> (the saved show stays paused until you enable it)</p>
 <div id="feature-days" role="group" aria-label="Days for feature"></div>
 <div class="row"><button id="feature-save" type="button" class="accent" disabled>SAVE PAUSED FEATURE</button><button id="feature-clear" type="button">CLEAR UNSAVED ORDER</button><a href="../manage/#programming" class="button-like">REVIEW IN STATION MANAGER</a></div>
+<div class="folder-controls">
+<div><label for="feature-cloud-date">One-time Cloud HOUSE date</label><input type="date" id="feature-cloud-date"></div>
+<div><label for="feature-cloud-time">One-time Cloud HOUSE time (Central)</label><input type="time" id="feature-cloud-time" value="19:00" step="900"></div>
+</div>
+<div class="row"><button id="feature-export-cloud" type="button" disabled>EXPORT ONE-TIME CLOUD FEATURE</button></div>
+<p class="small">This exports a source-verified TOWER handoff JSON from the same ordered lineup. It preserves long interviews, exact cue order and a planned Central slot. Export is <strong>not on-air publication</strong>; it needs separate owner review and the Cloud HOUSE publisher. The current station schedule is unchanged.</p>
 <p id="feature-status" role="status" aria-live="polite"></p>
 <p class="small">Existing scheduled programs belong to Same-Time RADIO and TOWER. Cloud HOUSE one-time guest blocks still require a separate owner-reviewed cloud publication. This form does not bypass that gate. Only the existing verified HUMKIN owner account can save; staff delegation is not active yet.</p>
 </section>

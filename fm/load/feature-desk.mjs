@@ -3,6 +3,7 @@
  * A draft is not a Cloud HOUSE program or an on-air receipt.
  */
 import {availableRecordings,buildPausedFeature,move} from "./feature-core.mjs";
+import {buildCloudHandoff,browserSha256} from "./cloud-feature-handoff.mjs";
 
 const OWNER="us@abundent.org";
 const byId=id=>document.getElementById(id);
@@ -67,6 +68,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
        byId("feature-duration").textContent+=" · Longer than selected window: the show may not complete before the end";
    }
    byId("feature-save").disabled=state.busy||!state.ids.length;
+   byId("feature-export-cloud").disabled=state.busy||!state.ids.length;
  }
  async function save(){
    if(state.busy)return;
@@ -98,6 +100,41 @@ export function mountFeatureDesk({db,rows,onStatus}){
    }catch(err){status("FEATURE NOT SAVED: "+err.message)}
    finally{state.busy=false;renderLineup()}
  }
+ async function exportOneTimeCloud(){
+   if(state.busy)return;
+   state.busy=true;renderLineup();
+   try{
+     const {data,error}=await db.auth.getUser();
+     if(error||data?.user?.email?.toLowerCase()!==OWNER)
+       throw Error("Only the verified HUMKIN owner can export a Cloud HOUSE feature.");
+     const ids=[...new Set(state.ids)];
+     const check=await db.from("humkin_radio_tracks")
+       .select("id,title,artist,album,kind,enabled,published_at,storage_provider,sha256,r2_object_key,duration_seconds")
+       .in("id",ids);
+     if(check.error)throw Error("Cannot recheck public audio: "+check.error.message);
+     const nonce=crypto.getRandomValues(new Uint8Array(12));
+     const programId=[...nonce].map(b=>b.toString(16).padStart(2,"0")).join("");
+     const packet=await buildCloudHandoff({
+       name:byId("feature-name").value,
+       day:byId("feature-cloud-date").value,
+       time:byId("feature-cloud-time").value,
+       ids:[...state.ids],rows:check.data||[],programId
+     },browserSha256);
+     const file=new Blob([JSON.stringify(packet,null,2),String.fromCharCode(10)],{type:"application/json"});
+     const url=URL.createObjectURL(file);
+     const link=document.createElement("a");
+     link.href=url;
+     link.download="HUMKIN-cloud-feature-"+packet.slot.day+"-"+programId+".json";
+     document.body.append(link);link.click();link.remove();
+     setTimeout(()=>URL.revokeObjectURL(url),30000);
+     status("ONE-TIME CLOUD HANDOFF PREPARED: "+state.ids.length+
+       " ordered positions · "+packet.slot.day+" "+packet.slot.time+
+       " Central. The downloaded packet is NOT an aired or scheduled show. "+
+       "The owner must review and publish using Cloud Autopilot.");
+   }catch(error){status("CLOUD FEATURE NOT EXPORTED: "+error.message)}
+   finally{state.busy=false;renderLineup()}
+ }
+ byId("feature-export-cloud").addEventListener("click",exportOneTimeCloud);
  byId("feature-add").addEventListener("click",()=>{
    if(state.busy)return;
    const id=byId("feature-track").value;
