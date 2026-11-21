@@ -143,6 +143,28 @@ class AssetStoreTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"contradicts"):
             store.read_manifest(self.client,self.a,[8000,8000])
 
+    def test_legacy_r2_assets_gain_markers_without_ffmpeg_or_new_program(self):
+        for i in range(3):
+            self.client.objects[store.segment_key(self.a,i)]=b"legacy-audio"+str(i).encode()
+        legacy=store.certify_legacy_asset(self.client,self.a,[8000]*3)
+        self.assertEqual(legacy["state"],"certified_without_reencoding")
+        self.assertEqual(store.read_manifest(self.client,self.a)[1],[8000]*3)
+        self.assertNotIn("autopilot/programs/station-one.json",self.client.objects)
+        self.client.objects.pop(store.key_for_manifest(self.a))
+        # Inactive or unapproved rows can never be backfilled automatically.
+        old={"schema":publisher.SCHEMA,"station_id":"station-one",
+             "revisions":[{"id":"r-legacy","effective_at":publisher.iso(datetime.now(timezone.utc)),
+                           "tracks":[{"id":"song-a","asset_sha":self.a,
+                                      "durations_ms":[8000]*3}]}]}
+        self.assertEqual(cloud.backfill_previous(self.client,old,[{
+            "sha256":self.a,"enabled":False,"published_at":None,"storage_provider":"r2"}]),0)
+        self.assertNotIn(store.key_for_manifest(self.a),self.client.objects)
+        approved={"sha256":self.a,"enabled":True,"published_at":"2026-11-21",
+                  "storage_provider":"r2"}
+        self.assertEqual(cloud.backfill_previous(self.client,old,[approved],limit=1),1)
+        self.assertEqual(cloud.backfill_previous(self.client,old,[approved],limit=1),0)
+        self.assertIn(store.key_for_manifest(self.a),self.client.objects)
+
     def test_publisher_uses_verified_marker_without_head_per_piece(self):
         with tempfile.TemporaryDirectory() as temp:
             fake_encode(None,self.a,temp)
