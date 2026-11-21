@@ -1,0 +1,8 @@
+.field-witness { margin-top: 18px !important; }
+.field-witness h2 { font: 600 clamp(1.25rem, 4vw, 2rem)/1.2 system-ui, sans-serif; margin: .4em 0; }
+.field-witness .field-explain { color: #efe6d6; font: .95rem/1.6 system-ui, sans-serif; }
+.field-witness .field-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.field-witness button { background: #f7d486; color: #172627; border: 1px solid #f7d486; padding: 12px 15px; min-height: 46px; border-radius: 8px; font: 700 .8rem system-ui, sans-serif; }
+.field-witness button:disabled { opacity: .5; cursor: not-allowed; }
+.field-witness button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+.field-witness #field-status { color: #d4dabb; min-height: 2em; font: .87rem/1.6 system-ui, sans-serif; }
