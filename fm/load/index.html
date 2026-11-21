@@ -100,7 +100,7 @@ footer{padding:20px;text-align:center}
 <div class="folder-controls">
 <div>
 <label for="pick-folder">Choose a whole music folder (desktop Chrome / Edge)</label>
-<input type="file" id="pick-folder" webkitdirectory directory multiple accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4">
+<input type="file" id="pick-folder" webkitdirectory directory multiple accept=".mp3,.wav,.m4a,.json,audio/mpeg,audio/wav,audio/x-wav,audio/mp4">
 </div>
 <div>
 <label for="folder-layout">Interpret subfolders as</label>
@@ -131,6 +131,7 @@ footer{padding:20px;text-align:center}
 </div>
 </div>
 <p id="folder-note" class="small" role="status">Folder layout: Artist / Album. The chosen parent folder itself is not treated as an artist.</p>
+<p id="tower-note" class="small" role="status">For an existing Acer Tower crate, select <code>%LOCALAPPDATA%\HUMKIN\Tower\media</code> using the folder picker. SHA-named audio and paired JSON sidecars are read locally to restore titles, artists, albums and verified durations before any upload. Original paths remain on your computer; missing sidecars are flagged for review.</p>
 </section>
 <section class="panel card" aria-labelledby="drop-title">
 <h2 id="drop-title">04 · Drop songs, singles and bumpers</h2>
