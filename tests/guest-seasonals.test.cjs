@@ -20,7 +20,10 @@ test("seasonal policy lists the two songs, not the interview",()=>{
  assert.deepEqual(new Set(rotation.sha256s),new Set(songs.map(t=>t.sha256)));
  assert.equal(rotation.sha256s.includes(interview.sha256),false);
  const config=require("../fm/rotation.json");
- assert.deepEqual(config.feature_only_spoken_sha256s,[interview.sha256]);
+ const held=new Set(config.feature_only_spoken_sha256s);
+ assert(held.has(interview.sha256),"The Eno Efia interview must stay show-only");
+ assert(held.has("3c8cf44a1ecbb933aa3bbcdc0d726881ff1839dec452e6593b5e00fcfc25b55a"),
+  "The dated FELLOWSHIP! dec4 notice must stay deliberate-show-only");
  assert.equal(songs.some(t=>config.feature_only_spoken_sha256s.includes(t.sha256)),false);
 });
 test("two songs each receive three total positions",()=>{
