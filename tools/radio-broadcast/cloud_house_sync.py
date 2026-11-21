@@ -10,6 +10,7 @@ No R2 writes occur in read-only mode, and no hidden catalog picks are allowed.
 import argparse
 from collections import defaultdict
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -149,16 +150,29 @@ def plan(rows=None):
 
 
 def sync(*, client, cache, selection=None, read_catalog=catalog_rows,
-         downloader=verified_remote_file, encode=_encoded_segments, commit=False):
+         downloader=verified_remote_file, encode=_encoded_segments, commit=False,
+         living_control=False, read_intents=None):
     """Single-flight coordinator; use protected GitHub Actions concurrency."""
     current_rows = read_catalog()
     chosen = selection or plan(current_rows)
     validate_selection(chosen, current_rows)
     old = read_cloud(client, chosen["station_id"])
-    if not needs_refresh(chosen, old):
-        return {"state": "unchanged", "fingerprint": chosen["fingerprint"],
-                "entries": len(chosen["tracks"])}
-    tracks, counts = prepare_delta(chosen, old, cache,
+    controlled = chosen
+    commands = []
+    control_state = None
+    previous = None
+    if living_control:
+        from tower_living_control import (public_intents, state_from_cloud,
+                                          compile_controls)
+        previous = state_from_cloud(old)
+        reader = read_intents or public_intents
+        commands = reader(previous["cursor"])
+        controlled, control_state = compile_controls(chosen, current_rows,
+                                                     previous, commands)
+    if not needs_refresh(controlled, old) and not commands:
+        return {"state": "unchanged", "fingerprint": controlled["fingerprint"],
+                "entries": len(controlled["tracks"])}
+    tracks, counts = prepare_delta(controlled, old, cache,
                                    downloader=downloader, encode=encode)
     from autopilot_publisher import parse_time
     if old and len(old["revisions"]) >= 32:
@@ -167,17 +181,31 @@ def sync(*, client, cache, selection=None, read_catalog=catalog_rows,
     # including per-record rights and the repo-owned policy, before publishing.
     latest = read_catalog()
     validate_selection(chosen, latest)
-    if not needs_refresh(chosen, read_cloud(client, chosen["station_id"])):
-        return {"state": "unchanged", "fingerprint": chosen["fingerprint"],
-                "entries": len(chosen["tracks"])}
-    program = public_program(old, chosen["station_id"], tracks, lead_seconds=180)
+    if living_control:
+        # A hold issued during a lengthy encode must not be overtaken by an
+        # older schedule. Leave all new requests pending and retry shortly.
+        fresh_commands = reader(previous["cursor"])
+        if fresh_commands != commands:
+            raise ValueError("Control requests changed during preparation: HOLD and retry.")
+        verified, replayed = compile_controls(chosen, latest, previous, commands)
+        if verified != controlled or replayed != control_state:
+            raise ValueError("Approved catalog or control policy changed during preparation: HOLD.")
+    if not needs_refresh(controlled, read_cloud(client, controlled["station_id"])) and not commands:
+        return {"state": "unchanged", "fingerprint": controlled["fingerprint"],
+                "entries": len(controlled["tracks"])}
+    program = public_program(old, controlled["station_id"], tracks, lead_seconds=180)
+    if living_control and control_state is not None:
+        # The receipt is written only with the R2 program pointer, never by
+        # the owner-controlled phone. Worker reports pending vs effective.
+        program["revisions"][-1]["control"] = control_state
     validate_hosted_program(program)
     if commit:
-        # publish_program re-HEADs every referenced TS segment and refuses a
-        # changed current R2 pointer; it uploads immutable media before JSON.
+        # publish_program re-HEADs referenced TS segments and holds on
+        # revision races; media is uploaded before the pointer changes.
         publish_program(program, Path(cache), client, new_revision_count=1)
     return {**counts, "state": "published" if commit else "preview",
-            "fingerprint": chosen["fingerprint"],
+            "fingerprint": controlled["fingerprint"],
+            "control_cursor": control_state["cursor"] if control_state else None,
             "revision": program["revisions"][-1]["id"],
             "effective_at": program["revisions"][-1]["effective_at"]}
 
@@ -197,7 +225,10 @@ def main():
         print("No R2 credentials required and no media/schedule written.")
         return
     from hls_push import r2_client
-    receipt = sync(client=r2_client(), cache=args.cache, selection=selection, commit=True)
+    control_active = os.getenv("HUMKIN_CLOUD_LIVING_CONTROL") == "ENABLED"
+    print("Living Control:", "ACTIVE" if control_active else "HOLD / not enabled")
+    receipt = sync(client=r2_client(), cache=args.cache, selection=selection,
+                   commit=True, living_control=control_active)
     print("CLOUD HOUSE SYNC RECEIPT:", json.dumps(receipt, sort_keys=True))
     if receipt["state"] == "published":
         print("Media-first, pointer-last R2 program update complete.")

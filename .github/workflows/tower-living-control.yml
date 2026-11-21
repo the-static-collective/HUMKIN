@@ -1,0 +1,71 @@
+name: TOWER 010 — apply owner Living Control requests to Cloud HOUSE
+
+# A five-minute check is OFF until owner explicitly enables
+# HUMKIN_CLOUD_LIVING_CONTROL=ENABLED in repository Actions variables.
+# Owner commands are independently verified against Supabase RLS on insertion,
+# then checked again against the public approved catalog by the cloud publisher.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: humkin-reviewed-cloud-house-station-one
+  cancel-in-progress: false
+
+jobs:
+  living-control:
+    if: github.ref == 'refs/heads/main' && vars.HUMKIN_CLOUD_LIVING_CONTROL == 'ENABLED'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Cheap, read-only public control queue check
+        id: pending
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/radio-broadcast/tower_control_preflight.py | tee -a "$GITHUB_OUTPUT"
+      - name: Install encoder and pinned R2 client only when needed
+        if: steps.pending.outputs.pending == 'true'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          python -m pip install boto3==1.40.70
+      - name: Verify dedicated bucket secrets exist
+        if: steps.pending.outputs.pending == 'true'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HUMKIN_R2_LIVE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HUMKIN_R2_LIVE_SECRET_ACCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import os,re
+          if not re.fullmatch('[0-9a-fA-F]{32}',os.getenv('CLOUDFLARE_ACCOUNT_ID','')):
+              raise SystemExit('HOLD: missing R2 account')
+          if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
+              raise SystemExit('HOLD: missing dedicated live-bucket R2 keys')
+          print('Dedicated R2 credentials present (no values revealed).')
+          PY
+      - name: Commit only catalog-verified controls on a safe song boundary
+        if: steps.pending.outputs.pending == 'true'
+        env:
+          HUMKIN_CLOUD_LIVING_CONTROL: ENABLED
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HUMKIN_R2_LIVE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HUMKIN_R2_LIVE_SECRET_ACCESS_KEY }}
+        run: |
+          python tools/radio-broadcast/cloud_house_sync.py \
+            --cache "$RUNNER_TEMP/tower-010-control" --sync
+      - name: Explain result
+        if: always()
+        shell: bash
+        run: |
+          echo "A requested command is not on air until Cloud HOUSE adopts a published revision and reports available HLS media." >> "$GITHUB_STEP_SUMMARY"

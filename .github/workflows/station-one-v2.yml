@@ -5,6 +5,9 @@ on:
       - 'tools/radio-broadcast/**'
       - 'tests/station-one-v2.test.py'
       - 'tests/cloud-house-delta.test.py'
+      - 'tests/tower-living-control.test.py'
+      - 'tools/radio-broadcast/tower_living_control.py'
+      - 'tools/radio-broadcast/tower_control_preflight.py'
       - 'tools/radio-broadcast/cloud_house_sync.py'
       - 'tests/station-lab.test.py'
       - 'tests/radio-broadcast.test.py'
@@ -15,6 +18,9 @@ on:
       - 'tools/radio-broadcast/**'
       - 'tests/station-one-v2.test.py'
       - 'tests/cloud-house-delta.test.py'
+      - 'tests/tower-living-control.test.py'
+      - 'tools/radio-broadcast/tower_living_control.py'
+      - 'tools/radio-broadcast/tower_control_preflight.py'
       - 'tools/radio-broadcast/cloud_house_sync.py'
       - 'tests/station-lab.test.py'
       - '.github/workflows/station-one-v2.yml'
@@ -55,6 +61,7 @@ jobs:
           python tests/autopilot-remote-media.test.py
           python tests/cloud-house-rotation.test.py
           python tests/cloud-house-delta.test.py
+          python tests/tower-living-control.test.py
           python tests/test_gambit_program_deck.py
           python tests/tower.test.py
           python tests/station-on-air.test.py
