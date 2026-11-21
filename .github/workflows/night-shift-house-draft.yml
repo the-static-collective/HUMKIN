@@ -1,0 +1,53 @@
+name: HUMKIN Night Shift — draft a larger cloud HOUSE
+on:
+  pull_request:
+    paths:
+      - 'tools/radio-broadcast/house_rotation.py'
+      - 'tools/radio-broadcast/autopilot_publisher.py'
+      - '.github/workflows/night-shift-house-draft.yml'
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Count of already published, enabled R2 songs to place in a draft HOUSE'
+        type: choice
+        required: true
+        default: '18'
+        options:
+          - '12'
+          - '18'
+          - '24'
+permissions:
+  contents: read
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build an owner-review DRAFT from current public radio catalog
+        shell: bash
+        run: |
+          TRACK_COUNT=18
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            TRACK_COUNT="$(jq -r '.inputs.count' "$GITHUB_EVENT_PATH")"
+          fi
+          mkdir -p out
+          python tools/radio-broadcast/house_rotation.py --count "$TRACK_COUNT" --output out/night-shift-house-selection.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('out/night-shift-house-selection.json').read_text(encoding='utf-8'))
+          print('DRAFT ONLY: no cloud audio or playlist writes')
+          print('Number of songs:',len(p['tracks']))
+          print('Estimated house minutes:',round(sum(s['duration_seconds'] for s in p['tracks'])/60,1))
+          for n, track in enumerate(p['tracks'],1):
+              print(f"{n:02d}. {track['artist']} — {track['title']}")
+          PY
+      - name: Preserve editable approved-selection draft for explicit owner review
+        uses: actions/upload-artifact@v4
+        with:
+          name: night-shift-house-selection-draft
+          path: out/night-shift-house-selection.json
+          retention-days: 14
