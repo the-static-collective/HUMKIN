@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://humkin.abundent.org/contracts/program.v1.schema.json",
+  "title": "Radio House Program v1 (proposal only)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "station_id",
+    "revision",
+    "items",
+    "publication_state"
+  ],
+  "properties": {
+    "schema": {
+      "const": "humkin.radiohouse.program/v1"
+    },
+    "station_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "effective_at_utc": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "publication_state": {
+      "enum": [
+        "draft",
+        "reviewed",
+        "prepared",
+        "published",
+        "withdrawn"
+      ]
+    },
+    "approval_ref": {
+      "type": "string",
+      "description": "Evidence reference, not a permission or cloud write token"
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "recording_id"
+        ],
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "editorial_note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "return_to_revision": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional house-return revision; not executed by this document"
+    }
+  }
+}
