@@ -2,7 +2,7 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [45051e98ff34](https://github.com/the-static-collective/HUMKIN/commit/45051e98ff3422d051854d043a82eae9ceda679e)
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [fcf6d8b52dc1](https://github.com/the-static-collective/HUMKIN/commit/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2)
 - Branches: 201; open PRs: 27; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
@@ -208,7 +208,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 45051e98ff34 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | fcf6d8b52dc1 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |

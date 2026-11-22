@@ -3,8 +3,8 @@
 > NOT A LIVE AIR CHECK. Source and GitHub metadata only. Cloudflare, R2, Supabase, Acer and real listening devices are NOT CHECKED.
 
 - Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN)
-- Main SHA: [45051e98ff34](https://github.com/the-static-collective/HUMKIN/commit/45051e98ff3422d051854d043a82eae9ceda679e)
-- Main commit event: 2026-11-21T22:41:47Z (not a current field-check time)
+- Main SHA: [fcf6d8b52dc1](https://github.com/the-static-collective/HUMKIN/commit/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2)
+- Main commit event: 2026-11-21T23:30:53Z (not a current field-check time)
 - Visible branch heads: 201; open PRs: 27; pagination: COMPLETE for this repository.
 - Source-file presence, merge, deployment, program publication and audio heard are distinct observations.
 
@@ -12,15 +12,15 @@
 
 | Component | Main source | Runtime/deployment | Device audio | Evidence |
 | --- | --- | --- | --- | --- |
-| Web FM / invisible fallbacks | [fm/radio.js](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/fm/radio.js) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/pull/148) |
-| Acer Tower / live intervention | [tools/radio-broadcast/engine.py](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/tools/radio-broadcast/engine.py) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/pull/150) |
-| Cloud HOUSE publisher | [tools/radio-broadcast/autopilot_publisher.py](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/tools/radio-broadcast/autopilot_publisher.py) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/pull/187) |
-| Night Shift opt-in receiver | [fm/night-shift/night-shift.js](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/fm/night-shift/night-shift.js) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/NIGHT-SHIFT-RECEIVER-002.md) |
-| Long Wave personal stream | [tools/radio-broadcast/cloudflare/worker.mjs](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/tools/radio-broadcast/cloudflare/worker.mjs) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/LONG-WAVE-BACKGROUND-STREAM.md) |
-| R2 / Supabase catalog bridge | [supabase/functions/humkin-r2-bridge/index.ts](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/supabase/functions/humkin-r2-bridge/index.ts) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/R2-PRIMARY-STORAGE.md) |
-| Program proposals and Gambits | [supabase/functions/humkin-program-proposals/index.ts](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/supabase/functions/humkin-program-proposals/index.ts) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/GAMBIT-PROGRAMMING-002.md) |
-| Orchard station game | [fm/orchard/index.html](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/fm/orchard/index.html) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/ORCHARD-NETWORK-004.md) |
-| Station Bible and fiction | [fm/studio/station-bible.json](https://github.com/the-static-collective/HUMKIN/blob/45051e98ff3422d051854d043a82eae9ceda679e/fm/studio/station-bible.json) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/HUMKIN-RADIO-CHARTER-AND-FIRST-DAY.md) |
+| Web FM / invisible fallbacks | [fm/radio.js](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/fm/radio.js) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/pull/148) |
+| Acer Tower / live intervention | [tools/radio-broadcast/engine.py](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/tools/radio-broadcast/engine.py) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/pull/150) |
+| Cloud HOUSE publisher | [tools/radio-broadcast/autopilot_publisher.py](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/tools/radio-broadcast/autopilot_publisher.py) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/pull/187) |
+| Night Shift opt-in receiver | [fm/night-shift/night-shift.js](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/fm/night-shift/night-shift.js) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/NIGHT-SHIFT-RECEIVER-002.md) |
+| Long Wave personal stream | [tools/radio-broadcast/cloudflare/worker.mjs](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/tools/radio-broadcast/cloudflare/worker.mjs) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/LONG-WAVE-BACKGROUND-STREAM.md) |
+| R2 / Supabase catalog bridge | [supabase/functions/humkin-r2-bridge/index.ts](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/supabase/functions/humkin-r2-bridge/index.ts) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/R2-PRIMARY-STORAGE.md) |
+| Program proposals and Gambits | [supabase/functions/humkin-program-proposals/index.ts](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/supabase/functions/humkin-program-proposals/index.ts) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/GAMBIT-PROGRAMMING-002.md) |
+| Orchard station game | [fm/orchard/index.html](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/fm/orchard/index.html) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/ORCHARD-NETWORK-004.md) |
+| Station Bible and fiction | [fm/studio/station-bible.json](https://github.com/the-static-collective/HUMKIN/blob/fcf6d8b52dc1cc9173eb51c2aef1a0eff91613e2/fm/studio/station-bible.json) — PRESENT (source only) | NOT CHECKED | NOT CHECKED | [Lead](https://github.com/the-static-collective/HUMKIN/blob/main/docs/HUMKIN-RADIO-CHARTER-AND-FIRST-DAY.md) |
 
 ## Operational boundary
 
