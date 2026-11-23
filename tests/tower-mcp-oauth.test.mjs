@@ -1,0 +1,51 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const mcp=readFileSync(new URL("../supabase/functions/humkin-tower-mcp/index.ts",import.meta.url),"utf8");
+const consent=readFileSync(new URL("../oauth/consent/consent.mjs",import.meta.url),"utf8");
+const ui=readFileSync(new URL("../oauth/consent/index.html",import.meta.url),"utf8");
+const gate=readFileSync(new URL("../supabase/functions/humkin-tower-chat/index.ts",import.meta.url),"utf8");
+test("MCP is OAuth/RLS protected before exposing any tool",()=>{
+  assert.match(mcp,/withOAuthProtectedResource\(\)/);
+  assert.match(mcp,/withSupabase\(\{auth:"user"\}\)/);
+  assert.match(mcp,/supabase\.auth\.getUser\(\)/);
+  assert.match(mcp,/OWNER_NOT_AUTHORIZED/);
+  assert.match(mcp,/email_confirmed_at/);
+  assert.match(mcp,/createMcpHandler/);
+  assert.match(mcp,/server\.registerTool\("tower_live_schedule"/);
+  assert.match(mcp,/server\.registerTool\("tower_search_catalog"/);
+  assert.match(mcp,/server\.registerTool\("tower_recent_requests"/);
+  assert.match(mcp,/server\.registerTool\("tower_request_control"/);
+  assert.doesNotMatch(mcp,/\.from\("humkin_tower_control_intents"\)\.insert/);
+  assert.doesNotMatch(mcp,/SECRET_ACCESS_KEY|R2_ACCESS_KEY_ID|CLOUDFLARE_API_TOKEN/);
+});
+test("Owner control tool submits only explicit future commands through existing gate",()=>{
+  assert.match(mcp,/request_id:uuid/);
+  assert.match(mcp,/owner_confirmed:z\.literal\(true\)/);
+  assert.match(mcp,/station_id:station/);
+  assert.match(mcp,/destructiveHint:false/);
+  assert.match(mcp,/send\("control_request",\{track_id,command,request_id\}\)/);
+  assert.match(gate,/principal\.scoped\.from\("humkin_tower_control_intents"\)/);
+  assert.match(gate,/await alreadyRecorded\(principal\.user\.id,command\.request_id\)/);
+});
+test("OAuth UI displays actual requesting client and never auto-grants permission",()=>{
+  assert.match(consent,/getAuthorizationDetails\(id\)/);
+  assert.match(consent,/approveAuthorization\(id\)/);
+  assert.match(consent,/denyAuthorization\(id\)/);
+  assert.match(consent,/data\.client\?\.name/);
+  assert.match(consent,/data\.scope/);
+  assert.match(consent,/data\.redirect_uri/);
+  assert.match(consent,/data\.user\.email_confirmed_at/);
+  assert.match(consent,/installProtonLogin/);
+  assert.match(consent,/auth\.signInWithOtp/);
+  assert.match(consent,/\$\("approve"\)\.addEventListener\("click",\(\)=>decide\(true\)\)/);
+  assert.doesNotMatch(consent,/(?:onload|DOMContentLoaded|load\(\))[\s\S]{0,200}approveAuthorization\(id\)/);
+  assert.match(ui,/id="approve"/);
+  assert.match(ui,/id="deny"/);
+  assert.match(ui,/noindex,nofollow/);
+});
+test("OAuth route never contains R2 or service-role credentials",()=>{
+  assert.doesNotMatch(consent,/service_role|SUPABASE_SERVICE_ROLE_KEY|R2_SECRET_ACCESS_KEY/);
+  assert.doesNotMatch(ui,/service_role|SUPABASE_SERVICE_ROLE_KEY|R2_SECRET_ACCESS_KEY/);
+  assert.match(consent,/http:.*localhost.*127\.0\.0\.1/);
+});
