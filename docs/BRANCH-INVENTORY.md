@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [c850e99c3ac1](https://github.com/the-static-collective/HUMKIN/commit/c850e99c3ac1336d9b80c826a560f75c9c40de72)
-- Branches: 201; open PRs: 27; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [6ec10050e046](https://github.com/the-static-collective/HUMKIN/commit/6ec10050e046ed0ef9e0c397eb1aa5ab9f0e428c)
+- Branches: 202; open PRs: 27; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -173,6 +173,7 @@
 | [feature/ten-manga-postcards](https://github.com/the-static-collective/HUMKIN/tree/feature/ten-manga-postcards) | 02348ed30206 | No matching open PR; UNCLASSIFIED |
 | [feature/tower-010-living-control](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-010-living-control) | e680d8dce2b6 | No matching open PR; UNCLASSIFIED |
 | [feature/tower-011-durable-asset-spine](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-011-durable-asset-spine) | de3617f680c8 | No matching open PR; UNCLASSIFIED |
+| [feature/tower-012a-b-chat-auth-bridge](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-012a-b-chat-auth-bridge) | 01b7a15b747a | No matching open PR; UNCLASSIFIED |
 | [feature/tower-feature-handoff-009](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-feature-handoff-009) | 38ddc94066e7 | No matching open PR; UNCLASSIFIED |
 | [feature/tower-living-crate-007-20261121](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-living-crate-007-20261121) | b5309ccc7945 | No matching open PR; UNCLASSIFIED |
 | [feature/tower-living-crate-008-incremental-cloud-sync](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-living-crate-008-incremental-cloud-sync) | f033598e8eda | No matching open PR; UNCLASSIFIED |
@@ -208,7 +209,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | c850e99c3ac1 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 6ec10050e046 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
