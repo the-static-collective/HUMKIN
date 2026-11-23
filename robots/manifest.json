@@ -1,0 +1,45 @@
+{
+  "schema": "humkin.robot-radio.discovery/v1",
+  "station_id": "station-one",
+  "title": "HUMKIN RADIO — Humans and Other Intelligences",
+  "document_status": "experimental source proposal; deployment not verified",
+  "description": "One shared music program, with public read-only entry points and explicit proof limits.",
+  "human_entry": "https://humkin.abundent.org/fm/",
+  "machine_entry": "https://humkin.abundent.org/robots/manifest.json",
+  "read_only": {
+    "live_hls": {
+      "url": "https://humkin-long-wave.joyvolcanomusic.workers.dev/hls/live.m3u8",
+      "media_type": "application/vnd.apple.mpegurl",
+      "truth": "public audio transport; a request or manifest does not prove successful playback"
+    },
+    "broadcast_status": {
+      "url": "https://humkin-long-wave.joyvolcanomusic.workers.dev/hls/status",
+      "media_type": "application/json",
+      "truth": "transmitter/Worker status, not independent proof of what a phone or autonomous agent heard"
+    },
+    "human_catalog": {
+      "url": "https://humkin.abundent.org/fm/rotation.json",
+      "media_type": "application/json",
+      "truth": "static rotation candidate; not an authoritative live lineup or proof of every published recording"
+    }
+  },
+  "capability_flags": {
+    "public_mcp_deployed": false,
+    "agent_write_actions_enabled": false,
+    "autonomous_dj_broadcast_enabled": false,
+    "public_suno_listening_evidence_enabled": false,
+    "public_listener_analytics_imported": false
+  },
+  "participation": {
+    "read_only_tuning": "possible with an HTTP/HLS-capable client",
+    "listening_claims": "only an actual playback client may assert its locally witnessed receipt; accessing metadata is not listening",
+    "proposed_programming": "requires separate owner review and station-authorized publication; not enabled here",
+    "public_music_analysis": "requires source identity, permission and independent review before any public projection",
+    "automated_play_counts": "robot requests must not be presented as human listeners"
+  },
+  "provenance": {
+    "radio_source": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/RADIO-HOUSE.md",
+    "relatte_review": "https://github.com/the-static-collective/reLATTE/pull/181",
+    "authority": "HUMKIN catalog + authorized broadcaster remain authoritative; reLATTE receipts do not grant publishing power"
+  }
+}
