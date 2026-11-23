@@ -1,0 +1,16 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "humkin-tower": {
+      "type": "streamable-http",
+      "url": "https://kbhqacsdvjsstzyplqij.supabase.co/functions/v1/humkin-tower-mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth"
+          }
+        }
+      }
+    }
+  }
+}
