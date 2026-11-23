@@ -35,7 +35,7 @@ test("OAuth UI displays actual requesting client and never auto-grants permissio
   assert.match(consent,/data\.client\?\.name/);
   assert.match(consent,/data\.scope/);
   assert.match(consent,/data\.redirect_uri/);
-  assert.match(consent,/data\.user\.email_confirmed_at/);
+  assert.match(consent,/user\.user\.email_confirmed_at/);
   assert.match(consent,/installProtonLogin/);
   assert.match(consent,/auth\.signInWithOtp/);
   assert.match(consent,/\$\("approve"\)\.addEventListener\("click",\(\)=>decide\(true\)\)/);
