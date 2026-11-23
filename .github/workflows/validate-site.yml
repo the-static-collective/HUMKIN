@@ -13,6 +13,8 @@ jobs:
           node-version: '22'
       - name: Validate Radio House contracts and evidence report
         run: python3 -m unittest discover -s tests -p 'test_radio_house_pulse.py' -v
+      - name: Validate read-only Robot Radio discovery
+        run: python3 -m unittest discover -s tests -p 'test_robot_radio_manifest.py' -v
       - name: Dry-run Radio House against live GitHub metadata
         run: python3 garden/radio_house_pulse.py --repo the-static-collective/HUMKIN --signal-out "$RUNNER_TEMP/current-signal.md" --branch-out "$RUNNER_TEMP/branch-inventory.md"
         env:
