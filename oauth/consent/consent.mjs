@@ -1,4 +1,4 @@
-// Owner-reviewed OAuth 2.1 consent. HUMKIN's existing browser Auth storage,
+// Shared owner-reviewed OAuth 2.1 consent. HUMKIN's existing browser Auth storage,
 // Proton authenticator and email sign-in; no client secrets, no auto-approval.
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.119.2";
 import {humkinAuthOptions} from "../../fm/browser-safe-auth.mjs";
@@ -28,7 +28,7 @@ function safeReturn(url){
 }
 async function load(){
   if(!/^[a-zA-Z0-9_-]{8,180}$/.test(id)){
-    show("");status("Missing or invalid authorization request. Start the connection from ChatGPT.");
+    show("");status("Missing or invalid authorization request. Start sign-in from the application requesting access.");
     return;
   }
   const {data:user,error:userError}=await db.auth.getUser();
@@ -45,11 +45,11 @@ async function load(){
       if(typeof data.redirect_url!=="string")throw Error("Invalid authorization redirect.");
       safeReturn(data.redirect_url);return;
     }
-    $("client-name").textContent=String(data.client?.name||"Unnamed MCP client").slice(0,120);
+    $("client-name").textContent=String(data.client?.name||"Unnamed application").slice(0,120);
     $("client-uri").textContent=String(data.client?.uri||"").slice(0,250);
     $("requested-scopes").textContent=String(data.scope||"No additional scopes listed.").slice(0,250);
     $("redirect-uri").textContent=String(data.redirect_uri||"").slice(0,400);
-    show("consent");status("Review the client and choose Approve or Deny.");
+    show("consent");status("Check the requesting application, scopes, and return destination. Choose Approve or Deny.");
   }catch(e){
     show("");status(String(e?.message||"Authorization details unavailable."));
   }
