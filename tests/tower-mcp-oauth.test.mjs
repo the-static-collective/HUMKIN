@@ -49,3 +49,15 @@ test("OAuth route never contains R2 or service-role credentials",()=>{
   assert.doesNotMatch(ui,/service_role|SUPABASE_SERVICE_ROLE_KEY|R2_SECRET_ACCESS_KEY/);
   assert.match(consent,/http:.*localhost.*127\.0\.0\.1/);
 });
+
+test("Shared consent names the actual app instead of claiming every client controls the radio",()=>{
+  assert.match(ui,/STATIC ID · THE SHARED ENTRANCE/);
+  assert.match(ui,/id="client-name"/);
+  assert.match(ui,/id="requested-scopes"/);
+  assert.match(ui,/id="redirect-uri"/);
+  assert.doesNotMatch(ui,/This connector may read approved catalog/);
+  assert.doesNotMatch(ui,/Connect Station Desk/);
+  assert.match(consent,/Start sign-in from the application requesting access/);
+  assert.match(consent,/Unnamed application/);
+  assert.match(consent,/approveAuthorization\(id\)/);
+});
