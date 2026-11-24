@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -33,6 +34,26 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+      - name: Wait for GitHub Pages artifact index
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          for attempt in {1..20}; do
+            count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+              --jq '[.artifacts[] | select(.name == "github-pages")] | length')
+            if [ "$count" = "1" ]; then
+              echo "Pages artifact available."
+              exit 0
+            fi
+            if [ "$count" -gt 1 ]; then
+              echo "::error::More than one Pages artifact; do not redeploy this run."
+              exit 1
+            fi
+            sleep 3
+          done
+          echo "::error::Pages artifact was not indexed within 60 seconds."
+          exit 1
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
