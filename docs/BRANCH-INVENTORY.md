@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [6ec10050e046](https://github.com/the-static-collective/HUMKIN/commit/6ec10050e046ed0ef9e0c397eb1aa5ab9f0e428c)
-- Branches: 202; open PRs: 27; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [1434c24878dc](https://github.com/the-static-collective/HUMKIN/commit/1434c24878dcda83ca0b572c1f5b6cb20ce3e19d)
+- Branches: 205; open PRs: 28; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -97,6 +97,7 @@
 | [feat/reservoir-delay-and-windows-stay-awake-20261119](https://github.com/the-static-collective/HUMKIN/tree/feat/reservoir-delay-and-windows-stay-awake-20261119) | f9a8be4ce449 | No matching open PR; UNCLASSIFIED |
 | [feat/robot-desk-editorial-knobs-20261116](https://github.com/the-static-collective/HUMKIN/tree/feat/robot-desk-editorial-knobs-20261116) | ba18bc354a75 | No matching open PR; UNCLASSIFIED |
 | [feat/robot-desk-many-voices-timeless-comedy-20261116](https://github.com/the-static-collective/HUMKIN/tree/feat/robot-desk-many-voices-timeless-comedy-20261116) | 38a57e258a5e | No matching open PR; UNCLASSIFIED |
+| [feat/robot-radio-discovery-001](https://github.com/the-static-collective/HUMKIN/tree/feat/robot-radio-discovery-001) | f3d5d4e09891 | [#204](https://github.com/the-static-collective/HUMKIN/pull/204) (base: main) |
 | [feat/robot-seed-garden-20261116](https://github.com/the-static-collective/HUMKIN/tree/feat/robot-seed-garden-20261116) | 79a99f25ed8b | No matching open PR; UNCLASSIFIED |
 | [feat/signal-current-track-seed-003](https://github.com/the-static-collective/HUMKIN/tree/feat/signal-current-track-seed-003) | 89a4c93c544b | No matching open PR; UNCLASSIFIED |
 | [feat/signal-seeded-composer-002](https://github.com/the-static-collective/HUMKIN/tree/feat/signal-seeded-composer-002) | 5889d6b09a78 | No matching open PR; UNCLASSIFIED |
@@ -169,6 +170,7 @@
 | [feature/save-the-hour-cards-001](https://github.com/the-static-collective/HUMKIN/tree/feature/save-the-hour-cards-001) | c0158707ca3f | No matching open PR; UNCLASSIFIED |
 | [feature/shortie-gap-guard-20261121](https://github.com/the-static-collective/HUMKIN/tree/feature/shortie-gap-guard-20261121) | 5428a6c704ec | No matching open PR; UNCLASSIFIED |
 | [feature/spotlight-single-into-live-001](https://github.com/the-static-collective/HUMKIN/tree/feature/spotlight-single-into-live-001) | 0fe0488cd074 | No matching open PR; UNCLASSIFIED |
+| [feature/static-id-consent-multiple-apps](https://github.com/the-static-collective/HUMKIN/tree/feature/static-id-consent-multiple-apps) | e9854c52baa4 | No matching open PR; UNCLASSIFIED |
 | [feature/station-one-live-web-receiver-001](https://github.com/the-static-collective/HUMKIN/tree/feature/station-one-live-web-receiver-001) | e8dfa4cfd1b0 | No matching open PR; UNCLASSIFIED |
 | [feature/ten-manga-postcards](https://github.com/the-static-collective/HUMKIN/tree/feature/ten-manga-postcards) | 02348ed30206 | No matching open PR; UNCLASSIFIED |
 | [feature/tower-010-living-control](https://github.com/the-static-collective/HUMKIN/tree/feature/tower-010-living-control) | e680d8dce2b6 | No matching open PR; UNCLASSIFIED |
@@ -194,6 +196,7 @@
 | [fix/lumi-radio-bible-scene-count-20261114](https://github.com/the-static-collective/HUMKIN/tree/fix/lumi-radio-bible-scene-count-20261114) | 9af8145dc771 | No matching open PR; UNCLASSIFIED |
 | [fix/night-shift-hls-short-final-segment-007](https://github.com/the-static-collective/HUMKIN/tree/fix/night-shift-hls-short-final-segment-007) | b7ce875d8d04 | No matching open PR; UNCLASSIFIED |
 | [fix/night-shift-publisher-install-ffmpeg-006](https://github.com/the-static-collective/HUMKIN/tree/fix/night-shift-publisher-install-ffmpeg-006) | 7df92d0d8454 | No matching open PR; UNCLASSIFIED |
+| [fix/pages-artifact-index-wait](https://github.com/the-static-collective/HUMKIN/tree/fix/pages-artifact-index-wait) | 52a05541baf5 | No matching open PR; UNCLASSIFIED |
 | [fix/postcard-buttons-cache-mismatch](https://github.com/the-static-collective/HUMKIN/tree/fix/postcard-buttons-cache-mismatch) | 8cbdaad5657a | No matching open PR; UNCLASSIFIED |
 | [fix/r2-domain-dns-ui-clarification-001](https://github.com/the-static-collective/HUMKIN/tree/fix/r2-domain-dns-ui-clarification-001) | e7dd8c5f4240 | No matching open PR; UNCLASSIFIED |
 | [fix/r2-key-check-constraint-002](https://github.com/the-static-collective/HUMKIN/tree/fix/r2-key-check-constraint-002) | 93067c60efd8 | No matching open PR; UNCLASSIFIED |
@@ -209,7 +212,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 6ec10050e046 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 1434c24878dc | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
