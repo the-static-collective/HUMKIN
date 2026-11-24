@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HUMKIN RADIO · Authorize Station Desk</title>
+<title>STATIC ID · Review application sign-in</title>
 <meta name="robots" content="noindex,nofollow">
 <style>
 :root{font-family:system-ui,Arial,sans-serif;color-scheme:dark;background:#101b25;color:#f6f4ee}
@@ -27,13 +27,13 @@ a{color:#c9e3f8}
 </head>
 <body>
 <main>
-<p class="label">HUMKIN RADIO · TOWER</p>
-<h1>Connect Station Desk</h1>
-<p class="small">You are authorizing an external AI client to access your HUMKIN radio control tools. A queue request is not a live broadcast or permission to publish private recordings.</p>
+<p class="label">STATIC ID · THE SHARED ENTRANCE</p>
+<h1>Approve this application?</h1>
+<p class="small">This sign-in uses your existing HUMKIN identity and Proton Authenticator. Check the requesting application, what identity information it requests, and where it will return you. No application receives access automatically.</p>
 <p id="status" role="status" aria-live="polite">Checking the authorization request…</p>
 <section id="login" hidden>
   <h2>Owner sign-in required</h2>
-  <p>Sign in using the existing HUMKIN owner session to review the connection.</p>
+  <p>Use your existing HUMKIN owner account or Proton Authenticator to review this application.</p>
   <div id="proton-login"></div>
   <div class="actions"><button type="button" class="secondary" id="email-login">SEND OWNER EMAIL LINK</button></div>
 </section>
@@ -45,9 +45,9 @@ a{color:#c9e3f8}
   <p class="value" id="requested-scopes">No scopes listed.</p>
   <p class="label">Return destination</p>
   <p class="small value" id="redirect-uri"></p>
-  <p class="small">This connector may read approved catalog and Cloud HOUSE schedule data. It may submit owner-authorized future queue, hold, release and rotation requests. It cannot directly alter R2 source audio or interrupt the current song. Review requested actions in ChatGPT before approval.</p>
+  <p class="small">Approving shares only the displayed identity scopes with the named application. The receiving application independently controls what you can do there; approval alone does not grant general access to HUMKIN, Fileport, storage, or other projects.</p>
   <div class="actions">
-    <button type="button" id="approve">APPROVE CONNECTION</button>
+    <button type="button" id="approve">APPROVE APPLICATION</button>
     <button type="button" id="deny" class="secondary">DENY</button>
   </div>
 </section>
