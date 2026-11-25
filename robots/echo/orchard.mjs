@@ -1,3 +1,4 @@
+import {findPairs,buildCross,crossMidi,crossReceipt} from "./pollinator.mjs";
 const ROOT="https://raw.githubusercontent.com/the-static-collective/HUMKIN/return-signal-feed/robots/echo-orchard/";
 const PIN="f5709e096756055e1a28c95ac5f9e79873319631",KEY="humkin.echo-orchard.harvest/v1";
 const HASH=/^(?:sha256:)?[a-f0-9]{64}$/;
@@ -49,12 +50,37 @@ function mount(){
   }catch{action.textContent="Could not verify or audition this seed.";}
  }
  const button=(label,fn)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.addEventListener("click",fn);return b};
- function renderBasket(){el("count").textContent=String(saved.length);const box=el("basket");box.replaceChildren();for(const s of saved){const row=document.createElement("div"),text=document.createElement("span");row.className="saved";text.textContent=s.proposal.pitches.map(noteName).join(" · ")+" — "+(s.track_title||"Unknown source recording");row.append(text,button("Remove",()=>save(saved.filter(x=>x.id!==s.id))));box.append(row);}}
+ function renderBasket(){el("pairs").replaceChildren();el("pollinator-status").textContent="Harvest changed. Run the search again.";el("count").textContent=String(saved.length);const box=el("basket");box.replaceChildren();for(const s of saved){const row=document.createElement("div"),text=document.createElement("span");row.className="saved";text.textContent=s.proposal.pitches.map(noteName).join(" · ")+" — "+(s.track_title||"Unknown source recording");row.append(text,button("Remove",()=>save(saved.filter(x=>x.id!==s.id))));box.append(row);}}
  function render(seeds){const box=el("seeds");box.replaceChildren();for(const s of seeds){const card=document.createElement("article");card.id=s.id;const title=document.createElement("h2");title.textContent=s.track_title?"Reply to "+s.track_title:"Reply to unidentified broadcast fragment";const notes=document.createElement("p");notes.className="notes";notes.textContent=s.proposal.pitches.map(noteName).join(" · ")+" / "+s.proposal.tempo_bpm+" BPM";const credit=document.createElement("small");credit.textContent=new Date(s.created_at).toLocaleString()+" · Native Field Answer · Proposal only";const controls=document.createElement("div");controls.className="actions";
   controls.append(button("Audition",()=>void audition(s)),button("Download MIDI",async()=>{try{download(await midiBytes(s),"humkin-echo-"+s.id.slice(0,12)+".mid","audio/midi");action.textContent="MIDI checksum verified."}catch{action.textContent="MIDI verification failed.";}}),button("Harvest",async()=>{try{await midiBytes(s);if(saved.some(x=>x.id===s.id)){action.textContent="Already harvested.";return}if(saved.length>=128){action.textContent="Export and remove seeds before harvesting more.";return}save([...saved,s]);}catch{action.textContent="Seed verification failed.";}}));
   const details=document.createElement("details"),summary=document.createElement("summary"),code=document.createElement("code");summary.textContent="Source and proposal receipt";code.textContent="Source sample: "+s.source_sample_id+" | Receipt: "+s.id;details.append(summary,code);card.append(title,notes,credit,controls,details);box.append(card);}
   const target=location.hash.slice(1);if(/^[a-f0-9]{64}$/.test(target))document.getElementById(target)?.scrollIntoView();
  }
+ let searchVersion=0;
+ async function playCross(cross){
+  stop();const token=++version;
+  try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)throw Error("Audio unavailable");ctx=ctx||new Audio();await ctx.resume();if(token!==version)return;
+   const start=ctx.currentTime+.05,p=cross.performance;
+   for(const e of p.events){const t=start+e.tick/p.ppq*60/p.tempoBpm,d=e.durationTicks/p.ppq*60/p.tempoBpm,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type=e.channel?"triangle":"sine";osc.frequency.value=440*2**((e.note-69)/12);gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.07,t+.02);gain.gain.linearRampToValueAtTime(0,t+d);osc.connect(gain).connect(ctx.destination);osc.start(t);osc.stop(t+d+.01);voices.push(osc);}
+   action.textContent="Auditioning a new composition proposal, not the source broadcast.";
+  }catch{action.textContent="Unable to audition this cross.";}
+ }
+ async function pollinate(){
+  const req=++searchVersion, snapshot=saved.slice(),status=el("pollinator-status"),box=el("pairs");box.replaceChildren();status.textContent="Verifying parent receipts…";
+  const checked=[];for(const seed of snapshot){try{await midiBytes(seed);checked.push(seed)}catch{}}
+  if(req!==searchVersion||snapshot.length!==saved.length||snapshot.some((s,i)=>s.id!==saved[i]?.id))return;
+  const pairs=findPairs(checked),byId=new Map(checked.map(s=>[s.id,s]));
+  status.textContent=checked.length<2?"Harvest at least two verified seeds.":pairs.length+" candidate pairings from "+checked.length+" verified seeds (ranked by heuristic compatibility).";
+  for(const pair of pairs){const a=byId.get(pair.a),b=byId.get(pair.b),card=document.createElement("article"),title=document.createElement("h2"),desc=document.createElement("p"),actions=document.createElement("div");
+   title.textContent=(a.track_title||a.id.slice(0,8))+" × "+(b.track_title||b.id.slice(0,8));
+   desc.textContent="Score "+pair.score+" · transpose second phrase "+pair.shift+" semitones · tempo difference "+pair.tempo_distance+" BPM · clash overlap "+Math.round(pair.clash_fraction*100)+"%";
+   const mode=document.createElement("select");mode.setAttribute("aria-label","Composition form");for(const [v,label] of [["duet","Duet"],["call-response","Call & response"],["graft","Alternating graft"]]){const option=document.createElement("option");option.value=v;option.textContent=label;mode.append(option);}
+   const build=()=>buildCross(a,b,pair,mode.value);actions.className="actions";
+   actions.append(mode,button("Audition cross",()=>void playCross(build())),button("Download MIDI",()=>{const cross=build();download(crossMidi(cross),"humkin-cross-"+a.id.slice(0,8)+"-"+b.id.slice(0,8)+".mid","audio/midi")}),button("Export ancestry",async()=>{try{const cross=await crossReceipt(build());download(JSON.stringify({schema:"humkin.echo-orchard.cross-export/v1",cross,parents:[a,b]},null,2),"humkin-cross-"+cross.id.slice(0,12)+".json","application/json");}catch{action.textContent="Could not export cross receipt.";}}));
+   card.append(title,desc,actions);box.append(card);
+  }
+ }
+ el("pollinate").addEventListener("click",()=>void pollinate());
  let requestVersion=0;
  async function fetchJSON(path){const result=await fetch(ROOT+path,{cache:"no-store",credentials:"omit",signal:AbortSignal.timeout(10000)});if(result.status===404)return null;if(!result.ok)throw Error("Archive unavailable");const raw=await result.text();if(raw.length>5000000)throw Error("Archive exceeds bound");return JSON.parse(raw);}
  async function load(value){if(!validDay(value)){status.textContent="Choose a valid UTC date.";return}const req=++requestVersion;day.value=value;status.textContent="Opening harvest…";try{const data=await fetchJSON("days/"+value+".json");if(req!==requestVersion)return;const seeds=data?readDay(data,value):[];render(seeds);status.textContent=seeds.length?seeds.length+" original musical proposals · "+value+" UTC":"No archived proposals for "+value+" UTC.";}catch{if(req===requestVersion)status.textContent="Archive unavailable; previous displayed seeds are historical.";}}

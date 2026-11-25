@@ -24,7 +24,7 @@ jobs:
       - run: python3 tests/test_return_signal.py
       - run: python3 tests/test_listening_council.py
       - run: python3 tests/test_echo_orchard.py
-      - run: node --test tests/echo-orchard.test.mjs
+      - run: node --test tests/echo-orchard.test.mjs tests/pollinator.test.mjs
       - run: node --test tests/listening-council.test.mjs
       - run: node --test tests/return-signal.test.mjs
       - run: node tests/postcard-buttons.test.mjs
