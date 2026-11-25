@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/radio-broadcast"))
 from house_rotation import make_quiet_selection, validate_selection, fingerprint
-from autopilot_publisher import validate_quiet_cycle
+from autopilot_publisher import validate_quiet_cycle, validate_quiet_transition, clock_ms
 
 def fixture():
     rows = []
@@ -41,6 +41,17 @@ class QuietSelection(unittest.TestCase):
         validate_quiet_cycle(tracks)
         with self.assertRaises(ValueError): validate_quiet_cycle(tracks[:-1])
         with self.assertRaises(ValueError): validate_quiet_cycle(tracks+[tracks[0]])
+
+    def test_cross_revision_lookback(self):
+        # An intervening revision cannot hide a recent play from an older one.
+        def tr(sha):
+            return {"asset_sha":sha,"durations_ms":[10000]*24}
+        a={"effective_at":"2026-11-01T00:00:00Z","tracks":[tr("a"),tr("b")]}
+        b={"effective_at":"2026-11-01T00:04:00Z","tracks":[tr("c"),tr("d")]}
+        cutover=clock_ms("2026-11-01T00:08:00Z")
+        with self.assertRaises(ValueError):
+            validate_quiet_transition([a,b],[tr("a")],cutover)
+        validate_quiet_transition([a,b],[tr("never played")],cutover)
 
 if __name__ == "__main__":
     unittest.main()

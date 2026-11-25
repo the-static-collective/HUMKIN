@@ -251,6 +251,36 @@ def validate_quiet_cycle(tracks):
         raise ValueError("Encoded Quiet Frequency cycle is shorter than four hours.")
 
 
+def validate_quiet_transition(revisions, tracks, cutover_ms):
+    """Check every actual prior start in the last four hours, including earlier revisions."""
+    minimum = 14_400_000
+    latest = {}
+    end = cutover_ms
+    for revision in reversed(revisions):
+        start = clock_ms(revision["effective_at"])
+        if end <= cutover_ms - minimum:
+            break
+        previous = revision["tracks"]
+        cycle = sum(sum(t["durations_ms"]) for t in previous)
+        if cycle <= 0 or end <= start:
+            raise ValueError("Invalid previous Quiet Frequency timeline.")
+        offset = 0
+        for track in previous:
+            first = start + offset
+            if first < end:
+                last = first + ((end - 1 - first) // cycle) * cycle
+                sha = track["asset_sha"]
+                latest[sha] = max(last, latest.get(sha, last))
+            offset += sum(track["durations_ms"])
+        end = start
+    offset = 0
+    for track in tracks:
+        last = latest.get(track["asset_sha"])
+        if last is not None and cutover_ms + offset - last < minimum:
+            raise ValueError("Quiet Frequency revision would repeat a song within four hours; reorder or publish later.")
+        offset += sum(track["durations_ms"])
+
+
 def next_boundary(previous, earliest_ms):
     start = clock_ms(previous["effective_at"])
     positions = [0]
@@ -292,25 +322,10 @@ def public_program(existing, frequency, tracks, lead_seconds=120):
     when = next_effective(revisions, lead_seconds)
     if frequency == "quiet-frequency":
         validate_quiet_cycle(tracks)
-        # At revision boundaries, ensure no shared recording repeats within 4h.
         if revisions:
             if any(parse_time(r["effective_at"]) > utcnow() for r in revisions):
                 raise ValueError("Pending Quiet Frequency revision; wait for its activation.")
-            previous = revisions[-1]
-            old_cycle = sum(sum(t["durations_ms"]) for t in previous["tracks"])
-            old_pos = (clock_ms(iso(when)) - clock_ms(previous["effective_at"])) % old_cycle
-            old_offsets = {}
-            offset = 0
-            for t in previous["tracks"]:
-                old_offsets[t["asset_sha"]] = offset
-                offset += sum(t["durations_ms"])
-            offset = 0
-            for t in tracks:
-                if t["asset_sha"] in old_offsets:
-                    age = (old_pos - old_offsets[t["asset_sha"]]) % old_cycle or old_cycle
-                    if age + offset < 14_400_000:
-                        raise ValueError("Quiet Frequency revision would repeat a song within four hours; reorder or publish later.")
-                offset += sum(t["durations_ms"])
+            validate_quiet_transition(revisions, tracks, clock_ms(iso(when)))
     revision = {"id": "r-" + when.strftime("%Y%m%d%H%M%S") + "-" +
         hashlib.sha256(json.dumps(tracks,sort_keys=True).encode()).hexdigest()[:10],
         "effective_at": iso(when), "tracks": tracks}
