@@ -10,6 +10,10 @@ export function validStationId(id) {
 
 export function streamForStation(id, base = STREAM_BASE) {
   if (!validStationId(id)) throw new TypeError("Invalid station frequency");
+  if (id === "quiet-frequency") {
+    const prefix = base.replace(/\/$/, "") + "/autopilot/quiet-frequency/";
+    return {hls: prefix + "live.m3u8", status: prefix + "status", longwave: null};
+  }
   const prefix = base.replace(/\/$/, "") + "/hls/" + (id === "station-one" ? "" : id + "/");
   return { hls: prefix + "live.m3u8", status: prefix + "status",
     longwave: id === "station-one" ? base.replace(/\/$/, "") + "/live.mp3" : null };
