@@ -1,4 +1,5 @@
 import {findPairs,buildCross,crossMidi,crossReceipt} from "./pollinator.mjs";
+import {MAX_NODES,rootNode,familyPairs,makeChild,admitChild,familyBundle,verifyFamily,germlinePerformance} from "./family.mjs";
 const ROOT="https://raw.githubusercontent.com/the-static-collective/HUMKIN/return-signal-feed/robots/echo-orchard/";
 const PIN="f5709e096756055e1a28c95ac5f9e79873319631",KEY="humkin.echo-orchard.harvest/v1";
 const HASH=/^(?:sha256:)?[a-f0-9]{64}$/;
@@ -81,6 +82,51 @@ function mount(){
   }
  }
  el("pollinate").addEventListener("click",()=>void pollinate());
+ const FAMILY_KEY="humkin.echo-orchard.family/v1",familyStatus=el("family-status");
+ let family=[],familyBusy=false;
+ function renderFamily(){
+  const box=el("family-nodes");box.replaceChildren();el("family-pairs").replaceChildren();
+  familyStatus.textContent=family.length+" retained nodes · "+family.filter(n=>n.kind==="root").length+" roots · "+family.filter(n=>n.kind==="child").length+" descendants.";
+  for(const n of family){const row=document.createElement("article"),title=document.createElement("h2"),notes=document.createElement("p"),detail=document.createElement("p"),controls=document.createElement("div");
+   title.textContent=(n.kind==="root"?"Root":"Generation "+n.generation)+" · "+(n.track_title||n.id.slice(0,12));
+   notes.className="notes";notes.textContent=n.proposal.pitches.map(noteName).join(" · ");
+   detail.textContent=n.kind==="root"?"Original receipt "+n.id:"Parents "+n.parents.map(id=>id.slice(0,12)).join(" × ")+" · "+n.roots.length+" original roots · "+n.mutation;
+   controls.className="actions";controls.append(button("Audition inherited phrase",()=>void playCross(germlinePerformance(n))),button("Inherited MIDI",()=>download(crossMidi(germlinePerformance(n)),"humkin-lineage-"+n.id.slice(0,12)+".mid","audio/midi")));
+   if(n.kind==="child")controls.append(button("Audition full cross",()=>void playCross(n.cross)),button("Full cross MIDI",()=>download(crossMidi(n.cross),"humkin-cross-"+n.id.slice(0,12)+".mid","audio/midi")));
+   row.append(title,notes,detail,controls);box.append(row);
+  }
+ }
+ function storeFamily(next){
+  try{localStorage.setItem(FAMILY_KEY,JSON.stringify(familyBundle(next)));}catch{throw Error("Local storage unavailable or full; export current family first");}
+  family=next;renderFamily();
+ }
+ async function familyAction(fn){if(familyBusy)return;familyBusy=true;try{await fn()}catch(e){familyStatus.textContent=e.message||"Family operation failed."}finally{familyBusy=false}}
+ void familyAction(async()=>{const raw=localStorage.getItem(FAMILY_KEY);if(raw)family=await verifyFamily(JSON.parse(raw),midiBytes);renderFamily();});
+ el("family-roots").addEventListener("click",()=>void familyAction(async()=>{
+  let next=family.slice();for(const s of saved){if(next.some(n=>n.id===s.id))continue;if(next.length>=MAX_NODES)throw Error("Family capacity reached");await midiBytes(s);next.push(rootNode(s));}
+  storeFamily(next);
+ }));
+ el("family-search").addEventListener("click",()=>void familyAction(async()=>{
+  const related=el("family-related").checked,pairs=familyPairs(family,related),byId=new Map(family.map(n=>[n.id,n])),box=el("family-pairs");box.replaceChildren();
+  familyStatus.textContent=pairs.length+" diverse candidate pairings. Shared ancestry is "+(related?"penalized.":"excluded.");
+  for(const pair of pairs){
+   const a=byId.get(pair.a),b=byId.get(pair.b),card=document.createElement("article"),title=document.createElement("h2"),info=document.createElement("p"),controls=document.createElement("div");
+   title.textContent="G"+a.generation+" "+a.id.slice(0,8)+" × G"+b.generation+" "+b.id.slice(0,8);
+   info.textContent="Compatibility "+pair.score+" · diversity adjusted "+pair.diversity_score+" · shared roots "+pair.shared_roots+" · displacement "+pair.shift;
+   const select=(label,options)=>{const x=document.createElement("select");x.setAttribute("aria-label",label);for(const [v,l] of options){const o=document.createElement("option");o.value=v;o.textContent=l;x.append(o)}return x};
+   const mode=select("Composition form",[["duet","Duet"],["call-response","Call & response"],["graft","Graft"]]),mutation=select("Inherited phrase mutation",[["none","No mutation"],["up-2","Transpose +2"],["down-2","Transpose -2"],["rotate-rhythm","Rotate rhythm"]]);
+   const build=()=>makeChild(a,b,pair,mode.value,mutation.value,related);
+   controls.className="actions";controls.append(mode,mutation,button("Audition candidate",async()=>{try{await playCross(germlinePerformance(await build()))}catch(e){familyStatus.textContent=e.message}}),button("Cultivate descendant",()=>void familyAction(async()=>{
+    if(!family.some(n=>n.id===a.id)||!family.some(n=>n.id===b.id))throw Error("Parents changed; run search again");
+    const child=await build();storeFamily(admitChild(family,child));familyStatus.textContent="Cultivated generation "+child.generation+" · "+child.id.slice(0,12)+". Run search again for the next generation.";
+   })));card.append(title,info,controls);box.append(card);
+  }
+ }));
+ el("family-related").addEventListener("change",()=>{el("family-pairs").replaceChildren();familyStatus.textContent="Ancestry policy changed. Run search again.";});
+ el("family-export").addEventListener("click",()=>download(JSON.stringify(familyBundle(family),null,2),"humkin-family.json","application/json"));
+ el("family-import").addEventListener("change",()=>void familyAction(async()=>{const file=el("family-import").files[0];if(!file)return;if(file.size>4000000)throw Error("Family file exceeds 4 MB");const next=await verifyFamily(JSON.parse(await file.text()),midiBytes);
+  if(family.length&&!window.confirm("Replace this device’s current family? Export it first to preserve it."))return;storeFamily(next);
+ }));
  let requestVersion=0;
  async function fetchJSON(path){const result=await fetch(ROOT+path,{cache:"no-store",credentials:"omit",signal:AbortSignal.timeout(10000)});if(result.status===404)return null;if(!result.ok)throw Error("Archive unavailable");const raw=await result.text();if(raw.length>5000000)throw Error("Archive exceeds bound");return JSON.parse(raw);}
  async function load(value){if(!validDay(value)){status.textContent="Choose a valid UTC date.";return}const req=++requestVersion;day.value=value;status.textContent="Opening harvest…";try{const data=await fetchJSON("days/"+value+".json");if(req!==requestVersion)return;const seeds=data?readDay(data,value):[];render(seeds);status.textContent=seeds.length?seeds.length+" original musical proposals · "+value+" UTC":"No archived proposals for "+value+" UTC.";}catch{if(req===requestVersion)status.textContent="Archive unavailable; previous displayed seeds are historical.";}}
