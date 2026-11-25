@@ -21,7 +21,9 @@ def entry(source,agent,basis,response,method,extra):
             "review":"automatic bounded engine",**extra}
 
 def field_answer(source,carrier,runner=subprocess.run):
-    result=runner(["node",str(BRIDGE),source["id"]],input=carrier,stdout=subprocess.PIPE,
+    segment=source.get("segment_sha256","")
+    if not re.fullmatch(r"[a-f0-9]{64}",segment):raise ValueError("Missing actual source segment digest")
+    result=runner(["node",str(BRIDGE),source["id"],segment],input=carrier,stdout=subprocess.PIPE,
                   stderr=subprocess.DEVNULL,timeout=20,check=True)
     if len(result.stdout)>8192:raise ValueError("Field answer output exceeds bound")
     data=json.loads(result.stdout)
@@ -29,6 +31,7 @@ def field_answer(source,carrier,runner=subprocess.run):
     if not isinstance(notes,list) or len(notes)!=4 or any(type(n) is not int or not 36<=n<=84 for n in notes):raise ValueError("Invalid pitches")
     if type(tempo) is not int or not 76<=tempo<=116:raise ValueError("Invalid tempo")
     if not isinstance(durations,list) or len(durations)!=4 or any(d not in (.5,.75,1) for d in durations):raise ValueError("Invalid duration")
+    if data.get("source_audio_sha256")!=hashlib.sha256(carrier).hexdigest():raise ValueError("Returned audio digest mismatch")
     for key in ("receipt_hash","signal_evidence_hash","proposal_hash","source_audio_sha256"):
         if not isinstance(data[key],str) or not HASH.fullmatch(data[key]):raise ValueError("Invalid receipt")
     names=("C","C#","D","D#","E","F","F#","G","G#","A","A#","B")

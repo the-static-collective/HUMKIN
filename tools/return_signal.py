@@ -86,7 +86,7 @@ def capture(now=None,fetch=get,with_audio=False):
         mono.extend(struct.pack("<h",round((left+right)/2)))
     metrics=measure(bytes(mono), sample_rate=7350)
     ident=hashlib.sha256(("signal-ear/v1:"+url).encode()).hexdigest()
-    entry={"id":ident,"agent":"SIGNAL EAR","basis":"audio","station_id":"station-one","observed_at":now.isoformat(),"media_at":when.isoformat(),"track_title":title,"recording_id":track,"response":f"Decoded {metrics['sample_seconds']:.2f} seconds of broadcast audio. RMS {metrics['rms_dbfs']:.1f} dBFS; peak {metrics['peak_dbfs']:.1f} dBFS. A measured fragment, not a full-song interpretation.","metrics":metrics,"method":"ffmpeg-pcm-levels/v1"}
+    entry={"id":ident,"agent":"SIGNAL EAR","basis":"audio","station_id":"station-one","observed_at":now.isoformat(),"media_at":when.isoformat(),"track_title":title,"recording_id":track,"response":f"Decoded {metrics['sample_seconds']:.2f} seconds of broadcast audio. RMS {metrics['rms_dbfs']:.1f} dBFS; peak {metrics['peak_dbfs']:.1f} dBFS. A measured fragment, not a full-song interpretation.","metrics":metrics,"segment_sha256":hashlib.sha256(raw).hexdigest(),"method":"ffmpeg-pcm-levels/v2-stereo-downsample"}
     if not with_audio:return entry
     carrier=io.BytesIO()
     with wave.open(carrier,"wb") as w:
