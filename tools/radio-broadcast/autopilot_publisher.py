@@ -220,6 +220,9 @@ def prepare_tracks(input_path, cache, *, publish=False):
             "album": str(item.get("album") or "")[:160],
             "artwork": artwork[:1000], "asset_sha": digest,
             "durations_ms": durations})
+        if "chapters" in item:
+            from quiet_chapters import validate_chapters
+            tracks[-1]["chapters"] = validate_chapters(item["chapters"], sum(durations))
         print("Prepared:", name, "—", len(durations), "segments")
     if station == "quiet-frequency":
         if not handoff or handoff.get("mode") != "quiet_curated":
@@ -245,9 +248,11 @@ def prepare_tracks(input_path, cache, *, publish=False):
 
 
 def validate_quiet_cycle(tracks):
-    if len({t["asset_sha"] for t in tracks}) != len(tracks):
-        raise ValueError("Duplicate encoded recording in Quiet Frequency.")
-    if sum(sum(t["durations_ms"]) for t in tracks) < 14_400_000:
+    from quiet_chapters import recording_events
+    events, cycle = recording_events(tracks, lambda t: sum(t["durations_ms"]))
+    if len({key for key,_ in events}) != len(events):
+        raise ValueError("Duplicate encoded asset or chapter recording in Quiet Frequency.")
+    if cycle < 14_400_000:
         raise ValueError("Encoded Quiet Frequency cycle is shorter than four hours.")
 
 
@@ -260,25 +265,23 @@ def validate_quiet_transition(revisions, tracks, cutover_ms):
         start = clock_ms(revision["effective_at"])
         if end <= cutover_ms - minimum:
             break
+        from quiet_chapters import recording_events
         previous = revision["tracks"]
-        cycle = sum(sum(t["durations_ms"]) for t in previous)
+        events, cycle = recording_events(previous, lambda t: sum(t["durations_ms"]))
         if cycle <= 0 or end <= start:
             raise ValueError("Invalid previous Quiet Frequency timeline.")
-        offset = 0
-        for track in previous:
+        for key, offset in events:
             first = start + offset
             if first < end:
                 last = first + ((end - 1 - first) // cycle) * cycle
-                sha = track["asset_sha"]
-                latest[sha] = max(last, latest.get(sha, last))
-            offset += sum(track["durations_ms"])
+                latest[key] = max(last, latest.get(key, last))
         end = start
-    offset = 0
-    for track in tracks:
-        last = latest.get(track["asset_sha"])
+    from quiet_chapters import recording_events
+    events, _ = recording_events(tracks, lambda t: sum(t["durations_ms"]))
+    for key, offset in events:
+        last = latest.get(key)
         if last is not None and cutover_ms + offset - last < minimum:
             raise ValueError("Quiet Frequency revision would repeat a song within four hours; reorder or publish later.")
-        offset += sum(track["durations_ms"])
 
 
 def next_boundary(previous, earliest_ms):

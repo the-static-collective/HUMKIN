@@ -9,8 +9,8 @@ let ready=false,checking=false,localArt=null;
 const receiver=createReceiver(el("audio"),state=>{
   play.textContent=state.playing?"Pause":"Listen live";
   signal.textContent=state.status;
-  track.textContent=state.track?[state.track.title,state.track.artist].filter(Boolean).join(" · "):"";
-  if("mediaSession" in navigator&&typeof MediaMetadata!=="undefined"){try{navigator.mediaSession.metadata=state.mode==="idle"?null:new MediaMetadata({title:state.track?.title||"The Quiet Frequency",artist:state.track?.artist||"HUMKIN",album:"The Quiet Frequency"});}catch{}}
+  track.textContent=state.track?[state.track.title,state.track.artist,state.track.session_title ? state.track.session_title+" · "+state.track.chapter_index+"/"+state.track.chapter_count : ""].filter(Boolean).join(" · "):"";
+  if("mediaSession" in navigator&&typeof MediaMetadata!=="undefined"){try{navigator.mediaSession.metadata=state.mode==="idle"?null:new MediaMetadata({title:state.track?.title||"The Quiet Frequency",artist:state.track?.artist||"HUMKIN",album:state.track?.session_title||"The Quiet Frequency"});}catch{}}
 });
 async function check(){
   if(checking)return;checking=true;el("check").disabled=true;const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),8000);

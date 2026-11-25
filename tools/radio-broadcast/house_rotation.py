@@ -273,7 +273,7 @@ def make_selection(rows, *, station="station-one", count=40, bumper_settings=Non
     return packet
 
 
-def make_quiet_selection(rows, approved_ids):
+def make_quiet_selection(rows, approved_ids, chapter_sheets=None):
     """Preserve explicit owner order; no inferred choices, bumpers or extra slots."""
     if not isinstance(approved_ids, list) or not 2 <= len(approved_ids) <= 500:
         raise ValueError("Quiet Frequency needs 2–500 explicitly selected songs.")
@@ -290,7 +290,20 @@ def make_quiet_selection(rows, approved_ids):
             current[item["id"]] = item
     if any(uid not in current for uid in approved_ids):
         raise ValueError("Selected recording is missing, disabled or not approved R2 media.")
-    songs = [current[uid] for uid in approved_ids]
+    songs = [dict(current[uid]) for uid in approved_ids]
+    from quiet_chapters import validate_chapters, recording_events
+    sheets = {} if chapter_sheets is None else chapter_sheets
+    if not isinstance(sheets, dict) or set(sheets) - set(approved_ids):
+        raise ValueError("Chapter sheets must refer only to selected R2 assets.")
+    for song in songs:
+        sheet = sheets.get(song["id"])
+        if song["id"] in sheets:
+            if not isinstance(sheet, dict) or set(sheet) != {"sha256","chapters"} or sheet["sha256"] != song["sha256"]:
+                raise ValueError("Chapter sheet does not match the selected audio hash.")
+            song["chapters"] = validate_chapters(sheet["chapters"], round(song["duration_seconds"]*1000))
+    events, _ = recording_events([dict(s,asset_sha=s["sha256"],id="r2-"+s["id"]) for s in songs], lambda t: round(t["duration_seconds"]*1000))
+    if len({key for key,_ in events}) != len(events):
+        raise ValueError("A recording occurs more than once, including inside sessions.")
     if len({song["sha256"] for song in songs}) != len(songs):
         raise ValueError("Duplicate audio bytes in Quiet Frequency.")
     if sum(song["duration_seconds"] for song in songs) < 14400:
@@ -316,7 +329,8 @@ def validate_selection(packet, rows, *, bumper_settings=None, bumper_policy=None
             raise ValueError("Quiet Frequency requires an explicitly curated selection.")
         if not isinstance(songs, list) or any(not isinstance(x, dict) for x in songs):
             raise ValueError("Invalid Quiet Frequency tracks.")
-        expected = make_quiet_selection(rows, [x.get("id") for x in songs])
+        sheets = {x.get("id"):{"sha256":x.get("sha256"),"chapters":x["chapters"]} for x in songs if "chapters" in x}
+        expected = make_quiet_selection(rows, [x.get("id") for x in songs], sheets)
         if packet != expected:
             raise ValueError("Quiet Frequency source or reviewed order changed; regenerate.")
         return "quiet-frequency"
@@ -363,6 +377,7 @@ def crate_from_selection(packet):
             "artist": row["artist"], "album": row["album"],
             "source_kind": "r2", "url": r2_public_url(row["r2_object_key"]),
             "expected_sha": row["sha256"],
+            **({"chapters":row["chapters"]} if "chapters" in row else {}),
         } for row in packet["tracks"]],
     }
 
