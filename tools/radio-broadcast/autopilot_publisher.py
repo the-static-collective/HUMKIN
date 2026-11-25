@@ -221,6 +221,8 @@ def prepare_tracks(input_path, cache, *, publish=False):
             "artwork": artwork[:1000], "asset_sha": digest,
             "durations_ms": durations})
         if "chapters" in item:
+            if station != "quiet-frequency":
+                raise ValueError("Chapter sessions are currently enabled only for Quiet Frequency.")
             from quiet_chapters import validate_chapters
             tracks[-1]["chapters"] = validate_chapters(item["chapters"], sum(durations))
         print("Prepared:", name, "—", len(durations), "segments")
@@ -354,6 +356,11 @@ def validate_hosted_program(program):
                 raise ValueError("Hosted audio requires valid encoded segments.")
             if any(type(milliseconds) is not int or not 250 <= milliseconds <= 11000 for milliseconds in durations):
                 raise ValueError("Encoded segment duration violates Cloud Worker contract.")
+            if "chapters" in entry:
+                if program.get("station_id") != "quiet-frequency":
+                    raise ValueError("Chapter session station is not authorized.")
+                from quiet_chapters import validate_chapters
+                validate_chapters(entry["chapters"], sum(durations))
             segment_count += len(durations)
         if segment_count > 10000:
             raise ValueError("Cloud Worker 10,000-segment limit exceeded; HOLD before R2 writes.")

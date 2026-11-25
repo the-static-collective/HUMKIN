@@ -18,6 +18,12 @@ class Chapters(unittest.TestCase):
         validate_quiet_cycle(tracks)
         tracks[1]["chapters"]=tracks[0]["chapters"]
         with self.assertRaises(ValueError):validate_quiet_cycle(tracks)
+    def test_standalone_and_session_share_identity(self):
+        ident="r2-00000000-0000-0000-0000-000000000001"
+        standalone={"id":ident,"asset_sha":"a","durations_ms":[10000]*120}
+        session={"id":"r2-session","asset_sha":"b","durations_ms":[10000]*120,"chapters":[dict(chapter(1),recording_id=ident)]}
+        with self.assertRaises(ValueError):validate_quiet_cycle([standalone,session])
+        self.assertEqual(recording_events([standalone,session],lambda t:sum(t["durations_ms"]))[0].count(("recording:"+ident,0)),1)
     def test_chapter_cross_revision(self):
         old={"asset_sha":"a","durations_ms":[10000]*120,"chapters":[chapter(1),chapter(2,183500)]}
         new={"asset_sha":"b","durations_ms":[10000]*120,"chapters":[chapter(2)]}

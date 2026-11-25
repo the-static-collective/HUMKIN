@@ -40,7 +40,7 @@ function safeControl(raw) {
   return {cursor:raw.cursor,last_action:last};
 }
 
-function buildRevision(raw) {
+function buildRevision(raw, allowChapters = false) {
   requireValue(raw && ID.test(raw.id), "INVALID_REVISION_ID");
   const epoch = timestamp(raw.effective_at);
   requireValue(Array.isArray(raw.tracks) && raw.tracks.length > 0 && raw.tracks.length <= MAX_TRACKS, "INVALID_TRACKS");
@@ -66,6 +66,7 @@ function buildRevision(raw) {
       offset += duration;
     }
     if (row.chapters !== undefined) {
+      requireValue(allowChapters, "INVALID_CHAPTER_STATION");
       requireValue(Array.isArray(row.chapters) && row.chapters.length >= 1 && row.chapters.length <= 64, "INVALID_CHAPTERS");
       let previous = -1;
       track.chapters = row.chapters.map(chapter => {
@@ -111,7 +112,7 @@ export function compileProgram(input) {
     /^[a-z0-9][a-z0-9-]{0,31}$/.test(input.station_id), "INVALID_FREQUENCY");
   requireValue(Array.isArray(input.revisions) && input.revisions.length &&
     input.revisions.length <= MAX_REVISIONS, "INVALID_REVISIONS");
-  const revisions = input.revisions.map(buildRevision);
+  const revisions = input.revisions.map(raw => buildRevision(raw,input.station_id === "quiet-frequency"));
   for (let i = 1; i < revisions.length; i++) {
     const before = revisions[i - 1], after = revisions[i];
     requireValue(after.epoch > before.epoch, "UNSORTED_REVISIONS");
@@ -222,7 +223,7 @@ export function publicSchedule(program, now = Date.now()) {
     as_of_utc: new Date(now).toISOString(),
     clock_at_utc: new Date(playbackClock).toISOString(),
     rotation_track_count: active.tracks.length,
-    rotation_chapter_count: chapterCount(active),
+    ...(program.stationId==="quiet-frequency" ? {rotation_chapter_count:chapterCount(active)} : {}),
     cycle_duration_ms: active.cycleMs,
     upcoming,
     pending_revisions: program.revisions.filter(revision => revision.epoch > playbackClock)
@@ -252,6 +253,14 @@ export function renderPlaylist(program, now = Date.now()) {
     const item = window[i], prev = window[i - 1];
     if (prev && item.discontinuity > prev.discontinuity) lines.push("#EXT-X-DISCONTINUITY");
     lines.push("#EXT-X-PROGRAM-DATE-TIME:" + new Date(item.start).toISOString());
+    if(program.stationId!=="quiet-frequency") {
+      if(item.index===0){
+        const track=item.track;
+        const metadata={id:track.id,title:track.title,artist:track.artist,album:track.album,artwork:track.artwork};
+        lines.push('#EXT-X-DATERANGE:ID="'+item.revision+"-"+item.sequence+
+          '\",CLASS="org.abundent.humkin.track",START-DATE="'+new Date(item.start).toISOString()+'",X-HUMKIN="'+encodeCue(metadata)+'"');
+      }
+    } else {
     // Include the currently audible chapter even if its start has rolled
     // out of the window, plus any transitions inside this media segment.
     let instant=item.start;
@@ -267,6 +276,7 @@ export function renderPlaylist(program, now = Date.now()) {
           new Date(occurrence.start).toISOString()+'",X-HUMKIN="'+encodeCue(metadata)+'"');
       }
       instant=occurrence.end;
+    }
     }
     lines.push("#EXTINF:" + (item.duration / 1000).toFixed(3) + ",", urlFor(item));
   }
@@ -333,6 +343,11 @@ export async function serveAutopilot(request, env, now = Date.now()) {
     if (match[2] === "status") return respond({on_air:true,mode:"cloud_autopilot_hls",
       frequency:parsed.stationId,revision:latest.revision,age_seconds:Math.round((now - latest.end)/1000),
       playlist:pathname.replace(/status$/,"live.m3u8")});
+    if (match[2] === "now-playing" && parsed.stationId!=="quiet-frequency") return respond({on_air:true,
+      mode:"cloud_autopilot_hls",frequency:parsed.stationId,
+      revision:latest.revision,media_at:new Date(latest.start).toISOString(),
+      track:{id:latest.track.id,title:latest.track.title,artist:latest.track.artist,
+        album:latest.track.album,artwork_url:latest.track.artwork}});
     if (match[2] === "now-playing") {
       const cue=trackOccurrence(parsed,now-PLAYOUT_LAG_MS);
       return respond({on_air:true,mode:"cloud_autopilot_hls",frequency:parsed.stationId,
