@@ -17,12 +17,19 @@ export function readDay(data,day){
 }
 export const noteName=n=>["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"][n%12]+(Math.floor(n/12)-1);
 export function harvestBundle(seeds){return {schema:"humkin.echo-orchard.harvest/v1",state:"draft_for_owner_review",broadcast_authority:false,seeds:seeds.filter(validSeed).slice(0,128)};}
+const canonical=value=>value===null||typeof value!=="object"?JSON.stringify(value):Array.isArray(value)?"["+value.map(canonical).join(",")+"]":"{"+Object.keys(value).sort().map(k=>JSON.stringify(k)+":"+canonical(value[k])).join(",")+"}";
+const sha256=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),x=>x.toString(16).padStart(2,"0")).join("");
 export async function midiBytes(seed){
  if(!validSeed(seed))throw Error("Invalid seed");
  const p=seed.proposal.midi,bytes=Uint8Array.from(atob(p.base64),x=>x.charCodeAt(0));
  if(bytes.length!==p.byte_length||bytes.length>4096||String.fromCharCode(...bytes.slice(0,4))!=="MThd")throw Error("Malformed MIDI");
- const actual=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),x=>x.toString(16).padStart(2,"0")).join("");
+ const actual=await sha256(bytes);
  if(actual!==p.sha256.replace(/^sha256:/,""))throw Error("MIDI checksum mismatch");
+ const {receipt_hash,...receipt}=seed.proposal.native_receipt;
+ const hash=async value=>"sha256:"+await sha256(new TextEncoder().encode(canonical(value)));
+ if(await hash(receipt)!==receipt_hash||await hash(seed.proposal.native_proposal)!==receipt.proposal_hash||await hash(seed.proposal.signal_evidence.signal_profile)!==receipt.signal_evidence_hash||receipt.midi.sha256!==p.sha256||receipt.midi.byte_length!==p.byte_length||receipt.source_window.source_sha256!==seed.source_segment_sha256)throw Error("Native receipt mismatch");
+ const v=seed.proposal.native_proposal.value;
+ if(JSON.stringify(v.pitches)!==JSON.stringify(seed.proposal.pitches)||v.tempoBpm!==seed.proposal.tempo_bpm||JSON.stringify(v.durationsQuarter)!==JSON.stringify(seed.proposal.durations_quarter))throw Error("Proposal summary mismatch");
  return bytes;
 }
 function download(bytes,name,type){const a=document.createElement("a"),url=URL.createObjectURL(new Blob([bytes],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
@@ -34,7 +41,7 @@ function mount(){
  function stop(){for(const n of voices){try{n.stop()}catch{}}voices=[];}
  async function audition(seed){
   stop();const token=++version;
-  try{await midiBytes(seed);if(token!==version)return;const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)throw Error("Audio unavailable");ctx=ctx||new Audio();await ctx.resume();if(token!==version)return;
+  try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)throw Error("Audio unavailable");ctx=ctx||new Audio();await ctx.resume();await midiBytes(seed);if(token!==version)return;
    let time=ctx.currentTime+.05;const p=seed.proposal;
    for(let i=0;i<4;i++){const duration=p.durations_quarter[i]*60/p.tempo_bpm;const osc=ctx.createOscillator(),gain=ctx.createGain();
     osc.type="sine";osc.frequency.value=440*2**((p.pitches[i]-69)/12);gain.gain.setValueAtTime(0,time);gain.gain.linearRampToValueAtTime(.12,time+.025);gain.gain.linearRampToValueAtTime(0,time+duration);osc.connect(gain).connect(ctx.destination);osc.start(time);osc.stop(time+duration+.01);voices.push(osc);time+=duration;}

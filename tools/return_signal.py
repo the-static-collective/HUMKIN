@@ -49,8 +49,10 @@ def select_segment(manifest,playlist=PLAYLIST):
             try:
                 stamp=dt.datetime.fromisoformat(m[1].replace("Z","+00:00"))
                 d=json.loads(base64.urlsafe_b64decode(m[2]+"="*(-len(m[2])%4)))
-                cue=(stamp,d) if isinstance(d,dict) else None
+                cue=(stamp,d) if isinstance(d,dict) and stamp.tzinfo is not None else None
             except (ValueError,TypeError):cue=None
+        elif line=="#EXT-X-DISCONTINUITY":
+            cue=None
         elif line.startswith("#EXT-X-PROGRAM-DATE-TIME:"):
             when=dt.datetime.fromisoformat(line.split(":",1)[1].replace("Z","+00:00"))
         elif line.startswith("#EXTINF:"):
