@@ -25,7 +25,7 @@ def field_answer(source,carrier,runner=subprocess.run):
     if not re.fullmatch(r"[a-f0-9]{64}",segment):raise ValueError("Missing actual source segment digest")
     result=runner(["node",str(BRIDGE),source["id"],segment],input=carrier,stdout=subprocess.PIPE,
                   stderr=subprocess.DEVNULL,timeout=20,check=True)
-    if len(result.stdout)>8192:raise ValueError("Field answer output exceeds bound")
+    if len(result.stdout)>32768:raise ValueError("Field answer output exceeds bound")
     data=json.loads(result.stdout)
     notes=data["pitches"];tempo=data["tempo_bpm"];durations=data["durations_quarter"]
     if not isinstance(notes,list) or len(notes)!=4 or any(type(n) is not int or not 36<=n<=84 for n in notes):raise ValueError("Invalid pitches")
@@ -34,6 +34,8 @@ def field_answer(source,carrier,runner=subprocess.run):
     if data.get("source_audio_sha256")!=hashlib.sha256(carrier).hexdigest():raise ValueError("Returned audio digest mismatch")
     for key in ("receipt_hash","signal_evidence_hash","proposal_hash","source_audio_sha256"):
         if not isinstance(data[key],str) or not HASH.fullmatch(data[key]):raise ValueError("Invalid receipt")
+    from echo_orchard import verify_native
+    verify_native(data, source)
     names=("C","C#","D","D#","E","F","F#","G","G#","A","A#","B")
     melody=" – ".join(names[n%12]+str(n//12-1) for n in notes)
     return entry(source,"HAUNTED PHONOGRAPHY","creative",

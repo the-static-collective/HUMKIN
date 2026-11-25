@@ -18,6 +18,8 @@ from urllib.parse import urljoin, urlsplit
 
 ROOT="https://humkin-long-wave.joyvolcanomusic.workers.dev"
 PLAYLIST=ROOT+"/hls/live.m3u8"
+CLOUD_PLAYLIST=ROOT+"/autopilot/station-one/live.m3u8"
+CLOUD_SEGMENT=re.compile(r"/autopilot/station-one/segments/[a-f0-9]{64}/segment-[0-9]{6}\.ts\Z")
 SCHEMA="humkin.return-signal/v1"
 SEGMENT=re.compile(r"/hls/(?:station-one/)?[a-f0-9]{32}/segment-[0-9]{10,16}\.ts\Z")
 CUE=re.compile(r'^#EXT-X-DATERANGE:ID="[^"]+",CLASS="org\.abundent\.humkin\.track",START-DATE="([^"]+)",X-HUMKIN="([A-Za-z0-9_-]{1,5000})"$')
@@ -35,9 +37,11 @@ def get(url,limit):
 def clean(value,limit):
     return " ".join(value.split())[:limit] if isinstance(value,str) else ""
 
-def select_segment(manifest):
+def select_segment(manifest,playlist=PLAYLIST):
     """Use only an exact allowlisted, complete HLS segment; never follow arbitrary URLs."""
     if not manifest.startswith("#EXTM3U"):raise ValueError("Invalid playlist")
+    if playlist not in (PLAYLIST,CLOUD_PLAYLIST):raise ValueError("Invalid playlist source")
+    allowed=SEGMENT if playlist==PLAYLIST else CLOUD_SEGMENT
     rows=[];cue=None;when=None;duration=None
     for line in manifest.splitlines():
         m=CUE.fullmatch(line)
@@ -52,8 +56,8 @@ def select_segment(manifest):
         elif line.startswith("#EXTINF:"):
             duration=float(line.split(":",1)[1].split(",")[0])
         elif line and not line.startswith("#"):
-            url=urljoin(PLAYLIST,line);p=urlsplit(url)
-            if p.scheme!="https" or p.netloc!=urlsplit(ROOT).netloc or p.query or p.fragment or not SEGMENT.fullmatch(p.path):
+            url=urljoin(playlist,line);p=urlsplit(url)
+            if p.scheme!="https" or p.netloc!=urlsplit(ROOT).netloc or p.query or p.fragment or not allowed.fullmatch(p.path):
                 raise ValueError("Unapproved HLS segment")
             if when is None or when.tzinfo is None or duration is None or not 0.25<=duration<=11:raise ValueError("Incomplete segment")
             d=cue[1] if cue and cue[0]<=when else {}
@@ -72,10 +76,16 @@ def measure(pcm,sample_rate=8000):
 
 def capture(now=None,fetch=get,with_audio=False):
     now=now or dt.datetime.now(dt.timezone.utc)
-    url,when,title,track=select_segment(fetch(PLAYLIST,256000).decode("utf-8"))
-    age=(now-when).total_seconds()
-    if not -30<=age<=90:raise ValueError("Stale audio sample")
-    raw=fetch(url,3*1024*1024)
+    for playlist,transport in ((PLAYLIST,"hot_hls"),(CLOUD_PLAYLIST,"cloud_autopilot_hls")):
+        try:
+            url,when,title,track=select_segment(fetch(playlist,256000).decode("utf-8"),playlist)
+            age=(now-when).total_seconds()
+            if not -30<=age<=90:raise ValueError("Stale audio sample")
+            raw=fetch(url,3*1024*1024)
+            break
+        except (ValueError,OSError,TypeError):
+            continue
+    else:raise ValueError("Neither approved Station One transport supplied a fresh sample")
     result=subprocess.run(["ffmpeg","-nostdin","-v","error","-f","mpegts","-i","pipe:0","-map","0:a:0","-t","8","-ac","2","-ar","44100","-f","s16le","pipe:1"],input=raw,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=15,check=True)
     pcm=result.stdout
     if len(pcm)%4 or not 176400<=len(pcm)<=1411200:raise ValueError("Invalid bounded stereo sample")
@@ -85,8 +95,8 @@ def capture(now=None,fetch=get,with_audio=False):
         left,right=struct.unpack_from("<hh",pcm,i)
         mono.extend(struct.pack("<h",round((left+right)/2)))
     metrics=measure(bytes(mono), sample_rate=7350)
-    ident=hashlib.sha256(("signal-ear/v1:"+url).encode()).hexdigest()
-    entry={"id":ident,"agent":"SIGNAL EAR","basis":"audio","station_id":"station-one","observed_at":now.isoformat(),"media_at":when.isoformat(),"track_title":title,"recording_id":track,"response":f"Decoded {metrics['sample_seconds']:.2f} seconds of broadcast audio. RMS {metrics['rms_dbfs']:.1f} dBFS; peak {metrics['peak_dbfs']:.1f} dBFS. A measured fragment, not a full-song interpretation.","metrics":metrics,"segment_sha256":hashlib.sha256(raw).hexdigest(),"method":"ffmpeg-pcm-levels/v2-stereo-downsample"}
+    ident=hashlib.sha256(("signal-ear/v2:"+url+":"+when.isoformat()).encode()).hexdigest()
+    entry={"id":ident,"agent":"SIGNAL EAR","basis":"audio","station_id":"station-one","transport":transport,"observed_at":now.isoformat(),"media_at":when.isoformat(),"track_title":title,"recording_id":track,"response":f"Decoded {metrics['sample_seconds']:.2f} seconds of broadcast audio. RMS {metrics['rms_dbfs']:.1f} dBFS; peak {metrics['peak_dbfs']:.1f} dBFS. A measured fragment, not a full-song interpretation.","metrics":metrics,"segment_sha256":hashlib.sha256(raw).hexdigest(),"method":"ffmpeg-pcm-levels/v2-stereo-downsample"}
     if not with_audio:return entry
     carrier=io.BytesIO()
     with wave.open(carrier,"wb") as w:
@@ -133,7 +143,13 @@ def main():
     updated=append(feed,entry)
     if os.environ.get("RETURN_SIGNAL_MODE")!="reviewed" and updated!=feed:
         from listening_council import council
-        for response in council(entry,carrier,feed):updated=append(updated,response)
+        from echo_orchard import archive,seed_from
+        for response in council(entry,carrier,feed):
+            if response.get("method")=="haunted-phonograph/field-answer-v0":
+                seed=seed_from(response,entry)
+                archive(args.feed.parent/"echo-orchard",seed)
+                response=dict(response,proposal={k:v for k,v in response["proposal"].items() if k not in ("midi","native_receipt","native_proposal","signal_evidence")},echo_seed_id=seed["id"],echo_day=seed["created_at"][:10])
+            updated=append(updated,response)
     if updated!=feed:
         args.feed.write_text(json.dumps(updated,indent=2,ensure_ascii=False)+"\n")
         print("One verified audio observation prepared.")

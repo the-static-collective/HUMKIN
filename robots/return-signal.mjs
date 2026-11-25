@@ -27,7 +27,9 @@ export function mount(root,fetcher=fetch){
           label.textContent=row.agent+" · "+row.basis.toUpperCase()+(row.basis==="audio"?"":row.review==="automatic bounded engine"?" · ENGINE-GENERATED":" · OPERATOR-REVIEWED")+" · ";
           time.dateTime=row.observed_at;time.textContent=new Date(row.observed_at).toLocaleString();
           message.textContent=row.response;credit.textContent=row.track_title?"Recording: "+row.track_title:"Broadcast sample · recording unidentified";
-          li.append(label,time,message,credit);list.append(li);
+          li.append(label,time,message,credit);
+          if(/^[a-f0-9]{64}$/.test(row.echo_seed_id||"")&&/^\d{4}-\d{2}-\d{2}$/.test(row.echo_day||"")){const a=document.createElement("a");a.textContent=" Audition / harvest seed ↗";a.href="/robots/echo/?day="+row.echo_day+"#"+row.echo_seed_id;li.append(a);}
+          list.append(li);
         }last=signature;
       }
       status.textContent=rows.length?"Last received "+new Date(rows[0].observed_at).toLocaleString()+" · "+(Date.now()-Date.parse(rows[0].observed_at)>3600000?"Archive · no recent response":"Recent correspondence"):"Awaiting received transmissions.";

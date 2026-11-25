@@ -1,0 +1,2 @@
+import test from "node:test";import assert from "node:assert/strict";import {validDay,validSeed,harvestBundle,noteName,readDay} from "../robots/echo/orchard.mjs";
+test("calendar, honest empty archive, no authority",()=>{assert.equal(validDay("2026-02-30"),false);assert.equal(validDay("2026-11-24"),true);assert.equal(noteName(60),"C4");assert.equal(validSeed({state:"approved"}),false);assert.deepEqual(readDay({schema:"humkin.echo-orchard/day/v1",day:"2026-11-24",seeds:[]},"2026-11-24"),[]);assert.equal(harvestBundle([]).broadcast_authority,false);});

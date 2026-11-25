@@ -7,5 +7,5 @@ test("native donor generates receipt-bound reply from canonical synthetic fixtur
  for(let i=44;i<wav.length;i+=4){let n=Math.round(1000*Math.sin((i-44)/4*.04));wav.writeInt16LE(n,i);wav.writeInt16LE(n,i+2);}
  const run=()=>spawnSync(process.execPath,[bridge,"a".repeat(64),"b".repeat(64)],{input:wav,encoding:"utf8",timeout:20000});
  const a=run(),b=run();assert.equal(a.status,0,a.stderr);assert.equal(b.status,0,b.stderr);assert.equal(a.stdout,b.stdout);
- const p=JSON.parse(a.stdout);assert.equal(p.pitches.length,4);assert.ok(p.receipt_hash);assert.equal("base64" in p,false);
+ const p=JSON.parse(a.stdout);assert.equal(p.pitches.length,4);assert.ok(p.receipt_hash);assert.equal("base64" in p,false);assert.ok(p.midi.base64);assert.equal(p.midi.sha256,p.native_receipt.midi.sha256);assert.equal(p.proposal_hash,p.native_receipt.proposal_hash);
 });

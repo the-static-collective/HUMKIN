@@ -1,6 +1,6 @@
 /* Exact upstream Field Answer implementation in ./phonography, pinned in SOURCES.md.
  * Input: canonical WAV from already-decoded broadcast segment. Output: public-safe
- * proposal summary only. No raw audio, private data, MIDI or audition published. */
+ * proposal summary only. Returns original MIDI seed and native receipts; never source audio or audition bytes. */
 import {readFileSync} from "node:fs";
 import {createHash} from "node:crypto";
 import {buildFieldAnswer} from "./phonography/field-answer.mjs";
@@ -20,4 +20,5 @@ const result=buildFieldAnswer({schema:"haunted-phonograph/field-answer-request/v
 const v=result.proposal.value;
 process.stdout.write(JSON.stringify({pitches:v.pitches,tempo_bpm:v.tempoBpm,durations_quarter:v.durationsQuarter,
  receipt_hash:result.receipt.receipt_hash,signal_evidence_hash:result.receipt.signal_evidence_hash,
- proposal_hash:result.receipt.proposal_hash,source_audio_sha256:digest}));
+ proposal_hash:result.receipt.proposal_hash,source_audio_sha256:digest,
+ midi:result.midi,native_receipt:result.receipt,native_proposal:result.proposal,signal_evidence:result.evidence}));

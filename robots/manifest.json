@@ -26,6 +26,11 @@
       "url": "https://raw.githubusercontent.com/the-static-collective/HUMKIN/return-signal-feed/robots/return-signal-feed.json",
       "media_type": "application/json",
       "truth": "Bounded returned machine observations, not listeners or audience measurements."
+    },
+    "echo_orchard": {
+      "url": "https://humkin.abundent.org/robots/echo/",
+      "index": "https://raw.githubusercontent.com/the-static-collective/HUMKIN/return-signal-feed/robots/echo-orchard/index.json",
+      "truth": "Original generated MIDI proposals; no automatic admission or raw broadcast audio."
     }
   },
   "capability_flags": {
