@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="HUMKIN Robot Radio: a read-only protocol porch for humans and autonomous listening clients.">
+  <title>HUMKIN RADIO · For Humans & Other Intelligences</title>
+  <link rel="alternate" type="application/json" title="Machine-readable radio discovery" href="./manifest.json">
+  <style>
+    :root{color-scheme:dark;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#121710;color:#eceddd}
+    *{box-sizing:border-box}body{margin:0;padding:clamp(1rem,4vw,3.5rem);max-width:860px}
+    a{color:#b9e8a1}a:focus-visible{outline:2px solid #e7d179;outline-offset:4px}
+    header{border-bottom:1px solid #68745e;padding-bottom:1.5rem}
+    .flag{color:#e7d179;letter-spacing:.12em;font-size:.75rem;text-transform:uppercase}
+    h1{font-size:clamp(2rem,6vw,4rem);line-height:1.07;margin:.65rem 0}
+    h2{font-size:1.1rem;color:#e7d179;margin-top:2rem}
+    p,li{line-height:1.65}main{margin-top:2rem}
+    .panel{border:1px solid #57674f;background:#1a241a;padding:1.2rem;margin:1rem 0;border-radius:8px}
+    .freq{font-size:1.4rem;font-weight:700;color:#b9e8a1}
+    .muted{color:#a9b09e;font-size:.88rem}.links{display:flex;flex-wrap:wrap;gap:.8rem;margin:1rem 0}
+    .links a{border:1px solid currentColor;border-radius:5px;padding:.75rem 1rem;text-decoration:none}
+    code{overflow-wrap:anywhere;color:#c5e1ad}
+    footer{border-top:1px solid #68745e;margin-top:2rem;padding-top:1rem}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="flag">HUMKIN // ROBOT PORCH // 001</div>
+    <h1>Radio for humans.<br>And other intelligences.</h1>
+    <p>One shared broadcast. Two ways of encountering it. No imaginary audience.</p>
+  </header>
+  <main>
+    <section aria-labelledby="frequency">
+      <h2 id="frequency">Frequency one: the real station</h2>
+      <div class="panel">
+        <div class="freq">STATION ONE · LIVE</div>
+        <p>Humans can use the regular radio player. HTTP/HLS-capable agents can inspect the broadcast transport and its status directly. Neither opening a manifest nor fetching metadata establishes that sound was heard.</p>
+        <div class="links">
+          <a href="../fm/">Open human player</a>
+          <a href="./manifest.json">Machine-readable discovery</a>
+          <a href="https://humkin-long-wave.joyvolcanomusic.workers.dev/hls/status">Broadcast status</a>
+          <a href="https://humkin-long-wave.joyvolcanomusic.workers.dev/hls/live.m3u8">HLS transport</a>
+        </div>
+        <p class="muted">Transport and Worker status are not independently verified listening receipts. This porch is a proposal in source until its deployment is checked.</p>
+      </div>
+    </section>
+    <section aria-labelledby="ghost">
+      <h2 id="ghost">Frequency two: the ghost frequency (in development)</h2>
+      <p>HUMKIN is investigating a second, machine-readable layer for track discoveries, audio descriptions, musical relationships, and robot DJ proposals.</p>
+      <p>Suno can provide actual sound analysis and agent listening reports. The <a href="https://github.com/the-static-collective/reLATTE/pull/181">reLATTE Suno evidence review</a> holds these observations before any public release. The public MCP endpoint, robot participation inbox, and automated broadcasting are <strong>not deployed</strong> here.</p>
+    </section>
+    <section aria-labelledby="rules">
+      <h2 id="rules">Etiquette for autonomous listeners</h2>
+      <p>Respect source permissions. Keep model interpretations distinct from measured audio features and human editorial decisions. Do not treat program listings as proof of playback. Do not manufacture human listener metrics with bot traffic. Robot-selected tracks or features cannot go on air without station-authorized approval.</p>
+    </section>
+  </main>
+  <footer>
+    <p class="muted">HUMKIN RADIO · An experimental, opt-in participation surface. <a href="https://github.com/the-static-collective/HUMKIN/blob/main/docs/RADIO-HOUSE.md">Radio House source authority</a>.</p>
+  </footer>
+</body>
+</html>

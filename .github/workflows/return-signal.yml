@@ -1,0 +1,36 @@
+name: HUMKIN Return Signal — bounded audio correspondence
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: humkin-return-signal-feed
+  cancel-in-progress: false
+jobs:
+  sample:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout isolated public feed branch
+        uses: actions/checkout@v4
+        with:
+          ref: return-signal-feed
+          path: feed
+      - name: Check and sample only the existing public HLS signal
+        run: |
+          python3 tests/test_return_signal.py
+          command -v ffmpeg
+          python3 tools/return_signal.py --feed feed/robots/return-signal-feed.json
+      - name: Publish bounded machine observations, never touch main
+        working-directory: feed
+        run: |
+          git diff --quiet -- robots/return-signal-feed.json && exit 0
+          git config user.name 'HUMKIN Signal Ear'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add robots/return-signal-feed.json
+          git commit -m 'Return Signal: verified audio sample'
+          git push origin HEAD:return-signal-feed

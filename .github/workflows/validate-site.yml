@@ -21,6 +21,8 @@ jobs:
         run: node scripts/assemble-everywhere-near-you.mjs
       - run: node tests/record-shelf.test.mjs
       - run: node tests/site.test.mjs
+      - run: python3 tests/test_return_signal.py
+      - run: node --test tests/return-signal.test.mjs
       - run: node tests/postcard-buttons.test.mjs
       - run: node tests/distribution.test.mjs
       - run: node tests/surprise.test.mjs
