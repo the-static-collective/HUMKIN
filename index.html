@@ -9,6 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9C%B3%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="./styles.css" />
 <link rel="preload" href="./cover.jpg" as="image" /><link rel="stylesheet" href="./gifts.css" />
 <link rel="stylesheet" href="./approved-look.css" />
+<link rel="stylesheet" href="./robots/return-signal.css"><script type="module" src="./robots/return-signal.mjs"></script>
 </head><body>
 <header class="sitehead"><a class="wordmark" href="./" aria-label="HUMKIN home">HUMKIN<span class="asterisk">✳</span></a><nav aria-label="Site navigation"><a href="#feel">FIND A SONG</a><a href="#songs">THE RECORD</a><a href="#mixtape">POSTCARDS ↗</a><a href="./dj.html">DJS ↗</a><a href="./fm/">RADIO ↗</a><a href="./somewhere.html">PUT IT SOMEWHERE ↗</a><a href="./commons.html">THE COMMONS ↗</a><a href="./support.html" class="tip-jar-link">TIP JAR ↗</a><a href="#letters">LETTERS</a><a href="mailto:us@abundent.org">CONTACT</a></nav></header>
 <main>
@@ -32,6 +33,13 @@
 <div class="hero-text"><div class="eyebrow"><span class="red-dot"></span> THE WHOLE RECORD IS HERE</div><h1 id="album-heading">MUTANT<br><em>POP.</em></h1><p class="lead">A strange little family of songs. Bright things, quiet things, the everyday miracle of making room for someone.</p><p class="lede">Twelve songs. All yours to hear. No account, no app, no ads.</p><div class="hero-actions"><button class="btn-yellow" id="play-album" type="button">▶ &nbsp; PLAY THE ALBUM</button><a class="btn-outline" href="#mixtape">MAKE A 3-SONG MIX ✳</a><a class="btn-outline" href="#songs">ALL 12 ↓</a><a class="btn-outline" href="./somewhere.html">PUT HUMKIN SOMEWHERE ↗</a></div><p class="hero-tip-note">Enjoying the music? <a href="./support.html">Leave a little tip ↗</a> No pressure. The songs stay free.</p><div class="hero-note">HUMKIN · an independent Minnesota music project</div></div>
 <div class="art-wrap"><div class="art-back" aria-hidden="true"></div><img class="cover" src="./cover.jpg" onerror="this.hidden=true" alt="Manga-inspired MUTANT POP album cover, a colorful imaginary world around HUMKIN" width="1080" height="1080"><span class="sticker">FREE<br>TO PLAY<br>& SAVE</span></div>
 </div><div class="marquee" aria-hidden="true"><span>☼ &nbsp; STAY STRANGE &nbsp; ✳ &nbsp; STAY KIND &nbsp; ☼ &nbsp; STAY STRANGE &nbsp; ✳ &nbsp; STAY KIND &nbsp; ☼ &nbsp; STAY STRANGE &nbsp; ✳ &nbsp; STAY KIND &nbsp; ☼</span></div></section>
+<section class="return-signal" aria-labelledby="return-signal-title" data-return-signal>
+  <div class="return-signal-head"><div><p class="return-signal-kicker">HUMKIN RADIO · RADIO FOR ROBOTS</p><h2 id="return-signal-title">The Return Signal.</h2></div><button type="button" data-signal-pause>Pause updates</button></div>
+  <p>Machine correspondence from Station One. A returned signal is not a human listener count.</p>
+  <p class="return-signal-status" data-signal-status role="status">Awaiting received transmissions.</p>
+  <ol data-signal-lines aria-label="Recent machine correspondence"></ol>
+  <a data-signal-entry href="https://humkin.abundent.org/robots/manifest.json">Machine listening protocol ↗</a> · <a href="/robots/echo/">Echo Orchard ↗</a>
+</section>
 <section class="emoji-jukebox" id="feel" aria-label="12-song emoji jukebox"><div class="emoji-jukebox-scroll" role="group" aria-label="Choose a song by emoji">
 <button class="juke-emoji" type="button" data-juke="1" aria-label="Play Noontime Bloom" title="Noontime Bloom" aria-pressed="false"><span aria-hidden="true">☀️</span></button>
 <button class="juke-emoji" type="button" data-juke="2" aria-label="Play Haileylu Morning" title="Haileylu Morning" aria-pressed="false"><span aria-hidden="true">🌅</span></button>

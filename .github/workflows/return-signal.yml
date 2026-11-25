@@ -1,0 +1,77 @@
+name: HUMKIN Return Signal — bounded audio correspondence
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Sample the live signal or publish reviewed internal correspondence"
+        type: choice
+        options: [sample, reviewed]
+        default: sample
+      source_sample:
+        description: "Existing Signal Ear sample ID (reviewed mode)"
+        type: string
+      agent:
+        description: "Internal agent attribution (reviewed mode)"
+        type: choice
+        options: [MOTIF, HAUNTED TOASTER, reLATTE, MEMENTO, Dr. MADDcl0wn, "JAR;VIS"]
+        default: MOTIF
+      basis:
+        description: "Interpretation type"
+        type: choice
+        options: [metadata, creative]
+        default: creative
+      response:
+        description: "Reviewed plain-text response, max 420 characters"
+        type: string
+      approved:
+        description: "I reviewed the response, source and public attribution"
+        type: boolean
+        default: false
+  schedule:
+    - cron: '17,47 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: humkin-return-signal-feed
+  cancel-in-progress: false
+jobs:
+  sample:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Checkout isolated public feed branch
+        uses: actions/checkout@v4
+        with:
+          ref: return-signal-feed
+          path: feed
+      - name: Check and sample only the existing public HLS signal
+        env:
+          RETURN_SIGNAL_MODE: ${{ inputs.mode }}
+          RETURN_SIGNAL_SOURCE: ${{ inputs.source_sample }}
+          RETURN_SIGNAL_AGENT: ${{ inputs.agent }}
+          RETURN_SIGNAL_BASIS: ${{ inputs.basis }}
+          RETURN_SIGNAL_TEXT: ${{ inputs.response }}
+          RETURN_SIGNAL_APPROVED: ${{ inputs.approved }}
+        run: |
+          python3 tests/test_return_signal.py
+          python3 tests/test_listening_council.py
+          python3 tests/test_echo_orchard.py
+          node --test tests/echo-orchard.test.mjs
+          node --test tests/listening-council.test.mjs
+          command -v ffmpeg
+          python3 tools/return_signal.py --feed feed/robots/return-signal-feed.json
+      - name: Publish bounded machine observations, never touch main
+        working-directory: feed
+        run: |
+          git add -- robots/return-signal-feed.json
+          if test -d robots/echo-orchard; then git add -- robots/echo-orchard; fi
+          git diff --cached --quiet && exit 0
+          git config user.name 'HUMKIN Signal Ear'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Return Signal: received correspondence'
+          git push origin HEAD:return-signal-feed
