@@ -40,7 +40,7 @@ function safeControl(raw) {
   return {cursor:raw.cursor,last_action:last};
 }
 
-function buildRevision(raw) {
+function buildRevision(raw, allowChapters = false) {
   requireValue(raw && ID.test(raw.id), "INVALID_REVISION_ID");
   const epoch = timestamp(raw.effective_at);
   requireValue(Array.isArray(raw.tracks) && raw.tracks.length > 0 && raw.tracks.length <= MAX_TRACKS, "INVALID_TRACKS");
@@ -64,6 +64,21 @@ function buildRevision(raw) {
       segments.push({offset, duration, track, trackIndex: tracks.length - 1,
         index: i, asset: row.asset_sha, discIndex: trackBeginnings});
       offset += duration;
+    }
+    if (row.chapters !== undefined) {
+      requireValue(allowChapters, "INVALID_CHAPTER_STATION");
+      requireValue(Array.isArray(row.chapters) && row.chapters.length >= 1 && row.chapters.length <= 64, "INVALID_CHAPTERS");
+      let previous = -1;
+      track.chapters = row.chapters.map(chapter => {
+        requireValue(chapter && Number.isSafeInteger(chapter.start_ms) &&
+          chapter.start_ms > previous && chapter.start_ms < offset-trackStart &&
+          (previous !== -1 || chapter.start_ms === 0) &&
+          typeof chapter.recording_id === "string" &&
+          /^(?:r2-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|rec-[0-9a-f]{64})$/.test(chapter.recording_id) &&
+          string(chapter.title) && string(chapter.artist), "INVALID_CHAPTER");
+        previous = chapter.start_ms;
+        return {start_ms:chapter.start_ms,recording_id:chapter.recording_id,title:string(chapter.title),artist:string(chapter.artist)};
+      });
     }
     trackSpans.push({start: trackStart, end: offset});
     trackBeginnings++;
@@ -97,7 +112,7 @@ export function compileProgram(input) {
     /^[a-z0-9][a-z0-9-]{0,31}$/.test(input.station_id), "INVALID_FREQUENCY");
   requireValue(Array.isArray(input.revisions) && input.revisions.length &&
     input.revisions.length <= MAX_REVISIONS, "INVALID_REVISIONS");
-  const revisions = input.revisions.map(buildRevision);
+  const revisions = input.revisions.map(raw => buildRevision(raw,input.station_id === "quiet-frequency"));
   for (let i = 1; i < revisions.length; i++) {
     const before = revisions[i - 1], after = revisions[i];
     requireValue(after.epoch > before.epoch, "UNSORTED_REVISIONS");
@@ -157,12 +172,19 @@ function trackOccurrence(program, instant) {
   const trackStart = revision.epoch + cycle * revision.cycleMs + span.start;
   const nextRevision = program.revisions[revisionIndex + 1];
   const naturalEnd = revision.epoch + cycle * revision.cycleMs + span.end;
-  const trackEnd = Math.min(naturalEnd, nextRevision?.epoch ?? Infinity);
-  requireValue(trackEnd > instant, "INVALID_SCHEDULE_BOUNDARY");
+  let end = Math.min(naturalEnd, nextRevision?.epoch ?? Infinity);
   const track = revision.tracks[segment.trackIndex];
-  return {revision: revision.id, start: trackStart, end: trackEnd,
-    track: {id: track.id, title: track.title, artist: track.artist,
-      album: track.album, artwork_url: track.artwork}};
+  let start=trackStart, info={id:track.id,title:track.title,artist:track.artist,album:track.album,artwork_url:track.artwork};
+  if(track.chapters){
+    const index=track.chapters.findLastIndex(ch=>ch.start_ms<=instant-trackStart);
+    const chapter=track.chapters[index];
+    start=trackStart+chapter.start_ms;
+    if(track.chapters[index+1])end=Math.min(end,trackStart+track.chapters[index+1].start_ms);
+    info={...info,id:chapter.recording_id,title:chapter.title,artist:chapter.artist,
+      session_id:track.id,session_title:track.title,chapter_index:index+1,chapter_count:track.chapters.length};
+  }
+  requireValue(end > instant, "INVALID_SCHEDULE_BOUNDARY");
+  return {revision: revision.id, start, end, track:info};
 }
 
 export function publicSchedule(program, now = Date.now()) {
@@ -178,8 +200,8 @@ export function publicSchedule(program, now = Date.now()) {
   // published revision becomes effective. Stop before repeating the opening cue.
   const deadline = following ? following.epoch + following.cycleMs :
     first.start + active.cycleMs;
-  const maxEntries = Math.min(1000,
-    active.tracks.length + (following ? following.tracks.length : 0));
+  const chapterCount = rev => rev.tracks.reduce((sum,t)=>sum+(t.chapters?.length||1),0);
+  const maxEntries = Math.min(1000, chapterCount(active) + (following ? chapterCount(following) : 0));
   const upcoming = [];
   let cursor = clock;
   while (upcoming.length < maxEntries) {
@@ -201,6 +223,7 @@ export function publicSchedule(program, now = Date.now()) {
     as_of_utc: new Date(now).toISOString(),
     clock_at_utc: new Date(playbackClock).toISOString(),
     rotation_track_count: active.tracks.length,
+    ...(program.stationId==="quiet-frequency" ? {rotation_chapter_count:chapterCount(active)} : {}),
     cycle_duration_ms: active.cycleMs,
     upcoming,
     pending_revisions: program.revisions.filter(revision => revision.epoch > playbackClock)
@@ -230,13 +253,30 @@ export function renderPlaylist(program, now = Date.now()) {
     const item = window[i], prev = window[i - 1];
     if (prev && item.discontinuity > prev.discontinuity) lines.push("#EXT-X-DISCONTINUITY");
     lines.push("#EXT-X-PROGRAM-DATE-TIME:" + new Date(item.start).toISOString());
-    if (item.index === 0) {
-      const track = item.track;
-      const metadata = {id:track.id,title:track.title,artist:track.artist,
-        album:track.album,artwork:track.artwork};
-      lines.push('#EXT-X-DATERANGE:ID="' + item.revision + "-" + item.sequence +
-        '",CLASS="org.abundent.humkin.track",START-DATE="' +
-        new Date(item.start).toISOString() + '",X-HUMKIN="' + encodeCue(metadata) + '"');
+    if(program.stationId!=="quiet-frequency") {
+      if(item.index===0){
+        const track=item.track;
+        const metadata={id:track.id,title:track.title,artist:track.artist,album:track.album,artwork:track.artwork};
+        lines.push('#EXT-X-DATERANGE:ID="'+item.revision+"-"+item.sequence+
+          '\",CLASS="org.abundent.humkin.track",START-DATE="'+new Date(item.start).toISOString()+'",X-HUMKIN="'+encodeCue(metadata)+'"');
+      }
+    } else {
+    // Include the currently audible chapter even if its start has rolled
+    // out of the window, plus any transitions inside this media segment.
+    let instant=item.start;
+    while(instant<item.end){
+      const occurrence=trackOccurrence(program,instant);
+      if(!occurrence)break;
+      if(i===0 || occurrence.start>=item.start){
+        const {artwork_url,...info}=occurrence.track;
+        const metadata={...info,artwork:artwork_url};
+        const cueId=occurrence.revision+"-"+occurrence.start;
+        lines.push('#EXT-X-DATERANGE:ID="'+cueId+
+          '",CLASS="org.abundent.humkin.track",START-DATE="'+
+          new Date(occurrence.start).toISOString()+'",X-HUMKIN="'+encodeCue(metadata)+'"');
+      }
+      instant=occurrence.end;
+    }
     }
     lines.push("#EXTINF:" + (item.duration / 1000).toFixed(3) + ",", urlFor(item));
   }
@@ -303,11 +343,16 @@ export async function serveAutopilot(request, env, now = Date.now()) {
     if (match[2] === "status") return respond({on_air:true,mode:"cloud_autopilot_hls",
       frequency:parsed.stationId,revision:latest.revision,age_seconds:Math.round((now - latest.end)/1000),
       playlist:pathname.replace(/status$/,"live.m3u8")});
-    if (match[2] === "now-playing") return respond({on_air:true,
+    if (match[2] === "now-playing" && parsed.stationId!=="quiet-frequency") return respond({on_air:true,
       mode:"cloud_autopilot_hls",frequency:parsed.stationId,
       revision:latest.revision,media_at:new Date(latest.start).toISOString(),
       track:{id:latest.track.id,title:latest.track.title,artist:latest.track.artist,
         album:latest.track.album,artwork_url:latest.track.artwork}});
+    if (match[2] === "now-playing") {
+      const cue=trackOccurrence(parsed,now-PLAYOUT_LAG_MS);
+      return respond({on_air:true,mode:"cloud_autopilot_hls",frequency:parsed.stationId,
+        revision:cue.revision,media_at:new Date(cue.start).toISOString(),track:cue.track});
+    }
     return new Response(request.method === "HEAD" ? null : renderPlaylist(parsed,now),
       {status:200,headers:headers("application/vnd.apple.mpegurl")});
   } catch (e) {

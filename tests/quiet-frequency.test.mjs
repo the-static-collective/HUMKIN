@@ -1,0 +1,5 @@
+import test from "node:test";import assert from "node:assert/strict";
+import {streamForStation} from "../fmstudio/receiver/core.mjs";
+import {rainField,deterministicField} from "../fm/quiet/atmosphere.mjs";
+test("quiet cloud route is independent and has no cross-station fallback",()=>{assert.deepEqual(streamForStation("quiet-frequency","https://fixture.test"),{hls:"https://fixture.test/autopilot/quiet-frequency/live.m3u8",status:"https://fixture.test/autopilot/quiet-frequency/status",longwave:null});assert.equal(streamForStation("station-one","https://fixture.test").hls,"https://fixture.test/hls/live.m3u8");assert.equal(streamForStation("talk","https://fixture.test").hls,"https://fixture.test/hls/talk/live.m3u8");});
+test("fixed low-energy bounded field",()=>{assert.deepEqual(rainField(),rainField());assert.notDeepEqual(rainField(1),rainField(2));assert.equal(rainField(42,10000).length,78);assert.ok(rainField().every(p=>p.opacity>=.08&&p.opacity<=.18&&p.slant<0));assert.equal(deterministicField(0).next(),deterministicField().next());});

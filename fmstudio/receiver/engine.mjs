@@ -99,7 +99,7 @@ export function createReceiver(audio, onUpdate = () => {}) {
     wanted = true;
     emit({mode: "idle", playing: false, stationId, track: null, status: "Tuning…"});
     clearTransport();
-    emit({mode: "hls", status: "Connecting to the live transmitter…"});
+    emit({mode: "hls", status: stationId === "quiet-frequency" ? "Connecting to the cloud broadcast…" : "Connecting to the live transmitter…"});
     lastProgress = Date.now();
     interval = setInterval(() => monitor(n), 10000);
     void checkSignal(n);

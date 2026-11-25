@@ -220,7 +220,16 @@ def prepare_tracks(input_path, cache, *, publish=False):
             "album": str(item.get("album") or "")[:160],
             "artwork": artwork[:1000], "asset_sha": digest,
             "durations_ms": durations})
+        if "chapters" in item:
+            if station != "quiet-frequency":
+                raise ValueError("Chapter sessions are currently enabled only for Quiet Frequency.")
+            from quiet_chapters import validate_chapters
+            tracks[-1]["chapters"] = validate_chapters(item["chapters"], sum(durations))
         print("Prepared:", name, "—", len(durations), "segments")
+    if station == "quiet-frequency":
+        if not handoff or handoff.get("mode") != "quiet_curated":
+            raise ValueError("Quiet Frequency requires an owner-reviewed curated selection.")
+        validate_quiet_cycle(tracks)
     if remote_pins and handoff:
         if publish:
             if remote_pins != prior_pins:
@@ -238,6 +247,43 @@ def prepare_tracks(input_path, cache, *, publish=False):
                 temp.unlink(missing_ok=True)
             print("Pinned", len(remote_pins), "remote recording slots for owner review.")
     return station, tracks
+
+
+def validate_quiet_cycle(tracks):
+    from quiet_chapters import recording_events
+    events, cycle = recording_events(tracks, lambda t: sum(t["durations_ms"]))
+    if len({key for key,_ in events}) != len(events):
+        raise ValueError("Duplicate encoded asset or chapter recording in Quiet Frequency.")
+    if cycle < 14_400_000:
+        raise ValueError("Encoded Quiet Frequency cycle is shorter than four hours.")
+
+
+def validate_quiet_transition(revisions, tracks, cutover_ms):
+    """Check every actual prior start in the last four hours, including earlier revisions."""
+    minimum = 14_400_000
+    latest = {}
+    end = cutover_ms
+    for revision in reversed(revisions):
+        start = clock_ms(revision["effective_at"])
+        if end <= cutover_ms - minimum:
+            break
+        from quiet_chapters import recording_events
+        previous = revision["tracks"]
+        events, cycle = recording_events(previous, lambda t: sum(t["durations_ms"]))
+        if cycle <= 0 or end <= start:
+            raise ValueError("Invalid previous Quiet Frequency timeline.")
+        for key, offset in events:
+            first = start + offset
+            if first < end:
+                last = first + ((end - 1 - first) // cycle) * cycle
+                latest[key] = max(last, latest.get(key, last))
+        end = start
+    from quiet_chapters import recording_events
+    events, _ = recording_events(tracks, lambda t: sum(t["durations_ms"]))
+    for key, offset in events:
+        last = latest.get(key)
+        if last is not None and cutover_ms + offset - last < minimum:
+            raise ValueError("Quiet Frequency revision would repeat a song within four hours; reorder or publish later.")
 
 
 def next_boundary(previous, earliest_ms):
@@ -279,6 +325,12 @@ def public_program(existing, frequency, tracks, lead_seconds=120):
     else:
         revisions = []
     when = next_effective(revisions, lead_seconds)
+    if frequency == "quiet-frequency":
+        validate_quiet_cycle(tracks)
+        if revisions:
+            if any(parse_time(r["effective_at"]) > utcnow() for r in revisions):
+                raise ValueError("Pending Quiet Frequency revision; wait for its activation.")
+            validate_quiet_transition(revisions, tracks, clock_ms(iso(when)))
     revision = {"id": "r-" + when.strftime("%Y%m%d%H%M%S") + "-" +
         hashlib.sha256(json.dumps(tracks,sort_keys=True).encode()).hexdigest()[:10],
         "effective_at": iso(when), "tracks": tracks}
@@ -304,6 +356,11 @@ def validate_hosted_program(program):
                 raise ValueError("Hosted audio requires valid encoded segments.")
             if any(type(milliseconds) is not int or not 250 <= milliseconds <= 11000 for milliseconds in durations):
                 raise ValueError("Encoded segment duration violates Cloud Worker contract.")
+            if "chapters" in entry:
+                if program.get("station_id") != "quiet-frequency":
+                    raise ValueError("Chapter session station is not authorized.")
+                from quiet_chapters import validate_chapters
+                validate_chapters(entry["chapters"], sum(durations))
             segment_count += len(durations)
         if segment_count > 10000:
             raise ValueError("Cloud Worker 10,000-segment limit exceeded; HOLD before R2 writes.")

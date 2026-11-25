@@ -10,6 +10,10 @@ export function validStationId(id) {
 
 export function streamForStation(id, base = STREAM_BASE) {
   if (!validStationId(id)) throw new TypeError("Invalid station frequency");
+  if (id === "quiet-frequency") {
+    const prefix = base.replace(/\/$/, "") + "/autopilot/quiet-frequency/";
+    return {hls: prefix + "live.m3u8", status: prefix + "status", longwave: null};
+  }
   const prefix = base.replace(/\/$/, "") + "/hls/" + (id === "station-one" ? "" : id + "/");
   return { hls: prefix + "live.m3u8", status: prefix + "status",
     longwave: id === "station-one" ? base.replace(/\/$/, "") + "/live.mp3" : null };
@@ -25,7 +29,9 @@ export function decodeTrackCue(base64) {
       ? { title: value.title.trim().slice(0, 160),
           artist: typeof value.artist === "string" ? value.artist.trim().slice(0, 160) : "",
           album: typeof value.album === "string" ? value.album.trim().slice(0, 160) : "",
-          artwork: typeof value.artwork === "string" ? value.artwork : "" }
+          artwork: typeof value.artwork === "string" ? value.artwork : "",
+          ...(typeof value.id==="string" ? {id:value.id.slice(0,80)} : {}),
+          ...(typeof value.session_id==="string" && typeof value.session_title==="string" && Number.isInteger(value.chapter_index) && Number.isInteger(value.chapter_count) ? {session_id:value.session_id.slice(0,80),session_title:value.session_title.slice(0,160),chapter_index:value.chapter_index,chapter_count:value.chapter_count} : {}) }
       : null;
   } catch { return null; }
 }

@@ -22,8 +22,8 @@ import {createReceiverView, loadSkins} from "./receiver/view.mjs";
       copy: "Slow burns and wide-open songs for the road after midnight."},
     {id: "porch-field", name: "Porch & Field", lane: "Roots",
       copy: "Folk, Americana, field recordings and the sound of a room."},
-    {id: "workshop", name: "The Workshop", lane: "Instrumentals",
-      copy: "Instrumentals, beats and long stretches for making things."},
+    {id: "quiet-frequency", name: "The Quiet Frequency", lane: "Lo-fi · Study & work", room: true,
+      copy: "Our dedicated calm cloud frequency. Open the study room to check its broadcast status."},
     {id: "sunday-signal", name: "Sunday Signal", lane: "Gospel & worship",
       copy: "Gospel, worship and songs worn smooth by singing together."},
     {id: "talk-tape", name: "Talk & Tape", lane: "Voices",
@@ -82,6 +82,7 @@ import {createReceiverView, loadSkins} from "./receiver/view.mjs";
     return url.href;
   }
   function statusFor(station) {
+    if (station.room) return "Cloud broadcast · check status in room";
     if (station.archive) return "Available · personal archive rotation";
     if (!registryReady) return "Live status unavailable";
     const state = states.get(station.id);
@@ -90,7 +91,7 @@ import {createReceiverView, loadSkins} from "./receiver/view.mjs";
     return "In development";
   }
   function canTune(station) {
-    if (station.archive || station.id === "station-one") return true;
+    if (station.room || station.archive || station.id === "station-one") return true;
     return states.get(station.id)?.on_air === true;
   }
   function updateSelection(announce = false) {
@@ -104,7 +105,11 @@ import {createReceiverView, loadSkins} from "./receiver/view.mjs";
     byId("station-name").textContent = station.name;
     byId("station-copy").textContent = station.copy;
     link.hidden = !canTune(station);
-    if (station.archive) {
+    if (station.room) {
+      link.href = "../fm/quiet/";
+      link.textContent = "Open The Quiet Frequency";
+      link.target = "_self";
+    } else if (station.archive) {
       link.href = "#compost";
       link.textContent = "Open The Compost Heap";
       link.target = "_self";
@@ -152,7 +157,7 @@ import {createReceiverView, loadSkins} from "./receiver/view.mjs";
     if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const trigger = event.currentTarget;
     const target = new URL(trigger.href, document.baseURI);
-    if (target.hash === "#compost") return;
+    if (target.hash === "#compost" || target.pathname.endsWith("/fm/quiet/")) return;
     if (target.origin !== new URL(RECEIVER).origin || target.pathname !== "/fm/") return;
     const frequency = target.searchParams.get("frequency") || "station-one";
     if (!ID.test(frequency) || (frequency !== "station-one" &&
