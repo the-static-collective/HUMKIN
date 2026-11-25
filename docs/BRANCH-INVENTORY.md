@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [2afc79b7c58f](https://github.com/the-static-collective/HUMKIN/commit/2afc79b7c58f7fc9e3b0405773810c35b8a5ca63)
-- Branches: 206; open PRs: 29; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [6ca9ded12636](https://github.com/the-static-collective/HUMKIN/commit/6ca9ded1263696c642a527a1d7ad2c783e2cf90a)
+- Branches: 208; open PRs: 30; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -168,6 +168,7 @@
 | [feature/radio-sync-92bpm-airwave-20261114](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-sync-92bpm-airwave-20261114) | 9d12039fcbb8 | No matching open PR; UNCLASSIFIED |
 | [feature/radio-web-primary-live-001](https://github.com/the-static-collective/HUMKIN/tree/feature/radio-web-primary-live-001) | 0f7fb8cf9e82 | No matching open PR; UNCLASSIFIED |
 | [feature/random-postcard-art](https://github.com/the-static-collective/HUMKIN/tree/feature/random-postcard-art) | 1f30f18751d4 | No matching open PR; UNCLASSIFIED |
+| [feature/return-signal-001](https://github.com/the-static-collective/HUMKIN/tree/feature/return-signal-001) | aeefabb79a7c | [#208](https://github.com/the-static-collective/HUMKIN/pull/208) (base: main) |
 | [feature/save-the-hour-cards-001](https://github.com/the-static-collective/HUMKIN/tree/feature/save-the-hour-cards-001) | c0158707ca3f | No matching open PR; UNCLASSIFIED |
 | [feature/shortie-gap-guard-20261121](https://github.com/the-static-collective/HUMKIN/tree/feature/shortie-gap-guard-20261121) | 5428a6c704ec | No matching open PR; UNCLASSIFIED |
 | [feature/spotlight-single-into-live-001](https://github.com/the-static-collective/HUMKIN/tree/feature/spotlight-single-into-live-001) | 0fe0488cd074 | No matching open PR; UNCLASSIFIED |
@@ -213,10 +214,11 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 2afc79b7c58f | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 6ca9ded12636 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
+| [return-signal-feed](https://github.com/the-static-collective/HUMKIN/tree/return-signal-feed) | f0ae7c4d7cc4 | No matching open PR; UNCLASSIFIED |
 | [review/living-receiver-service-20261120](https://github.com/the-static-collective/HUMKIN/tree/review/living-receiver-service-20261120) | 691b67437f06 | [#178](https://github.com/the-static-collective/HUMKIN/pull/178) (base: main) |
 | [signal-001-compost-editorial-relay-20261118](https://github.com/the-static-collective/HUMKIN/tree/signal-001-compost-editorial-relay-20261118) | 98334b60dac9 | [#155](https://github.com/the-static-collective/HUMKIN/pull/155) (base: main) |
 | [station-desk-03-blackbox-simulator](https://github.com/the-static-collective/HUMKIN/tree/station-desk-03-blackbox-simulator) | 8955aeda6a49 | No matching open PR; UNCLASSIFIED |
