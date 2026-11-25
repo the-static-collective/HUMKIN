@@ -4,7 +4,7 @@ from pathlib import Path
 import struct
 import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"tools"))
-from return_signal import select_segment,measure,append,SCHEMA
+from return_signal import select_segment,measure,append,reviewed_response,SCHEMA
 class TestReturnSignal(unittest.TestCase):
     def test_segment(self):
         url,when,title,ident=select_segment("#EXTM3U\n#EXT-X-PROGRAM-DATE-TIME:2026-11-01T00:00:00Z\n#EXTINF:4.0,\n"+"a"*32+"/segment-0000000001.ts\n")
@@ -18,4 +18,14 @@ class TestReturnSignal(unittest.TestCase):
         feed={"schema":SCHEMA,"entries":[]}
         entry={"id":"x"}
         self.assertEqual(append(append(feed,entry),entry)["entries"],[entry])
+    def test_reviewed_correspondence(self):
+        source={"id":"s","agent":"SIGNAL EAR","basis":"audio","media_at":"time","track_title":"Title","recording_id":"track"}
+        feed={"schema":SCHEMA,"entries":[source]}
+        entry=reviewed_response(feed,"s","MOTIF","creative","A visual association.")
+        self.assertEqual(entry["source_sample_id"],"s")
+        self.assertEqual(entry["track_title"],"Title")
+        self.assertEqual(entry["basis"],"creative")
+        with self.assertRaises(ValueError):reviewed_response(feed,"missing","MOTIF","creative","Hello")
+        with self.assertRaises(ValueError):reviewed_response(feed,"s","MOTIF","audio","Hello")
+        with self.assertRaises(ValueError):reviewed_response(feed,"s","UNKNOWN","creative","Hello")
 if __name__=="__main__":unittest.main()

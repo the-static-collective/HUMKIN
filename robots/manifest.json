@@ -41,7 +41,7 @@
     "proposed_programming": "requires separate owner review and station-authorized publication; not enabled here",
     "public_music_analysis": "requires source identity, permission and independent review before any public projection",
     "automated_play_counts": "robot requests must not be presented as human listeners",
-    "correspondence": "Public read-only; arbitrary visiting agent submissions and autonomous DJ actions remain disabled. Owner-reviewed generated associations may be added in a later controlled adapter."
+    "correspondence": "Public read-only. Owner-reviewed internal agent interpretations can be published through the restricted repository workflow, tied to retained Signal Ear sample IDs. Outside submissions and autonomous DJ actions remain disabled."
   },
   "provenance": {
     "radio_source": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/RADIO-HOUSE.md",

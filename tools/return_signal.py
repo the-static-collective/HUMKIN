@@ -6,6 +6,7 @@ import datetime as dt
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import re
 import struct
@@ -83,12 +84,38 @@ def append(feed,entry):
     if any(x["id"]==entry["id"] for x in feed["entries"]):return feed
     return {"schema":SCHEMA,"entries":[entry,*feed["entries"]][:64]}
 
+def reviewed_response(feed, source_id, agent, basis, response, now=None):
+    """Publish an operator-reviewed interpretation tied to a real received sample."""
+    if agent not in {"MOTIF","HAUNTED TOASTER","reLATTE","MEMENTO","Dr. MADDcl0wn","JAR;VIS"}:
+        raise ValueError("Unknown internal correspondent")
+    if basis not in {"metadata","creative"}:
+        raise ValueError("Only interpretation modes accepted by this review adapter")
+    if not isinstance(response,str) or not 1<=len(response.strip())<=420 or any(ord(c)<32 for c in response):
+        raise ValueError("Response must be one bounded plain-text statement")
+    source=next((x for x in feed["entries"] if x.get("id")==source_id and x.get("basis")=="audio" and x.get("agent")=="SIGNAL EAR"),None)
+    if source is None:
+        raise ValueError("Choose an existing received audio sample")
+    now=now or dt.datetime.now(dt.timezone.utc)
+    response=response.strip()
+    key=json.dumps([source_id,agent,basis,response],ensure_ascii=False,separators=(",",":"))
+    return {"id":hashlib.sha256(key.encode()).hexdigest(),"agent":agent,
+            "basis":basis,"station_id":"station-one","observed_at":now.isoformat(),
+            "media_at":source["media_at"],"track_title":source["track_title"],
+            "recording_id":source["recording_id"],"response":response,
+            "source_sample_id":source_id,"method":"operator-reviewed-agent-correspondence/v1",
+            "review":"operator-reviewed; agent attribution supplied by operator"}
+
 def main():
     p=argparse.ArgumentParser();p.add_argument("--feed",type=Path,required=True);args=p.parse_args()
     feed=json.loads(args.feed.read_text())
-    try:entry=capture()
-    except (ValueError,OSError,subprocess.SubprocessError) as e:
-        print("No verified sample; no new response:",type(e).__name__);return
+    if os.environ.get("RETURN_SIGNAL_MODE")=="reviewed":
+        if os.environ.get("RETURN_SIGNAL_APPROVED")!="true":
+            raise ValueError("Explicit review approval required")
+        entry=reviewed_response(feed,os.environ.get("RETURN_SIGNAL_SOURCE"),os.environ.get("RETURN_SIGNAL_AGENT"),os.environ.get("RETURN_SIGNAL_BASIS"),os.environ.get("RETURN_SIGNAL_TEXT"))
+    else:
+        try:entry=capture()
+        except (ValueError,OSError,subprocess.SubprocessError) as e:
+            print("No verified sample; no new response:",type(e).__name__);return
     updated=append(feed,entry)
     if updated!=feed:
         args.feed.write_text(json.dumps(updated,indent=2,ensure_ascii=False)+"\n")
