@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 import re
 import struct
+import io
+import wave
 import subprocess
 import urllib.request
 from urllib.parse import urljoin, urlsplit
@@ -60,24 +62,36 @@ def select_segment(manifest):
     if not rows:raise ValueError("No complete audio segment")
     return rows[-1]
 
-def measure(pcm):
-    if len(pcm)%2 or not 16000<=len(pcm)<=16*16000:raise ValueError("Insufficient bounded audio")
+def measure(pcm,sample_rate=8000):
+    if len(pcm)%2 or not 2*sample_rate<=len(pcm)<=16*sample_rate:raise ValueError("Insufficient bounded audio")
     samples=[v[0]/32768 for v in struct.iter_unpack("<h",pcm)]
     rms=math.sqrt(sum(v*v for v in samples)/len(samples))
     peak=max(abs(v) for v in samples)
     db=lambda x:round(20*math.log10(max(x,1e-6)),1)
-    return {"sample_seconds":round(len(samples)/8000,2),"rms_dbfs":db(rms),"peak_dbfs":db(peak)}
+    return {"sample_seconds":round(len(samples)/sample_rate,2),"rms_dbfs":db(rms),"peak_dbfs":db(peak)}
 
-def capture(now=None,fetch=get):
+def capture(now=None,fetch=get,with_audio=False):
     now=now or dt.datetime.now(dt.timezone.utc)
     url,when,title,track=select_segment(fetch(PLAYLIST,256000).decode("utf-8"))
     age=(now-when).total_seconds()
     if not -30<=age<=90:raise ValueError("Stale audio sample")
     raw=fetch(url,3*1024*1024)
-    result=subprocess.run(["ffmpeg","-nostdin","-v","error","-f","mpegts","-i","pipe:0","-map","0:a:0","-t","8","-ac","1","-ar","8000","-f","s16le","pipe:1"],input=raw,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=15,check=True)
-    metrics=measure(result.stdout)
+    result=subprocess.run(["ffmpeg","-nostdin","-v","error","-f","mpegts","-i","pipe:0","-map","0:a:0","-t","8","-ac","2","-ar","44100","-f","s16le","pipe:1"],input=raw,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=15,check=True)
+    pcm=result.stdout
+    if len(pcm)%4 or not 176400<=len(pcm)<=1411200:raise ValueError("Invalid bounded stereo sample")
+    # Measure a bounded mono representation from the same decoded stereo sample.
+    mono=bytearray()
+    for i in range(0,len(pcm),24):
+        left,right=struct.unpack_from("<hh",pcm,i)
+        mono.extend(struct.pack("<h",round((left+right)/2)))
+    metrics=measure(bytes(mono), sample_rate=7350)
     ident=hashlib.sha256(("signal-ear/v1:"+url).encode()).hexdigest()
-    return {"id":ident,"agent":"SIGNAL EAR","basis":"audio","station_id":"station-one","observed_at":now.isoformat(),"media_at":when.isoformat(),"track_title":title,"recording_id":track,"response":f"Decoded {metrics['sample_seconds']:.2f} seconds of broadcast audio. RMS {metrics['rms_dbfs']:.1f} dBFS; peak {metrics['peak_dbfs']:.1f} dBFS. A measured fragment, not a full-song interpretation.","metrics":metrics,"method":"ffmpeg-pcm-levels/v1"}
+    entry={"id":ident,"agent":"SIGNAL EAR","basis":"audio","station_id":"station-one","observed_at":now.isoformat(),"media_at":when.isoformat(),"track_title":title,"recording_id":track,"response":f"Decoded {metrics['sample_seconds']:.2f} seconds of broadcast audio. RMS {metrics['rms_dbfs']:.1f} dBFS; peak {metrics['peak_dbfs']:.1f} dBFS. A measured fragment, not a full-song interpretation.","metrics":metrics,"method":"ffmpeg-pcm-levels/v1"}
+    if not with_audio:return entry
+    carrier=io.BytesIO()
+    with wave.open(carrier,"wb") as w:
+        w.setnchannels(2);w.setsampwidth(2);w.setframerate(44100);w.writeframes(pcm)
+    return entry,carrier.getvalue()
 
 def append(feed,entry):
     if feed.get("schema")!=SCHEMA or not isinstance(feed.get("entries"),list) or len(feed["entries"])>64:raise ValueError("Invalid feed")
@@ -113,10 +127,13 @@ def main():
             raise ValueError("Explicit review approval required")
         entry=reviewed_response(feed,os.environ.get("RETURN_SIGNAL_SOURCE"),os.environ.get("RETURN_SIGNAL_AGENT"),os.environ.get("RETURN_SIGNAL_BASIS"),os.environ.get("RETURN_SIGNAL_TEXT"))
     else:
-        try:entry=capture()
+        try:entry,carrier=capture(with_audio=True)
         except (ValueError,OSError,subprocess.SubprocessError) as e:
             print("No verified sample; no new response:",type(e).__name__);return
     updated=append(feed,entry)
+    if os.environ.get("RETURN_SIGNAL_MODE")!="reviewed" and updated!=feed:
+        from listening_council import council
+        for response in council(entry,carrier,feed):updated=append(updated,response)
     if updated!=feed:
         args.feed.write_text(json.dumps(updated,indent=2,ensure_ascii=False)+"\n")
         print("One verified audio observation prepared.")

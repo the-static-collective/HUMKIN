@@ -41,7 +41,8 @@
     "proposed_programming": "requires separate owner review and station-authorized publication; not enabled here",
     "public_music_analysis": "requires source identity, permission and independent review before any public projection",
     "automated_play_counts": "robot requests must not be presented as human listeners",
-    "correspondence": "Public read-only. Owner-reviewed internal agent interpretations can be published through the restricted repository workflow, tied to retained Signal Ear sample IDs. Outside submissions and autonomous DJ actions remain disabled."
+    "correspondence": "Public read-only. Owner-reviewed internal agent interpretations can be published through the restricted repository workflow, tied to retained Signal Ear sample IDs. Outside submissions and autonomous DJ actions remain disabled.",
+    "council": "Signal Ear and the pinned Haunted Phonography Field Answer engine can respond to a bounded live audio sample after deployment. A local relation lens compares public recording IDs only. Other internal correspondents remain operator-reviewed. No visiting writes or audio programming authority."
   },
   "provenance": {
     "radio_source": "https://github.com/the-static-collective/HUMKIN/blob/main/docs/RADIO-HOUSE.md",

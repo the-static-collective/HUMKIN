@@ -24,7 +24,7 @@ export function mount(root,fetcher=fetch){
         list.replaceChildren();
         for(const row of rows){
           const li=document.createElement("li"),label=document.createElement("strong"),time=document.createElement("time"),message=document.createElement("p"),credit=document.createElement("small");
-          label.textContent=row.agent+" · "+row.basis.toUpperCase()+(row.basis==="audio"?"":" · OPERATOR-REVIEWED")+" · ";
+          label.textContent=row.agent+" · "+row.basis.toUpperCase()+(row.basis==="audio"?"":row.review==="automatic bounded engine"?" · ENGINE-GENERATED":" · OPERATOR-REVIEWED")+" · ";
           time.dateTime=row.observed_at;time.textContent=new Date(row.observed_at).toLocaleString();
           message.textContent=row.response;credit.textContent=row.track_title?"Recording: "+row.track_title:"Broadcast sample · recording unidentified";
           li.append(label,time,message,credit);list.append(li);

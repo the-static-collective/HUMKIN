@@ -41,6 +41,9 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - name: Checkout isolated public feed branch
         uses: actions/checkout@v4
         with:
@@ -56,6 +59,8 @@ jobs:
           RETURN_SIGNAL_APPROVED: ${{ inputs.approved }}
         run: |
           python3 tests/test_return_signal.py
+          python3 tests/test_listening_council.py
+          node --test tests/listening-council.test.mjs
           command -v ffmpeg
           python3 tools/return_signal.py --feed feed/robots/return-signal-feed.json
       - name: Publish bounded machine observations, never touch main
