@@ -273,6 +273,35 @@ def make_selection(rows, *, station="station-one", count=40, bumper_settings=Non
     return packet
 
 
+def make_quiet_selection(rows, approved_ids):
+    """Preserve explicit owner order; no inferred choices, bumpers or extra slots."""
+    if not isinstance(approved_ids, list) or not 2 <= len(approved_ids) <= 500:
+        raise ValueError("Quiet Frequency needs 2–500 explicitly selected songs.")
+    if any(not isinstance(uid, str) or not UUID.fullmatch(uid) for uid in approved_ids):
+        raise ValueError("Use exact approved R2 catalog IDs.")
+    if len(set(approved_ids)) != len(approved_ids):
+        raise ValueError("Duplicate recording ID in Quiet Frequency.")
+    current = {}
+    for row in rows:
+        item = accepted_row(row)
+        if item:
+            if item["id"] in current:
+                raise ValueError("Ambiguous approved catalog identity.")
+            current[item["id"]] = item
+    if any(uid not in current for uid in approved_ids):
+        raise ValueError("Selected recording is missing, disabled or not approved R2 media.")
+    songs = [current[uid] for uid in approved_ids]
+    if len({song["sha256"] for song in songs}) != len(songs):
+        raise ValueError("Duplicate audio bytes in Quiet Frequency.")
+    if sum(song["duration_seconds"] for song in songs) < 14400:
+        raise ValueError("Quiet Frequency needs at least four hours before it repeats.")
+    packet = {"schema": SCHEMA, "state": "draft_for_owner_review",
+              "source": SOURCE, "station_id": "quiet-frequency",
+              "mode": "quiet_curated", "tracks": songs}
+    packet["fingerprint"] = fingerprint(packet)
+    return packet
+
+
 def validate_selection(packet, rows, *, bumper_settings=None, bumper_policy=None, rotation_policy=None):
     if not isinstance(packet, dict) or packet.get("schema") != SCHEMA:
         raise ValueError("Not a HUMKIN house selection.")
@@ -282,6 +311,15 @@ def validate_selection(packet, rows, *, bumper_settings=None, bumper_policy=None
             or not STATION.fullmatch(packet["station_id"])):
         raise ValueError("Invalid house station.")
     songs = packet.get("tracks")
+    if packet["station_id"] == "quiet-frequency":
+        if packet.get("mode") != "quiet_curated" or packet.get("source") != SOURCE:
+            raise ValueError("Quiet Frequency requires an explicitly curated selection.")
+        if not isinstance(songs, list) or any(not isinstance(x, dict) for x in songs):
+            raise ValueError("Invalid Quiet Frequency tracks.")
+        expected = make_quiet_selection(rows, [x.get("id") for x in songs])
+        if packet != expected:
+            raise ValueError("Quiet Frequency source or reviewed order changed; regenerate.")
+        return "quiet-frequency"
     full = packet.get("mode") == "full_catalog" and packet.get("source") == FULL_SOURCE
     if not isinstance(songs, list) or not 2 <= len(songs) <= (500 if full else 40):
         raise ValueError("Invalid reviewed cloud program size.")

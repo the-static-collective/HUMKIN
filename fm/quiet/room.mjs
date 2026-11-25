@@ -20,10 +20,10 @@ async function check(){
   }catch{ready=false;if(!receiver.state.playing)signal.textContent="Unable to verify cloud signal · retry later";}
   finally{clearTimeout(timer);checking=false;play.disabled=!ready&&!receiver.state.playing;el("check").disabled=false;}
 }
-play.addEventListener("click",()=>{if(receiver.state.playing){receiver.pause();return;}if(!ready)return;if(receiver.state.stationId===id&&receiver.state.mode!=="unavailable")receiver.resume();else receiver.tune(id);});
+play.addEventListener("click",()=>{if(receiver.state.playing){receiver.pause();return;}if(!ready)return;receiver.tune(id);});
 el("check").addEventListener("click",check);void check();setInterval(check,30000);
-if("mediaSession" in navigator){try{navigator.mediaSession.setActionHandler("play",()=>{if(ready)receiver.state.stationId===id?receiver.resume():receiver.tune(id);});navigator.mediaSession.setActionHandler("pause",()=>receiver.pause());navigator.mediaSession.setActionHandler("stop",()=>receiver.stop());}catch{}}
-function missingArt(){art.hidden=true;el("weather").hidden=true;el("art-note").hidden=false;}
+if("mediaSession" in navigator){try{navigator.mediaSession.setActionHandler("play",()=>{if(ready)receiver.tune(id);});navigator.mediaSession.setActionHandler("pause",()=>receiver.pause());navigator.mediaSession.setActionHandler("stop",()=>receiver.stop());}catch{}}
+function missingArt(){art.hidden=true;el("weather").hidden=true;motion.setEnabled(false);el("art-note").hidden=false;}
 art.addEventListener("error",missingArt);if(art.complete&&!art.naturalWidth)missingArt();
-el("art-file").addEventListener("change",e=>{const file=e.target.files[0];if(!file||!file.type.startsWith("image/"))return;if(localArt)URL.revokeObjectURL(localArt);localArt=URL.createObjectURL(file);art.src=localArt;art.hidden=false;el("weather").hidden=false;el("art-note").hidden=true;});
+el("art-file").addEventListener("change",e=>{const file=e.target.files[0];if(!file||!file.type.startsWith("image/"))return;if(localArt)URL.revokeObjectURL(localArt);localArt=URL.createObjectURL(file);art.src=localArt;art.hidden=false;el("weather").hidden=false;el("art-note").hidden=true;motion.setEnabled(el("motion").checked);});
 el("fullscreen").addEventListener("click",async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector("main").requestFullscreen();}catch{}});

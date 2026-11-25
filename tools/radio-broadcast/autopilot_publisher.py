@@ -221,6 +221,10 @@ def prepare_tracks(input_path, cache, *, publish=False):
             "artwork": artwork[:1000], "asset_sha": digest,
             "durations_ms": durations})
         print("Prepared:", name, "—", len(durations), "segments")
+    if station == "quiet-frequency":
+        if not handoff or handoff.get("mode") != "quiet_curated":
+            raise ValueError("Quiet Frequency requires an owner-reviewed curated selection.")
+        validate_quiet_cycle(tracks)
     if remote_pins and handoff:
         if publish:
             if remote_pins != prior_pins:
@@ -238,6 +242,13 @@ def prepare_tracks(input_path, cache, *, publish=False):
                 temp.unlink(missing_ok=True)
             print("Pinned", len(remote_pins), "remote recording slots for owner review.")
     return station, tracks
+
+
+def validate_quiet_cycle(tracks):
+    if len({t["asset_sha"] for t in tracks}) != len(tracks):
+        raise ValueError("Duplicate encoded recording in Quiet Frequency.")
+    if sum(sum(t["durations_ms"]) for t in tracks) < 14_400_000:
+        raise ValueError("Encoded Quiet Frequency cycle is shorter than four hours.")
 
 
 def next_boundary(previous, earliest_ms):
@@ -279,6 +290,27 @@ def public_program(existing, frequency, tracks, lead_seconds=120):
     else:
         revisions = []
     when = next_effective(revisions, lead_seconds)
+    if frequency == "quiet-frequency":
+        validate_quiet_cycle(tracks)
+        # At revision boundaries, ensure no shared recording repeats within 4h.
+        if revisions:
+            if any(parse_time(r["effective_at"]) > utcnow() for r in revisions):
+                raise ValueError("Pending Quiet Frequency revision; wait for its activation.")
+            previous = revisions[-1]
+            old_cycle = sum(sum(t["durations_ms"]) for t in previous["tracks"])
+            old_pos = (clock_ms(iso(when)) - clock_ms(previous["effective_at"])) % old_cycle
+            old_offsets = {}
+            offset = 0
+            for t in previous["tracks"]:
+                old_offsets[t["asset_sha"]] = offset
+                offset += sum(t["durations_ms"])
+            offset = 0
+            for t in tracks:
+                if t["asset_sha"] in old_offsets:
+                    age = (old_pos - old_offsets[t["asset_sha"]]) % old_cycle or old_cycle
+                    if age + offset < 14_400_000:
+                        raise ValueError("Quiet Frequency revision would repeat a song within four hours; reorder or publish later.")
+                offset += sum(t["durations_ms"])
     revision = {"id": "r-" + when.strftime("%Y%m%d%H%M%S") + "-" +
         hashlib.sha256(json.dumps(tracks,sort_keys=True).encode()).hexdigest()[:10],
         "effective_at": iso(when), "tracks": tracks}

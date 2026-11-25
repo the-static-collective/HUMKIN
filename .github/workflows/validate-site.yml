@@ -40,7 +40,9 @@ jobs:
       - run: node --check fmstudio/receiver/engine.mjs
       - run: node --check fmstudio/receiver/view.mjs
       - run: node --check tools/radio-broadcast/cloudflare/station-registry.mjs
-      - run: node --test tests/fmstudio-live-dial.test.mjs tests/fmstudio-station-registry.test.mjs
+      - run: node --test tests/fmstudio-live-dial.test.mjs tests/fmstudio-station-registry.test.mjs tests/quiet-frequency.test.mjs
+      - run: node --check fm/quiet/room.mjs
+      - run: python3 tests/quiet-selection.test.py
       - run: node tests/orchard-gambits.test.cjs
       - run: node tests/save-the-hour.test.cjs
       - run: node --check fm/orchard/save-hour-ui.js
