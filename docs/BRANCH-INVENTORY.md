@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [871de1f5057a](https://github.com/the-static-collective/HUMKIN/commit/871de1f5057a818173931068d3bdbe2e74536fb8)
-- Branches: 205; open PRs: 28; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [2afc79b7c58f](https://github.com/the-static-collective/HUMKIN/commit/2afc79b7c58f7fc9e3b0405773810c35b8a5ca63)
+- Branches: 206; open PRs: 29; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -150,6 +150,7 @@
 | [feature/night-watch-outpost-001](https://github.com/the-static-collective/HUMKIN/tree/feature/night-watch-outpost-001) | 702056e5e694 | No matching open PR; UNCLASSIFIED |
 | [feature/night-watch-sidecar-apk-001](https://github.com/the-static-collective/HUMKIN/tree/feature/night-watch-sidecar-apk-001) | f412769704cb | No matching open PR; UNCLASSIFIED |
 | [feature/phi-cadence-three-lengths-20261116](https://github.com/the-static-collective/HUMKIN/tree/feature/phi-cadence-three-lengths-20261116) | 61ae780e86fe | No matching open PR; UNCLASSIFIED |
+| [feature/quiet-frequency-001](https://github.com/the-static-collective/HUMKIN/tree/feature/quiet-frequency-001) | ad2c7d8f1c30 | [#207](https://github.com/the-static-collective/HUMKIN/pull/207) (base: main) |
 | [feature/quiet-postcards-signup](https://github.com/the-static-collective/HUMKIN/tree/feature/quiet-postcards-signup) | 7562e80f9dc1 | No matching open PR; UNCLASSIFIED |
 | [feature/r2-direct-credential-reuse-001](https://github.com/the-static-collective/HUMKIN/tree/feature/r2-direct-credential-reuse-001) | 957005dda469 | No matching open PR; UNCLASSIFIED |
 | [feature/r2-direct-private-bulk-ingest-001](https://github.com/the-static-collective/HUMKIN/tree/feature/r2-direct-private-bulk-ingest-001) | e0ba0a426a8f | No matching open PR; UNCLASSIFIED |
@@ -212,7 +213,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 871de1f5057a | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 2afc79b7c58f | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
