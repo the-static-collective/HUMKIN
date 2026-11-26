@@ -1,0 +1,178 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HUMKIN / Ghost Frequency</title>
+<style>
+:root{color-scheme:dark;--ink:#f0e9d0;--mint:#a4d9b6;--amber:#edc279;--border:#3b574d;--dim:#a2b7ad}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,#233a30,#101a18 65%);color:var(--ink);font:16px system-ui,sans-serif;min-height:100vh}main{max-width:740px;margin:auto;padding:24px 16px 60px}h1{font-size:clamp(2.6rem,8vw,4.5rem);line-height:.92;letter-spacing:-.06em;margin:14px 0 12px}h2{font-size:1.1rem;margin:0 0 10px}p{line-height:1.5}.eyebrow{letter-spacing:.2em;color:var(--amber);font:700 .72rem monospace}.muted,small{color:var(--dim)}.panel{border:1px solid var(--border);border-radius:18px;padding:16px;margin-top:15px;background:#182621}.scope{border:1px solid var(--border);height:82px;border-radius:9px;background:repeating-linear-gradient(0deg,transparent 0 18px,#34483e 19px 20px),#101d18;position:relative;overflow:hidden}.scope svg{width:100%;height:100%}.rows{display:flex;gap:8px;flex-wrap:wrap}.rows>*{flex:1}button,select{font:inherit;color:var(--ink);background:#243a30;border:1px solid #527063;padding:12px;border-radius:10px;min-height:44px}button{cursor:pointer}button.primary{background:var(--mint);color:#15271d;font-weight:800}button:disabled{opacity:.45;cursor:default}select{width:100%}label{display:block;font-size:.83rem;color:var(--dim);margin:10px 0 4px}.status{font:700 1rem monospace;color:var(--amber)}.track{border-left:2px solid var(--mint);padding:8px 12px;margin:5px 0;background:#203329}.log{max-height:230px;overflow:auto;overflow-wrap:anywhere}.receipt{border-top:1px solid var(--border);padding:9px 0;font-size:.88rem}.warning{color:#f0b09c}#forge[hidden]{display:none}button:focus-visible,select:focus-visible{outline:2px solid var(--amber);outline-offset:2px}@media(max-width:480px){.rows>*{flex-basis:100%}}
+</style><main><div class="eyebrow">HUMKIN / ULTIMATE JOY / RESEARCH TRANSMISSION 01</div><h1>GHOST<br>FREQUENCY</h1><p>A station is transmitting from somewhere beyond the dial. Its selections are not random. Discover the rule — and find out what happens when the rule changes.</p><div class="scope" aria-hidden="true"><svg viewBox="0 0 500 80" preserveAspectRatio="none"><path d="M0 40 L20 40 27 31 36 49 45 17 52 63 62 28 72 49 82 40 112 40 125 31 133 57 143 11 154 70 166 25 178 44 190 40 220 40 235 25 245 49 252 31 265 59 279 9 289 65 305 40 320 40 335 20 345 59 360 26 371 45 386 40 410 40 425 27 440 56 452 10 466 64 480 40 500 40" fill="none" stroke="#a4d9b6" stroke-width="2"/></svg></div>
+<div class="panel"><h2>Choose a mission</h2><div class="rows"><button id="start">Intercept a hidden station</button><button id="forgeMode">Forge a station</button></div><div id="forge" hidden><label for="law">Secret first Gambit</label><select id="law"></select><button id="seal">Seal and let the machine investigate</button></div><p id="mission" class="muted"></p></div>
+<div class="panel"><h2>Receiver desk</h2><div id="status" class="status" aria-live="polite"></div><p id="interpret"></p><div class="rows"><div><label for="hour">Clock</label><select id="hour"><option value="12">Noon</option><option value="22">Night</option></select></div><div><label for="pattern">Draft-history scenario</label><select id="pattern"><option value="0">All unheard</option><option value="1">Mixed</option><option value="2">All heard</option><option value="3">Three unheard</option></select></div><div><label for="roll">Controlled seed</label><select id="roll"><option value="0.15">Seed A</option><option value="0.65">Seed B</option></select></div></div><p id="counts" class="muted"></p><div class="rows"><button class="primary" id="observe">Send probe</button><button id="suggest">Machine picks probe</button><button id="repeat">Repeat first probe</button></div><p id="recommend" class="muted" aria-live="polite"></p><div id="queue" aria-live="polite"></div><div class="rows"><button id="epoch">Start fresh theory window</button><button id="reveal">Reveal station law</button></div><p id="revealed" class="muted"></p></div>
+<div class="panel"><h2>Observation ledger</h2><p class="muted" id="bytes"></p><div class="log" id="log"></div><button id="export">Export local evidence JSON</button></div><p><small>Research simulation only. Real HUMKIN track metadata; no audio streaming, account, HUM/XP, public programming, or operator authority. The machine uses a finite authored policy registry. A repeat conflict disproves a stationary deterministic explanation under the supplied context; it does not prove the cause.</small></p></main>
+<script>/* HUMKIN Orchard Gambits 001 — deterministic, LOCAL-ONLY programming suggestions.
+ * Ordered conditional radio selection, inspired by classic priority-rule RPGs.
+ * It cannot submit to Guilds, spend HUM, mint server XP, or command any transmitter.
+ */
+(function(root,factory){
+  const api=factory();
+  if(typeof module!=="undefined"&&module.exports)module.exports=api;
+  root.HumkinGambits=api;
+})(typeof globalThis!=="undefined"?globalThis:this,function(){
+"use strict";
+const KEY="humkin-orchard-gambits-v1",HISTORY_KEY="humkin-orchard-gambit-draft-history-v1",SCHEMA="humkin.gambits.local/v1";
+const CONDITIONS=Object.freeze([
+  ["unheard","If a song has not appeared in a prior Gambit draft"],
+  ["new-album","If another album is available"],
+  ["night","If it is evening or night"],
+  ["short","If a short recording is available"],
+  ["always","Otherwise (fallback)"]
+]);
+const ACTIONS=Object.freeze([
+  ["least-played","Choose the least used in my Gambit drafts"],
+  ["different-album","Choose another album"],
+  ["shortest","Choose the shortest"],
+  ["longest","Choose the longest"],
+  ["surprise","Choose a surprise"]
+]);
+const CONDITIONS_SET=new Set(CONDITIONS.map(x=>x[0]));
+const ACTIONS_SET=new Set(ACTIONS.map(x=>x[0]));
+const STARTER=[
+ {when:"unheard",action:"least-played",enabled:true},
+ {when:"new-album",action:"different-album",enabled:true},
+ {when:"always",action:"surprise",enabled:true}
+];
+const STAGES=Object.freeze([
+ {key:"receiver",name:"Receiver",level:1,ability:"Hear the dial, discover music, learn how Gambits work",kind:"local"},
+ {key:"tuner",name:"Tuner",level:3,ability:"Edit your personal conditional radio rules and publish a three-song Signal link",kind:"local"},
+ {key:"archivist",name:"Archivist / Contributor",level:4,ability:"Expand your rules and submit voluntary Guild work for review",kind:"local-and-reviewed"},
+ {key:"bootleg",name:"Bootleg Frequency",level:7,ability:"Build deeper personal experimental mixes",kind:"local"},
+ {key:"producer",name:"Producer",level:null,ability:"Submit proposed station programming, automation and creative work",kind:"server-verified"},
+ {key:"operator",name:"Station Operator",level:null,ability:"Operate a station only when server-authorized for that frequency",kind:"server-authorized"},
+ {key:"founder",name:"Network Founder",level:null,ability:"Manage separately authorized stations, crews, and programming policies",kind:"server-authorized"}
+]);
+function slotsForLevel(level){
+ const n=Number.isFinite(level)?Math.floor(level):1;
+ return n>=9?8:n>=7?6:n>=4?4:n>=3?3:0;
+}
+function cleanRule(raw){
+ if(!raw||typeof raw!=="object")return null;
+ if(!CONDITIONS_SET.has(raw.when)||!ACTIONS_SET.has(raw.action))return null;
+ return {when:raw.when,action:raw.action,enabled:raw.enabled!==false};
+}
+function normalizeRules(input,level=3){
+ const max=slotsForLevel(level);
+ if(max===0)return STARTER.slice(0,2).map(cleanRule);
+ const inputRows=Array.isArray(input)?input:STARTER;
+ const rules=inputRows.slice(0,max).map(cleanRule).filter(Boolean);
+ return rules.length?rules:STARTER.slice(0,max).map(cleanRule);
+}
+function safeCatalog(raw){
+ if(!Array.isArray(raw))return [];
+ const seen=new Set();
+ return raw.slice(0,1000).filter(t=>{
+   if(!t||typeof t.id!=="string"||!/^[-_a-zA-Z0-9]{1,90}$/.test(t.id)||seen.has(t.id)||
+      typeof t.title!=="string"||!t.title.trim()||typeof t.src!=="string"||!t.src)return false;
+   seen.add(t.id);return true;
+ }).map(t=>({id:t.id,title:t.title.trim().slice(0,160),
+    artist:String(t.artist||"HUMKIN").slice(0,160),
+    album:String(t.album||"").slice(0,160),
+    src:t.src,duration:Number.isFinite(t.duration)?Math.max(0,t.duration):0}));
+}
+function asCount(reads,id){
+ if(!reads||typeof reads!=="object")return 0;
+ const n=reads[id];return Number.isFinite(n)&&n>=0?Math.min(1000000,Math.floor(n)):0;
+}
+function targets(when,pool,history,hour,reads){
+ const latest=history.length?history[history.length-1]:null;
+ switch(when){
+ case "unheard":return pool.filter(t=>asCount(reads,t.id)===0&&!history.some(x=>x.id===t.id));
+ case "new-album":return latest?pool.filter(t=>t.album!==latest.album):[];
+ case "night":return hour>=19||hour<6?pool:[];
+ case "short":return pool.filter(t=>t.duration>0&&t.duration<=180);
+ case "always":return pool;
+ default:return [];
+ }
+}
+function select(action,pool,history,reads,roll){
+ const last=history[history.length-1];
+ let options=pool;
+ if(action==="different-album"&&last){
+   const others=pool.filter(t=>t.album!==last.album);
+   if(others.length)options=others;
+ }
+ if(action==="least-played")return options.slice().sort((a,b)=>
+   asCount(reads,a.id)-asCount(reads,b.id) || a.id.localeCompare(b.id))[0];
+ if(action==="shortest")return options.slice().sort((a,b)=>
+   (a.duration||Infinity)-(b.duration||Infinity)||a.id.localeCompare(b.id))[0];
+ if(action==="longest")return options.slice().sort((a,b)=>b.duration-a.duration||a.id.localeCompare(b.id))[0];
+ const random=Number.isFinite(roll)?Math.max(0,Math.min(.99999999,roll)):.5;
+ return options[Math.floor(random*options.length)];
+}
+/* The first matching enabled rule wins. Each selection is from the validated
+ * published catalog. No network call, broadcast write, or implicit player play.
+ */
+function propose(rawCatalog,rawRules,opts={}){
+ const catalog=safeCatalog(rawCatalog);
+ const rules=normalizeRules(rawRules,opts.level??3);
+ const length=Math.min(3,Math.max(1,Number.isFinite(opts.length)?Math.floor(opts.length):3));
+ const reads=opts.reads&&typeof opts.reads==="object"?opts.reads:{};
+ const hour=Number.isInteger(opts.hour)?Math.min(23,Math.max(0,opts.hour)):12;
+ const history=[],receipts=[];
+ const rng=typeof opts.random==="function"?opts.random:()=>.5;
+ for(let pos=0;pos<length&&history.length<catalog.length;pos++){
+   const pool=catalog.filter(t=>!history.some(h=>h.id===t.id));
+   let chosen=null,ruleIndex=-1,applied="fallback";
+   for(let i=0;i<rules.length;i++){
+     const rule=rules[i];
+     if(!rule.enabled)continue;
+     const available=targets(rule.when,pool,history,hour,reads);
+     if(!available.length)continue;
+     chosen=select(rule.action,available,history,reads,rng());
+     ruleIndex=i;
+     applied=rule.when+" → "+rule.action;
+     break;
+   }
+   if(!chosen){
+     chosen=select("least-played",pool,history,reads,.5);
+     applied="safe catalog fallback (no matching Gambit)";
+   }
+   if(!chosen)break;
+   history.push(chosen);
+   receipts.push({position:pos+1,trackId:chosen.id,ruleIndex,
+     detail:applied,reason:"local suggestion; no public programming altered"});
+ }
+ return {tracks:history,receipts,mode:"personal-signal-preview",authority:"local-only"};
+}
+return Object.freeze({KEY,HISTORY_KEY,SCHEMA,CONDITIONS,ACTIONS,STAGES,STARTER,
+  slotsForLevel,cleanRule,normalizeRules,safeCatalog,propose});
+});
+</script><script>/* HUMKIN Ghost Frequency: local research game, no player or station writes. */
+(function(root){'use strict';
+const G=typeof module!=='undefined'&&module.exports?require(require('node:fs').existsSync(require('node:path').join(__dirname,'../../fm/orchard/gambit-core.js'))?'../../fm/orchard/gambit-core.js':'./gambit-core.js'):root.HumkinGambits;
+// Public rotation metadata at 10ffb553a73710fff02ab241069b4b1f5c55cb7d; no media URLs.
+const catalog=[['mutant-pop-04','Golden Yellow Blue','MUTANT POP',133],['mutant-pop-03','Bright Blue Rose','MUTANT POP',183],['mutant-pop-08','Make a Little Room','MUTANT POP',264],['everywhere-near-you-01','Home With You','everywhere;near you',179.472],['everywhere-near-you-07','Blue Bowl Rings','everywhere;near you',212.304],['haileylu-bloom','HaileyLu Bloom','HUMKIN RADIO · Singles',147.864]].map(([id,title,album,duration])=>({id,title,album,duration,src:'fixture:'+id}));
+const rule=(when,action)=>({when,action,enabled:true});
+const laws=[];for(const when of ['night','unheard','short'])for(const action of ['shortest','longest','least-played','surprise'])laws.push({id:laws.length,deck:[rule(when,action),rule('always','different-album')]});
+const probes=[];for(const hour of [12,22])for(const pattern of [0,1,2,3])for(const roll of [.15,.65])probes.push({id:probes.length,hour,pattern,roll});
+function reads(pattern){return Object.fromEntries(catalog.map((t,i)=>[t.id,[[0,0,0,0,0,0],[1,0,2,1,0,3],[5,4,3,2,1,1],[0,3,0,2,1,0]][pattern][i]]));}
+function run(l,q){const r=G.propose(catalog,l.deck,{level:3,hour:q.hour,reads:reads(q.pattern),random:()=>q.roll,length:3});return r.tracks.map(t=>t.id).join('|');}
+function compatible(h,ls=laws){return ls.filter(l=>h.every(o=>run(l,probes[o.q])===o.y));}
+function gain(ls,q){const c=new Map();for(const l of ls){const y=run(l,q);c.set(y,(c.get(y)||0)+1);}return [...c.values()].reduce((s,n)=>s-n/ls.length*Math.log2(n/ls.length),0);}
+function next(ls,h){const used=new Set(h.map(o=>o.q));return probes.filter(q=>!used.has(q.id)).sort((a,b)=>gain(ls,b)-gain(ls,a)||a.id-b.id)[0];}
+function inspect(h){const seen=new Map(),collisions=[];for(let i=0;i<h.length;i++){const o=h[i];if(seen.has(o.q)&&seen.get(o.q).y!==o.y)collisions.push({q:o.q,first:seen.get(o.q).i,second:i});else if(!seen.has(o.q))seen.set(o.q,{y:o.y,i});}const candidates=compatible(h);return {candidates,collisions,status:collisions.length?'REPEAT_CONFLICT':!candidates.length?'UNMODELED':candidates.length===1?'PROVISIONAL':'INVESTIGATING'};}
+function label(l){return l.deck.map(r=>r.when+' → '+r.action).join('; ');}
+function title(y){return y.split('|').map(id=>catalog.find(t=>t.id===id)?.title||id).join(' → ');}
+// Byte codec: 0 raw, 1 one policy + indexed whole-queue exceptions, 2 two epochs.
+// Each queue consists of three one-byte catalog indexes. Context and registry shared.
+function triplet(y){const a=y.split('|').map(id=>catalog.findIndex(t=>t.id===id));if(a.length!==3||new Set(a).size!==3||a.some(x=>x<0))throw Error('bad queue');return a;}
+function encode(h){if(h.length<1||h.length>255)throw Error('frame length');let best=[0,h.length,...h.flatMap(o=>triplet(o.y))];function model(slice,l){const r=[];slice.forEach((o,i)=>{if(o.y!==run(l,probes[o.q]))r.push(i,...triplet(o.y));});return [l.id,r.length/4,...r];}for(const l of laws){const f=[1,h.length,...model(h,l)];if(f.length<best.length)best=f;}for(let k=1;k<h.length;k++){const left=laws.map(l=>model(h.slice(0,k),l)).sort((a,b)=>a.length-b.length)[0],right=laws.map(l=>model(h.slice(k),l)).sort((a,b)=>a.length-b.length)[0];const f=[2,h.length,k,...left,...right];if(f.length<best.length)best=f;}return Uint8Array.from(best);}
+function decode(f,qs){if(f[1]!==qs.length||!qs.length||qs.some(q=>!probes[q]))throw Error('context');let p=2;function take(){if(p>=f.length)throw Error('truncated');return f[p++];}function queue(){const a=[take(),take(),take()];if(new Set(a).size!==3||a.some(i=>!catalog[i]))throw Error('queue');return a.map(i=>catalog[i].id).join('|');}function part(q){const l=laws[take()],n=take();if(!l)throw Error('law');const y=q.map(i=>run(l,probes[i]));let prev=-1;for(let i=0;i<n;i++){const k=take();if(k<=prev||k>=y.length)throw Error('residual');prev=k;y[k]=queue();}return y;}let y;if(f[0]===0)y=qs.map(queue);else if(f[0]===1)y=part(qs);else if(f[0]===2){const k=take();if(k<=0||k>=qs.length)throw Error('epoch');y=part(qs.slice(0,k)).concat(part(qs.slice(k)));}else throw Error('format');if(p!==f.length)throw Error('trailing');return y;}
+const api={catalog,laws,probes,reads,run,compatible,gain,next,inspect,label,title,encode,decode};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.GhostFrequency=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
+</script><script>
+'use strict';const G=GhostFrequency,$=x=>document.getElementById(x);let secret,mode,all=[],windowStart=0,changed=false;
+function el(tag,txt,cls){const x=document.createElement(tag);x.textContent=txt;if(cls)x.className=cls;return x;}
+for(const l of G.laws){const x=el('option',G.label(l));x.value=l.id;$('law').append(x);}const alien=el('option','Alien rule: always longest');alien.value='99';$('law').append(alien);
+const unknown={id:99,deck:[{when:'always',action:'longest',enabled:true}]};
+function begin(m,id){mode=m;secret=id===99?unknown:G.laws[id];all=[];windowStart=0;changed=false;$('forge').hidden=true;$('queue').replaceChildren();$('revealed').textContent='';$('recommend').textContent='';$('mission').textContent=m==='intercept'?'Hidden station. It may change policy during the mission.':'Your station is sealed. Try to beat the finite machine vocabulary.';render();}
+function current(){return all.slice(windowStart);}function render(){const r=G.inspect(current());$('status').textContent=r.status.replaceAll('_',' ');$('interpret').textContent=r.status==='REPEAT_CONFLICT'?'Identical probe, different queue. A stationary theory cannot account for both. Check timing, hidden state or measurement; open a fresh window if warranted.':r.status==='UNMODELED'?'None of the known laws explain this window. Repeat a controlled experiment before guessing why.':r.status==='PROVISIONAL'?'One candidate survives: '+G.label(r.candidates[0])+'. Challenge it; this is not proof.':r.candidates.length+' candidate laws remain. Compare day/night and prior draft scenarios.';$('counts').textContent='Draft counts (catalog order): '+Object.values(G.reads(+$('pattern').value)).join(', ');$('log').replaceChildren(...all.map((o,i)=>el('div',`${i+1}. ${G.probes[o.q].hour===22?'Night':'Noon'} / scenario ${G.probes[o.q].pattern} / seed ${G.probes[o.q].roll} · ${G.title(o.y)}`,'receipt')));$('bytes').textContent=all.length?'Inspectable frame: '+G.encode(all).length+' B · '+all.length+' observations · shared context excluded.':'No observations yet.';$('repeat').disabled=!current().length;$('export').disabled=!all.length;$('observe').disabled=all.length>=64;$('suggest').disabled=all.length>=64||!r.candidates.length||!G.next(r.candidates,current());$('repeat').disabled||=all.length>=64;}
+function setQ(q){$('hour').value=q.hour;$('pattern').value=q.pattern;$('roll').value=q.roll;render();}
+function probe(q){if(all.length>=64)return;if(mode==='intercept'&&!changed&&all.length>=3){const first=G.probes[all[0].q],c=G.laws.filter(l=>G.run(l,first)!==all[0].y);if(c.length){secret=c[0];changed=true;}}const y=G.run(secret,q);all.push({q:q.id,y});$('queue').replaceChildren(...y.split('|').map((id,i)=>el('div',`${i+1} / ${G.catalog.find(t=>t.id===id).title}`,'track')));render();}
+$('start').onclick=()=>begin('intercept',Math.floor(Math.random()*G.laws.length));$('forgeMode').onclick=()=>{$('forge').hidden=false;};$('seal').onclick=()=>begin('forge',+$('law').value);$('observe').onclick=()=>probe(G.probes.find(q=>q.hour===+$('hour').value&&q.pattern===+$('pattern').value&&q.roll===+$('roll').value));$('suggest').onclick=()=>{const h=current(),r=G.inspect(h),q=G.next(r.candidates,h);if(q){setQ(q);$('recommend').textContent='Machine-selected context; press Send probe to observe.';}};$('repeat').onclick=()=>{const q=G.probes[current()[0].q];setQ(q);probe(q);};$('epoch').onclick=()=>{windowStart=all.length;$('revealed').textContent='';$('recommend').textContent='New theory window; previous evidence retained.';render();};$('reveal').onclick=()=>{$('revealed').textContent='Current sealed law: '+G.label(secret);};$('pattern').onchange=render;$('export').onclick=()=>{const packet={schema:'humkin.ghost-frequency/v1',context:'public-metadata-fixture',observations:all,frame:Array.from(G.encode(all)),authority:'local-only'};const url=URL.createObjectURL(new Blob([JSON.stringify(packet,null,2)],{type:'application/json'}));const a=el('a','');a.href=url;a.download='ghost-frequency-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),0);};begin('intercept',0);
+</script></html>

@@ -1,0 +1,24 @@
+{
+  "laws": 12,
+  "probes": 16,
+  "means": {
+    "adaptive": 1.3333333333333333,
+    "grouped": 4.333333333333333,
+    "optimizedFixed": 1.3333333333333333,
+    "random": 2.1308333333333334
+  },
+  "fixedProbes": [
+    14,
+    0
+  ],
+  "transitions": {
+    "count": 132,
+    "repeatConflict": 132,
+    "nonrepeatUnmodeled": 114,
+    "raw": 12936,
+    "zlib": 4974,
+    "oneEpoch": 7744,
+    "twoEpoch": 924
+  },
+  "unknown": "UNMODELED"
+}

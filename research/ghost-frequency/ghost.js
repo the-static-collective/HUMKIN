@@ -1,0 +1,23 @@
+/* HUMKIN Ghost Frequency: local research game, no player or station writes. */
+(function(root){'use strict';
+const G=typeof module!=='undefined'&&module.exports?require(require('node:fs').existsSync(require('node:path').join(__dirname,'../../fm/orchard/gambit-core.js'))?'../../fm/orchard/gambit-core.js':'./gambit-core.js'):root.HumkinGambits;
+// Public rotation metadata at 10ffb553a73710fff02ab241069b4b1f5c55cb7d; no media URLs.
+const catalog=[['mutant-pop-04','Golden Yellow Blue','MUTANT POP',133],['mutant-pop-03','Bright Blue Rose','MUTANT POP',183],['mutant-pop-08','Make a Little Room','MUTANT POP',264],['everywhere-near-you-01','Home With You','everywhere;near you',179.472],['everywhere-near-you-07','Blue Bowl Rings','everywhere;near you',212.304],['haileylu-bloom','HaileyLu Bloom','HUMKIN RADIO · Singles',147.864]].map(([id,title,album,duration])=>({id,title,album,duration,src:'fixture:'+id}));
+const rule=(when,action)=>({when,action,enabled:true});
+const laws=[];for(const when of ['night','unheard','short'])for(const action of ['shortest','longest','least-played','surprise'])laws.push({id:laws.length,deck:[rule(when,action),rule('always','different-album')]});
+const probes=[];for(const hour of [12,22])for(const pattern of [0,1,2,3])for(const roll of [.15,.65])probes.push({id:probes.length,hour,pattern,roll});
+function reads(pattern){return Object.fromEntries(catalog.map((t,i)=>[t.id,[[0,0,0,0,0,0],[1,0,2,1,0,3],[5,4,3,2,1,1],[0,3,0,2,1,0]][pattern][i]]));}
+function run(l,q){const r=G.propose(catalog,l.deck,{level:3,hour:q.hour,reads:reads(q.pattern),random:()=>q.roll,length:3});return r.tracks.map(t=>t.id).join('|');}
+function compatible(h,ls=laws){return ls.filter(l=>h.every(o=>run(l,probes[o.q])===o.y));}
+function gain(ls,q){const c=new Map();for(const l of ls){const y=run(l,q);c.set(y,(c.get(y)||0)+1);}return [...c.values()].reduce((s,n)=>s-n/ls.length*Math.log2(n/ls.length),0);}
+function next(ls,h){const used=new Set(h.map(o=>o.q));return probes.filter(q=>!used.has(q.id)).sort((a,b)=>gain(ls,b)-gain(ls,a)||a.id-b.id)[0];}
+function inspect(h){const seen=new Map(),collisions=[];for(let i=0;i<h.length;i++){const o=h[i];if(seen.has(o.q)&&seen.get(o.q).y!==o.y)collisions.push({q:o.q,first:seen.get(o.q).i,second:i});else if(!seen.has(o.q))seen.set(o.q,{y:o.y,i});}const candidates=compatible(h);return {candidates,collisions,status:collisions.length?'REPEAT_CONFLICT':!candidates.length?'UNMODELED':candidates.length===1?'PROVISIONAL':'INVESTIGATING'};}
+function label(l){return l.deck.map(r=>r.when+' → '+r.action).join('; ');}
+function title(y){return y.split('|').map(id=>catalog.find(t=>t.id===id)?.title||id).join(' → ');}
+// Byte codec: 0 raw, 1 one policy + indexed whole-queue exceptions, 2 two epochs.
+// Each queue consists of three one-byte catalog indexes. Context and registry shared.
+function triplet(y){const a=y.split('|').map(id=>catalog.findIndex(t=>t.id===id));if(a.length!==3||new Set(a).size!==3||a.some(x=>x<0))throw Error('bad queue');return a;}
+function encode(h){if(h.length<1||h.length>255)throw Error('frame length');let best=[0,h.length,...h.flatMap(o=>triplet(o.y))];function model(slice,l){const r=[];slice.forEach((o,i)=>{if(o.y!==run(l,probes[o.q]))r.push(i,...triplet(o.y));});return [l.id,r.length/4,...r];}for(const l of laws){const f=[1,h.length,...model(h,l)];if(f.length<best.length)best=f;}for(let k=1;k<h.length;k++){const left=laws.map(l=>model(h.slice(0,k),l)).sort((a,b)=>a.length-b.length)[0],right=laws.map(l=>model(h.slice(k),l)).sort((a,b)=>a.length-b.length)[0];const f=[2,h.length,k,...left,...right];if(f.length<best.length)best=f;}return Uint8Array.from(best);}
+function decode(f,qs){if(f[1]!==qs.length||!qs.length||qs.some(q=>!probes[q]))throw Error('context');let p=2;function take(){if(p>=f.length)throw Error('truncated');return f[p++];}function queue(){const a=[take(),take(),take()];if(new Set(a).size!==3||a.some(i=>!catalog[i]))throw Error('queue');return a.map(i=>catalog[i].id).join('|');}function part(q){const l=laws[take()],n=take();if(!l)throw Error('law');const y=q.map(i=>run(l,probes[i]));let prev=-1;for(let i=0;i<n;i++){const k=take();if(k<=prev||k>=y.length)throw Error('residual');prev=k;y[k]=queue();}return y;}let y;if(f[0]===0)y=qs.map(queue);else if(f[0]===1)y=part(qs);else if(f[0]===2){const k=take();if(k<=0||k>=qs.length)throw Error('epoch');y=part(qs.slice(0,k)).concat(part(qs.slice(k)));}else throw Error('format');if(p!==f.length)throw Error('trailing');return y;}
+const api={catalog,laws,probes,reads,run,compatible,gain,next,inspect,label,title,encode,decode};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.GhostFrequency=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
