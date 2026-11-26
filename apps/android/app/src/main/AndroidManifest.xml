@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false"
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_radio"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".PirateRadioActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SignalStudioActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MyRecordsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".GuildActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FieldDeskActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OutpostActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrchardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".LeagueActivity"
+            android:exported="false" />
+        <service
+            android:name=".RadioPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
