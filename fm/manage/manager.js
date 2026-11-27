@@ -1,3 +1,4 @@
+import {compareInventory} from "./local-inventory.mjs";
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import {prepareCover} from "./art-upload.js";
 import {r2Bridge} from "../r2-bridge-client.js";
@@ -765,3 +766,18 @@ $("logout").addEventListener("click",async()=>{
 });
 db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_IN"||event==="SIGNED_OUT")setTimeout(loadDesk,0)});
 loadDesk();
+
+$("local-inventory-file").addEventListener("change",async event=>{
+ const out=$("local-inventory-result"),list=$("local-inventory-unmatched");list.replaceChildren();
+ try{
+  await requireOwner();
+  const file=event.target.files?.[0];if(!file)return;
+  if(file.size>12*1024*1024)throw Error("Choose an inventory under 12 MiB.");
+  if(!library.length)throw Error("Refresh the desk and load the catalog first.");
+  const report=compareInventory(JSON.parse(await file.text()),library);
+  const c=report.counts;
+  out.textContent=report.frequency+" · snapshot "+report.observed_at+(report.preview?" · PREVIEW":"")+" · "+c.matched+" matched / "+c.total+" · "+c.ambiguous+" ambiguous · "+c.not_in_loaded_catalog+" not in loaded catalog. Catalog results may be capped; no membership changes made.";
+  for(const row of report.rows.filter(r=>r.status!=="matched").slice(0,40))list.append(el("li",(row.title||row.id)+" · "+row.status));
+  if(c.ambiguous+c.not_in_loaded_catalog>40)list.append(el("li","Showing first 40 unresolved identities."));
+ }catch(err){out.textContent=err.message;}finally{event.target.value="";}
+});
