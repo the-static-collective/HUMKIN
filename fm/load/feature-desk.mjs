@@ -4,6 +4,7 @@
  */
 import {availableRecordings,buildPausedFeature,move} from "./feature-core.mjs";
 import {editOrder,projectCues,formatOffset} from "./feature-order.mjs";
+import {mountRollingTimeline} from "./rolling-timeline.mjs";
 import {buildCloudHandoff,browserSha256,buildHouseCrate,checkedStation} from "./cloud-feature-handoff.mjs";
 
 const OWNER="us@abundent.org";
@@ -228,5 +229,6 @@ export function mountFeatureDesk({db,rows,onStatus}){
  if(requested&&[...stationSelect.options].some(option=>option.value===requested)){
    stationSelect.value=requested;switchStation();
  }
+ mountRollingTimeline();
  return {refresh(){renderChoices();renderLineup()},hasDrafts(){return state.busy||state.ids.length>0||[...drafts.entries()].some(([id,d])=>id!==state.station&&d.ids.length>0)}};
 }
