@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import {compareInventory} from "../fm/manage/local-inventory.mjs";
+import {readFileSync} from "node:fs";
+const hash="a".repeat(64),packet={schema:"humkin.tower.local-inventory/v1",frequency:"station-one",observed_at:"2026-11-27T15:00:00Z",records:[{id:"crate-a"},{id:"upload-"+hash,held:true},{id:"unknown"},{id:"duplicate"}]};
+const catalog=[{id:"crate-a"},{id:"crate-b",sha256:hash},{id:"duplicate"},{id:"duplicate"}];
+const result=compareInventory(packet,catalog);
+assert.deepEqual(result.counts,{total:4,matched:2,ambiguous:1,not_in_loaded_catalog:1});
+assert.equal(result.rows[1].basis,"exact-source-sha256");
+assert.equal(result.rows[1].local.held,true);
+assert.throws(()=>compareInventory({...packet,records:[packet.records[0],packet.records[0]]},catalog));
+assert.throws(()=>compareInventory({...packet,frequency:"../bad"},catalog));
+assert.equal(compareInventory({...packet,records:[{id:"upload-"+hash}]},[...catalog,{id:"other",sha256:hash}]).counts.ambiguous,1);
+const desktop=readFileSync("tools/radio-broadcast/on_air.js","utf8").split("// Only stable identities and policy flags;")[1];
+assert(desktop.includes("humkin.tower.local-inventory/v1"));
+for(const forbidden of ["token","headers","storage_path","fetch(","notes:","slot:"])assert(!desktop.split("\n").slice(1).join("\n").includes(forbidden));
+console.log("TOWER local inventory identity and ambiguity checks passed");
