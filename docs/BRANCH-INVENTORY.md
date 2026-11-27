@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [716995e778a3](https://github.com/the-static-collective/HUMKIN/commit/716995e778a315a6724454df326bb7fe8acbde2f)
-- Branches: 210; open PRs: 32; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [b436289c9809](https://github.com/the-static-collective/HUMKIN/commit/b436289c9809e716b4857fe405d4ae0e7d0773b6)
+- Branches: 213; open PRs: 35; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -215,8 +215,11 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 716995e778a3 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | b436289c9809 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
+| [proposal/archive-janitor-001](https://github.com/the-static-collective/HUMKIN/tree/proposal/archive-janitor-001) | c782a508e7d7 | [#211](https://github.com/the-static-collective/HUMKIN/pull/211) (base: main) |
+| [proposal/station-operating-desk-001](https://github.com/the-static-collective/HUMKIN/tree/proposal/station-operating-desk-001) | 32c77cf69849 | [#212](https://github.com/the-static-collective/HUMKIN/pull/212) (base: main) |
+| [proposal/tower-unified-desk-002](https://github.com/the-static-collective/HUMKIN/tree/proposal/tower-unified-desk-002) | 1188184c1847 | [#213](https://github.com/the-static-collective/HUMKIN/pull/213) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
 | [research/ultimate-joy-ghost-frequency-001](https://github.com/the-static-collective/HUMKIN/tree/research/ultimate-joy-ghost-frequency-001) | 7c6551b9e591 | [#209](https://github.com/the-static-collective/HUMKIN/pull/209) (base: main) |
