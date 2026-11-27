@@ -630,3 +630,12 @@ for (const [id, event] of [["search", "input"], ["crate-sort", "change"]]) {
 }
 byId("undo").addEventListener("click", () => act("undo"));
 refresh();
+
+// Only stable identities and policy flags; never local paths, tokens, notes, queue slots, or audio.
+byId("export-tower-inventory").addEventListener("click",()=>{
+ if(!connected||!latest||busy)return;
+ const records=(latest.catalog||[]).map(t=>({id:String(t.id),title:String(t.title||"").slice(0,240),rotation:t.rotation===true,in_lineup:t.in_lineup===true,disabled:t.disabled===true,held:t.held===true,weight:Number.isInteger(t.weight)?t.weight:0}));
+ const packet={schema:"humkin.tower.local-inventory/v1",frequency:latest.frequency,observed_at:new Date().toISOString(),preview:latest.preview===true,curated:latest.curated===true,records};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(packet,null,2)],{type:"application/json"}));
+ const a=document.createElement("a");a.href=url;a.download="HUMKIN-"+latest.frequency+"-private-inventory.json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});

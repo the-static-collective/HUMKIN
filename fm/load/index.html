@@ -77,19 +77,16 @@ button.warn{background:#ffd3d3}
 footer{padding:20px;text-align:center}
 @media(max-width:720px){.deck{grid-template-columns:1fr}.panel{padding:15px}h1{font-size:3.5rem}}
 </style>
+<link rel="stylesheet" href="../manage/operating-desk.css">
+<link rel="stylesheet" href="./loader-desk.css">
+<script defer src="../manage/operating-desk.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
 <script type="module" src="./loader.js"></script>
 </head>
 <body>
 <header class="topline"><a href="../" class="brand">HUMKIN <span>✳</span></a><span class="station-id">CREATOR / CRATE LOADER</span><a href="../" class="dj-link">← RADIO</a></header>
-<main>
-<p class="eyebrow">PRIVATE BACKSTAGE · ONE CRATE AT A TIME</p>
-<h1>LOAD THE<br><em>WHOLE ROAD.</em></h1>
-<p class="lead">Drop songs, official singles, and station bumpers here. Choose each recording's role before staging. Nothing goes public without your approval.</p>
-<nav class="quick-links" aria-label="Daily TOWER tasks"><a href="#drop-title">+ ADD TODAY'S AUDIO</a><a href="#ready-title">REVIEW CRATE</a><a href="#feature-desk">BUILD A FEATURE</a><a href="#living-control">RUN STATION</a></nav>
-<p class="small">Works from a phone or desktop. This page handles private intake and approval; publishing an approved item to the catalog does not itself rebuild the independent Cloud HOUSE program.</p>
-<div class="deck">
-<section class="panel tint" aria-labelledby="login-title">
+<nav class="tower-global-nav" aria-label="Tower work areas"><a href="../manage/">Operating desk</a><a href="#drop-title" aria-current="page">Intake</a><a href="#feature-desk">Frequency builder</a><a href="../network/dial.html">Network signals</a><a href="../studio/">Studio</a></nav><main class="tower-shell loader-shell"><div class="desk-masthead"><div><p class="eyebrow">HUMKIN RADIO / TOWER</p><h1>Crate &amp; programming<span>.</span></h1></div><a class="button-like" href="../manage/">OPERATING DESK ↗</a></div>
+<div class="desk-snapshot"><section class="panel tint" aria-labelledby="login-title">
 <h2 id="login-title">01 · Unlock your crate</h2>
 <p class="small">Only the verified owner of <strong>us@abundent.org</strong> can upload or publish. Sign-in uses an email link—no password embedded in the site.</p>
 <div id="signed-out"><label for="email">Email</label><br><input id="email" type="email" value="us@abundent.org" autocomplete="email"><br><button id="send-link">EMAIL ME A FRESH LINK ↗</button>
@@ -104,17 +101,32 @@ footer{padding:20px;text-align:center}
 <div id="signed-in" class="hidden"><p id="signed-label"></p><button id="sign-out" class="warn">LOCK THE CRATE</button></div>
 <div id="proton-loader"></div>
 <p id="auth-message" role="status" aria-live="polite"></p>
-</section>
-<section class="panel" aria-labelledby="health-title">
+</section><section class="panel" aria-labelledby="health-title">
 <h2 id="health-title">02 · Storage gauge</h2>
 <p id="stats">Checking storage…</p>
 <p id="r2-storage-note" class="small" role="status">Checking R2 storage bridge…</p>
 <p id="direct-r2-status" class="small" role="status">Direct private R2: sign in to check bucket permissions and transfer readiness.</p>
 <p id="total">0:00 on air</p>
 <p class="small">When direct R2 is ready, this loader transfers MP3 copies straight from your computer to a separate <strong>private R2 bucket</strong>, verifies them, and waits for your approval before publishing to the public R2 bucket. If private R2 is not ready, the existing Supabase inbox route remains available. Existing recordings continue playing. Supabase Free has a <strong>1 GB free storage allowance</strong> shared with this organization; the 700 MiB soft limit reflects actual remaining Supabase copies; removing a confirmed backup is a separate, optional action.</p>
-</section>
+</section></div><div class="desk-layout"><aside class="desk-sidebar"><nav class="desk-nav" aria-label="Crate workspaces"><a href="#desk-intake" data-desk-link="intake">Intake</a><a href="#desk-review" data-desk-link="review">Review & publish</a><a href="#desk-programming" data-desk-link="programming">Frequency builder</a><a href="#desk-control" data-desk-link="control">Night Shift control</a><a href="#desk-storage" data-desk-link="storage">Storage & logs</a></nav><p class="small">Switch workspaces without losing the current crate or feature draft. Export or finish your work before leaving this page.</p></aside><div class="desk-stage">
+<div class="desk-workspace" id="desk-intake" data-desk-view="intake"><header class="workspace-heading"><h2 tabindex="-1">Intake</h2><p>Shared library — select, review and privately stage recordings.</p></header><section class="panel card" aria-labelledby="drop-title">
+<h2 id="drop-title">04 · Drop songs, singles and bumpers</h2>
+<label id="drop" for="pick">DROP MUSIC / SINGLES / BUMPERS HERE<br><span class="small">or tap for individual files; use the folder reader above for a library</span></label>
+<input type="file" id="pick" multiple accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4">
+<p class="small">MP3 stays original; WAV/M4A → 128 kbps MP3 on this device (if the browser can decode it). WAV/M4A sources are never uploaded. Choose RADIO-ONLY SONG, OFFICIAL SINGLE, or STATION BUMPER / SPOKEN FEATURE for each file and review its title, artist, and album. For the Eno Efia guest feature, upload the interview as spoken audio, not a seasonal song. An official single gets <strong>two plays per rotation cycle</strong> where the station's release weighting applies; radio-only songs get one. Long audio conversion uses memory, so keep this tab open.</p>
+<p id="selection">No files selected.</p>
+<p id="selected-time">0 hours 0 minutes queued</p>
+<div class="folder-controls">
+<div><label for="queue-search">Find a recording in this crate</label><input id="queue-search" type="text" placeholder="Search artist, album, title, or filename"></div>
+<div><label for="queue-sort">Sort preview by</label><select id="queue-sort">
+<option value="path">Folder / filename</option><option value="artist">Artist</option><option value="album">Album</option><option value="genre">Genre folder</option><option value="collection">Collection folder</option><option value="disc">Disc folder</option><option value="title">Title</option></select></div>
 </div>
-<section class="panel card" aria-labelledby="folder-title">
+<p id="queue-note" class="small">Edit the inferred titles, artists, and albums before staging. Showing up to 150 matching files at once.</p>
+<ul id="queue"></ul>
+<div class="row"><button id="stage" class="accent" disabled>STAGE THIS CRATE ↗</button><button id="cancel" class="warn" disabled>STOP AFTER CURRENT SONG</button><button id="clear">CLEAR SELECTION</button></div>
+<progress class="progress" id="progress" value="0" max="100"></progress>
+<p id="feedback" role="status" aria-live="polite"></p>
+</section><details class="loader-folder"><summary>Folder import &amp; desktop metadata</summary><section class="panel card" aria-labelledby="folder-title">
 <h2 id="folder-title">03 · Desktop folder reader</h2>
 <p>Choose the <strong>parent folder</strong> containing your music subfolders. Nothing is uploaded or made public just by selecting a folder. A file's path can fill artist and album before you review each recording.</p>
 <div class="folder-controls">
@@ -152,42 +164,58 @@ footer{padding:20px;text-align:center}
 </div>
 <p id="folder-note" class="small" role="status">Folder layout: Artist / Album. The chosen parent folder itself is not treated as an artist.</p>
 <p id="tower-note" class="small" role="status">For an existing Acer Tower crate, select <code>%LOCALAPPDATA%\HUMKIN\Tower\media</code> using the folder picker. SHA-named audio and paired JSON sidecars are read locally to restore titles, artists, albums and verified durations before any upload. Original paths remain on your computer; missing sidecars are flagged for review.</p>
-</section>
-<section class="panel card" aria-labelledby="drop-title">
-<h2 id="drop-title">04 · Drop songs, singles and bumpers</h2>
-<label id="drop" for="pick">DROP MUSIC / SINGLES / BUMPERS HERE<br><span class="small">or tap for individual files; use the folder reader above for a library</span></label>
-<input type="file" id="pick" multiple accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4">
-<p class="small">MP3 stays original; WAV/M4A → 128 kbps MP3 on this device (if the browser can decode it). WAV/M4A sources are never uploaded. Choose RADIO-ONLY SONG, OFFICIAL SINGLE, or STATION BUMPER / SPOKEN FEATURE for each file and review its title, artist, and album. For the Eno Efia guest feature, upload the interview as spoken audio, not a seasonal song. An official single gets <strong>two plays per rotation cycle</strong> where the station's release weighting applies; radio-only songs get one. Long audio conversion uses memory, so keep this tab open.</p>
-<p id="selection">No files selected.</p>
-<p id="selected-time">0 hours 0 minutes queued</p>
-<div class="folder-controls">
-<div><label for="queue-search">Find a recording in this crate</label><input id="queue-search" type="text" placeholder="Search artist, album, title, or filename"></div>
-<div><label for="queue-sort">Sort preview by</label><select id="queue-sort">
-<option value="path">Folder / filename</option><option value="artist">Artist</option><option value="album">Album</option><option value="genre">Genre folder</option><option value="collection">Collection folder</option><option value="disc">Disc folder</option><option value="title">Title</option></select></div>
-</div>
-<p id="queue-note" class="small">Edit the inferred titles, artists, and albums before staging. Showing up to 150 matching files at once.</p>
-<ul id="queue"></ul>
-<div class="row"><button id="stage" class="accent" disabled>STAGE THIS CRATE ↗</button><button id="cancel" class="warn" disabled>STOP AFTER CURRENT SONG</button><button id="clear">CLEAR SELECTION</button></div>
-<progress class="progress" id="progress" value="0" max="100"></progress>
-<p id="feedback" role="status" aria-live="polite"></p>
-</section>
-<section class="panel card" aria-labelledby="ready-title">
+</section></details></div>
+<div class="desk-workspace" id="desk-review" data-desk-view="review"><header class="workspace-heading"><h2 tabindex="-1">Review & publish</h2><p>Global catalog approval; publishing is not a cloud schedule update.</p></header><section class="panel card" aria-labelledby="ready-title">
 <h2 id="ready-title">05 · Put it on the air</h2>
 <p>Everything enters as a private draft. Direct R2 drafts require server-side SHA-256 verification before approval. Approve a <strong>specific song or bumper</strong> using its own button below; this publishes that one item and enables it for the radio. The bulk button handles SONGS and SINGLES only. Never approve private callers or unverified real-world announcements.</p>
 <ul id="draft-list"><li>Sign in to view private drafts.</li></ul>
 <p><a href="../manage/" class="button-like">✳ OPEN STATION MANAGER — EDIT SONGS & SHOWS ↗</a></p>
 <div class="row"><button id="publish" disabled>PUBLISH SONGS + SINGLES (NOT BUMPERS) ↗</button><button id="refresh-drafts">REFRESH CRATE</button><a href="../" class="button-like">LISTEN TO RADIO ↗</a></div>
-</section>
-<section class="panel card" id="cloud-receipt" aria-labelledby="cloud-title">
-<h2 id="cloud-title">TOWER · Cloud HOUSE receipt</h2>
-<p>Only approved songs and bumpers are eligible for automatic Cloud HOUSE pickup. A catalog approval does not itself prove a new cloud schedule or anyone's playback.</p>
-<p id="cloud-house-receipt" role="status" aria-live="polite">Checking the public Cloud HOUSE schedule…</p>
-<div class="row"><button type="button" id="cloud-receipt-refresh">CHECK CLOUD SCHEDULE</button><a class="button-like" href="https://github.com/the-static-collective/HUMKIN/actions/workflows/tower-cloud-incremental-sync.yml" target="_blank" rel="noopener noreferrer">OWNER: CLOUD SYNC SETUP</a><a class="button-like" href="../schedule/" target="_blank" rel="noopener noreferrer">PUBLIC SCHEDULE</a></div>
-<p class="small">Owner setup once: run the Cloud Sync workflow using <strong>SYNC_APPROVED_CATALOG</strong>. For scheduled automatic refresh, enable repository variable <code>HUMKIN_CLOUD_AUTOPUBLISH=ENABLED</code> after a successful test. Without this setting, automation stays off. New audio is encoded only when its source hash has not been published before. Cloud HLS updates still occur at clean audio boundaries.</p>
-</section>
-<section class="panel card" id="living-control" aria-labelledby="living-title">
+</section></div>
+<div class="desk-workspace" id="desk-programming" data-desk-view="programming"><header class="workspace-heading"><h2 tabindex="-1">Frequency builder</h2><p>Independent draft orders for each registered cloud frequency.</p></header><section class="panel card" id="feature-desk" aria-labelledby="feature-title">
+<h2 id="feature-title">06 · Feature Desk — program the frequencies</h2>
+<label for="feature-station">Cloud frequency</label><select id="feature-station"><option value="station-one">Night Shift · station-one</option><option value="lo-fi">Lo-Fi Study · lo-fi</option><option value="mutant">Mutant Radio · mutant</option></select>
+<p id="feature-scope" class="small" role="status"></p>
+<section id="rolling-timeline" class="rolling-board" aria-labelledby="rolling-title">
+ <header><div><p class="rolling-kicker">TRANSMISSION / READ ONLY</p><h3 id="rolling-title">Rolling station timeline</h3></div><button id="rolling-refresh" type="button">Refresh</button></header>
+ <div class="rolling-controls"><label for="rolling-horizon">Look ahead</label><select id="rolling-horizon"><option value="30">30 minutes</option><option value="60" selected>1 hour</option><option value="120">2 hours</option></select><label><input id="rolling-auto" type="checkbox" checked> Refresh every minute while visible</label></div>
+ <div class="rolling-head"><small>CURRENT CLOUD CUE · sampled</small><strong id="rolling-now">No verified current cue</strong><p id="rolling-receipt" class="small" role="status"></p></div>
+ <details open><summary>Committed upcoming cues · locked</summary><ol id="rolling-committed" aria-label="Published schedule cues"></ol></details>
+ <p id="rolling-pending" class="small"></p><p class="small">Published schedules may be superseded by a separately authorized revision. Nothing in this lane is draggable. Build or reorder your independent draft below; it is not yet committed. All times Central.</p>
+</section><p id="feature-draft-count" class="small"></p>
+<p class="small">Station drafts stay independent while this tab is open. The approved recording catalog is shared. Copying a lineup creates an independent draft, not a live queue.</p>
+<div class="row"><a href="../network/dial.html">Network signals &amp; ledger ↗</a><a href="../manage/#programming">Legacy Same-Time programming ↗</a></div>
+<p>Choose already published and enabled songs, interviews and bumpers from this same crate. Put them in the exact order you want, save a <strong>PAUSED</strong> recurring program to the existing Station Manager, then inspect it there before anyone turns it on. Nothing schedules itself and no cloud transmitter is changed here.</p>
+<div class="folder-controls">
+<div><label for="feature-name">Feature / show name</label><input id="feature-name" type="text" maxlength="100" placeholder="Friday Night Fellowship"></div>
+<div><label for="feature-search">Find an approved recording</label><input id="feature-search" type="search" placeholder="Song, interview, bumper, artist…"></div>
+</div>
+<p id="feature-match-count" class="small">Sign in and refresh the crate to choose recordings.</p>
+<div class="row"><select id="feature-track" aria-label="Approved recording for ordered feature" style="flex:1;min-width:185px"><option value="">Choose an approved recording…</option></select><button id="feature-add" type="button" class="accent">+ ADD TO FEATURE</button></div>
+<div class="feature-board"><section class="feature-source"><h3>Shared crate</h3><p class="small">Drag a recording into the running order, or use its Add button.</p><ul id="feature-palette" aria-label="Matching recordings"></ul></section><section class="feature-timeline"><h3>Running order <span class="draft-chip">DRAFT</span></h3><p class="small">Drag a handle to an insertion line. Arrows work on touch and keyboard. Cue offsets are estimates, not live playout times.</p><div class="row"><button id="feature-undo-order" type="button" disabled>Undo order edit</button></div><ol id="feature-order" aria-label="Ordered draft recordings"><li>No recordings selected.</li></ol><div id="feature-drop-end" class="feature-insertion" aria-label="Drop at end">+ Drop at end</div></section></div>
+<p id="feature-duration" class="small">0 ordered positions</p>
+<label for="feature-copy-target">Copy ordered draft to another frequency</label><select id="feature-copy-target"><option value="lo-fi">Lo-Fi Study</option><option value="mutant">Mutant Radio</option><option value="station-one">Night Shift</option></select><button id="feature-copy" type="button" disabled>COPY DRAFT</button>
+<div class="folder-controls">
+<div><label for="feature-start">Start / Central</label><input id="feature-start" type="time" value="19:00"></div>
+<div><label for="feature-end">End / Central</label><input id="feature-end" type="time" value="20:00"></div>
+</div>
+<p><strong>Recurring days</strong> (the saved show stays paused until you enable it)</p>
+<div id="feature-days" role="group" aria-label="Days for feature"></div>
+<div class="row"><button id="feature-save" type="button" class="accent" disabled>SAVE PAUSED SAME-TIME FEATURE</button><button id="feature-clear" type="button">CLEAR UNSAVED ORDER</button><a href="../manage/#programming" class="button-like">REVIEW IN STATION MANAGER</a></div>
+<div class="folder-controls">
+<div><label for="feature-cloud-date">One-time Cloud HOUSE date</label><input type="date" id="feature-cloud-date"></div>
+<div><label for="feature-cloud-time">One-time Cloud HOUSE time (Central)</label><input type="time" id="feature-cloud-time" value="19:00" step="900"></div>
+</div>
+<div class="row"><button id="feature-export-cloud" type="button" disabled>EXPORT ONE-TIME CLOUD FEATURE</button></div>
+<p class="small">This exports a source-verified TOWER handoff JSON from the same ordered lineup. It preserves long interviews, exact cue order and a planned Central slot. Export is <strong>not on-air publication</strong>; it needs separate owner review and the Cloud HOUSE publisher. The current station schedule is unchanged.</p>
+<div class="row"><button id="feature-export-house" type="button" disabled>EXPORT NEW FREQUENCY HOUSE DRAFT</button></div>
+<p class="small">Use a HOUSE draft to seed an independent frequency, then use one-time cloud features for scheduled shows. Export is not approval or publication. The existing Night Shift HOUSE and live controls remain separate.</p>
+<p id="feature-status" role="status" aria-live="polite"></p>
+<p class="small">Existing scheduled programs belong to Same-Time RADIO and TOWER. Cloud HOUSE one-time guest blocks still require a separate owner-reviewed cloud publication. This form does not bypass that gate. Only the existing verified HUMKIN owner account can save; staff delegation is not active yet.</p>
+</section></div>
+<div class="desk-workspace" id="desk-control" data-desk-view="control"><header class="workspace-heading"><h2 tabindex="-1">Night Shift control</h2><p>Only station-one accepts these live control requests.</p></header><section class="panel card" id="living-control" aria-labelledby="living-title">
 <h2 id="living-title">TOWER 010 · Living Control — mobile + desktop</h2>
-<p class="small">Owner-only station commands. The recording must already be published and approved in R2. A request is durable but does <strong>not</strong> change what listeners hear until the protected Cloud HOUSE scheduler accepts it and publishes a new safe-boundary revision. Existing desktop TOWER production tools remain available.</p>
+<p class="small">Owner-only commands for the existing Night Shift Cloud HOUSE only (not the frequency selected in Feature Desk). The recording must already be published and approved in R2. A request is durable but does <strong>not</strong> change what listeners hear until the protected Cloud HOUSE scheduler accepts it and publishes a new safe-boundary revision. Existing desktop TOWER production tools remain available.</p>
 <div class="folder-controls">
   <div><label for="living-search">Find an approved track or bumper</label><input type="search" id="living-search" placeholder="Title, artist, album…"></div>
   <div><label for="living-track">Recording to control</label><select id="living-track"><option value="">Choose approved R2 recording…</option></select></div>
@@ -212,41 +240,20 @@ footer{padding:20px;text-align:center}
 <h3>Recent station requests</h3>
 <ol id="living-control-receipts" aria-live="polite"><li>Sign in to inspect station requests.</li></ol>
 <p class="small">REQUESTED = owner entry recorded. ACCEPTED = published future cloud revision. EFFECTIVE = the cloud HLS schedule reached that revision and current media passed its availability checks. None of these labels alone proves a specific listener heard a recording. This controller cannot skip the currently playing audio.</p>
-</section>
-<section class="panel card" id="feature-desk" aria-labelledby="feature-title">
-<h2 id="feature-title">06 · Feature Desk — put a show in order</h2>
-<p>Choose already published and enabled songs, interviews and bumpers from this same crate. Put them in the exact order you want, save a <strong>PAUSED</strong> recurring program to the existing Station Manager, then inspect it there before anyone turns it on. Nothing schedules itself and no cloud transmitter is changed here.</p>
-<div class="folder-controls">
-<div><label for="feature-name">Feature / show name</label><input id="feature-name" type="text" maxlength="100" placeholder="Friday Night Fellowship"></div>
-<div><label for="feature-search">Find an approved recording</label><input id="feature-search" type="search" placeholder="Song, interview, bumper, artist…"></div>
-</div>
-<p id="feature-match-count" class="small">Sign in and refresh the crate to choose recordings.</p>
-<div class="row"><select id="feature-track" aria-label="Approved recording for ordered feature" style="flex:1;min-width:185px"><option value="">Choose an approved recording…</option></select><button id="feature-add" type="button" class="accent">+ ADD TO FEATURE</button></div>
-<ol id="feature-order" aria-live="polite"><li>No recordings selected.</li></ol>
-<p id="feature-duration" class="small">0 ordered positions</p>
-<div class="folder-controls">
-<div><label for="feature-start">Start / Central</label><input id="feature-start" type="time" value="19:00"></div>
-<div><label for="feature-end">End / Central</label><input id="feature-end" type="time" value="20:00"></div>
-</div>
-<p><strong>Recurring days</strong> (the saved show stays paused until you enable it)</p>
-<div id="feature-days" role="group" aria-label="Days for feature"></div>
-<div class="row"><button id="feature-save" type="button" class="accent" disabled>SAVE PAUSED FEATURE</button><button id="feature-clear" type="button">CLEAR UNSAVED ORDER</button><a href="../manage/#programming" class="button-like">REVIEW IN STATION MANAGER</a></div>
-<div class="folder-controls">
-<div><label for="feature-cloud-date">One-time Cloud HOUSE date</label><input type="date" id="feature-cloud-date"></div>
-<div><label for="feature-cloud-time">One-time Cloud HOUSE time (Central)</label><input type="time" id="feature-cloud-time" value="19:00" step="900"></div>
-</div>
-<div class="row"><button id="feature-export-cloud" type="button" disabled>EXPORT ONE-TIME CLOUD FEATURE</button></div>
-<p class="small">This exports a source-verified TOWER handoff JSON from the same ordered lineup. It preserves long interviews, exact cue order and a planned Central slot. Export is <strong>not on-air publication</strong>; it needs separate owner review and the Cloud HOUSE publisher. The current station schedule is unchanged.</p>
-<p id="feature-status" role="status" aria-live="polite"></p>
-<p class="small">Existing scheduled programs belong to Same-Time RADIO and TOWER. Cloud HOUSE one-time guest blocks still require a separate owner-reviewed cloud publication. This form does not bypass that gate. Only the existing verified HUMKIN owner account can save; staff delegation is not active yet.</p>
-</section>
-<section class="panel card">
+</section><section class="panel card" id="cloud-receipt" aria-labelledby="cloud-title">
+<h2 id="cloud-title">TOWER · Cloud HOUSE receipt</h2>
+<p>Only approved songs and bumpers are eligible for automatic Cloud HOUSE pickup. A catalog approval does not itself prove a new cloud schedule or anyone's playback.</p>
+<p id="cloud-house-receipt" role="status" aria-live="polite">Checking the public Cloud HOUSE schedule…</p>
+<div class="row"><button type="button" id="cloud-receipt-refresh">CHECK CLOUD SCHEDULE</button><a class="button-like" href="https://github.com/the-static-collective/HUMKIN/actions/workflows/tower-cloud-incremental-sync.yml" target="_blank" rel="noopener noreferrer">OWNER: CLOUD SYNC SETUP</a><a class="button-like" href="../schedule/" target="_blank" rel="noopener noreferrer">PUBLIC SCHEDULE</a></div>
+<p class="small">Owner setup once: run the Cloud Sync workflow using <strong>SYNC_APPROVED_CATALOG</strong>. For scheduled automatic refresh, enable repository variable <code>HUMKIN_CLOUD_AUTOPUBLISH=ENABLED</code> after a successful test. Without this setting, automation stays off. New audio is encoded only when its source hash has not been published before. Cloud HLS updates still occur at clean audio boundaries.</p>
+</section></div>
+<div class="desk-workspace" id="desk-storage" data-desk-view="storage"><header class="workspace-heading"><h2 tabindex="-1">Storage & logs</h2><p>Storage readiness, transfer history and field notes.</p></header><section class="panel card">
 <h2>Field notes</h2>
 <p><a href="../mesh/" class="button-like">✳ OPEN MESH · INDEX EVERY COMPUTER ↗</a></p>
 <p>Keep originals on your phone or computer; this loader makes listening copies, not archival masters. Upload failures leave the unshared source untouched. Exact duplicates are skipped by SHA-256. A locked screen may suspend uploads, so leave this tab visible while a crate is transferring.</p>
 <p>For hundreds of WAVs, a desktop FFmpeg batch conversion is faster and more reliable than encoding on a phone. The repo also includes a local offline converter at <code>tools/humkin-radio-batch.py</code>. Make MP3s once, then select the resulting folder here. Direct R2 allows up to three parallel recordings (50 MiB each); interrupted batches can be resumed by reselecting the same folder or retrying errors. Individual PUTs restart on network failure.</p>
 <pre id="history" role="log" aria-live="polite">Ready.</pre>
-</section>
-</main>
+</section></div>
+</div></div></main>
 <footer><a href="../">← HUMKIN RADIO</a> · OWNER LOAD-IN v1 · NO TRACKING</footer>
 </body></html>

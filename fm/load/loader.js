@@ -593,3 +593,6 @@ livingControl=mountLivingControl({db,rows:()=>activeUser?known:[],onStatus:messa
 mountCloudReceipt();
 installProtonLogin({mount:$("proton-loader"),getClient:async()=>db,onSignedIn:updateSession});
 updateSession();
+
+// Workspaces keep the same DOM; warn only when leaving the whole page with local work.
+window.addEventListener("beforeunload",event=>{if(busy||selected.length||featureDesk?.hasDrafts?.()){event.preventDefault();event.returnValue="";}});

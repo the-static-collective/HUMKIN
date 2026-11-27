@@ -128,7 +128,33 @@ def _remote_pin_path(cache, handoff):
     return cache / "handoffs" / (fingerprint + ".json")
 
 
-def prepare_tracks(input_path, cache, *, publish=False):
+def validate_network_house(packet):
+    """A reviewed seed is scoped to a new frequency and rechecks public source identity."""
+    from house_rotation import catalog_rows, fingerprint
+    station = packet.get("station_id")
+    crate = packet.get("crate")
+    if station not in ("lo-fi", "mutant") or not isinstance(crate, dict):
+        raise ValueError("Only a secondary frequency can be seeded.")
+    if packet.get("fingerprint") != fingerprint(packet):
+        raise ValueError("HOUSE draft changed after export.")
+    tracks = crate.get("tracks")
+    if crate.get("schema") != CRATE_SCHEMA or crate.get("station_id") != station or not isinstance(tracks, list) or not 1 <= len(tracks) <= 200:
+        raise ValueError("Invalid frequency-bound HOUSE crate.")
+    rows = {r.get("id"): r for r in catalog_rows() if isinstance(r, dict)}
+    for t in tracks:
+        if not isinstance(t, dict) or not isinstance(t.get("id"), str) or not t["id"].startswith("r2-"):
+            raise ValueError("Invalid HOUSE recording identity.")
+        row = rows.get(t["id"][3:])
+        sha = t.get("expected_sha")
+        if not row or row.get("enabled") is not True or not row.get("published_at") or row.get("storage_provider") != "r2" or row.get("kind") not in ("song", "bumper") or not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{64}", sha) or row.get("sha256") != sha:
+            raise ValueError("HOUSE recording no longer approved in the current public catalog.")
+        key = "tracks/" + row["id"] + "/" + sha + ".mp3"
+        if row.get("r2_object_key") != key or t.get("url") != "https://media.abundent.org/" + key or t.get("source_kind") != "r2" or "path" in t:
+            raise ValueError("HOUSE source binding mismatch.")
+    return crate
+
+
+def prepare_tracks(input_path, cache, *, publish=False, seed_house=False):
     """Prepare files or published remote MP3s without requiring a local master.
 
     Published remote sources are downloaded only into disposable temp files.
@@ -137,6 +163,11 @@ def prepare_tracks(input_path, cache, *, publish=False):
     """
     payload = json.loads(input_path.read_text(encoding="utf-8"))
     handoff = None
+    if seed_house:
+        if payload.get("schema") != "humkin.network-house-draft/v1":
+            raise ValueError("Expected a frequency-bound HOUSE draft.")
+        handoff = payload
+        payload = validate_network_house(payload)
     if payload.get("schema") == "humkin.cloud-house-selection/v1":
         from house_rotation import catalog_rows, validate_selection, crate_from_selection
         # The public catalog is checked on BOTH preview and publish. Remote
@@ -387,6 +418,7 @@ def main():
     parser = argparse.ArgumentParser(description="Prepare/cloud-publish HUMKIN's clock-owned radio")
     sources = parser.add_mutually_exclusive_group(required=True)
     sources.add_argument("--input", help="Local approved track list JSON")
+    sources.add_argument("--seed-house", help="Reviewed secondary-frequency HOUSE draft; refuses existing program")
     sources.add_argument("--tower-program", help="Unapproved Tower handoff JSON; owner must review before publication")
     sources.add_argument("--house-selection", help="Owner-reviewed draft generated from current approved R2 catalog; remote sources checked again")
     parser.add_argument("--cache", default=str(Path(os.environ.get("LOCALAPPDATA",
@@ -397,9 +429,9 @@ def main():
     args = parser.parse_args()
     if not 30 <= args.lead_seconds <= 86400:
         parser.error("Lead time must be 30–86400 seconds")
-    if (args.tower_program or args.house_selection) and args.approved_packet:
+    if (args.tower_program or args.house_selection or args.seed_house) and args.approved_packet:
         parser.error("Saved Tower/house selections and Gambit proposals are separate scheduling paths.")
-    manifest = Path(args.tower_program or args.house_selection or args.input).resolve(strict=True)
+    manifest = Path(args.tower_program or args.house_selection or args.seed_house or args.input).resolve(strict=True)
     cache = Path(args.cache)
     handoff = None
     if args.tower_program:
@@ -409,7 +441,7 @@ def main():
         print("Tower program:", handoff["program"]["name"],
               "revision", handoff["program"]["revision"])
         print("Requested Central slot:", handoff["slot"]["day"], handoff["slot"]["time"])
-    station, tracks = prepare_tracks(manifest, cache, publish=args.publish)
+    station, tracks = prepare_tracks(manifest, cache, publish=args.publish, seed_house=bool(args.seed_house))
     if args.house_selection:
         print("HOUSE source approval rechecked:", len(tracks), "songs")
         print("This changes the HOUSE cycle only if explicitly published.")
@@ -444,6 +476,10 @@ def main():
         if status not in (404,):
             raise
         existing = None
+    if args.seed_house:
+        if existing is not None:
+            raise ValueError("Secondary frequency already has a program; seed refused.")
+        validate_network_house(json.loads(manifest.read_text(encoding="utf-8")))
     if handoff:
         from tower_cloud_handoff import schedule_curated
         program = schedule_curated(existing, station, tracks, handoff)
