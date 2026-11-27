@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/radio-broadcast/cloudflare/**'
       - 'fm/long-wave/**'
+      - 'fm/network/dial*'
       - 'docs/LONG-WAVE-BACKGROUND-STREAM.md'
       - '.github/workflows/long-wave-worker.yml'
   workflow_dispatch:
@@ -23,7 +24,12 @@ jobs:
           node --check tools/radio-broadcast/cloudflare/night-shift-aircheck.mjs
           node --check tools/radio-broadcast/cloudflare/worker.mjs
           node --check fm/long-wave/receiver.js
+          node --check fm/network/dial.mjs
+          node --check fm/network/dial-core.mjs
+          node --check tools/radio-broadcast/cloudflare/transmission-ledger.mjs
       - name: Long Wave stream and receiver regression tests
         run: node --test tools/radio-broadcast/cloudflare/worker.test.mjs tools/radio-broadcast/cloudflare/receiver.test.mjs tools/radio-broadcast/cloudflare/cloud-autopilot.test.mjs tools/radio-broadcast/cloudflare/cloud-schedule.test.mjs tools/radio-broadcast/cloudflare/night-shift-aircheck.test.mjs
+      - name: Transmission ledger and dial tests
+        run: node --test tools/radio-broadcast/cloudflare/transmission-ledger.test.mjs fm/network/dial-core.test.mjs
       - name: Publisher source syntax
         run: python3 -m py_compile tools/radio-broadcast/autopilot_publisher.py
