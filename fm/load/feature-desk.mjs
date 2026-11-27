@@ -3,7 +3,7 @@
  * A draft is not a Cloud HOUSE program or an on-air receipt.
  */
 import {availableRecordings,buildPausedFeature,move} from "./feature-core.mjs";
-import {buildCloudHandoff,browserSha256} from "./cloud-feature-handoff.mjs";
+import {buildCloudHandoff,browserSha256,buildHouseCrate,checkedStation} from "./cloud-feature-handoff.mjs";
 
 const OWNER="us@abundent.org";
 const byId=id=>document.getElementById(id);
@@ -13,7 +13,36 @@ const el=(tag,label)=>{const item=document.createElement(tag);if(label)item.text
 export function mountFeatureDesk({db,rows,onStatus}){
  const root=byId("feature-desk");
  if(!root)return;
- const state={ids:[],busy:false};
+ const state={ids:[],busy:false,station:"station-one"};
+ const stationSelect=byId("feature-station");
+ const draftFields=["feature-name","feature-start","feature-end","feature-cloud-date","feature-cloud-time"];
+ const drafts=new Map();
+ const snapshot=()=>({ids:[...state.ids],fields:Object.fromEntries(draftFields.map(id=>[id,byId(id).value])),days:[...document.querySelectorAll('input[name="feature-day"]:checked')].map(n=>n.value)});
+ const initialFields=Object.fromEntries(draftFields.map(id=>[id,byId(id).value]));
+ function restore(draft){
+   state.ids=[...draft.ids];
+   for(const id of draftFields)byId(id).value=draft.fields[id]??initialFields[id];
+   for(const day of document.querySelectorAll('input[name="feature-day"]'))day.checked=draft.days.includes(day.value);
+ }
+ function showScope(){
+   byId("feature-scope").textContent=state.station==="station-one"?"Night Shift cloud drafts; legacy paused Same-Time saves remain separate.":"Cloud-only draft for "+state.station+". Legacy Same-Time save disabled.";
+   byId("feature-draft-count").textContent=[...drafts.entries()].filter(([id,d])=>id!==state.station&&d.ids.length).map(([id,d])=>id+": "+d.ids.length+" positions").join(" · ")||"No other nonempty drafts in this tab.";
+ }
+ function switchStation(){
+   if(state.busy){stationSelect.value=state.station;return;}
+   const next=checkedStation(stationSelect.value);
+   if(next===state.station)return;
+   drafts.set(state.station,snapshot());state.station=next;
+   restore(drafts.get(next)||{ids:[],fields:{...initialFields,name:"","feature-name":""},days:["5"]});
+   renderChoices();renderLineup();status("Editing "+next+" only. Previous station draft retained in this tab.");
+ }
+ function copyToStation(){
+   if(state.busy||!state.ids.length)return;
+   const target=checkedStation(byId("feature-copy-target").value);
+   if(target===state.station)return status("Choose a different destination.");
+   if(drafts.get(target)?.ids.length&&!confirm("Replace the unsaved "+target+" draft?"))return;
+   drafts.set(target,snapshot());showScope();status("Copied ordered draft to "+target+". No shared queue or live schedule changed.");
+ }
  const status=message=>{byId("feature-status").textContent=message;onStatus?.(message)};
  const approved=()=>availableRecordings(rows());
  const matched=()=>{const query=String(byId("feature-search").value||"").toLocaleLowerCase().trim();
@@ -67,11 +96,15 @@ export function mountFeatureDesk({db,rows,onStatus}){
      if(end>start&&sec/60>end-start)
        byId("feature-duration").textContent+=" · Longer than selected window: the show may not complete before the end";
    }
-   byId("feature-save").disabled=state.busy||!state.ids.length;
+   byId("feature-save").disabled=state.busy||!state.ids.length||state.station!=="station-one";
+   byId("feature-export-house").disabled=state.busy||!state.ids.length||state.station==="station-one";
+   byId("feature-copy").disabled=state.busy||!state.ids.length;
+   stationSelect.disabled=state.busy;
+   showScope();
    byId("feature-export-cloud").disabled=state.busy||!state.ids.length;
  }
  async function save(){
-   if(state.busy)return;
+   if(state.busy||state.station!=="station-one")return;
    state.busy=true;renderLineup();byId("feature-save").disabled=true;
    try{
      const result=await db.auth.getUser();
@@ -118,22 +151,40 @@ export function mountFeatureDesk({db,rows,onStatus}){
        name:byId("feature-name").value,
        day:byId("feature-cloud-date").value,
        time:byId("feature-cloud-time").value,
-       ids:[...state.ids],rows:check.data||[],programId
+       ids:[...state.ids],rows:check.data||[],programId,stationId:state.station
      },browserSha256);
      const file=new Blob([JSON.stringify(packet,null,2),String.fromCharCode(10)],{type:"application/json"});
      const url=URL.createObjectURL(file);
      const link=document.createElement("a");
      link.href=url;
-     link.download="HUMKIN-cloud-feature-"+packet.slot.day+"-"+programId+".json";
+     link.download="HUMKIN-"+packet.station_id+"-cloud-feature-"+packet.slot.day+"-"+programId+".json";
      document.body.append(link);link.click();link.remove();
      setTimeout(()=>URL.revokeObjectURL(url),30000);
-     status("ONE-TIME CLOUD HANDOFF PREPARED: "+state.ids.length+
+     status("ONE-TIME CLOUD HANDOFF PREPARED FOR "+packet.station_id+": "+state.ids.length+
        " ordered positions · "+packet.slot.day+" "+packet.slot.time+
        " Central. The downloaded packet is NOT an aired or scheduled show. "+
        "The owner must review and publish using Cloud Autopilot.");
    }catch(error){status("CLOUD FEATURE NOT EXPORTED: "+error.message)}
    finally{state.busy=false;renderLineup()}
  }
+ async function exportHouse(){
+   if(state.busy||state.station==="station-one")return;
+   state.busy=true;renderLineup();
+   try{
+     const {data,error}=await db.auth.getUser();
+     if(error||data?.user?.email?.toLowerCase()!==OWNER)throw Error("Unlock your verified owner session first.");
+     const check=await db.from("humkin_radio_tracks").select("id,title,artist,album,kind,enabled,published_at,storage_provider,sha256,r2_object_key,duration_seconds").in("id",[...new Set(state.ids)]);
+     if(check.error)throw Error("Cannot recheck source eligibility: "+check.error.message);
+     const packet=await buildHouseCrate({stationId:state.station,ids:[...state.ids],rows:check.data||[]});
+     const url=URL.createObjectURL(new Blob([JSON.stringify(packet,null,2)],{type:"application/json"}));
+     const a=document.createElement("a");a.href=url;a.download="HUMKIN-"+state.station+"-house-crate.json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+     status("HOUSE DRAFT FOR "+state.station+": "+packet.crate.tracks.length+" positions. Preview and review with Autopilot publisher; not published.");
+   }catch(error){status("HOUSE NOT EXPORTED: "+error.message);}
+   finally{state.busy=false;renderLineup();}
+ }
+ stationSelect.addEventListener("change",switchStation);
+ byId("feature-copy").addEventListener("click",copyToStation);
+ byId("feature-export-house").addEventListener("click",exportHouse);
  byId("feature-export-cloud").addEventListener("click",exportOneTimeCloud);
  byId("feature-add").addEventListener("click",()=>{
    if(state.busy)return;

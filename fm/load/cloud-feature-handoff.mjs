@@ -31,7 +31,9 @@ export function eligibleHandoffRow(row){
  };
 }
 
-export async function buildCloudHandoff({name,day,time,ids,rows,programId},digest){
+export const CLOUD_STATIONS=Object.freeze(["station-one","lo-fi","mutant"]);
+export function checkedStation(station){if(!CLOUD_STATIONS.includes(station))throw Error("Unknown cloud frequency.");return station;}
+export async function buildCloudHandoff({name,day,time,ids,rows,programId,stationId="station-one"},digest){
  if(typeof name!=="string"||!name.trim()||name.length>120)throw Error("Name this one-time cloud feature.");
  if(typeof day!=="string"||!DAY.test(day)||
     Number.isNaN(Date.parse(day+"T12:00:00Z"))||
@@ -53,7 +55,7 @@ export async function buildCloudHandoff({name,day,time,ids,rows,programId},diges
   crate.push(record);
  }
  if(seconds>8*3600)throw Error("A one-time cloud feature cannot exceed eight hours.");
- const station_id="station-one";
+ const station_id=checkedStation(stationId);
  const packet={
   schema:"humkin.tower.cloud-handoff/v1",
   state:"draft_for_owner_review",
@@ -76,4 +78,17 @@ export async function buildCloudHandoff({name,day,time,ids,rows,programId},diges
 export async function browserSha256(bytes){
  const hash=await crypto.subtle.digest("SHA-256",bytes);
  return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+/* Initial HOUSE draft, not a publication receipt. Uses the same approved source filter. */
+export async function buildHouseCrate({stationId,ids,rows},digest=browserSha256){
+ const station_id=checkedStation(stationId);
+ if(station_id==="station-one")throw Error("Use the existing Night Shift HOUSE workflow.");
+ if(!Array.isArray(ids)||!ids.length||ids.length>200)throw Error("Select 1–200 ordered recordings.");
+ const available=new Map((Array.isArray(rows)?rows:[]).map(eligibleHandoffRow).filter(Boolean).map(r=>[r.id.slice(3),r]));
+ const tracks=ids.map(id=>{const record=available.get(id);if(!record)throw Error("Recording is no longer eligible for cloud.");const {source_seconds,...track}=record;return track;});
+ const packet={schema:"humkin.network-house-draft/v1",station_id,crate:{schema:"humkin.autopilot.crate/v1",station_id,tracks}};
+ packet.fingerprint=await digest(new TextEncoder().encode(canonical(packet)));
+ if(!SHA.test(packet.fingerprint))throw Error("House draft digest failed.");
+ return packet;
 }
