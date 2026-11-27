@@ -187,7 +187,7 @@ footer{padding:20px;text-align:center}
 </section>
 <section class="panel card" id="living-control" aria-labelledby="living-title">
 <h2 id="living-title">TOWER 010 · Living Control — mobile + desktop</h2>
-<p class="small">Owner-only station commands. The recording must already be published and approved in R2. A request is durable but does <strong>not</strong> change what listeners hear until the protected Cloud HOUSE scheduler accepts it and publishes a new safe-boundary revision. Existing desktop TOWER production tools remain available.</p>
+<p class="small">Owner-only commands for the existing Night Shift Cloud HOUSE only (not the frequency selected in Feature Desk). The recording must already be published and approved in R2. A request is durable but does <strong>not</strong> change what listeners hear until the protected Cloud HOUSE scheduler accepts it and publishes a new safe-boundary revision. Existing desktop TOWER production tools remain available.</p>
 <div class="folder-controls">
   <div><label for="living-search">Find an approved track or bumper</label><input type="search" id="living-search" placeholder="Title, artist, album…"></div>
   <div><label for="living-track">Recording to control</label><select id="living-track"><option value="">Choose approved R2 recording…</option></select></div>
@@ -214,7 +214,11 @@ footer{padding:20px;text-align:center}
 <p class="small">REQUESTED = owner entry recorded. ACCEPTED = published future cloud revision. EFFECTIVE = the cloud HLS schedule reached that revision and current media passed its availability checks. None of these labels alone proves a specific listener heard a recording. This controller cannot skip the currently playing audio.</p>
 </section>
 <section class="panel card" id="feature-desk" aria-labelledby="feature-title">
-<h2 id="feature-title">06 · Feature Desk — put a show in order</h2>
+<h2 id="feature-title">06 · Feature Desk — program the frequencies</h2>
+<label for="feature-station">Cloud frequency</label><select id="feature-station"><option value="station-one">Night Shift · station-one</option><option value="lo-fi">Lo-Fi Study · lo-fi</option><option value="mutant">Mutant Radio · mutant</option></select>
+<p id="feature-scope" class="small" role="status"></p><p id="feature-draft-count" class="small"></p>
+<p class="small">Station drafts stay independent while this tab is open. The approved recording catalog is shared. Copying a lineup creates an independent draft, not a live queue.</p>
+<div class="row"><a href="../network/dial.html">Network signals &amp; ledger ↗</a><a href="../manage/#programming">Legacy Same-Time programming ↗</a></div>
 <p>Choose already published and enabled songs, interviews and bumpers from this same crate. Put them in the exact order you want, save a <strong>PAUSED</strong> recurring program to the existing Station Manager, then inspect it there before anyone turns it on. Nothing schedules itself and no cloud transmitter is changed here.</p>
 <div class="folder-controls">
 <div><label for="feature-name">Feature / show name</label><input id="feature-name" type="text" maxlength="100" placeholder="Friday Night Fellowship"></div>
@@ -224,19 +228,22 @@ footer{padding:20px;text-align:center}
 <div class="row"><select id="feature-track" aria-label="Approved recording for ordered feature" style="flex:1;min-width:185px"><option value="">Choose an approved recording…</option></select><button id="feature-add" type="button" class="accent">+ ADD TO FEATURE</button></div>
 <ol id="feature-order" aria-live="polite"><li>No recordings selected.</li></ol>
 <p id="feature-duration" class="small">0 ordered positions</p>
+<label for="feature-copy-target">Copy ordered draft to another frequency</label><select id="feature-copy-target"><option value="lo-fi">Lo-Fi Study</option><option value="mutant">Mutant Radio</option><option value="station-one">Night Shift</option></select><button id="feature-copy" type="button" disabled>COPY DRAFT</button>
 <div class="folder-controls">
 <div><label for="feature-start">Start / Central</label><input id="feature-start" type="time" value="19:00"></div>
 <div><label for="feature-end">End / Central</label><input id="feature-end" type="time" value="20:00"></div>
 </div>
 <p><strong>Recurring days</strong> (the saved show stays paused until you enable it)</p>
 <div id="feature-days" role="group" aria-label="Days for feature"></div>
-<div class="row"><button id="feature-save" type="button" class="accent" disabled>SAVE PAUSED FEATURE</button><button id="feature-clear" type="button">CLEAR UNSAVED ORDER</button><a href="../manage/#programming" class="button-like">REVIEW IN STATION MANAGER</a></div>
+<div class="row"><button id="feature-save" type="button" class="accent" disabled>SAVE PAUSED SAME-TIME FEATURE</button><button id="feature-clear" type="button">CLEAR UNSAVED ORDER</button><a href="../manage/#programming" class="button-like">REVIEW IN STATION MANAGER</a></div>
 <div class="folder-controls">
 <div><label for="feature-cloud-date">One-time Cloud HOUSE date</label><input type="date" id="feature-cloud-date"></div>
 <div><label for="feature-cloud-time">One-time Cloud HOUSE time (Central)</label><input type="time" id="feature-cloud-time" value="19:00" step="900"></div>
 </div>
 <div class="row"><button id="feature-export-cloud" type="button" disabled>EXPORT ONE-TIME CLOUD FEATURE</button></div>
 <p class="small">This exports a source-verified TOWER handoff JSON from the same ordered lineup. It preserves long interviews, exact cue order and a planned Central slot. Export is <strong>not on-air publication</strong>; it needs separate owner review and the Cloud HOUSE publisher. The current station schedule is unchanged.</p>
+<div class="row"><button id="feature-export-house" type="button" disabled>EXPORT NEW FREQUENCY HOUSE DRAFT</button></div>
+<p class="small">Use a HOUSE draft to seed an independent frequency, then use one-time cloud features for scheduled shows. Export is not approval or publication. The existing Night Shift HOUSE and live controls remain separate.</p>
 <p id="feature-status" role="status" aria-live="polite"></p>
 <p class="small">Existing scheduled programs belong to Same-Time RADIO and TOWER. Cloud HOUSE one-time guest blocks still require a separate owner-reviewed cloud publication. This form does not bypass that gate. Only the existing verified HUMKIN owner account can save; staff delegation is not active yet.</p>
 </section>
