@@ -211,5 +211,9 @@ export function mountFeatureDesk({db,rows,onStatus}){
  });
  renderChoices();renderLineup();
  status("Private editor. Only approved tracks are selectable. Save is PAUSED, never on air.");
- return {refresh(){renderChoices();renderLineup()}};
+ const requested=new URLSearchParams(location.search).get("station");
+ if(requested&&[...stationSelect.options].some(option=>option.value===requested)){
+   stationSelect.value=requested;switchStation();
+ }
+ return {refresh(){renderChoices();renderLineup()},hasDrafts(){return state.busy||state.ids.length>0||[...drafts.values()].some(d=>d.ids.length>0)}};
 }
