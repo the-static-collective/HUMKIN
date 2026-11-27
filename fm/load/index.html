@@ -185,7 +185,7 @@ footer{padding:20px;text-align:center}
 </div>
 <p id="feature-match-count" class="small">Sign in and refresh the crate to choose recordings.</p>
 <div class="row"><select id="feature-track" aria-label="Approved recording for ordered feature" style="flex:1;min-width:185px"><option value="">Choose an approved recording…</option></select><button id="feature-add" type="button" class="accent">+ ADD TO FEATURE</button></div>
-<ol id="feature-order" aria-live="polite"><li>No recordings selected.</li></ol>
+<div class="feature-board"><section class="feature-source"><h3>Shared crate</h3><p class="small">Drag a recording into the running order, or use its Add button.</p><ul id="feature-palette" aria-label="Matching recordings"></ul></section><section class="feature-timeline"><h3>Running order <span class="draft-chip">DRAFT</span></h3><p class="small">Drag a handle to an insertion line. Arrows work on touch and keyboard. Cue offsets are estimates, not live playout times.</p><div class="row"><button id="feature-undo-order" type="button" disabled>Undo order edit</button></div><ol id="feature-order" aria-label="Ordered draft recordings"><li>No recordings selected.</li></ol><div id="feature-drop-end" class="feature-insertion" aria-label="Drop at end">+ Drop at end</div></section></div>
 <p id="feature-duration" class="small">0 ordered positions</p>
 <label for="feature-copy-target">Copy ordered draft to another frequency</label><select id="feature-copy-target"><option value="lo-fi">Lo-Fi Study</option><option value="mutant">Mutant Radio</option><option value="station-one">Night Shift</option></select><button id="feature-copy" type="button" disabled>COPY DRAFT</button>
 <div class="folder-controls">
