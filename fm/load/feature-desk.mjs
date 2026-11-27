@@ -78,6 +78,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
    revision++;clearDrag();
    list.replaceChildren();
    byId("feature-undo-order").disabled=state.busy||!undo;
+   for(const b of byId("feature-palette").querySelectorAll("button")){b.disabled=state.busy;if(b.classList.contains("feature-drag"))b.draggable=!state.busy;}
    const lookup=new Map(approved().map(r=>[r.id,r]));
    if(!state.ids.length)list.append(el("li","Nothing added yet. Choose a track above."));
    const cues=projectCues(state.ids,lookup);
@@ -85,13 +86,13 @@ export function mountFeatureDesk({db,rows,onStatus}){
      const insertion=el("li","");insertion.className="feature-insertion";insertion.setAttribute("aria-hidden","true");bindDrop(insertion,index);list.append(insertion);
      const record=lookup.get(id);
      const item=el("li");
-     const label=el("span");label.className="feature-info";label.append(el("strong",(index+1)+". "+(record?record.title:"UNAVAILABLE · This draft needs review")),el("small","+"+formatOffset(cues[index].offset)+" · "+(record?.kind==="bumper"?"CART":"SONG")+" · "+formatOffset(cues[index].duration)));if(!record)item.classList.add("feature-missing");item.append(label);
+     const label=el("span");label.className="feature-info";label.append(el("strong",(index+1)+". "+(record?record.title:"UNAVAILABLE · This draft needs review")),el("small","+"+formatOffset(cues[index].offset)+" · "+(record?.kind==="bumper"?"CART":"SONG")+" · "+formatOffset(cues[index].duration)));if(!record)item.classList.add("feature-missing");item.append(label);bindDrop(item,index);
      const tools=el("span");tools.className="feature-actions";tools.append(dragHandle("order",id,index));
      for(const [text,dir] of [["↑",-1],["↓",1]]){
        const b=el("button",text);b.type="button";
        b.disabled=state.busy||(dir===-1&&index===0)||(dir===1&&index===state.ids.length-1);
        b.setAttribute("aria-label",(dir===-1?"Move up: ":"Move down: ")+(record?.title||id));
-       b.addEventListener("click",()=>{commitOrder(move(state.ids,index,dir))});
+       b.addEventListener("click",()=>{commitOrder(move(state.ids,index,dir));const buttons=list.querySelectorAll("li:not(.feature-insertion) .feature-actions");buttons[index+dir]?.querySelector(dir<0?"button[aria-label^=\"Move up\"]":"button[aria-label^=\"Move down\"]")?.focus();});
        tools.append(b);
      }
      const remove=el("button","Remove");remove.type="button";remove.disabled=state.busy;
