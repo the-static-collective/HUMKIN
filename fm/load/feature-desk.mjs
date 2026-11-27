@@ -3,6 +3,7 @@
  * A draft is not a Cloud HOUSE program or an on-air receipt.
  */
 import {availableRecordings,buildPausedFeature,move} from "./feature-core.mjs";
+import {editOrder,projectCues,formatOffset} from "./feature-order.mjs";
 import {buildCloudHandoff,browserSha256,buildHouseCrate,checkedStation} from "./cloud-feature-handoff.mjs";
 
 const OWNER="us@abundent.org";
@@ -17,6 +18,14 @@ export function mountFeatureDesk({db,rows,onStatus}){
  const stationSelect=byId("feature-station");
  const draftFields=["feature-name","feature-start","feature-end","feature-cloud-date","feature-cloud-time"];
  const drafts=new Map();
+ let revision=0,drag=null,undo=null;
+ function clearDrag(){drag=null;root.querySelectorAll(".drop-target").forEach(n=>n.classList.remove("drop-target"));}
+ function commitOrder(next){if(state.busy)return;if(next.length===state.ids.length&&next.every((id,i)=>id===state.ids[i]))return;undo=state.ids.slice();state.ids=next;renderLineup();}
+ function applyDrop(token,slot){if(state.busy)return;try{commitOrder(editOrder(state.ids,token,slot,{station:state.station,revision,eligible:new Set(approved().map(r=>r.id))}));status("Draft order updated · no live schedule changed.");}catch(e){status(e.message);}finally{clearDrag();}}
+ function dragHandle(kind,id,index){const b=el("button",kind==="catalog"?"Drag +":"Drag");b.type="button";b.className="feature-drag";b.disabled=state.busy;b.draggable=!state.busy;b.setAttribute("aria-label",kind==="catalog"?"Drag recording into order":"Drag to reorder position "+(index+1));b.addEventListener("dragstart",e=>{if(state.busy){e.preventDefault();return;}clearDrag();drag={kind,id,index,station:state.station,revision};e.dataTransfer.setData("text/plain","HUMKIN draft position");e.dataTransfer.effectAllowed=kind==="catalog"?"copy":"move";});b.addEventListener("dragend",clearDrag);return b;}
+ function bindDrop(node,slot){node.addEventListener("dragover",e=>{if(!drag||state.busy||drag.station!==state.station||drag.revision!==revision)return;e.preventDefault();e.dataTransfer.dropEffect=drag.kind==="catalog"?"copy":"move";node.classList.add("drop-target");});node.addEventListener("dragleave",()=>node.classList.remove("drop-target"));node.addEventListener("drop",e=>{e.preventDefault();e.stopPropagation();if(drag)applyDrop(drag,typeof slot==="function"?slot():slot);});}
+ bindDrop(byId("feature-drop-end"),()=>state.ids.length);
+ byId("feature-undo-order").addEventListener("click",()=>{if(state.busy||!undo)return;const prior=undo;undo=null;state.ids=prior;renderLineup();status("Undid last draft order edit.");});
  const snapshot=()=>({ids:[...state.ids],fields:Object.fromEntries(draftFields.map(id=>[id,byId(id).value])),days:[...document.querySelectorAll('input[name="feature-day"]:checked')].map(n=>n.value)});
  const initialFields=Object.fromEntries(draftFields.map(id=>[id,byId(id).value]));
  function restore(draft){
@@ -32,7 +41,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
    if(state.busy){stationSelect.value=state.station;return;}
    const next=checkedStation(stationSelect.value);
    if(next===state.station)return;
-   drafts.set(state.station,snapshot());state.station=next;
+   drafts.set(state.station,snapshot());state.station=next;undo=null;clearDrag();
    restore(drafts.get(next)||{ids:[],fields:{...initialFields,name:"","feature-name":""},days:["5"]});
    renderChoices();renderLineup();status("Editing "+next+" only. Previous station draft retained in this tab.");
  }
@@ -52,11 +61,13 @@ export function mountFeatureDesk({db,rows,onStatus}){
  function renderChoices(){
    const select=byId("feature-track");
    const previous=select.value;
+   const palette=byId("feature-palette");palette.replaceChildren();
    select.replaceChildren(new Option("Choose an approved recording…",""));
    for(const r of matched()){
      const tag=r.kind==="bumper"?"CART":r.is_single?"SINGLE":"SONG";
      const option=new Option("["+tag+"] "+r.title+" — "+r.artist,r.id);
      select.add(option);
+     const item=el("li"),info=el("span"),tools=el("span");info.className="feature-info";tools.className="feature-actions";info.append(el("strong",r.title),el("small",tag+" · "+r.artist+" · "+formatOffset(Number(r.duration_seconds))));const add=el("button","Add");add.type="button";add.disabled=state.busy;add.setAttribute("aria-label","Add "+r.title);add.addEventListener("click",()=>applyDrop({kind:"catalog",id:r.id,station:state.station,revision},state.ids.length));tools.append(dragHandle("catalog",r.id),add);item.append(info,tools);palette.append(item);
    }
    if([...select.options].some(option=>option.value===previous))select.value=previous;
    byId("feature-match-count").textContent=matched().length+
@@ -64,26 +75,27 @@ export function mountFeatureDesk({db,rows,onStatus}){
  }
  function renderLineup(){
    const list=byId("feature-order");
+   revision++;clearDrag();
    list.replaceChildren();
+   byId("feature-undo-order").disabled=state.busy||!undo;
    const lookup=new Map(approved().map(r=>[r.id,r]));
    if(!state.ids.length)list.append(el("li","Nothing added yet. Choose a track above."));
+   const cues=projectCues(state.ids,lookup);
    state.ids.forEach((id,index)=>{
+     const insertion=el("li","");insertion.className="feature-insertion";insertion.setAttribute("aria-hidden","true");bindDrop(insertion,index);list.append(insertion);
      const record=lookup.get(id);
      const item=el("li");
-     const label=el("span",record?(record.kind==="bumper"?"CART · ":"SONG · ")+
-       record.title+" · "+Math.round(Number(record.duration_seconds))+" sec":
-       "UNAVAILABLE · This draft needs review");
-     item.append(label);
-     const tools=el("span");tools.className="feature-actions";
+     const label=el("span");label.className="feature-info";label.append(el("strong",(index+1)+". "+(record?record.title:"UNAVAILABLE · This draft needs review")),el("small","+"+formatOffset(cues[index].offset)+" · "+(record?.kind==="bumper"?"CART":"SONG")+" · "+formatOffset(cues[index].duration)));if(!record)item.classList.add("feature-missing");item.append(label);
+     const tools=el("span");tools.className="feature-actions";tools.append(dragHandle("order",id,index));
      for(const [text,dir] of [["↑",-1],["↓",1]]){
        const b=el("button",text);b.type="button";
        b.disabled=state.busy||(dir===-1&&index===0)||(dir===1&&index===state.ids.length-1);
        b.setAttribute("aria-label",(dir===-1?"Move up: ":"Move down: ")+(record?.title||id));
-       b.addEventListener("click",()=>{state.ids=move(state.ids,index,dir);renderLineup()});
+       b.addEventListener("click",()=>{commitOrder(move(state.ids,index,dir))});
        tools.append(b);
      }
      const remove=el("button","Remove");remove.type="button";remove.disabled=state.busy;
-     remove.addEventListener("click",()=>{state.ids.splice(index,1);renderLineup()});
+     remove.addEventListener("click",()=>{commitOrder(state.ids.filter((_,i)=>i!==index))});
      tools.append(remove);item.append(tools);list.append(item);
    });
    const sec=state.ids.reduce((sum,id)=>sum+Number(lookup.get(id)?.duration_seconds||0),0);
@@ -129,7 +141,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
      if(data?.is_active!==false)throw Error("Saved state was not verified paused; inspect in Station Manager.");
      status("SAVED PAUSED: "+data.name+" · "+state.ids.length+
        " ordered positions. Open Station Manager to review before enabling. Cloud HOUSE is unchanged.");
-     state.ids=[];renderLineup();
+     state.ids=[];undo=null;renderLineup();
    }catch(err){status("FEATURE NOT SAVED: "+err.message)}
    finally{state.busy=false;renderLineup()}
  }
@@ -191,7 +203,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
    const id=byId("feature-track").value;
    if(!approved().some(r=>r.id===id))return status("Choose a currently approved recording.");
    if(state.ids.length>=200)return status("Maximum 200 positions per program.");
-   state.ids.push(id);renderLineup();
+   commitOrder([...state.ids,id]);
  });
  byId("feature-search").addEventListener("input",renderChoices);
  for(const id of ["feature-start","feature-end"])byId(id).addEventListener("change",renderLineup);
@@ -199,7 +211,7 @@ export function mountFeatureDesk({db,rows,onStatus}){
  byId("feature-clear").addEventListener("click",()=>{
    if(state.busy)return;
    if(state.ids.length&& !confirm("Clear this unsaved feature running order?"))return;
-   state.ids=[];renderLineup();status("Draft cleared. No show was created.");
+   commitOrder([]);status("Draft cleared. No show was created.");
  });
  byId("feature-days").replaceChildren();
  weekdays.forEach((name,i)=>{
@@ -215,5 +227,5 @@ export function mountFeatureDesk({db,rows,onStatus}){
  if(requested&&[...stationSelect.options].some(option=>option.value===requested)){
    stationSelect.value=requested;switchStation();
  }
- return {refresh(){renderChoices();renderLineup()},hasDrafts(){return state.busy||state.ids.length>0||[...drafts.values()].some(d=>d.ids.length>0)}};
+ return {refresh(){renderChoices();renderLineup()},hasDrafts(){return state.busy||state.ids.length>0||[...drafts.entries()].some(([id,d])=>id!==state.station&&d.ids.length>0)}};
 }
