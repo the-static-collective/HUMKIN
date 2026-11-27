@@ -85,3 +85,12 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 @media(max-width:760px){.desk-workspace{scroll-margin-top:180px}.desk-sidebar section{padding:6px 8px}.desk-sidebar section h2{font-size:.75rem}}
+
+.tower-global-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px clamp(12px,3vw,42px);background:#ede6f4;border-bottom:1px solid #d9cfdd;font-size:.83rem}
+.tower-global-nav a{padding:5px 9px;text-decoration:none;border-radius:5px;font-weight:700}
+.tower-global-nav a[aria-current="page"]{background:#271d42;color:#fff8eb}
+.frequency-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.frequency-grid article{padding:12px;border:1px solid #d9cfdd;border-radius:8px;min-width:0}
+.frequency-grid h3{font-size:1rem;margin:4px 0}
+.scope-line{font-size:.72rem;font-weight:800;letter-spacing:.07em;color:#675a75}
+@media(max-width:760px){.frequency-grid{grid-template-columns:1fr}.tower-global-nav{font-size:.74rem;gap:3px;padding:5px 8px}}
