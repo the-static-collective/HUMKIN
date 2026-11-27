@@ -175,10 +175,10 @@ export function mountFeatureDesk({db,rows,onStatus}){
      if(error||data?.user?.email?.toLowerCase()!==OWNER)throw Error("Unlock your verified owner session first.");
      const check=await db.from("humkin_radio_tracks").select("id,title,artist,album,kind,enabled,published_at,storage_provider,sha256,r2_object_key,duration_seconds").in("id",[...new Set(state.ids)]);
      if(check.error)throw Error("Cannot recheck source eligibility: "+check.error.message);
-     const packet=buildHouseCrate({stationId:state.station,ids:[...state.ids],rows:check.data||[]});
+     const packet=await buildHouseCrate({stationId:state.station,ids:[...state.ids],rows:check.data||[]});
      const url=URL.createObjectURL(new Blob([JSON.stringify(packet,null,2)],{type:"application/json"}));
      const a=document.createElement("a");a.href=url;a.download="HUMKIN-"+state.station+"-house-crate.json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
-     status("HOUSE DRAFT FOR "+state.station+": "+packet.tracks.length+" positions. Preview and review with Autopilot publisher; not published.");
+     status("HOUSE DRAFT FOR "+state.station+": "+packet.crate.tracks.length+" positions. Preview and review with Autopilot publisher; not published.");
    }catch(error){status("HOUSE NOT EXPORTED: "+error.message);}
    finally{state.busy=false;renderLineup();}
  }
