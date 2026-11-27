@@ -2,8 +2,8 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [cea69ad2941c](https://github.com/the-static-collective/HUMKIN/commit/cea69ad2941c3e5e27e28f645a1c0b9ec1d35043)
-- Branches: 209; open PRs: 31; branch/PR pages: COMPLETE.
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [716995e778a3](https://github.com/the-static-collective/HUMKIN/commit/716995e778a315a6724454df326bb7fe8acbde2f)
+- Branches: 210; open PRs: 32; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
 ## Focused return doors
@@ -135,6 +135,7 @@
 | [feature/humkin-radio-autodj-20261113](https://github.com/the-static-collective/HUMKIN/tree/feature/humkin-radio-autodj-20261113) | da9454075197 | No matching open PR; UNCLASSIFIED |
 | [feature/humkin-station-manager-20261113](https://github.com/the-static-collective/HUMKIN/tree/feature/humkin-station-manager-20261113) | 4d0e9a8d494e | No matching open PR; UNCLASSIFIED |
 | [feature/humkin-time-then-clock-liner-20261115](https://github.com/the-static-collective/HUMKIN/tree/feature/humkin-time-then-clock-liner-20261115) | f00c8982fe54 | No matching open PR; UNCLASSIFIED |
+| [feature/humkin-transmission-ledger-001](https://github.com/the-static-collective/HUMKIN/tree/feature/humkin-transmission-ledger-001) | e49315d40f87 | [#210](https://github.com/the-static-collective/HUMKIN/pull/210) (base: main) |
 | [feature/listener-tip-jar-discoverability-001](https://github.com/the-static-collective/HUMKIN/tree/feature/listener-tip-jar-discoverability-001) | b5bb6901bbf4 | No matching open PR; UNCLASSIFIED |
 | [feature/little-human-machine-v2](https://github.com/the-static-collective/HUMKIN/tree/feature/little-human-machine-v2) | 7d2bb0c3d0f7 | No matching open PR; UNCLASSIFIED |
 | [feature/living-discography-kinship-producer-desk](https://github.com/the-static-collective/HUMKIN/tree/feature/living-discography-kinship-producer-desk) | 3a50aa1a6ee3 | No matching open PR; UNCLASSIFIED |
@@ -214,7 +215,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | cea69ad2941c | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 716995e778a3 | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [recovery/android-classic-spine-20261120](https://github.com/the-static-collective/HUMKIN/tree/recovery/android-classic-spine-20261120) | 23c6b3bfe14e | [#179](https://github.com/the-static-collective/HUMKIN/pull/179) (base: main) |
 | [release/everywhere-near-you-001](https://github.com/the-static-collective/HUMKIN/tree/release/everywhere-near-you-001) | 1db2f6a72678 | No matching open PR; UNCLASSIFIED |
