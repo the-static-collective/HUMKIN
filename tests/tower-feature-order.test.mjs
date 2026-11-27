@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import {editOrder,projectCues,formatOffset} from "../fm/load/feature-order.mjs";
+const order=["a","b","a","c"],opts={station:"lo-fi",revision:3,eligible:new Set(["a","b","c","d"])},t={kind:"order",id:"a",index:2,station:"lo-fi",revision:3};
+assert.deepEqual(editOrder(order,t,0,opts),["a","a","b","c"]);
+assert.deepEqual(editOrder(order,{...t,index:0},4,opts),["b","a","c","a"]);
+assert.deepEqual(editOrder(order,t,3,opts),order);
+assert.deepEqual(editOrder(order,{...t,kind:"catalog",id:"d"},2,opts),["a","b","d","a","c"]);
+for(const change of [{station:"mutant"},{revision:2},{id:"b"},{kind:"catalog",id:"hidden"}])assert.throws(()=>editOrder(order,{...t,...change},0,opts));
+assert.throws(()=>editOrder(order,{...t,kind:"catalog",id:"d"},0,{...opts,limit:4}));
+assert.deepEqual(projectCues(["a","missing","b"],new Map([["a",{duration_seconds:90}],["b",{duration_seconds:30}]])),[{id:"a",offset:0,duration:90},{id:"missing",offset:90,duration:null},{id:"b",offset:null,duration:30}]);
+assert.equal(formatOffset(3661),"01:01:01");
+assert.equal(formatOffset(null),"—");
+console.log("TOWER draft drag order checks passed");
