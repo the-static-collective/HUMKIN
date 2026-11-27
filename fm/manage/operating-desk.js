@@ -3,7 +3,7 @@
  const panels=[...document.querySelectorAll("[data-desk-view]")];
  const links=[...document.querySelectorAll("[data-desk-link]")];
  if(!panels.length||panels.length!==links.length)return;
- const overview=panels.find(p=>p.dataset.deskView==="overview");
+ const overview=panels.find(p=>p.dataset.deskView==="overview")||panels[0];
  if(!overview)return;
  function route(){
   let id="";
@@ -19,7 +19,7 @@
    if(a.dataset.deskLink===panel.dataset.deskView)a.setAttribute("aria-current","page");
    else a.removeAttribute("aria-current");
   }
-  if(scroll&&target&&target!==panel)target.scrollIntoView({block:"start"});
+  if(scroll&&target&&target!==panel){for(let d=target.closest?.("details");d;d=d.parentElement?.closest("details"))d.open=true;target.scrollIntoView({block:"start"});}
   else if(focus){
    panel.querySelector("h2")?.focus({preventScroll:true});
    panel.scrollIntoView({block:"start"});
