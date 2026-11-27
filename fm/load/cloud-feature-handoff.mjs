@@ -81,11 +81,14 @@ export async function browserSha256(bytes){
 }
 
 /* Initial HOUSE draft, not a publication receipt. Uses the same approved source filter. */
-export function buildHouseCrate({stationId,ids,rows}){
+export async function buildHouseCrate({stationId,ids,rows},digest=browserSha256){
  const station_id=checkedStation(stationId);
  if(station_id==="station-one")throw Error("Use the existing Night Shift HOUSE workflow.");
  if(!Array.isArray(ids)||!ids.length||ids.length>200)throw Error("Select 1–200 ordered recordings.");
  const available=new Map((Array.isArray(rows)?rows:[]).map(eligibleHandoffRow).filter(Boolean).map(r=>[r.id.slice(3),r]));
  const tracks=ids.map(id=>{const record=available.get(id);if(!record)throw Error("Recording is no longer eligible for cloud.");const {source_seconds,...track}=record;return track;});
- return {schema:"humkin.autopilot.crate/v1",station_id,tracks};
+ const packet={schema:"humkin.network-house-draft/v1",station_id,crate:{schema:"humkin.autopilot.crate/v1",station_id,tracks}};
+ packet.fingerprint=await digest(new TextEncoder().encode(canonical(packet)));
+ if(!SHA.test(packet.fingerprint))throw Error("House draft digest failed.");
+ return packet;
 }
