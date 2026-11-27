@@ -83,3 +83,5 @@
  .desk-workspace [id]{scroll-margin-top:180px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+@media(max-width:760px){.desk-workspace{scroll-margin-top:180px}.desk-sidebar section{padding:6px 8px}.desk-sidebar section h2{font-size:.75rem}}
