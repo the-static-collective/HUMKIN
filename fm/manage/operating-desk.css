@@ -1,0 +1,85 @@
+/* Operating Desk: preserve HUMKIN's palette, reduce competition for attention. */
+:root{--desk-line:#d9cfdd;--desk-muted:#675a75}
+.tower-shell{max-width:1480px;padding:20px clamp(12px,3vw,42px) 70px}
+.desk-masthead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.desk-masthead .eyebrow,.workspace-heading .eyebrow{margin:0;color:var(--desk-muted)}
+.desk-masthead h1{font-size:clamp(2rem,4vw,3.2rem);letter-spacing:-.05em;line-height:1.08;margin:2px 0}
+.desk-masthead h1 span{color:#9d527d}
+.tower-shell section,.tower-shell .block{border:1px solid var(--desk-line);border-radius:12px;box-shadow:none;margin:0 0 12px;padding:16px;background:#fff}
+.tower-shell section.rose,.tower-shell section.mint{background:#fff}
+.tower-shell section h2{font-size:1.13rem;line-height:1.3;letter-spacing:-.02em;margin:0 0 8px}
+.tower-shell p{margin-bottom:10px}
+.tower-shell button,.tower-shell .button{border-width:1px;border-radius:7px;font-size:.78rem;padding:8px 11px}
+.tower-shell button.primary{background:#d5f4df}
+.tower-shell input:not([type=checkbox]),.tower-shell select{border:1px solid #a89ab3;min-height:36px;font-size:.88rem}
+.tower-shell a:focus-visible,.tower-shell button:focus-visible{outline:3px solid #16899b;outline-offset:2px}
+.desk-snapshot{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px}
+.desk-snapshot section:first-child{background:#eee9f6;border-color:#d8c9ea}
+.desk-snapshot #now{font-size:1rem;margin:4px 0}
+.desk-snapshot #stats,.desk-snapshot #auth-status{font-size:.82rem;min-height:0;margin:5px 0;overflow-wrap:anywhere}
+.desk-snapshot section>.sub{font-size:.76rem;margin-bottom:0;margin-top:6px}
+.desk-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}
+.desk-sidebar{position:sticky;top:12px;min-width:0}
+.desk-nav{display:grid;gap:4px;padding:8px;background:#271d42;color:#fff8eb;border-radius:12px;margin-bottom:10px}
+.desk-nav a{display:flex;align-items:center;gap:10px;min-height:42px;padding:9px 12px;text-decoration:none;font-size:.88rem;font-weight:750;border-radius:6px}
+.desk-nav a span{font-size:.7rem;color:#c2b6d2;font-variant-numeric:tabular-nums}
+.desk-nav a:hover{background:#483b5d}
+.desk-nav a[aria-current="page"]{background:#ffe77a;color:#271d42}
+.desk-nav a[aria-current="page"] span{color:#675a75}
+.desk-sidebar audio{display:block;width:100%;max-width:100%;height:38px;margin:6px 0 0}
+.desk-sidebar #preview-label{font-size:.78rem;overflow-wrap:anywhere}
+#manager-msg{font-size:.8rem;min-height:0;overflow-wrap:anywhere}
+#manager-msg:not(:empty){border-left:3px solid #9b7ba9;padding:8px;background:#f4eef7}
+.desk-stage{min-width:0}
+.desk-workspace[hidden]{display:none!important}
+.workspace-heading{margin:0 0 14px;padding:2px 0 8px;border-bottom:1px solid var(--desk-line)}
+.workspace-heading h2{font-size:1.65rem;line-height:1.16;letter-spacing:-.04em;margin:4px 0}
+.workspace-heading p:last-child{font-size:.87rem;color:var(--desk-muted);margin:0}
+.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
+.quick-tool{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:start;text-decoration:none;background:#fff;border:1px solid var(--desk-line);border-radius:10px;padding:14px}
+.quick-tool strong{font-size:.96rem}
+.quick-tool span:first-of-type{grid-column:1;font-size:.8rem;color:var(--desk-muted)}
+.quick-tool span:last-child{grid-column:2;grid-row:1/3;align-self:center}
+.quick-tool:hover{border-color:#75618c;background:#f8f3fc}
+.desk-disclaimer{margin-top:18px}
+#catalog{max-height:min(70vh,820px);border:1px solid var(--desk-line);border-radius:8px;margin:10px 0;padding:0 10px;scrollbar-gutter:stable}
+#catalog .track{padding:9px 0;align-items:center}
+#catalog .track>div:first-of-type{min-width:0}
+#catalog .track-thumb{float:left;width:42px;height:42px;margin:2px 9px 6px 0}
+#catalog .track-title{font-size:.92rem;line-height:1.3}
+#catalog .track .row{gap:4px}
+#catalog .pill{font-size:.64rem;padding:1px 5px;border-color:#d1c4dd;border-radius:5px}
+#catalog .track-info{font-size:.7rem}
+#catalog .track-actions{gap:4px}
+#catalog .track-actions button{padding:6px 8px;font-size:.72rem}
+#track-search{min-width:0;width:100%}
+#library>.row:first-of-type{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,auto)}
+.recovery-tools{margin:12px 0;padding:10px;border:1px solid var(--desk-line);border-radius:8px}
+.recovery-tools summary{cursor:pointer;font-weight:700;font-size:.85rem}
+.recovery-tools .row{margin-top:9px}
+@media(max-width:760px){
+ .tower-shell{padding:12px 10px 45px}
+ .desk-snapshot{grid-template-columns:1fr;gap:0}
+ .desk-snapshot section{padding:10px 12px;margin-bottom:8px}
+ .desk-snapshot section>.sub{display:none}
+ .desk-layout{display:block}
+ .desk-sidebar{position:sticky;top:0;z-index:5;background:var(--cream);padding:4px 0}
+ .desk-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:5px;margin-bottom:4px}
+ .desk-nav a{justify-content:center;gap:3px;padding:8px 3px;font-size:.75rem;min-height:36px}
+ .desk-nav a span{display:none}
+ .desk-sidebar section{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 8px;align-items:center;padding:6px 8px;margin:0 0 4px}
+ .desk-sidebar section h2{font-size:.75rem;margin:0}
+ .desk-sidebar section #preview-label{grid-column:1;font-size:.68rem;margin:0;max-height:2.9em;overflow:auto}
+ .desk-sidebar audio{grid-column:2;grid-row:1/3;margin:0;height:34px}
+ #manager-msg:not(:empty){margin:3px 0;padding:4px 6px;max-height:3em;overflow:auto}
+ .workspace-heading{margin-top:10px}
+ .tower-shell section{padding:12px}
+ .quick-grid{grid-template-columns:1fr}
+ .quick-tool{padding:10px}
+ #catalog .track{grid-template-columns:auto minmax(0,1fr)}
+ #catalog .track-actions{grid-column:2;justify-content:flex-start}
+ #library>.row:first-of-type{grid-template-columns:1fr}
+ #catalog{max-height:65vh}
+ .desk-workspace [id]{scroll-margin-top:180px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
