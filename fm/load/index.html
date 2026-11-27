@@ -175,7 +175,14 @@ footer{padding:20px;text-align:center}
 <div class="desk-workspace" id="desk-programming" data-desk-view="programming"><header class="workspace-heading"><h2 tabindex="-1">Frequency builder</h2><p>Independent draft orders for each registered cloud frequency.</p></header><section class="panel card" id="feature-desk" aria-labelledby="feature-title">
 <h2 id="feature-title">06 · Feature Desk — program the frequencies</h2>
 <label for="feature-station">Cloud frequency</label><select id="feature-station"><option value="station-one">Night Shift · station-one</option><option value="lo-fi">Lo-Fi Study · lo-fi</option><option value="mutant">Mutant Radio · mutant</option></select>
-<p id="feature-scope" class="small" role="status"></p><p id="feature-draft-count" class="small"></p>
+<p id="feature-scope" class="small" role="status"></p>
+<section id="rolling-timeline" class="rolling-board" aria-labelledby="rolling-title">
+ <header><div><p class="rolling-kicker">TRANSMISSION / READ ONLY</p><h3 id="rolling-title">Rolling station timeline</h3></div><button id="rolling-refresh" type="button">Refresh</button></header>
+ <div class="rolling-controls"><label for="rolling-horizon">Look ahead</label><select id="rolling-horizon"><option value="30">30 minutes</option><option value="60" selected>1 hour</option><option value="120">2 hours</option></select><label><input id="rolling-auto" type="checkbox" checked> Refresh every minute while visible</label></div>
+ <div class="rolling-head"><small>CURRENT CLOUD CUE · sampled</small><strong id="rolling-now">No verified current cue</strong><p id="rolling-receipt" class="small" role="status"></p></div>
+ <details open><summary>Committed upcoming cues · locked</summary><ol id="rolling-committed" aria-label="Published schedule cues"></ol></details>
+ <p id="rolling-pending" class="small"></p><p class="small">Published schedules may be superseded by a separately authorized revision. Nothing in this lane is draggable. Build or reorder your independent draft below; it is not yet committed. All times Central.</p>
+</section><p id="feature-draft-count" class="small"></p>
 <p class="small">Station drafts stay independent while this tab is open. The approved recording catalog is shared. Copying a lineup creates an independent draft, not a live queue.</p>
 <div class="row"><a href="../network/dial.html">Network signals &amp; ledger ↗</a><a href="../manage/#programming">Legacy Same-Time programming ↗</a></div>
 <p>Choose already published and enabled songs, interviews and bumpers from this same crate. Put them in the exact order you want, save a <strong>PAUSED</strong> recurring program to the existing Station Manager, then inspect it there before anyone turns it on. Nothing schedules itself and no cloud transmitter is changed here.</p>
