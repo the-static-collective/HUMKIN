@@ -2,7 +2,7 @@
 
 > Branch names, PR titles and commits are leads, not adopted capabilities or field tests.
 
-- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [b436289c9809](https://github.com/the-static-collective/HUMKIN/commit/b436289c9809e716b4857fe405d4ae0e7d0773b6)
+- Repo: [the-static-collective/HUMKIN](https://github.com/the-static-collective/HUMKIN); main: [2f8b04c1366d](https://github.com/the-static-collective/HUMKIN/commit/2f8b04c1366db382d41290ca2893133023e91f24)
 - Branches: 213; open PRs: 35; branch/PR pages: COMPLETE.
 - Source bodies, closed PR ancestry, external/private repositories, deployment and devices not examined.
 
@@ -215,7 +215,7 @@
 | [integration/living-hls-v20-bugtest-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/living-hls-v20-bugtest-20261118) | 0ba809b60520 | [#161](https://github.com/the-static-collective/HUMKIN/pull/161) (base: integration/radio-tower-council-20261118) |
 | [integration/radio-signal-train-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-signal-train-20261118) | 3ea968917308 | [#158](https://github.com/the-static-collective/HUMKIN/pull/158) (base: main) |
 | [integration/radio-tower-council-20261118](https://github.com/the-static-collective/HUMKIN/tree/integration/radio-tower-council-20261118) | e5aa1bc3f00f | [#159](https://github.com/the-static-collective/HUMKIN/pull/159) (base: integration/radio-signal-train-20261118) |
-| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | b436289c9809 | No matching open PR; UNCLASSIFIED |
+| [main](https://github.com/the-static-collective/HUMKIN/tree/main) | 2f8b04c1366d | No matching open PR; UNCLASSIFIED |
 | [preview/radio-and-records-season-two](https://github.com/the-static-collective/HUMKIN/tree/preview/radio-and-records-season-two) | 6b64209b70e4 | [#151](https://github.com/the-static-collective/HUMKIN/pull/151) (base: main) |
 | [proposal/archive-janitor-001](https://github.com/the-static-collective/HUMKIN/tree/proposal/archive-janitor-001) | c782a508e7d7 | [#211](https://github.com/the-static-collective/HUMKIN/pull/211) (base: main) |
 | [proposal/station-operating-desk-001](https://github.com/the-static-collective/HUMKIN/tree/proposal/station-operating-desk-001) | 32c77cf69849 | [#212](https://github.com/the-static-collective/HUMKIN/pull/212) (base: main) |
